@@ -24,11 +24,11 @@ jobs:
 
     - name: Run Unit Tests
       run: |
+        mkdir -p .octocov
         go test -v -race -coverprofile=coverage.txt -covermode=atomic ./...
-        go tool cover -func=coverage.txt > coverage.out
 
     - name: Comment coverage
       if: github.event_name == 'pull_request'
       uses: k1LoW/octocov-action@v0
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
