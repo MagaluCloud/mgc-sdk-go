@@ -57,7 +57,7 @@ jobs:
           git config --global user.name "${{vars.MAGALUBOT_USER_NAME}}"
           git config --global commit.gpgsign true
           git config --global tag.gpgsign true
-          git config --global user.signingkey "${{secrets.MAGALUBOT_GPG_FINGERPRINT}}"
+          git config --global user.signingkey $(gpg --list-secret-keys --keyid-format LONG | grep sec | awk '{print $2}' | cut -d'/' -f2)
 
       - name: Create and push tag
         id: create-and-push-tag
