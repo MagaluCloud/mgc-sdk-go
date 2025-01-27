@@ -22,7 +22,11 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: "1.23"
-
+          cache: true
+          cache-dependency-path: |
+            **/go.mod
+            **/go.sum
+          
       - name: Validate version format
         id: validate-version
         run: |
@@ -39,10 +43,14 @@ jobs:
       - name: Import GPG key
         id: import-gpg-key
         if: steps.run-tests.outcome == 'success'
-        env:
-          GPG_TTY: $(tty)
         run: |
-          echo "${{ secrets.MAGALUBOT_GPG_PRIVATE_KEY }}" | gpg --batch --yes --passphrase "${{ secrets.MAGALUBOT_GPG_PASSPHRASE }}" --import
+          mkdir -p ~/.gnupg
+          chmod 700 ~/.gnupg
+          echo 'use-agent' > ~/.gnupg/gpg.conf
+          echo 'pinentry-mode loopback' >> ~/.gnupg/gpg.conf
+          echo 'allow-loopback-pinentry' > ~/.gnupg/gpg-agent.conf
+          echo "${{ secrets.MAGALUBOT_GPG_PRIVATE_KEY }}" | gpg --batch --yes --pinentry-mode loopback --passphrase "${{ secrets.MAGALUBOT_GPG_PASSPHRASE }}" --import
+          gpgconf --kill gpg-agent
 
       - name: Config Git
         id: config-git
@@ -53,15 +61,15 @@ jobs:
           git config --global commit.gpgsign true
           git config --global tag.gpgsign true
           git config --global user.signingkey $(gpg --list-secret-keys --keyid-format LONG | grep sec | awk '{print $2}' | cut -d'/' -f2)
+          git config --global gpg.program $(which gpg)
       
       - name: Create and push tag
         id: create-and-push-tag
         if: steps.config-git.outcome == 'success'
-        env:
-          GPG_TTY: $(tty)        
         run: |
-          git tag -a ${{ github.event.inputs.version }} -m "Release ${{ github.event.inputs.version }}"
-          git push origin ${{ github.event.inputs.version }}
+          export GPG_TTY=$(tty)
+          git tag -a "${{ github.event.inputs.version }}" -m "Release ${{ github.event.inputs.version }}"
+          git push origin "${{ github.event.inputs.version }}"  
 
       - name: Publish to Go package registry
         id: publish-to-go-package-registry
