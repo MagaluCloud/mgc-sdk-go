@@ -1,5 +1,4 @@
 name: Release SDK
-
 on:
   workflow_dispatch:
     inputs:
@@ -35,9 +34,15 @@ jobs:
 
       - name: Import GPG key
         run: |
+          echo "allow-preset-passphrase" > ~/.gnupg/gpg-agent.conf
+          gpg-connect-agent reloadagent /bye
           echo "${{ secrets.MAGALUBOT_GPG_PRIVATE_KEY }}" | gpg --batch --yes --passphrase "${{ secrets.MAGALUBOT_GPG_PASSPHRASE }}" --import
-
+          echo 'export GPG_TTY=$(tty)' >> ~/.bashrc
+          export GPG_TTY=$(tty)
       - name: Create and push tag
+        env:
+          GIT_ASKPASS: /bin/true
+          GPG_TTY: $(tty)
         run: |
           git config --local user.email "${{vars.MAGALUBOT_EMAIL}}"
           git config --local user.name "${{vars.MAGALUBOT_USER_NAME}}"
