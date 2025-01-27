@@ -1,0 +1,34 @@
+name: Unit Tests
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  test:
+    name: Run Unit Tests
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.23'
+
+    - name: Install dependencies
+      run: go mod download
+
+    - name: Run Unit Tests
+      run: |
+        go test -v -race -coverprofile=coverage.txt -covermode=atomic ./...
+        go tool cover -func=coverage.txt > coverage.out
+
+    - name: Comment coverage
+      if: github.event_name == 'pull_request'
+      uses: k1LoW/octocov-action@v0
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
