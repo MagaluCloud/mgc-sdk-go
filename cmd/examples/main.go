@@ -33,7 +33,7 @@ func ExampleListInstances() {
 	instances, err := computeClient.Instances().List(context.Background(), compute.ListOptions{
 		Limit:  helpers.IntPtr(10),
 		Offset: helpers.IntPtr(0),
-		Expand: []string{"machine-type", "image"},
+		Expand: []string{compute.InstanceMachineTypeExpand, compute.InstanceImageExpand},
 	})
 
 	if err != nil {
@@ -94,7 +94,7 @@ func ExampleManageInstance(id string) {
 	ctx := context.Background()
 
 	// Get instance details
-	instance, err := computeClient.Instances().Get(ctx, id, []string{"network"})
+	instance, err := computeClient.Instances().Get(ctx, id, []string{compute.InstanceNetworkExpand})
 	if err != nil {
 		log.Fatal(err)
 	}

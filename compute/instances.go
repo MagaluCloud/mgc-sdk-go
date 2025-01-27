@@ -11,6 +11,12 @@ import (
 	"github.com/MagaluCloud/mgc-sdk-go/client"
 )
 
+const (
+	InstanceImageExpand = "image"
+	InstanceMachineTypeExpand = "machine-type"
+	InstanceNetworkExpand = "network"
+)
+
 type (
 	ListInstancesResponse struct {
 		Instances []Instance `json:"instances"`
