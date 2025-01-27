@@ -30,5 +30,11 @@ jobs:
 
     - name: Run Unit Tests
       run: |
-        mkdir -p .octocov
-        go test -v -race ./...
+        go test -v -race -coverprofile=coverage.out ./...
+    
+
+    - name: Upload Coverage Report to SonarCloud
+      uses: sonarsource/sonarcloud-github-action@master
+      with:
+        args: >
+          -Dsonar.login=${{ secrets.MAGALUBOT_SONAR_TOKEN }}
