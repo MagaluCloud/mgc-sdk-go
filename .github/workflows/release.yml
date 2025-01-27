@@ -73,3 +73,18 @@ jobs:
         run: |
           go mod tidy
           GOPROXY=proxy.golang.org go list -m github.com/${GITHUB_REPOSITORY}@${{ github.event.inputs.version }}
+
+      - name: Create release
+        id: create-release
+        if: steps.publish-to-go-package-registry.outcome == 'success'
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            go.mod
+            go.sum
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag_name: ${{ github.event.inputs.version }}
+          release_name: ${{ github.event.inputs.version }}
+          body: "Release ${{ github.event.inputs.version }}"
+          draft: true
+          prerelease: false
