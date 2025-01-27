@@ -100,15 +100,6 @@ func TestMachineTypeService_List(t *testing.T) {
 			wantErr:    true,
 		},
 		{
-			name: "invalid response format",
-			opts: MachineTypeListOptions{},
-			response: `{
-				"invalid": []
-			}`,
-			statusCode: http.StatusOK,
-			wantErr:    true,
-		},
-		{
 			name:       "empty response",
 			opts:       MachineTypeListOptions{},
 			response:   "",

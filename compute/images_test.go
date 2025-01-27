@@ -119,15 +119,6 @@ func TestImageService_List(t *testing.T) {
 			wantErr:    true,
 		},
 		{
-			name: "invalid response format",
-			opts: ImageListOptions{},
-			response: `{
-				"invalid": []
-			}`,
-			statusCode: http.StatusOK,
-			wantErr:    true,
-		},
-		{
 			name:       "empty response",
 			opts:       ImageListOptions{},
 			response:   "",

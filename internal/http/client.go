@@ -1,0 +1,139 @@
+package mgc_http
+
+import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
+	"time"
+
+	"github.com/MagaluCloud/mgc-sdk-go/client"
+	"github.com/MagaluCloud/mgc-sdk-go/internal/retry"
+)
+
+// NewRequest creates a new HTTP request with the given method, path, and body.
+// It returns the request and an error if the request creation fails.
+func NewRequest[T any](c *client.Config, ctx context.Context, method, path string, body *T) (*http.Request, error) {
+	c.Logger.Debug("creating new request",
+		"method", method,
+		"path", path,
+		"hasBody", body != nil)
+
+	url := c.BaseURL.String() + path
+
+	var bodyReader io.Reader
+	if body != nil {
+		bodyBytes, err := json.Marshal(body)
+		if err != nil {
+			c.Logger.Error("failed to marshal request body",
+				"error", err,
+				"method", method,
+				"path", path)
+			return nil, fmt.Errorf("error marshalling body: %w", err)
+		}
+		bodyReader = io.NopCloser(bytes.NewReader(bodyBytes))
+	}
+
+	req, err := http.NewRequestWithContext(ctx, method, url, bodyReader)
+	if err != nil {
+		c.Logger.Error("failed to create request",
+			"error", err,
+			"url", url,
+			"method", method)
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	if requestIDVal := ctx.Value(client.RequestIDKey); requestIDVal != nil {
+		if requestID, ok := requestIDVal.(string); ok {
+			c.Logger.Info("X-Request-ID found in context", "requestID", requestID)
+			req.Header.Set("X-Request-ID", requestID)
+		} else {
+			c.Logger.Warn("X-Request-ID in context is not a string")
+		}
+	}
+
+	c.Logger.Debug("setting request headers",
+		"apiKey", "redacted",
+		"userAgent", c.UserAgent)
+
+	req.Header.Set("X-API-Key", c.APIKey)
+	req.Header.Set("User-Agent", c.UserAgent)
+	req.Header.Set("Content-Type", "application/json")
+
+	return req, nil
+}
+
+// Do executes an HTTP request and processes the response.
+// If v is provided, the response body will be JSON decoded into it.
+// Returns the parsed response and an error if the request fails,
+// the response status is not 2xx, or if there are JSON decoding issues.
+func Do[T any](c *client.Config, ctx context.Context, req *http.Request, v *T) (*T, error) {
+	c.Logger.Debug("starting request execution",
+		"method", req.Method,
+		"url", req.URL.String(),
+		"expectResponse", v != nil)
+
+	if c.HTTPClient == nil {
+		return nil, fmt.Errorf("HTTP client is nil")
+	}
+
+	if c.Timeout > 0 {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, c.Timeout)
+		defer cancel()
+	}
+
+	var lastError error
+	for attempt := 0; attempt < c.RetryConfig.MaxAttempts; attempt++ {
+		if attempt > 0 {
+			backoff := retry.GetNextBackoff(attempt-1, c.RetryConfig.BackoffFactor, c.RetryConfig.InitialInterval, c.RetryConfig.MaxInterval)
+			timer := time.NewTimer(backoff)
+			select {
+			case <-ctx.Done():
+				timer.Stop()
+				return nil, ctx.Err()
+			case <-timer.C:
+			}
+		}
+
+		c.Logger.Info("making request",
+			"method", req.Method,
+			"url", req.URL.String(),
+			"attempt", attempt+1)
+
+		resp, err := c.HTTPClient.Do(req.Clone(ctx))
+		if err != nil {
+			lastError = err
+			continue
+		}
+
+		defer resp.Body.Close()
+
+		if xRequestID := resp.Header.Get("X-Request-ID"); xRequestID != "" {
+			c.Logger.Info("X-Request-ID received in response", "requestID", xRequestID)
+		} else {
+			c.Logger.Info("X-Request-ID not found in response")
+		}
+
+		if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
+			lastError = client.NewHTTPError(resp)
+			if !retry.ShouldRetry(resp.StatusCode) {
+				return nil, lastError
+			}
+			continue
+		}
+
+		if v != nil && resp.StatusCode != http.StatusNoContent {
+			if err := json.NewDecoder(resp.Body).Decode(v); err != nil {
+				return nil, fmt.Errorf("error decoding response: %w", err)
+			}
+			return v, nil
+		}
+
+		return nil, nil
+	}
+
+	return nil, fmt.Errorf("max retry attempts reached: %w", lastError)
+}

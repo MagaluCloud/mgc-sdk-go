@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/MagaluCloud/mgc-sdk-go/client"
+	mgc_http "github.com/MagaluCloud/mgc-sdk-go/internal/http"
 )
 
 const (
@@ -32,7 +33,7 @@ func New(core *client.CoreClient, opts ...ClientOption) *VirtualMachineClient {
 }
 
 func (c *VirtualMachineClient) newRequest(ctx context.Context, method, path string, body any) (*http.Request, error) {
-	return c.CoreClient.NewRequest(ctx, method, DefaultBasePath+path, body)
+	return mgc_http.NewRequest(c.GetConfig(), ctx, method, DefaultBasePath+path, &body)
 }
 
 func (c *VirtualMachineClient) Instances() InstanceService {
