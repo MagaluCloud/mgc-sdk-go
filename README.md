@@ -26,12 +26,11 @@ Find more information about how to generate an API token in the [Magalu Cloud do
 
 ```
 mgc-sdk-go/
-├── client/         # Base client implementation
+├── client/         # Base client implementation and configuration
+├── compute/        # Compute service API (instances, images, machine types)
 ├── helpers/        # Utility functions
-├── sdk/           # Service-specific implementations
-│   ├── virtualmachine/
-│   └── ... (other services)
-└── examples/      # Usage examples
+├── internal/       # Internal packages
+└── cmd/           # Command-line examples
 ```
 
 ## Usage Examples
@@ -41,67 +40,92 @@ mgc-sdk-go/
 ```go
 import (
     "github.com/MagaluCloud/mgc-sdk-go/client"
-    "github.com/MagaluCloud/mgc-sdk-go/sdk/virtualmachine"
+    "github.com/MagaluCloud/mgc-sdk-go/compute"
 )
 
 apiToken := os.Getenv("MGC_API_TOKEN")
-c := client.New(apiToken)
-vmClient := virtualmachine.New(c)
+c := client.NewMgcClient(apiToken)
+computeClient := compute.New(c)
 ```
 
-### Listing Virtual Machines
+### Client Configuration Options
+
+You can customize the client behavior using options:
 
 ```go
-instances, err := vmClient.Instances().List(context.Background(), virtualmachine.ListOptions{
+import (
+    "time"
+    "log/slog"
+)
+
+// Configure client with multiple options
+c := client.NewMgcClient(
+    apiToken,
+    client.WithTimeout(5 * time.Minute),
+    client.WithUserAgent("my-app/1.0"),
+    client.WithLogger(slog.Default().With("service", "mgc")),
+    client.WithRetryConfig(client.RetryConfig{
+        MaxAttempts: 5,
+        InitialInterval: 2 * time.Second,
+        MaxInterval: 60 * time.Second,
+        BackoffFactor: 1.5,
+    }),
+)
+```
+
+Available options:
+- `WithTimeout`: Sets the client timeout for requests
+- `WithUserAgent`: Sets a custom User-Agent header
+- `WithLogger`: Configures a custom logger
+- `WithRetryConfig`: Customizes the retry behavior
+- `WithHTTPClient`: Uses a custom HTTP client
+- `WithBaseURL`: Changes the API endpoint (useful for testing)
+
+### Listing Instances
+
+```go
+instances, err := computeClient.Instances().List(context.Background(), compute.ListOptions{
     Limit:  helpers.IntPtr(10),
     Offset: helpers.IntPtr(0),
-    Expand: []string{"machine-type", "image"},
+    Expand: []string{compute.InstanceMachineTypeExpand, compute.InstanceImageExpand},
 })
 ```
 
-### Creating a Virtual Machine
+### Creating an Instance
 
 ```go
-createReq := virtualmachine.CreateRequest{
+createReq := compute.CreateRequest{
     Name: "my-test-vm",
-    MachineType: virtualmachine.IDOrName{
+    MachineType: compute.IDOrName{
         Name: helpers.StrPtr("BV1-1-40"),
     },
-    Image: virtualmachine.IDOrName{
+    Image: compute.IDOrName{
         Name: helpers.StrPtr("cloud-ubuntu-24.04 LTS"),
     },
-    Network: &virtualmachine.CreateParametersNetwork{
+    Network: &compute.CreateParametersNetwork{
         AssociatePublicIp: helpers.BoolPtr(false),
     },
     SshKeyName: helpers.StrPtr("my-ssh-key"),
 }
 
-id, err := vmClient.Instances().Create(context.Background(), createReq)
+id, err := computeClient.Instances().Create(context.Background(), createReq)
 ```
 
-### Managing Virtual Machines
+### Managing Machine Types
 
 ```go
-// Get instance details
-instance, err := vmClient.Instances().Get(ctx, id, []string{"network"})
+machineTypes, err := computeClient.MachineTypes.List(context.Background(), compute.MachineTypeListOptions{})
+```
 
-// Rename instance
-err = vmClient.Instances().Rename(ctx, instanceID, "new-name")
+### Managing Images
 
-// Change machine type
-err = vmClient.Instances().Retype(ctx, instanceID, virtualmachine.RetypeRequest{
-    MachineType: virtualmachine.IDOrName{
-        Name: helpers.StrPtr("BV2-2-20"),
-    },
-})
-
-// Delete instance
-err = vmClient.Instances().Delete(ctx, instanceID, true)
+```go
+images, err := computeClient.Images().List(context.Background(), compute.ImageListOptions{})
 ```
 
 ## Full Example
 
-Check the [examples directory](examples/) for complete working examples of all SDK features.
+Check the [cmd/examples](cmd/examples) directory for complete working examples of all SDK features.
 
 ## Contributing
 
