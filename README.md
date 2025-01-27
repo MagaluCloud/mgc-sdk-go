@@ -1,5 +1,11 @@
 # MGC Go SDK
 
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=MagaluCloud_mgc-sdk-go&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=MagaluCloud_mgc-sdk-go)
+[![Bugs](https://sonarcloud.io/api/project_badges/measure?project=MagaluCloud_mgc-sdk-go&metric=bugs)](https://sonarcloud.io/summary/new_code?id=MagaluCloud_mgc-sdk-go)
+[![Code Smells](https://sonarcloud.io/api/project_badges/measure?project=MagaluCloud_mgc-sdk-go&metric=code_smells)](https://sonarcloud.io/summary/new_code?id=MagaluCloud_mgc-sdk-go)
+[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=MagaluCloud_mgc-sdk-go&metric=coverage)](https://sonarcloud.io/summary/new_code?id=MagaluCloud_mgc-sdk-go)
+[![Duplicated Lines (%)](https://sonarcloud.io/api/project_badges/measure?project=MagaluCloud_mgc-sdk-go&metric=duplicated_lines_density)](https://sonarcloud.io/summary/new_code?id=MagaluCloud_mgc-sdk-go)
+
 The MGC Go SDK provides a convenient way to interact with the Magalu Cloud API from Go applications.
 
 For more information about Magalu Cloud, visit:
