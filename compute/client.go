@@ -14,7 +14,6 @@ const (
 
 type VirtualMachineClient struct {
 	*client.CoreClient
-	MachineTypes MachineTypeService
 }
 
 type ClientOption func(*VirtualMachineClient)
@@ -29,7 +28,6 @@ func New(core *client.CoreClient, opts ...ClientOption) *VirtualMachineClient {
 	for _, opt := range opts {
 		opt(vmClient)
 	}
-	vmClient.MachineTypes = &machineTypeService{client: vmClient}
 	return vmClient
 }
 
@@ -43,4 +41,8 @@ func (c *VirtualMachineClient) Instances() InstanceService {
 
 func (c *VirtualMachineClient) Images() ImageService {
 	return &imageService{client: c}
+}
+
+func (c *VirtualMachineClient) MachineTypes() MachineTypeService {
+	return &machineTypeService{client: c}
 }

@@ -114,7 +114,7 @@ id, err := computeClient.Instances().Create(context.Background(), createReq)
 ### Managing Machine Types
 
 ```go
-machineTypes, err := computeClient.MachineTypes.List(context.Background(), compute.MachineTypeListOptions{})
+machineTypes, err := computeClient.MachineTypes().List(context.Background(), compute.MachineTypeListOptions{})
 ```
 
 ### Managing Images

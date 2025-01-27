@@ -145,7 +145,7 @@ func ExampleListMachineTypes() {
 	computeClient := compute.New(c)
 
 	// List machine types
-	machineTypes, err := computeClient.MachineTypes.List(context.Background(), compute.MachineTypeListOptions{})
+	machineTypes, err := computeClient.MachineTypes().List(context.Background(), compute.MachineTypeListOptions{})
 	if err != nil {
 		log.Fatal(err)
 	}
