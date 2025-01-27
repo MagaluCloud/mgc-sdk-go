@@ -39,11 +39,11 @@ jobs:
 
       - name: Create and push tag
         run: |
-          git config --local user.email "${{vars.MAGALUBOT_EMAIL}}"
-          git config --local user.name "${{vars.MAGALUBOT_USER_NAME}}"
-          git config --local commit.gpgsign true
-          git config --local tag.gpgsign true
-          git config --local user.signingkey $(gpg --list-secret-keys --keyid-format LONG | grep sec | awk '{print $2}' | cut -d'/' -f2)
+          git config --global user.email "${{vars.MAGALUBOT_EMAIL}}"
+          git config --global user.name "${{vars.MAGALUBOT_USER_NAME}}"
+          git config --global commit.gpgsign true
+          git config --global tag.gpgsign true
+          git config --global user.signingkey $(gpg --list-secret-keys --keyid-format LONG | grep sec | awk '{print $2}' | cut -d'/' -f2)
           git tag -a ${{ github.event.inputs.version }} -m "Release ${{ github.event.inputs.version }}"
           git push origin ${{ github.event.inputs.version }}
 
