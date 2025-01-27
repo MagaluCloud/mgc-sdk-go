@@ -8,7 +8,8 @@ test:
 test-coverage:
 	go test -coverprofile=coverage.txt -covermode=atomic ./...
 	go tool cover -func=coverage.txt
-
+	go tool cover -html=coverage.txt
+	
 # Run tests with race detection
 test-race:
 	go test -race ./...
