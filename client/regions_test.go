@@ -11,11 +11,16 @@ func TestMgcUrl_String(t *testing.T) {
 		{
 			name: "BrNe1 region string conversion",
 			m:    BrNe1,
-			want: "https://api.magalu.cloud/br-ne-1",
+			want: "https://api.magalu.cloud/br-ne1",
 		},
 		{
 			name: "BrSe1 region string conversion",
 			m:    BrSe1,
+			want: "https://api.magalu.cloud/br-se1",
+		},
+		{
+			name: "BrMgl1 region string conversion",
+			m:    BrMgl1,
 			want: "https://api.magalu.cloud/br-se-1",
 		},
 		{
@@ -40,11 +45,11 @@ func TestMgcUrl_String(t *testing.T) {
 }
 
 func TestRegionConstants(t *testing.T) {
-	if BrNe1 != "https://api.magalu.cloud/br-ne-1" {
+	if BrNe1 != "https://api.magalu.cloud/br-ne1" {
 		t.Errorf("BrNe1 constant has unexpected value: %s", BrNe1)
 	}
 
-	if BrSe1 != "https://api.magalu.cloud/br-se-1" {
+	if BrSe1 != "https://api.magalu.cloud/br-se1" {
 		t.Errorf("BrSe1 constant has unexpected value: %s", BrSe1)
 	}
 }
