@@ -1,11 +1,8 @@
-name: Unit Tests
+name: Nightly Test  
 
 on:
-  push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
-    types: [opened, synchronize, reopened]
+  schedule:
+    - cron: '0 1 * * *'
 
 jobs:
   test:
@@ -33,9 +30,8 @@ jobs:
       run: |
         go test -v -race -coverprofile=coverage.out ./...
     
-
-    - name: Upload Coverage Report to SonarCloud
-      uses: sonarsource/sonarqube-scan-action@v4.2.1
-      with:
-        args: >
-          -Dsonar.token=${{ secrets.MAGALUBOT_SONAR_TOKEN }}
+    - name: Run Examples
+      env:
+        MGC_API_TOKEN: ${{ secrets.MGC_API_TOKEN }}
+      run: |
+        go run cmd/examples/main.go
