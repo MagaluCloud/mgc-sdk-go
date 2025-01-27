@@ -14,6 +14,8 @@ jobs:
     runs-on: ${{ vars.RUNNER_RUNS_ON }}
     permissions:
       contents: write 
+    env:
+      GPG_PASSPHRASE: ${{ secrets.MAGALUBOT_GPG_PASSPHRASE }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -42,14 +44,33 @@ jobs:
         if: steps.validate-version.outcome == 'success'
         run: go test -v ./...
 
-      - name: Import GPG key
+      - name: Import and Trust GPG Key
         id: import-gpg-key
         if: steps.run-tests.outcome == 'success'
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.MAGALUBOT_GPG_PRIVATE_KEY }}
         run: |
-          echo "${{ secrets.MAGALUBOT_GPG_PRIVATE_KEY }}" | gpg --batch --yes --passphrase "${{ secrets.MAGALUBOT_GPG_PASSPHRASE }}" --import
-          export GPG_TTY=$(tty)
+          # Import the private key with passphrase
+          echo "$GPG_PRIVATE_KEY" | gpg --batch --yes --pinentry-mode loopback --passphrase "$GPG_PASSPHRASE" --import
 
-      - name: Config Git
+          # Get Key ID and Fingerprint
+          KEY_ID=$(gpg --list-secret-keys --keyid-format LONG | awk '/sec/ {split($2, a, "/"); print a[2]}')
+          FINGERPRINT=$(gpg --fingerprint --with-colons $KEY_ID | awk -F: '$1 == "fpr" {print $10; exit}')
+
+          # Trust the key ultimately
+          echo "${FINGERPRINT}:6:" | gpg --import-ownertrust
+
+          # Create GPG wrapper script
+          mkdir -p ~/bin
+          echo '#!/bin/sh' > ~/bin/git-gpg-wrapper
+          echo 'echo "$GPG_PASSPHRASE" | gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0 "$@"' >> ~/bin/git-gpg-wrapper
+          chmod +x ~/bin/git-gpg-wrapper
+          echo "$HOME/bin" >> $GITHUB_PATH
+
+          # Set GPG_TTY to avoid warnings
+          echo "GPG_TTY=$(tty)" >> $GITHUB_ENV
+
+      - name: Configure Git
         id: config-git
         if: steps.import-gpg-key.outcome == 'success'
         run: |
@@ -57,7 +78,10 @@ jobs:
           git config --global user.name "${{vars.MAGALUBOT_USER_NAME}}"
           git config --global commit.gpgsign true
           git config --global tag.gpgsign true
-          git config --global user.signingkey $(gpg --list-secret-keys --keyid-format LONG | grep sec | awk '{print $2}' | cut -d'/' -f2)
+          git config --global gpg.program git-gpg-wrapper
+          # Get and set the signing key
+          SIGNING_KEY=$(gpg --list-secret-keys --keyid-format LONG | awk '/sec/ {split($2, a, "/"); print a[2]}')
+          git config --global user.signingkey $SIGNING_KEY
 
       - name: Create and push tag
         id: create-and-push-tag
@@ -89,3 +113,4 @@ jobs:
           body: "Release ${{ github.event.inputs.version }}"
           draft: true
           prerelease: false
+          
