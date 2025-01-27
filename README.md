@@ -233,11 +233,12 @@ The client automatically retries on network errors and 5xx responses:
 ```go
 client := client.NewMgcClient(
     apiToken,
-    client.WithRetryConfig(client.RetryConfig{
-        MaxAttempts: 3,
-        InitialInterval: 1 * time.Second,
-        MaxInterval: 30 * time.Second,
-    }),
+    client.WithRetryConfig(
+        3, // maxAttempts
+        1 * time.Second, // initialInterval
+        30 * time.Second, // maxInterval
+        1.5, // backoffFactor
+    ),
 )
 ```
 
