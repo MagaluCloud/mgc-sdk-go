@@ -19,6 +19,11 @@ func TestMgcUrl_String(t *testing.T) {
 			want: "https://api.magalu.cloud/br-se1",
 		},
 		{
+			name: "BrMgl1 region string conversion",
+			m:    BrMgl1,
+			want: "https://api.magalu.cloud/br-se-1",
+		},
+		{
 			name: "Empty URL string conversion",
 			m:    "",
 			want: "",
