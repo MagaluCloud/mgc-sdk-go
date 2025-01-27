@@ -20,6 +20,14 @@ For more information about Magalu Cloud, visit:
 go get github.com/MagaluCloud/mgc-sdk-go
 ```
 
+## Supported Products
+
+- Compute (Virtual Machines)
+  - Instances
+  - Machine Types
+  - Images
+  - Snapshots
+
 ## Authentication
 
 The SDK uses an API token for authentication.
@@ -72,12 +80,12 @@ c := client.NewMgcClient(
     client.WithTimeout(5 * time.Minute),
     client.WithUserAgent("my-app/1.0"),
     client.WithLogger(slog.Default().With("service", "mgc")),
-    client.WithRetryConfig(client.RetryConfig{
-        MaxAttempts: 5,
-        InitialInterval: 2 * time.Second,
-        MaxInterval: 60 * time.Second,
-        BackoffFactor: 1.5,
-    }),
+    client.WithRetryConfig(
+        3, // maxAttempts
+        1 * time.Second, // initialInterval
+        30 * time.Second, // maxInterval
+        1.5, // backoffFactor
+    ),
 )
 ```
 
