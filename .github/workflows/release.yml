@@ -33,10 +33,17 @@ jobs:
       - name: Run tests
         run: go test -v ./...
 
+      - name: Import GPG key
+        run: |
+          echo "${{ secrets.MAGALUBOT_GPG_PRIVATE_KEY }}" | gpg --batch --yes --passphrase "${{ secrets.MAGALUBOT_GPG_PASSPHRASE }}" --import
+
       - name: Create and push tag
         run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
+          git config --local user.email "${{vars.MAGALUBOT_EMAIL}}"
+          git config --local user.name "${{vars.MAGALUBOT_USER_NAME}}"
+          git config --local commit.gpgsign true
+          git config --local tag.gpgsign true
+          git config --local user.signingkey $(gpg --list-secret-keys --keyid-format LONG | grep sec | awk '{print $2}' | cut -d'/' -f2)
           git tag -a ${{ github.event.inputs.version }} -m "Release ${{ github.event.inputs.version }}"
           git push origin ${{ github.event.inputs.version }}
 
