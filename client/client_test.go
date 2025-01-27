@@ -54,3 +54,26 @@ func TestNew(t *testing.T) {
 		})
 	}
 }
+
+func TestCoreClient_GetConfig(t *testing.T) {
+	// Arrange
+	expectedAPIKey := "test-api-key"
+	expectedTimeout := 5 * time.Second
+
+	client := NewMgcClient(expectedAPIKey,
+		WithTimeout(expectedTimeout))
+
+	// Act
+	config := client.GetConfig()
+
+	// Assert
+	if config == nil {
+		t.Fatal("expected non-nil config")
+	}
+	if config.APIKey != expectedAPIKey {
+		t.Errorf("expected APIKey %s, got %s", expectedAPIKey, config.APIKey)
+	}
+	if config.Timeout != expectedTimeout {
+		t.Errorf("expected Timeout %v, got %v", expectedTimeout, config.Timeout)
+	}
+}
