@@ -1,0 +1,48 @@
+name: Release SDK
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to release (e.g., v1.0.0)"
+        required: true
+        type: string
+
+jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.23"
+
+      - name: Validate version format
+        run: |
+          if [[ ! ${{ github.event.inputs.version }} =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Invalid version format. Must be in format v1.0.0"
+            exit 1
+          fi
+
+      - name: Run tests
+        run: go test -v ./...
+
+      - name: Create and push tag
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git tag -a ${{ github.event.inputs.version }} -m "Release ${{ github.event.inputs.version }}"
+          git push origin ${{ github.event.inputs.version }}
+
+      - name: Publish to Go package registry
+        env:
+          GOPROXY: proxy.golang.org
+        run: |
+          go mod tidy
+          GOPROXY=proxy.golang.org go list -m github.com/${GITHUB_REPOSITORY}@${{ github.event.inputs.version }}
