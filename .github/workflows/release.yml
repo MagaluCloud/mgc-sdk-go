@@ -11,7 +11,9 @@ on:
 jobs:
   release:
     name: Release
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.RUNNER_RUNS_ON }}
+    permissions:
+      contents: write 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -44,15 +46,7 @@ jobs:
         id: import-gpg-key
         if: steps.run-tests.outcome == 'success'
         run: |
-          mkdir -p ~/.gnupg
-          chmod 700 ~/.gnupg
-          
-          echo 'use-agent' > ~/.gnupg/gpg.conf
-          echo 'pinentry-mode loopback' >> ~/.gnupg/gpg.conf
-          echo 'allow-loopback-pinentry' > ~/.gnupg/gpg-agent.conf
-          
-          echo "${{ secrets.MAGALUBOT_GPG_PRIVATE_KEY }}" | gpg --batch --yes --pinentry-mode loopback --passphrase "${{ secrets.MAGALUBOT_GPG_PASSPHRASE }}" --import
-
+          echo "${{ secrets.MAGALUBOT_GPG_PRIVATE_KEY }}" | gpg --batch --yes --passphrase "${{ secrets.MAGALUBOT_GPG_PASSPHRASE }}" --import
 
       - name: Config Git
         id: config-git
@@ -62,21 +56,12 @@ jobs:
           git config --global user.name "${{vars.MAGALUBOT_USER_NAME}}"
           git config --global commit.gpgsign true
           git config --global tag.gpgsign true
-          git config --global user.signingkey $(gpg --list-secret-keys --keyid-format LONG | grep sec | awk '{print $2}' | cut -d'/' -f2)
-          git config --global gpg.program $(which gpg)
-          git config --global gpg.passphrase "${MAGALUBOT_GPG_PASSPHRASE}"
+          git config --global user.signingkey "${{secrets.MAGALUBOT_GPG_FINGERPRINT}}"
 
-      
       - name: Create and push tag
         id: create-and-push-tag
         if: steps.config-git.outcome == 'success'
-        env:
-          GPG_PASSPHRASE: ${{ secrets.MAGALUBOT_GPG_PASSPHRASE }}
         run: |
-          echo "RELOADAGENT" | gpg-connect-agent
-          echo 'echo $GPG_PASSPHRASE | gpg --batch --no-tty --yes --pinentry-mode loopback --passphrase-fd 0 --sign' > sign.sh
-          chmod +x sign.sh
-          git config --global gpg.program "$(pwd)/sign.sh"
           git tag -a ${{ github.event.inputs.version }} -m "Release ${{ github.event.inputs.version }}"
           git push origin ${{ github.event.inputs.version }}
 
