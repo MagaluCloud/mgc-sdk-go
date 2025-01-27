@@ -1,0 +1,12 @@
+
+coverage:
+  paths:
+    - coverage.txt
+  display-style: table
+  acceptable: 70
+  badge:
+    path: docs/coverage.svg
+
+diff:
+  datastores:
+    - local://.octocov/coverage.json
