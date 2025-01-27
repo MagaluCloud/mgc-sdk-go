@@ -24,6 +24,7 @@ jobs:
           go-version: "1.23"
 
       - name: Validate version format
+        id: validate-version
         run: |
           if [[ ! ${{ github.event.inputs.version }} =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "Invalid version format. Must be in format v1.0.0"
@@ -31,23 +32,36 @@ jobs:
           fi
 
       - name: Run tests
+        id: run-tests
+        if: steps.validate-version.outcome == 'success'
         run: go test -v ./...
 
       - name: Import GPG key
+        id: import-gpg-key
+        if: steps.run-tests.outcome == 'success'
         run: |
           echo "${{ secrets.MAGALUBOT_GPG_PRIVATE_KEY }}" | gpg --batch --yes --passphrase "${{ secrets.MAGALUBOT_GPG_PASSPHRASE }}" --import
 
-      - name: Create and push tag
+      - name: Config Git
+        id: config-git
+        if: steps.import-gpg-key.outcome == 'success'
         run: |
           git config --global user.email "${{vars.MAGALUBOT_EMAIL}}"
           git config --global user.name "${{vars.MAGALUBOT_USER_NAME}}"
           git config --global commit.gpgsign true
           git config --global tag.gpgsign true
           git config --global user.signingkey $(gpg --list-secret-keys --keyid-format LONG | grep sec | awk '{print $2}' | cut -d'/' -f2)
+      
+      - name: Create and push tag
+        id: create-and-push-tag
+        if: steps.config-git.outcome == 'success'
+        run: |
           git tag -a ${{ github.event.inputs.version }} -m "Release ${{ github.event.inputs.version }}"
           git push origin ${{ github.event.inputs.version }}
 
       - name: Publish to Go package registry
+        id: publish-to-go-package-registry
+        if: steps.create-and-push-tag.outcome == 'success'
         env:
           GOPROXY: proxy.golang.org
         run: |
