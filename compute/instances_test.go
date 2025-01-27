@@ -2,10 +2,12 @@ package compute
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
 	"testing"
+	"time"
 
 	"github.com/MagaluCloud/mgc-sdk-go/client"
 )
@@ -906,6 +908,269 @@ func TestInstanceService_GetWithExpand(t *testing.T) {
 					t.Error("Get() got nil, want instance")
 				} else if got.ID != tt.id {
 					t.Errorf("Get() got ID = %v, want %v", got.ID, tt.id)
+				}
+			}
+		})
+	}
+}
+
+func TestInstanceService_AttachNetworkInterface(t *testing.T) {
+	tests := []struct {
+		name       string
+		req        NICRequest
+		statusCode int
+		response   string
+		wantErr    bool
+	}{
+		{
+			name: "successful attach",
+			req: NICRequest{
+				Instance: IDOrName{ID: strPtr("inst1")},
+				Network: NICRequestInterface{
+					Interface: IDOrName{ID: strPtr("nic1")},
+				},
+			},
+			statusCode: http.StatusOK,
+			wantErr:    false,
+		},
+		{
+			name: "instance not found",
+			req: NICRequest{
+				Instance: IDOrName{ID: strPtr("invalid")},
+				Network: NICRequestInterface{
+					Interface: IDOrName{ID: strPtr("nic1")},
+				},
+			},
+			response:   `{"error": "instance not found"}`,
+			statusCode: http.StatusNotFound,
+			wantErr:    true,
+		},
+		{
+			name: "interface not found",
+			req: NICRequest{
+				Instance: IDOrName{ID: strPtr("inst1")},
+				Network: NICRequestInterface{
+					Interface: IDOrName{ID: strPtr("invalid")},
+				},
+			},
+			response:   `{"error": "network interface not found"}`,
+			statusCode: http.StatusNotFound,
+			wantErr:    true,
+		},
+		{
+			name: "interface already attached",
+			req: NICRequest{
+				Instance: IDOrName{ID: strPtr("inst1")},
+				Network: NICRequestInterface{
+					Interface: IDOrName{ID: strPtr("nic1")},
+				},
+			},
+			response:   `{"error": "interface already attached"}`,
+			statusCode: http.StatusConflict,
+			wantErr:    true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.Method != http.MethodPost {
+					t.Errorf("expected POST request, got %s", r.Method)
+				}
+				expectedPath := "/compute/v1/instances/network-interface/attach"
+				if r.URL.Path != expectedPath {
+					t.Errorf("expected path %s, got %s", expectedPath, r.URL.Path)
+				}
+				w.WriteHeader(tt.statusCode)
+				w.Write([]byte(tt.response))
+			}))
+			defer server.Close()
+
+			client := testClient(server.URL)
+			err := client.Instances().AttachNetworkInterface(context.Background(), tt.req)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("AttachNetworkInterface() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestInstanceService_DetachNetworkInterface(t *testing.T) {
+	tests := []struct {
+		name       string
+		req        NICRequest
+		statusCode int
+		response   string
+		wantErr    bool
+	}{
+		{
+			name: "successful detach",
+			req: NICRequest{
+				Instance: IDOrName{ID: strPtr("inst1")},
+				Network: NICRequestInterface{
+					Interface: IDOrName{ID: strPtr("nic1")},
+				},
+			},
+			statusCode: http.StatusOK,
+			wantErr:    false,
+		},
+		{
+			name: "instance not found",
+			req: NICRequest{
+				Instance: IDOrName{ID: strPtr("invalid")},
+				Network: NICRequestInterface{
+					Interface: IDOrName{ID: strPtr("nic1")},
+				},
+			},
+			response:   `{"error": "instance not found"}`,
+			statusCode: http.StatusNotFound,
+			wantErr:    true,
+		},
+		{
+			name: "interface not found",
+			req: NICRequest{
+				Instance: IDOrName{ID: strPtr("inst1")},
+				Network: NICRequestInterface{
+					Interface: IDOrName{ID: strPtr("invalid")},
+				},
+			},
+			response:   `{"error": "network interface not found"}`,
+			statusCode: http.StatusNotFound,
+			wantErr:    true,
+		},
+		{
+			name: "primary interface",
+			req: NICRequest{
+				Instance: IDOrName{ID: strPtr("inst1")},
+				Network: NICRequestInterface{
+					Interface: IDOrName{ID: strPtr("primary")},
+				},
+			},
+			response:   `{"error": "cannot detach primary interface"}`,
+			statusCode: http.StatusBadRequest,
+			wantErr:    true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.Method != http.MethodPost {
+					t.Errorf("expected POST request, got %s", r.Method)
+				}
+				expectedPath := "/compute/v1/instances/network-interface/detach"
+				if r.URL.Path != expectedPath {
+					t.Errorf("expected path %s, got %s", expectedPath, r.URL.Path)
+				}
+				w.WriteHeader(tt.statusCode)
+				w.Write([]byte(tt.response))
+			}))
+			defer server.Close()
+
+			client := testClient(server.URL)
+			err := client.Instances().DetachNetworkInterface(context.Background(), tt.req)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("DetachNetworkInterface() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestInstanceService_GetFirstWindowsPassword(t *testing.T) {
+	tests := []struct {
+		name       string
+		id         string
+		response   string
+		statusCode int
+		want       *WindowsPasswordResponse
+		wantErr    bool
+	}{
+		{
+			name: "successful password retrieval",
+			id:   "inst1",
+			response: `{
+				"instance": {
+					"id": "inst1",
+					"password": "P@ssw0rd123",
+					"created_at": "2023-01-01T00:00:00Z",
+					"user": "Administrator"
+				}
+			}`,
+			statusCode: http.StatusOK,
+			want: &WindowsPasswordResponse{
+				Instance: WindowsPasswordInstance{
+					ID:        "inst1",
+					Password:  "P@ssw0rd123",
+					CreatedAt: time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC),
+					User:      "Administrator",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:       "instance not found",
+			id:         "invalid",
+			response:   `{"error": "instance not found"}`,
+			statusCode: http.StatusNotFound,
+			wantErr:    true,
+		},
+		{
+			name:       "empty id",
+			id:         "",
+			statusCode: http.StatusBadRequest,
+			wantErr:    true,
+		},
+		{
+			name:       "non-windows instance",
+			id:         "linux-inst",
+			response:   `{"error": "not a Windows instance"}`,
+			statusCode: http.StatusBadRequest,
+			wantErr:    true,
+		},
+		{
+			name:       "password not ready",
+			id:         "new-inst",
+			response:   `{"error": "password not yet available"}`,
+			statusCode: http.StatusNotFound,
+			wantErr:    true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.Method != http.MethodGet {
+					t.Errorf("expected GET request, got %s", r.Method)
+				}
+				expectedPath := fmt.Sprintf("/compute/v1/instances/config/%s/first-windows-password", tt.id)
+				if r.URL.Path != expectedPath {
+					t.Errorf("expected path %s, got %s", expectedPath, r.URL.Path)
+				}
+				w.WriteHeader(tt.statusCode)
+				w.Write([]byte(tt.response))
+			}))
+			defer server.Close()
+
+			client := testClient(server.URL)
+			got, err := client.Instances().GetFirstWindowsPassword(context.Background(), tt.id)
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetFirstWindowsPassword() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !tt.wantErr {
+				if got == nil {
+					t.Error("GetFirstWindowsPassword() got nil, want response")
+					return
+				}
+				if got.Instance.ID != tt.want.Instance.ID {
+					t.Errorf("GetFirstWindowsPassword() got ID = %v, want %v", got.Instance.ID, tt.want.Instance.ID)
+				}
+				if got.Instance.Password != tt.want.Instance.Password {
+					t.Errorf("GetFirstWindowsPassword() got Password = %v, want %v", got.Instance.Password, tt.want.Instance.Password)
+				}
+				if !got.Instance.CreatedAt.Equal(tt.want.Instance.CreatedAt) {
+					t.Errorf("GetFirstWindowsPassword() got CreatedAt = %v, want %v", got.Instance.CreatedAt, tt.want.Instance.CreatedAt)
 				}
 			}
 		})

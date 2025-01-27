@@ -86,6 +86,26 @@ type (
 	RetypeRequest struct {
 		MachineType IDOrName `json:"machine_type"`
 	}
+
+	WindowsPasswordResponse struct {
+		Instance WindowsPasswordInstance `json:"instance"`
+	}
+
+	WindowsPasswordInstance struct {
+		ID        string    `json:"id"`
+		Password  string    `json:"password"`
+		CreatedAt time.Time `json:"created_at"`
+		User      string    `json:"user,omitempty"`
+	}
+
+	NICRequest struct {
+		Instance IDOrName              `json:"instance"`
+		Network  NICRequestInterface   `json:"network"`
+	}
+
+	NICRequestInterface struct {
+		Interface IDOrName `json:"interface"`
+	}
 )
 
 // InstanceService provides operations for managing virtual machine instances
@@ -125,6 +145,15 @@ type InstanceService interface {
 	// Suspend pauses the execution of an instance while maintaining its state in memory.
 	// Returns an error if the instance cannot be suspended or if the operation fails.
 	Suspend(ctx context.Context, id string) error
+
+	// GetFirstWindowsPassword retrieves the initial Windows administrator password for an instance
+	GetFirstWindowsPassword(ctx context.Context, id string) (*WindowsPasswordResponse, error)
+
+	// AttachNetworkInterface connects a network interface to an instance
+	AttachNetworkInterface(ctx context.Context, req NICRequest) error
+
+	// DetachNetworkInterface removes a non-primary network interface from an instance
+	DetachNetworkInterface(ctx context.Context, req NICRequest) error
 }
 
 type instanceService struct {
@@ -339,6 +368,61 @@ func (s *instanceService) executeInstanceAction(ctx context.Context, id string, 
 	}
 	if resp != nil {
 		return fmt.Errorf("unexpected response data for %s operation", action)
+	}
+	return nil
+}
+
+func (s *instanceService) GetFirstWindowsPassword(ctx context.Context, id string) (*WindowsPasswordResponse, error) {
+	if id == "" {
+		return nil, &client.ValidationError{Field: "id", Message: "cannot be empty"}
+	}
+
+	req, err := s.client.newRequest(ctx, http.MethodGet,
+		fmt.Sprintf("/v1/instances/config/%s/first-windows-password", id), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var response WindowsPasswordResponse
+	resp, err := s.client.Do(ctx, req, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	if r, ok := resp.(*WindowsPasswordResponse); ok {
+		return r, nil
+	}
+	return nil, fmt.Errorf("unexpected response type: %T", resp)
+}
+
+func (s *instanceService) AttachNetworkInterface(ctx context.Context, req NICRequest) error {
+	httpReq, err := s.client.newRequest(ctx, http.MethodPost, "/v1/instances/network-interface/attach", req)
+	if err != nil {
+		return err
+	}
+
+	resp, err := s.client.Do(ctx, httpReq, nil)
+	if err != nil {
+		return err
+	}
+	if resp != nil {
+		return fmt.Errorf("unexpected response data for network interface attach operation")
+	}
+	return nil
+}
+
+func (s *instanceService) DetachNetworkInterface(ctx context.Context, req NICRequest) error {
+	httpReq, err := s.client.newRequest(ctx, http.MethodPost, "/v1/instances/network-interface/detach", req)
+	if err != nil {
+		return err
+	}
+
+	resp, err := s.client.Do(ctx, httpReq, nil)
+	if err != nil {
+		return err
+	}
+	if resp != nil {
+		return fmt.Errorf("unexpected response data for network interface detach operation")
 	}
 	return nil
 }
