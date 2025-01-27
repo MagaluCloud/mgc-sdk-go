@@ -123,6 +123,33 @@ machineTypes, err := computeClient.MachineTypes.List(context.Background(), compu
 images, err := computeClient.Images().List(context.Background(), compute.ImageListOptions{})
 ```
 
+### Using Request IDs
+
+You can track requests across systems by setting a request ID in the context. The request ID must be a valid UUIDv4 string:
+
+```go
+import (
+    "context"
+    "github.com/google/uuid"
+    "github.com/MagaluCloud/mgc-sdk-go/client"
+)
+
+// Generate a valid UUIDv4 for the request
+requestID := uuid.New().String()
+
+// Create a context with request ID
+ctx := context.WithValue(context.Background(), client.RequestIDKey, requestID)
+
+// The client will automatically include the X-Request-ID header
+instances, err := computeClient.Instances().List(ctx, compute.ListOptions{})
+```
+
+The request ID will be:
+- Must be a valid UUIDv4 string (e.g. "123e4567-e89b-12d3-a456-426614174000")
+- Included in the request as `X-Request-ID` header
+- Logged in the client's logger
+- Returned in the response headers for tracking
+
 ## Full Example
 
 Check the [cmd/examples](cmd/examples) directory for complete working examples of all SDK features.
