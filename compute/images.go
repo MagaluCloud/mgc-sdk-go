@@ -2,7 +2,6 @@ package compute
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -100,15 +99,11 @@ func (s *imageService) List(ctx context.Context, opts ImageListOptions) ([]Image
 	}
 	req.URL.RawQuery = q.Encode()
 
-	var response ImageList
+	response := &ImageList{}
 
-	resp, err := mgc_http.Do(s.client.GetConfig(), ctx, req, &response)
+	resp, err := mgc_http.Do(s.client.GetConfig(), ctx, req, response)
 	if err != nil {
 		return nil, err
-	}
-
-	if resp == nil {
-		return nil, fmt.Errorf("empty response")
 	}
 
 	return resp.Images, nil

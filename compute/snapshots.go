@@ -107,11 +107,12 @@ func (s *snapshotService) List(ctx context.Context, opts ListOptions) ([]Snapsho
 	req.URL.RawQuery = q.Encode()
 
 	var response ListSnapshotsResponse
-	if _, err := mgc_http.Do(s.client.GetConfig(), ctx, req, &response); err != nil {
+	resp, err := mgc_http.Do(s.client.GetConfig(), ctx, req, &response)
+	if err != nil {
 		return nil, err
 	}
 
-	return response.Snapshots, nil
+	return resp.Snapshots, nil
 }
 
 func (s *snapshotService) Create(ctx context.Context, createReq CreateSnapshotRequest) (string, error) {
@@ -157,12 +158,9 @@ func (s *snapshotService) Delete(ctx context.Context, id string) error {
 		return err
 	}
 
-	resp, err := mgc_http.Do[any](s.client.GetConfig(), ctx, req, nil)
+	_, err = mgc_http.Do[any](s.client.GetConfig(), ctx, req, nil)
 	if err != nil {
 		return err
-	}
-	if resp != nil {
-		return fmt.Errorf("unexpected response data for delete operation")
 	}
 	return nil
 }
@@ -175,12 +173,9 @@ func (s *snapshotService) Rename(ctx context.Context, id string, newName string)
 		return err
 	}
 
-	resp, err := mgc_http.Do[any](s.client.GetConfig(), ctx, req, nil)
+	_, err = mgc_http.Do[any](s.client.GetConfig(), ctx, req, nil)
 	if err != nil {
 		return err
-	}
-	if resp != nil {
-		return fmt.Errorf("unexpected response data for rename operation")
 	}
 	return nil
 }
@@ -212,12 +207,9 @@ func (s *snapshotService) Copy(ctx context.Context, id string, copyReq CopySnaps
 		return err
 	}
 
-	resp, err := mgc_http.Do[any](s.client.GetConfig(), ctx, req, nil)
+	_, err = mgc_http.Do[any](s.client.GetConfig(), ctx, req, nil)
 	if err != nil {
 		return err
-	}
-	if resp != nil {
-		return fmt.Errorf("unexpected response data for copy operation")
 	}
 	return nil
 }

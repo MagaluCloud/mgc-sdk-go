@@ -204,10 +204,6 @@ func (s *instanceService) List(ctx context.Context, opts ListOptions) ([]Instanc
 		return nil, err
 	}
 
-	if resp == nil {
-		return nil, fmt.Errorf("empty response")
-	}
-
 	return resp.Instances, nil
 }
 
@@ -263,12 +259,9 @@ func (s *instanceService) Delete(ctx context.Context, id string, deletePublicIP 
 	q.Add("delete_public_ip", strconv.FormatBool(deletePublicIP))
 	req.URL.RawQuery = q.Encode()
 
-	resp, err := mgc_http.Do[any](s.client.GetConfig(), ctx, req, nil)
+	_, err = mgc_http.Do[any](s.client.GetConfig(), ctx, req, nil)
 	if err != nil {
 		return err
-	}
-	if resp != nil {
-		return fmt.Errorf("unexpected response data for delete operation")
 	}
 	return nil
 }
@@ -286,12 +279,9 @@ func (s *instanceService) Rename(ctx context.Context, id string, newName string)
 		return err
 	}
 
-	resp, err := mgc_http.Do[any](s.client.GetConfig(), ctx, req, nil)
+	_, err = mgc_http.Do[any](s.client.GetConfig(), ctx, req, nil)
 	if err != nil {
 		return err
-	}
-	if resp != nil {
-		return fmt.Errorf("unexpected response data for rename operation")
 	}
 	return nil
 }
@@ -309,12 +299,9 @@ func (s *instanceService) Retype(ctx context.Context, id string, retypeReq Retyp
 		return err
 	}
 
-	resp, err := mgc_http.Do[any](s.client.GetConfig(), ctx, req, nil)
+	_, err = mgc_http.Do[any](s.client.GetConfig(), ctx, req, nil)
 	if err != nil {
 		return err
-	}
-	if resp != nil {
-		return fmt.Errorf("unexpected response data for retype operation")
 	}
 	return nil
 }
@@ -347,12 +334,9 @@ func (s *instanceService) executeInstanceAction(ctx context.Context, id string, 
 		return err
 	}
 
-	resp, err := mgc_http.Do[any](s.client.GetConfig(), ctx, req, nil)
+	_, err = mgc_http.Do[any](s.client.GetConfig(), ctx, req, nil)
 	if err != nil {
 		return err
-	}
-	if resp != nil {
-		return fmt.Errorf("unexpected response data for %s operation", action)
 	}
 	return nil
 }
@@ -383,12 +367,9 @@ func (s *instanceService) AttachNetworkInterface(ctx context.Context, req NICReq
 		return err
 	}
 
-	resp, err := mgc_http.Do[any](s.client.GetConfig(), ctx, httpReq, nil)
+	_, err = mgc_http.Do[any](s.client.GetConfig(), ctx, httpReq, nil)
 	if err != nil {
 		return err
-	}
-	if resp != nil {
-		return fmt.Errorf("unexpected response data for network interface attach operation")
 	}
 	return nil
 }
@@ -399,12 +380,9 @@ func (s *instanceService) DetachNetworkInterface(ctx context.Context, req NICReq
 		return err
 	}
 
-	resp, err := mgc_http.Do[any](s.client.GetConfig(), ctx, httpReq, nil)
+	_, err = mgc_http.Do[any](s.client.GetConfig(), ctx, httpReq, nil)
 	if err != nil {
 		return err
-	}
-	if resp != nil {
-		return fmt.Errorf("unexpected response data for network interface detach operation")
 	}
 	return nil
 }
