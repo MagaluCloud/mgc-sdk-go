@@ -8,6 +8,8 @@
 
 The MGC Go SDK provides a convenient way to interact with the Magalu Cloud API from Go applications.
 
+This is an very active project and work in progress, with many products support comming soon.
+
 For more information about Magalu Cloud, visit:
 - Website: [https://magalu.cloud/](https://magalu.cloud/)
 - Documentation: [https://docs.magalu.cloud/](https://docs.magalu.cloud/)
@@ -20,7 +22,7 @@ go get github.com/MagaluCloud/mgc-sdk-go
 
 ## Authentication
 
-The SDK uses an API token for authentication. 
+The SDK uses an API token for authentication.
 
 ```go
 client := client.New("your-api-token")
