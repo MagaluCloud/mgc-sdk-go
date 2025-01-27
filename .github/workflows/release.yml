@@ -39,6 +39,8 @@ jobs:
       - name: Import GPG key
         id: import-gpg-key
         if: steps.run-tests.outcome == 'success'
+        env:
+          GPG_TTY: $(tty)
         run: |
           echo "${{ secrets.MAGALUBOT_GPG_PRIVATE_KEY }}" | gpg --batch --yes --passphrase "${{ secrets.MAGALUBOT_GPG_PASSPHRASE }}" --import
 
@@ -55,6 +57,8 @@ jobs:
       - name: Create and push tag
         id: create-and-push-tag
         if: steps.config-git.outcome == 'success'
+        env:
+          GPG_TTY: $(tty)        
         run: |
           git tag -a ${{ github.event.inputs.version }} -m "Release ${{ github.event.inputs.version }}"
           git push origin ${{ github.event.inputs.version }}
