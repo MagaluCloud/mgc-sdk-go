@@ -46,7 +46,7 @@ func TestNew(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			client := New(tt.apiKey, tt.opts...)
+			client := NewMgcClient(tt.apiKey, tt.opts...)
 			if client == nil {
 				t.Error("expected non-nil client")
 				return
@@ -63,7 +63,7 @@ func TestNew(t *testing.T) {
 }
 
 func TestCoreClient_NewRequest(t *testing.T) {
-	client := New("test-api-key")
+	client := NewMgcClient("test-api-key")
 
 	tests := []struct {
 		name     string
@@ -227,7 +227,7 @@ func TestCoreClient_Do(t *testing.T) {
 			server := tt.setupServer()
 			defer server.Close()
 
-			client := New("test-api-key",
+			client := NewMgcClient("test-api-key",
 				WithBaseURL(MgcUrl(server.URL)),
 				WithTimeout(10*time.Second),
 				WithRetryConfig(3,
@@ -263,7 +263,7 @@ func TestRetryLogic(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := New("test-api-key",
+	client := NewMgcClient("test-api-key",
 		WithBaseURL(MgcUrl(server.URL)),
 		WithRetryConfig(3, 100*time.Millisecond, 1*time.Second, 2.0))
 
@@ -293,7 +293,7 @@ func TestRequestHeaders(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := New("test-api-key", WithBaseURL(MgcUrl(server.URL)))
+	client := NewMgcClient("test-api-key", WithBaseURL(MgcUrl(server.URL)))
 	req, _ := client.NewRequest(context.Background(), http.MethodGet, "/test", nil)
 	_, err := client.Do(context.Background(), req, nil)
 	if err != nil {
@@ -325,7 +325,7 @@ func TestResponseStatusCodes(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := New("test-api-key",
+			client := NewMgcClient("test-api-key",
 				WithBaseURL(MgcUrl(server.URL)),
 				WithRetryConfig(
 					2,
@@ -377,7 +377,7 @@ func TestNewRequest_ErrorCases(t *testing.T) {
 		},
 	}
 
-	client := New("test-api-key")
+	client := NewMgcClient("test-api-key")
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			_, err := client.NewRequest(context.Background(), tt.method, tt.path, tt.body)
@@ -400,7 +400,7 @@ func TestClient_InvalidConfiguration(t *testing.T) {
 		{
 			name: "nil http client",
 			setupFunc: func() *CoreClient {
-				return New("test-api-key", func(c *Config) {
+				return NewMgcClient("test-api-key", func(c *Config) {
 					c.HTTPClient = nil
 				})
 			},
@@ -415,7 +415,7 @@ func TestClient_InvalidConfiguration(t *testing.T) {
 		{
 			name: "invalid base URL",
 			setupFunc: func() *CoreClient {
-				return New("test-api-key", WithBaseURL(MgcUrl("http://invalid\x7f.com")))
+				return NewMgcClient("test-api-key", WithBaseURL(MgcUrl("http://invalid\x7f.com")))
 			},
 			testFunc: func(t *testing.T, client *CoreClient) {
 				_, err := client.NewRequest(context.Background(), http.MethodGet, "/test", nil)
@@ -427,7 +427,7 @@ func TestClient_InvalidConfiguration(t *testing.T) {
 		{
 			name: "zero timeout",
 			setupFunc: func() *CoreClient {
-				return New("test-api-key", WithTimeout(0))
+				return NewMgcClient("test-api-key", WithTimeout(0))
 			},
 			testFunc: func(t *testing.T, client *CoreClient) {
 				if client.config.Timeout != 0 {
@@ -489,7 +489,7 @@ func TestResponseError_Handling(t *testing.T) {
 			server := tt.setupServer()
 			defer server.Close()
 
-			client := New("test-api-key", WithBaseURL(MgcUrl(server.URL)))
+			client := NewMgcClient("test-api-key", WithBaseURL(MgcUrl(server.URL)))
 			req, _ := client.NewRequest(context.Background(), http.MethodGet, "/test", nil)
 			var response interface{}
 			_, err := client.Do(context.Background(), req, &response)
@@ -510,7 +510,7 @@ func TestMaxRetryAttemptsReached(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := New("test-api-key",
+	client := NewMgcClient("test-api-key",
 		WithBaseURL(MgcUrl(server.URL)),
 		WithRetryConfig(maxAttempts, 10*time.Millisecond, 50*time.Millisecond, 1.5))
 
@@ -548,7 +548,7 @@ func TestRequestIDHandling(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := New("test-api-key", WithBaseURL(MgcUrl(server.URL)))
+	client := NewMgcClient("test-api-key", WithBaseURL(MgcUrl(server.URL)))
 
 	ctx := context.WithValue(context.Background(), RequestIDKey, requestIDValue)
 	req, err := client.NewRequest(ctx, http.MethodGet, "/test", nil)
@@ -582,38 +582,38 @@ func TestRequestIDHandling_TableDriven(t *testing.T) {
 	tests := []struct {
 		name           string
 		requestIDValue interface{}
-		wantHeader    string
-		wantLogMsg    string
+		wantHeader     string
+		wantLogMsg     string
 	}{
 		{
 			name:           "valid string request ID",
 			requestIDValue: "test-id-123",
-			wantHeader:    "test-id-123",
-			wantLogMsg:    "X-Request-ID found in context",
+			wantHeader:     "test-id-123",
+			wantLogMsg:     "X-Request-ID found in context",
 		},
 		{
 			name:           "invalid type request ID",
 			requestIDValue: 123,
-			wantHeader:    "",
-			wantLogMsg:    "X-Request-ID in context is not a string",
+			wantHeader:     "",
+			wantLogMsg:     "X-Request-ID in context is not a string",
 		},
 		{
 			name:           "empty string request ID",
 			requestIDValue: "",
-			wantHeader:    "",
-			wantLogMsg:    "X-Request-ID found in context",
+			wantHeader:     "",
+			wantLogMsg:     "X-Request-ID found in context",
 		},
 		{
 			name:           "nil request ID",
 			requestIDValue: nil,
-			wantHeader:    "",
-			wantLogMsg:    "X-Request-ID not found in context",
+			wantHeader:     "",
+			wantLogMsg:     "X-Request-ID not found in context",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			client := New("test-api-key")
+			client := NewMgcClient("test-api-key")
 			ctx := context.Background()
 			if tt.requestIDValue != nil {
 				ctx = context.WithValue(ctx, RequestIDKey, tt.requestIDValue)
@@ -647,7 +647,7 @@ func TestRequestID_Retries(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := New("test-api-key",
+	client := NewMgcClient("test-api-key",
 		WithBaseURL(MgcUrl(server.URL)),
 		WithRetryConfig(3, 10*time.Millisecond, 50*time.Millisecond, 1.5))
 
@@ -676,7 +676,7 @@ func TestConcurrentRequests_DifferentRequestIDs(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := New("test-api-key", WithBaseURL(MgcUrl(server.URL)))
+	client := NewMgcClient("test-api-key", WithBaseURL(MgcUrl(server.URL)))
 	var wg sync.WaitGroup
 
 	for i := 0; i < 5; i++ {

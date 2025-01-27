@@ -9,6 +9,8 @@ import (
 	"log/slog"
 	"net/http"
 	"time"
+
+	"github.com/MagaluCloud/mgc-sdk-go/internal/retry"
 )
 
 const (
@@ -31,7 +33,7 @@ type CoreClient struct {
 	config *Config
 }
 
-func New(apiKey string, opts ...Option) *CoreClient {
+func NewMgcClient(apiKey string, opts ...Option) *CoreClient {
 	cfg := &Config{
 		HTTPClient: http.DefaultClient,
 		Logger:     slog.Default(),
@@ -130,7 +132,7 @@ func (c *CoreClient) Do(ctx context.Context, req *http.Request, v any) (any, err
 	var lastError error
 	for attempt := 0; attempt < c.config.RetryConfig.MaxAttempts; attempt++ {
 		if attempt > 0 {
-			backoff := getNextBackoff(attempt-1, c.config.RetryConfig)
+			backoff := retry.GetNextBackoff(attempt-1, c.config.RetryConfig.BackoffFactor, c.config.RetryConfig.InitialInterval, c.config.RetryConfig.MaxInterval)
 			timer := time.NewTimer(backoff)
 			select {
 			case <-ctx.Done():
@@ -161,7 +163,7 @@ func (c *CoreClient) Do(ctx context.Context, req *http.Request, v any) (any, err
 
 		if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
 			lastError = NewHTTPError(resp)
-			if !shouldRetry(resp.StatusCode) {
+			if !retry.ShouldRetry(resp.StatusCode) {
 				return nil, lastError
 			}
 			continue

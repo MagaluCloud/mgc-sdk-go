@@ -1,4 +1,4 @@
-package virtualmachine
+package compute
 
 import (
 	"context"
@@ -10,7 +10,7 @@ import (
 
 func newTestCoreClient() *client.CoreClient {
 	httpClient := &http.Client{}
-	return client.New("test-api", client.WithBaseURL(client.MgcUrl("http://test-api.com")), client.WithHTTPClient(httpClient))
+	return client.NewMgcClient("test-api", client.WithBaseURL(client.MgcUrl("http://test-api.com")), client.WithHTTPClient(httpClient))
 }
 
 func TestNew(t *testing.T) {
@@ -61,26 +61,26 @@ func TestVirtualMachineClient_newRequest(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			core := newTestCoreClient()
 			vmClient := New(core)
-			
+
 			req, err := vmClient.newRequest(context.Background(), tt.method, tt.path, tt.body)
-			
+
 			if tt.wantErr {
 				if err == nil {
 					t.Error("expected error, got nil")
 				}
 				return
 			}
-			
+
 			if err != nil {
 				t.Errorf("unexpected error: %v", err)
 				return
 			}
-			
+
 			if req == nil {
 				t.Error("expected request to not be nil")
 				return
 			}
-			
+
 			if req.Method != tt.method {
 				t.Errorf("expected method %s, got %s", tt.method, req.Method)
 			}
@@ -90,18 +90,18 @@ func TestVirtualMachineClient_newRequest(t *testing.T) {
 
 func TestNew_WithOptions(t *testing.T) {
 	core := newTestCoreClient()
-	
+
 	var calledOpt bool
 	testOpt := func(c *VirtualMachineClient) {
 		calledOpt = true
 	}
-	
+
 	vmClient := New(core, testOpt)
-	
+
 	if !calledOpt {
 		t.Error("expected option to be called")
 	}
-	
+
 	if vmClient == nil {
 		t.Error("expected client to not be nil")
 	}
@@ -110,19 +110,19 @@ func TestNew_WithOptions(t *testing.T) {
 func TestVirtualMachineClient_newRequest_Headers(t *testing.T) {
 	core := newTestCoreClient()
 	vmClient := New(core)
-	
+
 	ctx := context.Background()
 	req, err := vmClient.newRequest(ctx, http.MethodGet, "/vms", nil)
-	
+
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	
+
 	// Check content type header
 	if contentType := req.Header.Get("Content-Type"); contentType != "application/json" {
 		t.Errorf("expected Content-Type header to be application/json, got %s", contentType)
 	}
-	
+
 	// Check user agent
 	if userAgent := req.Header.Get("User-Agent"); userAgent == "" {
 		t.Error("expected User-Agent header to be set")
@@ -139,13 +139,13 @@ func TestVirtualMachineClient_NewWithNilCore(t *testing.T) {
 func TestVirtualMachineClient_Instances(t *testing.T) {
 	core := newTestCoreClient()
 	vmClient := New(core)
-	
+
 	instanceSvc := vmClient.Instances()
-	
+
 	if instanceSvc == nil {
 		t.Error("expected instanceSvc to not be nil")
 	}
-	
+
 	_, ok := instanceSvc.(*instanceService)
 	if !ok {
 		t.Error("expected instanceSvc to be of type *instanceService")

@@ -1,4 +1,4 @@
-package virtualmachine
+package compute
 
 import (
 	"context"
@@ -73,27 +73,27 @@ func TestInstanceService_List(t *testing.T) {
 			wantErr:    true,
 		},
 		{
-			name: "nil response body",
-			opts: ListOptions{},
-			response: "",
+			name:       "nil response body",
+			opts:       ListOptions{},
+			response:   "",
 			statusCode: http.StatusOK,
-			wantErr: true,
+			wantErr:    true,
 		},
 		{
-			name: "malformed json",
-			opts: ListOptions{},
-			response: `{"instances": [{"id": "broken"}`,
+			name:       "malformed json",
+			opts:       ListOptions{},
+			response:   `{"instances": [{"id": "broken"}`,
 			statusCode: http.StatusOK,
-			wantErr: true,
+			wantErr:    true,
 		},
 		{
 			name: "invalid sort parameter",
 			opts: ListOptions{
 				Sort: strPtr("invalid:order"),
 			},
-			response: `{"error": "invalid sort parameter"}`,
+			response:   `{"error": "invalid sort parameter"}`,
 			statusCode: http.StatusBadRequest,
-			wantErr: true,
+			wantErr:    true,
 		},
 	}
 
@@ -170,19 +170,19 @@ func TestInstanceService_Create(t *testing.T) {
 			req: CreateRequest{
 				Name: "existing-vm",
 			},
-			response: `{"error": "instance name already exists"}`,
+			response:   `{"error": "instance name already exists"}`,
 			statusCode: http.StatusConflict,
-			wantErr: true,
+			wantErr:    true,
 		},
 		{
 			name: "insufficient resources",
 			req: CreateRequest{
-				Name: "test-vm",
+				Name:        "test-vm",
 				MachineType: IDOrName{Name: strPtr("large")},
 			},
-			response: `{"error": "insufficient resources"}`,
+			response:   `{"error": "insufficient resources"}`,
 			statusCode: http.StatusServiceUnavailable,
-			wantErr: true,
+			wantErr:    true,
 		},
 	}
 
@@ -243,8 +243,8 @@ func TestInstanceService_Get(t *testing.T) {
 			wantErr:    true,
 		},
 		{
-			name: "with expansion",
-			id: "inst1",
+			name:   "with expansion",
+			id:     "inst1",
 			expand: []string{"network", "storage"},
 			response: `{
 				"id": "inst1",
@@ -253,14 +253,14 @@ func TestInstanceService_Get(t *testing.T) {
 				"storage": {"id": "stor1"}
 			}`,
 			statusCode: http.StatusOK,
-			wantErr: false,
+			wantErr:    false,
 		},
 		{
-			name: "malformed response",
-			id: "inst1",
-			response: `{"id": "inst1", "name":}`,
+			name:       "malformed response",
+			id:         "inst1",
+			response:   `{"id": "inst1", "name":}`,
 			statusCode: http.StatusOK,
-			wantErr: true,
+			wantErr:    true,
 		},
 	}
 
@@ -543,20 +543,20 @@ func TestInstanceService_StateOperations(t *testing.T) {
 			wantErr:    true,
 		},
 		{
-			name: "operation timeout",
-			operation: "start",
-			id: "timeout",
-			response: `{"error": "operation timed out"}`,
+			name:       "operation timeout",
+			operation:  "start",
+			id:         "timeout",
+			response:   `{"error": "operation timed out"}`,
 			statusCode: http.StatusGatewayTimeout,
-			wantErr: true,
+			wantErr:    true,
 		},
 		{
-			name: "operation in progress",
-			operation: "stop",
-			id: "busy",
-			response: `{"error": "another operation in progress"}`,
+			name:       "operation in progress",
+			operation:  "stop",
+			id:         "busy",
+			response:   `{"error": "another operation in progress"}`,
 			statusCode: http.StatusConflict,
-			wantErr: true,
+			wantErr:    true,
 		},
 	}
 
@@ -622,7 +622,7 @@ func TestInstanceService_Concurrent(t *testing.T) {
 // Helper functions
 func testClient(baseURL string) *VirtualMachineClient {
 	httpClient := &http.Client{}
-	core := client.New("test-api",
+	core := client.NewMgcClient("test-api",
 		client.WithBaseURL(client.MgcUrl(baseURL)),
 		client.WithHTTPClient(httpClient))
 	return New(core)
@@ -635,7 +635,8 @@ func intPtr(i int) *int {
 func strPtr(s string) *string {
 	return &s
 }
-//  here
+
+// here
 func TestInstanceService_ListWithExpand(t *testing.T) {
 	tests := []struct {
 		name       string
@@ -899,7 +900,7 @@ func TestInstanceService_GetWithExpand(t *testing.T) {
 				t.Errorf("Get() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			
+
 			if !tt.wantErr {
 				if got == nil {
 					t.Error("Get() got nil, want instance")
