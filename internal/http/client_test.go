@@ -4,8 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
+	"reflect"
 	"strings"
 	"sync"
 	"testing"
@@ -672,4 +676,277 @@ func TestConcurrentRequests_DifferentRequestIDs(t *testing.T) {
 			t.Errorf("Request ID %s not received by server", expectedID)
 		}
 	}
+}
+
+func TestExecuteSimpleRequestWithRespBody(t *testing.T) {
+	// Create a test logger that discards output
+	testLogger := slog.New(slog.NewTextHandler(io.Discard, nil))
+
+	t.Run("successful request with response body", func(t *testing.T) {
+		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
+		}))
+		defer ts.Close()
+
+		core := client.NewMgcClient("test-api-key", client.WithBaseURL(client.MgcUrl(ts.URL)), client.WithTimeout(1*time.Second), client.WithRetryConfig(5, 100*time.Millisecond, 500*time.Millisecond, 1.5))
+
+		cfg := core.GetConfig()
+
+		resp, err := ExecuteSimpleRequestWithRespBody[map[string]string](
+			context.Background(),
+			func(ctx context.Context, method, path string, body any) (*http.Request, error) {
+				return NewRequest[map[string]string](cfg, ctx, method, path, nil)
+			},
+			cfg,
+			http.MethodGet,
+			"/test",
+			nil,
+			url.Values{"param": []string{"value"}},
+		)
+
+		if err != nil {
+			t.Fatalf("Unexpected error: %v", err)
+		}
+
+		expected := map[string]string{"status": "ok"}
+		if !reflect.DeepEqual(*resp, expected) {
+			t.Errorf("Unexpected response body:\nGot: %+v\nWant: %+v", *resp, expected)
+		}
+	})
+
+	t.Run("request creation error", func(t *testing.T) {
+		cfg := &client.Config{
+			BaseURL: client.MgcUrl("http://invalid-url"),
+			Logger:  testLogger, // Initialize Logger
+		}
+
+		_, err := ExecuteSimpleRequestWithRespBody[map[string]string](
+			context.Background(),
+			func(ctx context.Context, method, path string, body any) (*http.Request, error) {
+				return nil, fmt.Errorf("mock request creation error")
+			},
+			cfg,
+			http.MethodGet,
+			"/test",
+			nil,
+			nil,
+		)
+
+		if err == nil || err.Error() != "mock request creation error" {
+			t.Errorf("Unexpected error: %v", err)
+		}
+	})
+
+	t.Run("error response from server", func(t *testing.T) {
+		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusInternalServerError)
+		}))
+		defer ts.Close()
+
+		core := client.NewMgcClient("test-api-key", client.WithBaseURL(client.MgcUrl(ts.URL)), client.WithTimeout(1*time.Second), client.WithRetryConfig(5, 100*time.Millisecond, 500*time.Millisecond, 1.5))
+
+		cfg := core.GetConfig()
+
+		_, err := ExecuteSimpleRequestWithRespBody[map[string]string](
+			context.Background(),
+			func(ctx context.Context, method, path string, body any) (*http.Request, error) {
+				return NewRequest[any](cfg, ctx, method, path, nil)
+			},
+			cfg,
+			http.MethodGet,
+			"/test",
+			nil,
+			nil,
+		)
+
+		if err == nil {
+			t.Fatal("Expected error, got nil")
+		}
+		if want := "max retry attempts reached: HTTP error: 500 500 Internal Server Error"; err.Error() != want {
+			t.Errorf("Unexpected error message:\nGot: %v\nWant: %v", err.Error(), want)
+		}
+	})
+
+	t.Run("request with context values", func(t *testing.T) {
+		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if got := r.Header.Get("X-Request-ID"); got != "test-request-id" {
+				t.Errorf("Unexpected X-Request-ID header: %v", got)
+			}
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte(`{"status": "ok"}`))
+		}))
+		defer ts.Close()
+
+		cfg := &client.Config{
+			BaseURL:   client.MgcUrl(ts.URL),
+			APIKey:    "test-key",
+			UserAgent: "test-agent",
+			HTTPClient: &http.Client{
+				Timeout: 1 * time.Second,
+			},
+			Logger: testLogger, // Initialize Logger
+			RetryConfig: client.RetryConfig{
+				3,
+				100 * time.Millisecond,
+				500 * time.Millisecond,
+				1.5,
+			},
+		}
+
+		ctx := context.WithValue(context.Background(), client.RequestIDKey, "test-request-id")
+
+		_, err := ExecuteSimpleRequestWithRespBody[map[string]string](
+			ctx,
+			func(ctx context.Context, method, path string, body any) (*http.Request, error) {
+				return NewRequest[any](cfg, ctx, method, path, nil)
+			},
+			cfg,
+			http.MethodGet,
+			"/test",
+			nil,
+			nil,
+		)
+
+		if err != nil {
+			t.Fatalf("Unexpected error: %v", err)
+		}
+	})
+}
+
+func TestExecuteSimpleRequest(t *testing.T) {
+	// Create a test logger that discards output
+	testLogger := slog.New(slog.NewTextHandler(io.Discard, nil))
+
+	t.Run("successful request without response body", func(t *testing.T) {
+		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if got := r.URL.RawQuery; got != "param=value" {
+				t.Errorf("Unexpected query string: %v", got)
+			}
+			w.WriteHeader(http.StatusNoContent)
+		}))
+		defer ts.Close()
+
+		cfg := &client.Config{
+			BaseURL:   client.MgcUrl(ts.URL),
+			APIKey:    "test-key",
+			UserAgent: "test-agent",
+			HTTPClient: &http.Client{
+				Timeout: 1 * time.Second,
+			},
+			Logger: testLogger, // Initialize Logger
+			RetryConfig: client.RetryConfig{
+				3,
+				100 * time.Millisecond,
+				500 * time.Millisecond,
+				1.5,
+			},
+		}
+
+		err := ExecuteSimpleRequest(
+			context.Background(),
+			func(ctx context.Context, method, path string, body any) (*http.Request, error) {
+				return NewRequest[any](cfg, ctx, method, path, nil)
+			},
+			cfg,
+			http.MethodGet,
+			"/test",
+			nil,
+			url.Values{"param": []string{"value"}},
+		)
+
+		if err != nil {
+			t.Fatalf("Unexpected error: %v", err)
+		}
+	})
+
+	t.Run("error response from server", func(t *testing.T) {
+		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusBadRequest)
+		}))
+		defer ts.Close()
+
+		cfg := &client.Config{
+			BaseURL:   client.MgcUrl(ts.URL),
+			APIKey:    "test-key",
+			UserAgent: "test-agent",
+			HTTPClient: &http.Client{
+				Timeout: 1 * time.Second,
+			},
+			Logger: testLogger, // Initialize Logger
+		}
+		client.WithRetryConfig(3,
+			100*time.Millisecond,
+			500*time.Millisecond,
+			1.5,
+		)(cfg)
+
+		err := ExecuteSimpleRequest(
+			context.Background(),
+			func(ctx context.Context, method, path string, body any) (*http.Request, error) {
+				return NewRequest[any](cfg, ctx, method, path, nil)
+			},
+			cfg,
+			http.MethodGet,
+			"/test",
+			nil,
+			nil,
+		)
+
+		if err == nil {
+			t.Fatal("Expected error, got nil")
+		}
+		if want := "HTTP error: 400 400 Bad Request"; err.Error() != want {
+			t.Errorf("Unexpected error message:\nGot: %v\nWant: %v", err.Error(), want)
+		}
+	})
+
+	t.Run("request with body", func(t *testing.T) {
+		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			var body map[string]string
+			if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+				t.Fatalf("Error decoding request body: %v", err)
+			}
+			if got := body["test-key"]; got != "test-value" {
+				t.Errorf("Unexpected body value: %v", got)
+			}
+			w.WriteHeader(http.StatusOK)
+		}))
+		defer ts.Close()
+
+		cfg := &client.Config{
+			BaseURL:   client.MgcUrl(ts.URL),
+			APIKey:    "test-key",
+			UserAgent: "test-agent",
+			HTTPClient: &http.Client{
+				Timeout: 1 * time.Second,
+			},
+			Logger: testLogger, // Initialize Logger
+			RetryConfig: client.RetryConfig{
+				3,
+				100 * time.Millisecond,
+				500 * time.Millisecond,
+				1.5,
+			},
+		}
+
+		bodyData := map[string]string{"test-key": "test-value"}
+
+		err := ExecuteSimpleRequest(
+			context.Background(),
+			func(ctx context.Context, method, path string, body any) (*http.Request, error) {
+				return NewRequest[map[string]string](cfg, ctx, method, path, &bodyData)
+			},
+			cfg,
+			http.MethodPost,
+			"/test",
+			bodyData,
+			nil,
+		)
+
+		if err != nil {
+			t.Fatalf("Unexpected error: %v", err)
+		}
+	})
 }

@@ -7,11 +7,15 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/MagaluCloud/mgc-sdk-go/client"
 	"github.com/MagaluCloud/mgc-sdk-go/internal/retry"
 )
+
+// NewRequestFunc is a function that creates a new HTTP request.
+type NewRequestFunc func(ctx context.Context, method, path string, body any) (*http.Request, error)
 
 // NewRequest creates a new HTTP request with the given method, path, and body.
 // It returns the request and an error if the request creation fails.
@@ -136,4 +140,59 @@ func Do[T any](c *client.Config, ctx context.Context, req *http.Request, v *T) (
 	}
 
 	return nil, fmt.Errorf("max retry attempts reached: %w", lastError)
+}
+
+// ExecuteSimpleRequestWithRespBody handles HTTP requests that require response body parsing
+func ExecuteSimpleRequestWithRespBody[T any](
+	ctx context.Context,
+	reqf NewRequestFunc,
+	configs *client.Config,
+	method string,
+	path string,
+	body any,
+	queryParams url.Values,
+) (*T, error) {
+	req, err := reqf(ctx, method, path, body)
+	if err != nil {
+		return nil, err
+	}
+
+	if queryParams != nil {
+		req.URL.RawQuery = queryParams.Encode()
+	}
+
+	var resType T
+	result, err := Do(configs, ctx, req, &resType)
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+// ExecuteSimpleRequest handles HTTP requests that do not require response body parsing
+func ExecuteSimpleRequest(
+	ctx context.Context,
+	reqf NewRequestFunc,
+	configs *client.Config,
+	method string,
+	path string,
+	body any,
+	queryParams url.Values,
+) error {
+	req, err := reqf(ctx, method, path, body)
+	if err != nil {
+		return err
+	}
+
+	if queryParams != nil {
+		req.URL.RawQuery = queryParams.Encode()
+	}
+
+	_, err = Do[any](configs, ctx, req, nil)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
