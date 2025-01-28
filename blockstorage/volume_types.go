@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/url"
 
 	mgc_http "github.com/MagaluCloud/mgc-sdk-go/internal/http"
 )
@@ -58,24 +59,26 @@ type volumeTypeService struct {
 
 // List retrieves all volume types with optional filtering
 func (s *volumeTypeService) List(ctx context.Context, opts ListVolumeTypesOptions) ([]VolumeType, error) {
-	req, err := s.client.newRequest(ctx, http.MethodGet, "/v1/volume-types", nil)
-	if err != nil {
-		return nil, err
-	}
-
-	q := req.URL.Query()
+	queryParams := make(url.Values)
 	if opts.AvailabilityZone != "" {
-		q.Add("availability-zone", opts.AvailabilityZone)
+		queryParams.Add("availability-zone", opts.AvailabilityZone)
 	}
 	if opts.Name != "" {
-		q.Add("name", opts.Name)
+		queryParams.Add("name", opts.Name)
 	}
 	if opts.AllowsEncryption != nil {
-		q.Add("allows-encryption", fmt.Sprintf("%v", *opts.AllowsEncryption))
+		queryParams.Add("allows-encryption", fmt.Sprintf("%v", *opts.AllowsEncryption))
 	}
-	req.URL.RawQuery = q.Encode()
 
-	resp, err := mgc_http.Do(s.client.GetConfig(), ctx, req, &ListVolumeTypesResponse{})
+	resp, err := mgc_http.ExecuteSimpleRequestWithRespBody[ListVolumeTypesResponse](
+		ctx,
+		s.client.newRequest,
+		s.client.GetConfig(),
+		http.MethodGet,
+		"/v1/volume-types",
+		nil,
+		queryParams,
+	)
 	if err != nil {
 		return nil, err
 	}

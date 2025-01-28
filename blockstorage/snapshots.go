@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -102,16 +103,9 @@ type snapshotService struct {
 	client *BlockStorageClient
 }
 
-// Implementation of SnapshotService interface
-
 // List returns all snapshots
 func (s *snapshotService) List(ctx context.Context, opts ListOptions) ([]Snapshot, error) {
-	req, err := s.client.newRequest(ctx, http.MethodGet, "/v1/snapshots", nil)
-	if err != nil {
-		return nil, err
-	}
-
-	q := req.URL.Query()
+	q := url.Values{}
 	if opts.Limit != nil {
 		q.Add("_limit", strconv.Itoa(*opts.Limit))
 	}
@@ -124,93 +118,82 @@ func (s *snapshotService) List(ctx context.Context, opts ListOptions) ([]Snapsho
 	if len(opts.Expand) > 0 {
 		q.Add("expand", strings.Join(opts.Expand, ","))
 	}
-	req.URL.RawQuery = q.Encode()
 
-	var response ListSnapshotsResponse
-	resp, err := mgc_http.Do(s.client.GetConfig(), ctx, req, &response)
+	path := "/v1/snapshots"
+
+	result, err := mgc_http.ExecuteSimpleRequestWithRespBody[ListSnapshotsResponse](
+		ctx,
+		s.client.newRequest,
+		s.client.GetConfig(),
+		http.MethodGet,
+		path,
+		nil,
+		q,
+	)
 	if err != nil {
 		return nil, err
 	}
 
-	if resp == nil {
-		return nil, fmt.Errorf("empty response")
-	}
-
-	return response.Snapshots, nil
+	return result.Snapshots, nil
 }
 
 // Create provisions a new snapshot
 func (s *snapshotService) Create(ctx context.Context, req CreateSnapshotRequest) (string, error) {
-	var result struct {
-		ID string `json:"id"`
-	}
-
-	httpReq, err := s.client.newRequest(ctx, http.MethodPost, "/v1/snapshots", req)
+	result, err := mgc_http.ExecuteSimpleRequestWithRespBody[struct{ ID string }](
+		ctx,
+		s.client.newRequest,
+		s.client.GetConfig(),
+		http.MethodPost,
+		"/v1/snapshots",
+		req,
+		nil,
+	)
 	if err != nil {
 		return "", err
 	}
-
-	resp, err := mgc_http.Do(s.client.GetConfig(), ctx, httpReq, &result)
-	if err != nil {
-		return "", err
-	}
-
-	return resp.ID, nil
+	return result.ID, nil
 }
 
 // Get retrieves a specific snapshot
 func (s *snapshotService) Get(ctx context.Context, id string, expand []string) (*Snapshot, error) {
-	req, err := s.client.newRequest(ctx, http.MethodGet, fmt.Sprintf("/v1/snapshots/%s", id), nil)
-	if err != nil {
-		return nil, err
-	}
-
+	path := fmt.Sprintf("/v1/snapshots/%s", id)
 	if len(expand) > 0 {
-		q := req.URL.Query()
-		q.Add("expand", strings.Join(expand, ","))
-		req.URL.RawQuery = q.Encode()
+		path += "?expand=" + strings.Join(expand, ",")
 	}
 
-	resp, err := mgc_http.Do(s.client.GetConfig(), ctx, req, &Snapshot{})
-	if err != nil {
-		return nil, err
-	}
-
-	if resp == nil {
-		return nil, fmt.Errorf("empty response")
-	}
-
-	return resp, nil
+	return mgc_http.ExecuteSimpleRequestWithRespBody[Snapshot](
+		ctx,
+		s.client.newRequest,
+		s.client.GetConfig(),
+		http.MethodGet,
+		path,
+		nil,
+		nil,
+	)
 }
 
 // Delete removes a snapshot
 func (s *snapshotService) Delete(ctx context.Context, id string) error {
-	req, err := s.client.newRequest(ctx, http.MethodDelete, fmt.Sprintf("/v1/snapshots/%s", id), nil)
-	if err != nil {
-		return err
-	}
-
-	_, err = mgc_http.Do[any](s.client.GetConfig(), ctx, req, nil)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return mgc_http.ExecuteSimpleRequest(
+		ctx,
+		s.client.newRequest,
+		s.client.GetConfig(),
+		http.MethodDelete,
+		fmt.Sprintf("/v1/snapshots/%s", id),
+		nil,
+		nil,
+	)
 }
 
 // Rename updates the name of a snapshot
 func (s *snapshotService) Rename(ctx context.Context, id string, newName string) error {
-	req, err := s.client.newRequest(ctx, http.MethodPatch,
+	return mgc_http.ExecuteSimpleRequest(
+		ctx,
+		s.client.newRequest,
+		s.client.GetConfig(),
+		http.MethodPatch,
 		fmt.Sprintf("/v1/snapshots/%s/rename", id),
-		RenameSnapshotRequest{Name: newName})
-	if err != nil {
-		return err
-	}
-
-	_, err = mgc_http.Do[any](s.client.GetConfig(), ctx, req, nil)
-	if err != nil {
-		return err
-	}
-
-	return nil
+		RenameSnapshotRequest{Name: newName},
+		nil,
+	)
 }
