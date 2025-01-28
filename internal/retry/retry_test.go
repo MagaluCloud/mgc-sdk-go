@@ -34,12 +34,12 @@ func Test_shouldRetry(t *testing.T) {
 
 func Test_getNextBackoff(t *testing.T) {
 	tests := []struct {
-		name           string
-		attempt        int
-		backoffFactor  float64
+		name            string
+		attempt         int
+		backoffFactor   float64
 		initialInterval time.Duration
-		maxInterval    time.Duration
-		wantDelay      time.Duration
+		maxInterval     time.Duration
+		wantDelay       time.Duration
 	}{
 		{
 			name:            "first attempt with default config",
@@ -47,7 +47,7 @@ func Test_getNextBackoff(t *testing.T) {
 			backoffFactor:   2.0,
 			initialInterval: time.Second,
 			maxInterval:     time.Second * 30,
-			wantDelay:      time.Second,
+			wantDelay:       time.Second,
 		},
 		{
 			name:            "second attempt with default config",
@@ -55,7 +55,7 @@ func Test_getNextBackoff(t *testing.T) {
 			backoffFactor:   2.0,
 			initialInterval: time.Second,
 			maxInterval:     time.Second * 30,
-			wantDelay:      time.Second * 2,
+			wantDelay:       time.Second * 2,
 		},
 		{
 			name:            "max interval reached",
@@ -63,7 +63,7 @@ func Test_getNextBackoff(t *testing.T) {
 			backoffFactor:   2.0,
 			initialInterval: time.Second,
 			maxInterval:     time.Second * 30,
-			wantDelay:      time.Second * 30,
+			wantDelay:       time.Second * 30,
 		},
 		{
 			name:            "custom config with different factor",
@@ -71,7 +71,7 @@ func Test_getNextBackoff(t *testing.T) {
 			backoffFactor:   1.5,
 			initialInterval: time.Second * 2,
 			maxInterval:     time.Second * 60,
-			wantDelay:      time.Second * 4,
+			wantDelay:       time.Second * 4,
 		},
 	}
 

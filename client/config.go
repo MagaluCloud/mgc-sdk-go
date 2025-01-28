@@ -14,12 +14,12 @@ type RetryConfig struct {
 }
 
 type Config struct {
-	APIKey     string
-	BaseURL    MgcUrl
-	UserAgent  string
-	Logger     *slog.Logger
-	HTTPClient *http.Client
-	Timeout    time.Duration
+	APIKey      string
+	BaseURL     MgcUrl
+	UserAgent   string
+	Logger      *slog.Logger
+	HTTPClient  *http.Client
+	Timeout     time.Duration
 	RetryConfig RetryConfig
 }
 
