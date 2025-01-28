@@ -30,6 +30,10 @@ go get github.com/MagaluCloud/mgc-sdk-go
   - Machine Types
   - Images
   - Snapshots
+- Block Storage
+  - Volumes
+  - Snapshots
+  - Volume Types
 
 ## Authentication
 
@@ -49,7 +53,7 @@ mgc-sdk-go/
 ├── compute/        # Compute service API (instances, images, machine types)
 ├── helpers/        # Utility functions
 ├── internal/       # Internal packages
-└── cmd/           # Command-line examples
+└── cmd/            # Examples
 ```
 
 ## Usage Examples

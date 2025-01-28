@@ -65,7 +65,7 @@ jobs:
 
             // Add gofmt errors if present
             if (process.env.FMT_ERRORS) {
-              commentBody += `### 🛠️ gofmt Issues\n\nThe following files are not formatted:\n\`\`\`\n${process.env.FMT_ERRORS}\n\`\`\`\nRun \`gofmt -w .\` to fix.\n\n`;
+              commentBody += `### 🛠️ gofmt Issues\n\nThe following files are not formatted:\n\`\`\`\n${process.env.FMT_ERRORS}\n\`\`\`\nRun \`make go-fmt\` to fix.\n\n`;
             }
 
             // Add govet errors if present
