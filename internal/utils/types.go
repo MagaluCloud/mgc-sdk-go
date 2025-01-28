@@ -7,9 +7,11 @@ import (
 
 type LocalDateTimeWithoutZone time.Time
 
+const LocalDateTimeWithoutZoneLayout = "2006-01-02T15:04:05"
+
 func (ct *LocalDateTimeWithoutZone) UnmarshalJSON(data []byte) error {
 	s := strings.Trim(string(data), `"`)
-	t, err := time.Parse("2006-01-02T15:04:05", s)
+	t, err := time.Parse(LocalDateTimeWithoutZoneLayout, s)
 	if err != nil {
 		return err
 	}
@@ -18,9 +20,9 @@ func (ct *LocalDateTimeWithoutZone) UnmarshalJSON(data []byte) error {
 }
 
 func (ct LocalDateTimeWithoutZone) MarshalJSON() ([]byte, error) {
-	return []byte(`"` + time.Time(ct).Format("2006-01-02T15:04:05") + `"`), nil
+	return []byte(`"` + time.Time(ct).Format(LocalDateTimeWithoutZoneLayout) + `"`), nil
 }
 
 func (ct LocalDateTimeWithoutZone) String() string {
-	return time.Time(ct).Format("2006-01-02T15:04:05")
+	return time.Time(ct).Format(LocalDateTimeWithoutZoneLayout)
 }
