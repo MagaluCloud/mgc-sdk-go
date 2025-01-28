@@ -9,6 +9,8 @@ const (
 	BrSe1 MgcUrl = "https://api.magalu.cloud/br-se1"
 	// BrMgl1 is the URL for the Brazil Magalu region
 	BrMgl1 MgcUrl = "https://api.magalu.cloud/br-se-1"
+	// MgcUrl is the default URL for products that don't have a specific region
+	Global MgcUrl = "https://api.magalu.cloud"
 )
 
 // String returns the string representation of the MgcUrl

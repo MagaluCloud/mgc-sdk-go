@@ -34,6 +34,7 @@ go get github.com/MagaluCloud/mgc-sdk-go
   - Volumes
   - Snapshots
   - Volume Types
+- SSH Keys
 
 ## Authentication
 
