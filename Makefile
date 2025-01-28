@@ -1,4 +1,4 @@
-.PHONY: test test-coverage test-race test-all
+.PHONY: test test-coverage test-race test-all go-fmt
 
 # Run all tests
 test:
@@ -18,3 +18,9 @@ test-race:
 test-all:
 	go test -v -race -coverprofile=coverage.txt -covermode=atomic ./...
 	go tool cover -func=coverage.txt
+
+go-fmt:
+	gofmt -s -l -w .
+
+go-vet:
+	go vet ./...
