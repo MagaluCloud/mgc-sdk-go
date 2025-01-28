@@ -10,7 +10,7 @@ on:
 jobs:
   test:
     name: Run Unit Tests
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.RUNNER_RUNS_ON }}
 
     steps:
     - uses: actions/checkout@v4
@@ -38,4 +38,4 @@ jobs:
       uses: sonarsource/sonarqube-scan-action@v4.2.1
       with:
         args: >
-          -Dsonar.login=${{ secrets.MAGALUBOT_SONAR_TOKEN }}
+          -Dsonar.token=${{ secrets.MAGALUBOT_SONAR_TOKEN }}

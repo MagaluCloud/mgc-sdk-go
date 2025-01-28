@@ -7,10 +7,12 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	mgc_http "github.com/MagaluCloud/mgc-sdk-go/internal/http"
 )
 
 const (
-	SnapshotImageExpand      = "image"
+	SnapshotImageExpand       = "image"
 	SnapshotMachineTypeExpand = "machine-type"
 )
 
@@ -20,13 +22,13 @@ type (
 	}
 
 	Snapshot struct {
-		ID        string     `json:"id"`
-		Name      string     `json:"name,omitempty"`
-		Status    string     `json:"status"`
-		State     string     `json:"state"`
-		CreatedAt time.Time  `json:"created_at"`
-		UpdatedAt *time.Time `json:"updated_at,omitempty"`
-		Size      int        `json:"size"`
+		ID        string            `json:"id"`
+		Name      string            `json:"name,omitempty"`
+		Status    string            `json:"status"`
+		State     string            `json:"state"`
+		CreatedAt time.Time         `json:"created_at"`
+		UpdatedAt *time.Time        `json:"updated_at,omitempty"`
+		Size      int               `json:"size"`
 		Instance  *SnapshotInstance `json:"instance"`
 	}
 
@@ -105,11 +107,12 @@ func (s *snapshotService) List(ctx context.Context, opts ListOptions) ([]Snapsho
 	req.URL.RawQuery = q.Encode()
 
 	var response ListSnapshotsResponse
-	if _, err := s.client.Do(ctx, req, &response); err != nil {
+	resp, err := mgc_http.Do(s.client.GetConfig(), ctx, req, &response)
+	if err != nil {
 		return nil, err
 	}
 
-	return response.Snapshots, nil
+	return resp.Snapshots, nil
 }
 
 func (s *snapshotService) Create(ctx context.Context, createReq CreateSnapshotRequest) (string, error) {
@@ -122,14 +125,11 @@ func (s *snapshotService) Create(ctx context.Context, createReq CreateSnapshotRe
 		return "", err
 	}
 
-	resp, err := s.client.Do(ctx, req, &result)
+	resp, err := mgc_http.Do(s.client.GetConfig(), ctx, req, &result)
 	if err != nil {
 		return "", err
 	}
-	if r, ok := resp.(*struct{ ID string `json:"id"` }); ok {
-		return r.ID, nil
-	}
-	return "", fmt.Errorf("unexpected response type: %T", resp)
+	return resp.ID, nil
 }
 
 func (s *snapshotService) Get(ctx context.Context, id string, expand []string) (*Snapshot, error) {
@@ -145,14 +145,11 @@ func (s *snapshotService) Get(ctx context.Context, id string, expand []string) (
 	}
 
 	var snapshot Snapshot
-	resp, err := s.client.Do(ctx, req, &snapshot)
+	resp, err := mgc_http.Do(s.client.GetConfig(), ctx, req, &snapshot)
 	if err != nil {
 		return nil, err
 	}
-	if r, ok := resp.(*Snapshot); ok {
-		return r, nil
-	}
-	return nil, fmt.Errorf("unexpected response type: %T", resp)
+	return resp, nil
 }
 
 func (s *snapshotService) Delete(ctx context.Context, id string) error {
@@ -161,12 +158,9 @@ func (s *snapshotService) Delete(ctx context.Context, id string) error {
 		return err
 	}
 
-	resp, err := s.client.Do(ctx, req, nil)
+	_, err = mgc_http.Do[any](s.client.GetConfig(), ctx, req, nil)
 	if err != nil {
 		return err
-	}
-	if resp != nil {
-		return fmt.Errorf("unexpected response data for delete operation")
 	}
 	return nil
 }
@@ -179,12 +173,9 @@ func (s *snapshotService) Rename(ctx context.Context, id string, newName string)
 		return err
 	}
 
-	resp, err := s.client.Do(ctx, req, nil)
+	_, err = mgc_http.Do[any](s.client.GetConfig(), ctx, req, nil)
 	if err != nil {
 		return err
-	}
-	if resp != nil {
-		return fmt.Errorf("unexpected response data for rename operation")
 	}
 	return nil
 }
@@ -201,14 +192,11 @@ func (s *snapshotService) Restore(ctx context.Context, id string, restoreReq Res
 		return "", err
 	}
 
-	resp, err := s.client.Do(ctx, req, &result)
+	resp, err := mgc_http.Do(s.client.GetConfig(), ctx, req, &result)
 	if err != nil {
 		return "", err
 	}
-	if r, ok := resp.(*struct{ ID string `json:"id"` }); ok {
-		return r.ID, nil
-	}
-	return "", fmt.Errorf("unexpected response type: %T", resp)
+	return resp.ID, nil
 }
 
 func (s *snapshotService) Copy(ctx context.Context, id string, copyReq CopySnapshotRequest) error {
@@ -219,12 +207,9 @@ func (s *snapshotService) Copy(ctx context.Context, id string, copyReq CopySnaps
 		return err
 	}
 
-	resp, err := s.client.Do(ctx, req, nil)
+	_, err = mgc_http.Do[any](s.client.GetConfig(), ctx, req, nil)
 	if err != nil {
 		return err
-	}
-	if resp != nil {
-		return fmt.Errorf("unexpected response data for copy operation")
 	}
 	return nil
 }

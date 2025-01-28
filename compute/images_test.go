@@ -11,7 +11,7 @@ func TestImageService_List(t *testing.T) {
 	tests := []struct {
 		name       string
 		opts       ImageListOptions
-		response   string
+		response   *string
 		statusCode int
 		want       int
 		wantErr    bool
@@ -20,12 +20,12 @@ func TestImageService_List(t *testing.T) {
 		{
 			name: "basic list",
 			opts: ImageListOptions{},
-			response: `{
+			response: strPtr(`{
 				"images": [
 					{"id": "img1", "name": "ubuntu-20.04", "status": "active"},
 					{"id": "img2", "name": "centos-8", "status": "active"}
 				]
-			}`,
+			}`),
 			statusCode: http.StatusOK,
 			want:       2,
 			wantErr:    false,
@@ -36,11 +36,11 @@ func TestImageService_List(t *testing.T) {
 				Limit:  intPtr(1),
 				Offset: intPtr(1),
 			},
-			response: `{
+			response: strPtr(`{
 				"images": [
 					{"id": "img2", "name": "centos-8", "status": "active"}
 				]
-			}`,
+			}`),
 			statusCode: http.StatusOK,
 			want:       1,
 			wantErr:    false,
@@ -58,12 +58,12 @@ func TestImageService_List(t *testing.T) {
 			opts: ImageListOptions{
 				Sort: strPtr("platform:asc"),
 			},
-			response: `{
+			response: strPtr(`{
 				"images": [
 					{"id": "img1", "name": "ubuntu-20.04", "status": "active"},
 					{"id": "img2", "name": "centos-8", "status": "active"}
 				]
-			}`,
+			}`),
 			statusCode: http.StatusOK,
 			want:       2,
 			wantErr:    false,
@@ -78,11 +78,11 @@ func TestImageService_List(t *testing.T) {
 			opts: ImageListOptions{
 				Labels: []string{"prod", "latest"},
 			},
-			response: `{
+			response: strPtr(`{
 				"images": [
 					{"id": "img1", "name": "ubuntu-20.04", "status": "active", "labels": ["prod", "latest"]}
 				]
-			}`,
+			}`),
 			statusCode: http.StatusOK,
 			want:       1,
 			wantErr:    false,
@@ -97,11 +97,11 @@ func TestImageService_List(t *testing.T) {
 			opts: ImageListOptions{
 				AvailabilityZone: strPtr("zone1"),
 			},
-			response: `{
+			response: strPtr(`{
 				"images": [
 					{"id": "img1", "name": "ubuntu-20.04", "status": "active", "availability_zones": ["zone1"]}
 				]
-			}`,
+			}`),
 			statusCode: http.StatusOK,
 			want:       1,
 			wantErr:    false,
@@ -114,30 +114,28 @@ func TestImageService_List(t *testing.T) {
 		{
 			name:       "server error",
 			opts:       ImageListOptions{},
-			response:   `{"error": "internal server error"}`,
+			response:   strPtr(`{"error": "internal server error"}`),
 			statusCode: http.StatusInternalServerError,
-			wantErr:    true,
-		},
-		{
-			name: "invalid response format",
-			opts: ImageListOptions{},
-			response: `{
-				"invalid": []
-			}`,
-			statusCode: http.StatusOK,
 			wantErr:    true,
 		},
 		{
 			name:       "empty response",
 			opts:       ImageListOptions{},
-			response:   "",
+			response:   strPtr(""),
+			statusCode: http.StatusOK,
+			wantErr:    true,
+		},
+		{
+			name:       "response is nil",
+			opts:       ImageListOptions{},
+			response:   nil,
 			statusCode: http.StatusOK,
 			wantErr:    true,
 		},
 		{
 			name:       "malformed json",
 			opts:       ImageListOptions{},
-			response:   `{"images": [{"id": "broken"}`,
+			response:   strPtr(`{"images": [{"id": "broken"}`),
 			statusCode: http.StatusOK,
 			wantErr:    true,
 		},
@@ -147,7 +145,7 @@ func TestImageService_List(t *testing.T) {
 				Limit:  intPtr(-1),
 				Offset: intPtr(-1),
 			},
-			response:   `{"error": "invalid pagination parameters"}`,
+			response:   strPtr(`{"error": "invalid pagination parameters"}`),
 			statusCode: http.StatusBadRequest,
 			wantErr:    true,
 			checkQuery: func(t *testing.T, r *http.Request) {
@@ -169,7 +167,7 @@ func TestImageService_List(t *testing.T) {
 				}
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(tt.statusCode)
-				w.Write([]byte(tt.response))
+				w.Write([]byte(*tt.response))
 			}))
 			defer server.Close()
 

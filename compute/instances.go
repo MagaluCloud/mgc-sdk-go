@@ -9,12 +9,14 @@ import (
 	"time"
 
 	"github.com/MagaluCloud/mgc-sdk-go/client"
+
+	mgc_http "github.com/MagaluCloud/mgc-sdk-go/internal/http"
 )
 
 const (
-	InstanceImageExpand = "image"
+	InstanceImageExpand       = "image"
 	InstanceMachineTypeExpand = "machine-type"
-	InstanceNetworkExpand = "network"
+	InstanceNetworkExpand     = "network"
 )
 
 type (
@@ -99,8 +101,8 @@ type (
 	}
 
 	NICRequest struct {
-		Instance IDOrName              `json:"instance"`
-		Network  NICRequestInterface   `json:"network"`
+		Instance IDOrName            `json:"instance"`
+		Network  NICRequestInterface `json:"network"`
 	}
 
 	NICRequestInterface struct {
@@ -197,27 +199,12 @@ func (s *instanceService) List(ctx context.Context, opts ListOptions) ([]Instanc
 	var response struct {
 		Instances []Instance `json:"instances"`
 	}
-	resp, err := s.client.Do(ctx, req, &response)
+	resp, err := mgc_http.Do(s.client.GetConfig(), ctx, req, &response)
 	if err != nil {
 		return nil, err
 	}
-	
-	if resp == nil {
-		return nil, fmt.Errorf("empty response")
-	}
-	
-	r, ok := resp.(*struct {
-		Instances []Instance `json:"instances"`
-	})
-	if !ok {
-		return nil, fmt.Errorf("unexpected response type: %T", resp)
-	}
-	
-	if r.Instances == nil {
-		return nil, fmt.Errorf("invalid response format: missing instances field")
-	}
-	
-	return r.Instances, nil
+
+	return resp.Instances, nil
 }
 
 // Create creates a new instance
@@ -231,16 +218,13 @@ func (s *instanceService) Create(ctx context.Context, createReq CreateRequest) (
 		return "", err
 	}
 
-	resp, err := s.client.Do(ctx, req, &result)
+	resp, err := mgc_http.Do(s.client.GetConfig(), ctx, req, &result)
 	if err != nil {
 		return "", err
 	}
-	if r, ok := resp.(*struct {
-		ID string `json:"id"`
-	}); ok {
-		return r.ID, nil
-	}
-	return "", fmt.Errorf("unexpected response type: %T", resp)
+
+	return resp.ID, nil
+
 }
 
 // Get retrieves a specific instance
@@ -257,14 +241,11 @@ func (s *instanceService) Get(ctx context.Context, id string, expand []string) (
 	}
 
 	var instance Instance
-	resp, err := s.client.Do(ctx, req, &instance)
+	resp, err := mgc_http.Do(s.client.GetConfig(), ctx, req, &instance)
 	if err != nil {
 		return nil, err
 	}
-	if r, ok := resp.(*Instance); ok {
-		return r, nil
-	}
-	return nil, fmt.Errorf("unexpected response type: %T", resp)
+	return resp, nil
 }
 
 // Delete removes an instance
@@ -278,12 +259,9 @@ func (s *instanceService) Delete(ctx context.Context, id string, deletePublicIP 
 	q.Add("delete_public_ip", strconv.FormatBool(deletePublicIP))
 	req.URL.RawQuery = q.Encode()
 
-	resp, err := s.client.Do(ctx, req, nil)
+	_, err = mgc_http.Do[any](s.client.GetConfig(), ctx, req, nil)
 	if err != nil {
 		return err
-	}
-	if resp != nil {
-		return fmt.Errorf("unexpected response data for delete operation")
 	}
 	return nil
 }
@@ -301,12 +279,9 @@ func (s *instanceService) Rename(ctx context.Context, id string, newName string)
 		return err
 	}
 
-	resp, err := s.client.Do(ctx, req, nil)
+	_, err = mgc_http.Do[any](s.client.GetConfig(), ctx, req, nil)
 	if err != nil {
 		return err
-	}
-	if resp != nil {
-		return fmt.Errorf("unexpected response data for rename operation")
 	}
 	return nil
 }
@@ -324,12 +299,9 @@ func (s *instanceService) Retype(ctx context.Context, id string, retypeReq Retyp
 		return err
 	}
 
-	resp, err := s.client.Do(ctx, req, nil)
+	_, err = mgc_http.Do[any](s.client.GetConfig(), ctx, req, nil)
 	if err != nil {
 		return err
-	}
-	if resp != nil {
-		return fmt.Errorf("unexpected response data for retype operation")
 	}
 	return nil
 }
@@ -362,12 +334,9 @@ func (s *instanceService) executeInstanceAction(ctx context.Context, id string, 
 		return err
 	}
 
-	resp, err := s.client.Do(ctx, req, nil)
+	_, err = mgc_http.Do[any](s.client.GetConfig(), ctx, req, nil)
 	if err != nil {
 		return err
-	}
-	if resp != nil {
-		return fmt.Errorf("unexpected response data for %s operation", action)
 	}
 	return nil
 }
@@ -384,15 +353,12 @@ func (s *instanceService) GetFirstWindowsPassword(ctx context.Context, id string
 	}
 
 	var response WindowsPasswordResponse
-	resp, err := s.client.Do(ctx, req, &response)
+	resp, err := mgc_http.Do(s.client.GetConfig(), ctx, req, &response)
 	if err != nil {
 		return nil, err
 	}
 
-	if r, ok := resp.(*WindowsPasswordResponse); ok {
-		return r, nil
-	}
-	return nil, fmt.Errorf("unexpected response type: %T", resp)
+	return resp, nil
 }
 
 func (s *instanceService) AttachNetworkInterface(ctx context.Context, req NICRequest) error {
@@ -401,12 +367,9 @@ func (s *instanceService) AttachNetworkInterface(ctx context.Context, req NICReq
 		return err
 	}
 
-	resp, err := s.client.Do(ctx, httpReq, nil)
+	_, err = mgc_http.Do[any](s.client.GetConfig(), ctx, httpReq, nil)
 	if err != nil {
 		return err
-	}
-	if resp != nil {
-		return fmt.Errorf("unexpected response data for network interface attach operation")
 	}
 	return nil
 }
@@ -417,12 +380,9 @@ func (s *instanceService) DetachNetworkInterface(ctx context.Context, req NICReq
 		return err
 	}
 
-	resp, err := s.client.Do(ctx, httpReq, nil)
+	_, err = mgc_http.Do[any](s.client.GetConfig(), ctx, httpReq, nil)
 	if err != nil {
 		return err
-	}
-	if resp != nil {
-		return fmt.Errorf("unexpected response data for network interface detach operation")
 	}
 	return nil
 }

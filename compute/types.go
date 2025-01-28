@@ -5,7 +5,10 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+
+	mgc_http "github.com/MagaluCloud/mgc-sdk-go/internal/http"
 )
+
 // MachineType represents a virtual machine instance type configuration
 type MachineType struct {
 	ID                string   `json:"id"`
@@ -62,7 +65,7 @@ func (s *machineTypeService) List(ctx context.Context, opts MachineTypeListOptio
 	var response struct {
 		MachineTypes []MachineType `json:"machine_types"`
 	}
-	resp, err := s.client.Do(ctx, req, &response)
+	resp, err := mgc_http.Do(s.client.GetConfig(), ctx, req, &response)
 	if err != nil {
 		return nil, err
 	}
@@ -71,16 +74,6 @@ func (s *machineTypeService) List(ctx context.Context, opts MachineTypeListOptio
 		return nil, fmt.Errorf("empty response")
 	}
 
-	r, ok := resp.(*struct {
-		MachineTypes []MachineType `json:"machine_types"`
-	})
-	if !ok {
-		return nil, fmt.Errorf("unexpected response type: %T", resp)
-	}
+	return resp.MachineTypes, nil
 
-	if r.MachineTypes == nil {
-		return nil, fmt.Errorf("invalid response format: missing machine_types field")
-	}
-
-	return r.MachineTypes, nil
 }

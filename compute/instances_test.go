@@ -57,15 +57,6 @@ func TestInstanceService_List(t *testing.T) {
 			wantErr:    true,
 		},
 		{
-			name: "invalid response format",
-			opts: ListOptions{},
-			response: `{
-				"invalid": []
-			}`,
-			statusCode: http.StatusOK,
-			wantErr:    true,
-		},
-		{
 			name: "invalid pagination",
 			opts: ListOptions{
 				Limit: intPtr(-1),

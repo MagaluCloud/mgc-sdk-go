@@ -2,13 +2,18 @@ package compute
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
+
+	mgc_http "github.com/MagaluCloud/mgc-sdk-go/internal/http"
 )
 
 type (
+	ImageList struct {
+		Images []Image `json:"images"`
+	}
+
 	// Image represents a virtual machine image
 	Image struct {
 		ID                   string              `json:"id"`
@@ -94,28 +99,12 @@ func (s *imageService) List(ctx context.Context, opts ImageListOptions) ([]Image
 	}
 	req.URL.RawQuery = q.Encode()
 
-	var response struct {
-		Images []Image `json:"images"`
-	}
-	resp, err := s.client.Do(ctx, req, &response)
+	response := &ImageList{}
+
+	resp, err := mgc_http.Do(s.client.GetConfig(), ctx, req, response)
 	if err != nil {
 		return nil, err
 	}
 
-	if resp == nil {
-		return nil, fmt.Errorf("empty response")
-	}
-
-	r, ok := resp.(*struct {
-		Images []Image `json:"images"`
-	})
-	if !ok {
-		return nil, fmt.Errorf("unexpected response type: %T", resp)
-	}
-
-	if r.Images == nil {
-		return nil, fmt.Errorf("invalid response format: missing images field")
-	}
-
-	return r.Images, nil
+	return resp.Images, nil
 }
