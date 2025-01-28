@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"strconv"
-	"time"
 
 	"github.com/MagaluCloud/mgc-sdk-go/client"
 	"github.com/MagaluCloud/mgc-sdk-go/compute"
@@ -14,31 +12,23 @@ import (
 )
 
 func main() {
+	ExampleListMachineTypes()
+	ExampleListImages()
+	ExampleListInstances()
+	id := ExampleCreateInstance()
+	ExampleManageInstance(id)
+	ExampleDeleteInstance(id)
+}
+
+func ExampleListInstances() {
+	// Create a new client
 	apiToken := os.Getenv("MGC_API_TOKEN")
 	if apiToken == "" {
 		log.Fatal("MGC_API_TOKEN environment variable is not set")
 	}
-	sdkClient := initClient(apiToken)
-	computeClient := initComputeClient(sdkClient)
+	c := client.NewMgcClient(apiToken)
+	computeClient := compute.New(c)
 
-	ExampleListMachineTypes(computeClient)
-	ExampleListImages(computeClient)
-	ExampleListInstances(computeClient)
-
-	id := ExampleCreateInstance(computeClient)
-	ExampleManageInstance(computeClient, id)
-	ExampleDeleteInstance(computeClient, id)
-}
-
-func initClient(apiToken string) *client.CoreClient {
-	return client.NewMgcClient(apiToken)
-}
-
-func initComputeClient(sdkClient *client.CoreClient) *compute.VirtualMachineClient {
-	return compute.New(sdkClient)
-}
-
-func ExampleListInstances(computeClient *compute.VirtualMachineClient) {
 	// List instances with pagination and sorting
 	instances, err := computeClient.Instances().List(context.Background(), compute.ListOptions{
 		Limit:  helpers.IntPtr(10),
@@ -61,12 +51,19 @@ func ExampleListInstances(computeClient *compute.VirtualMachineClient) {
 	}
 }
 
-func ExampleCreateInstance(computeClient *compute.VirtualMachineClient) string {
+func ExampleCreateInstance() string {
+	apiToken := os.Getenv("MGC_API_TOKEN")
+	if apiToken == "" {
+		log.Fatal("MGC_API_TOKEN environment variable is not set")
+	}
+	c := client.NewMgcClient(apiToken)
+	computeClient := compute.New(c)
+
 	// Create a new instance
 	createReq := compute.CreateRequest{
-		Name: "my-test-vm-" + strconv.Itoa(int(time.Now().Unix())),
+		Name: "my-test-vm",
 		MachineType: compute.IDOrName{
-			Name: helpers.StrPtr("BV1-1-20"),
+			Name: helpers.StrPtr("BV1-1-40"),
 		},
 		Image: compute.IDOrName{
 			Name: helpers.StrPtr("cloud-ubuntu-24.04 LTS"),
@@ -82,23 +79,18 @@ func ExampleCreateInstance(computeClient *compute.VirtualMachineClient) string {
 		log.Fatal(err)
 	}
 
-	for {
-		instance, err := computeClient.Instances().Get(context.Background(), id, []string{compute.InstanceNetworkExpand})
-		if err != nil {
-			log.Fatal(err)
-		}
-		if instance.State == "running" {
-			break
-		}
-		time.Sleep(5 * time.Second)
-	}
-
 	fmt.Printf("Created instance with ID: %s\n", id)
 
 	return id
 }
 
-func ExampleManageInstance(computeClient *compute.VirtualMachineClient, id string) {
+func ExampleManageInstance(id string) {
+	apiToken := os.Getenv("MGC_API_TOKEN")
+	if apiToken == "" {
+		log.Fatal("MGC_API_TOKEN environment variable is not set")
+	}
+	c := client.NewMgcClient(apiToken)
+	computeClient := compute.New(c)
 	ctx := context.Background()
 
 	// Get instance details
@@ -110,7 +102,7 @@ func ExampleManageInstance(computeClient *compute.VirtualMachineClient, id strin
 	fmt.Printf("Instance: %s (ID: %s)\n", instance.Name, instance.ID)
 
 	// Rename the instance
-	if err := computeClient.Instances().Rename(ctx, instance.ID, "new-name"+strconv.Itoa(int(time.Now().Unix()))); err != nil {
+	if err := computeClient.Instances().Rename(ctx, instance.ID, "new-name"); err != nil {
 		log.Fatal(err)
 	}
 	fmt.Println("Instance renamed successfully")
@@ -118,26 +110,23 @@ func ExampleManageInstance(computeClient *compute.VirtualMachineClient, id strin
 	// Change machine type
 	retypeReq := compute.RetypeRequest{
 		MachineType: compute.IDOrName{
-			Name: helpers.StrPtr("BV1-1-40"),
+			Name: helpers.StrPtr("BV2-2-20"),
 		},
 	}
 	if err := computeClient.Instances().Retype(ctx, instance.ID, retypeReq); err != nil {
 		log.Fatal(err)
 	}
-	for {
-		instance, err := computeClient.Instances().Get(context.Background(), id, []string{compute.InstanceNetworkExpand})
-		if err != nil {
-			log.Fatal(err)
-		}
-		if instance.Status == "completed" {
-			break
-		}
-		time.Sleep(5 * time.Second)
-	}
 	fmt.Println("Instance machine type changed successfully")
 }
 
-func ExampleDeleteInstance(computeClient *compute.VirtualMachineClient, id string) {
+func ExampleDeleteInstance(id string) {
+	apiToken := os.Getenv("MGC_API_TOKEN")
+	if apiToken == "" {
+		log.Fatal("MGC_API_TOKEN environment variable is not set")
+	}
+	c := client.NewMgcClient(apiToken)
+	computeClient := compute.New(c)
+
 	// Delete instance and its public IP
 	if err := computeClient.Instances().Delete(context.Background(), id, true); err != nil {
 		log.Fatal(err)
@@ -146,7 +135,15 @@ func ExampleDeleteInstance(computeClient *compute.VirtualMachineClient, id strin
 	fmt.Println("Instance deleted successfully")
 }
 
-func ExampleListMachineTypes(computeClient *compute.VirtualMachineClient) {
+func ExampleListMachineTypes() {
+	apiToken := os.Getenv("MGC_API_TOKEN")
+	if apiToken == "" {
+		log.Fatal("MGC_API_TOKEN environment variable is not set")
+	}
+
+	c := client.NewMgcClient(apiToken)
+	computeClient := compute.New(c)
+
 	// List machine types
 	machineTypes, err := computeClient.MachineTypes().List(context.Background(), compute.MachineTypeListOptions{})
 	if err != nil {
@@ -164,7 +161,15 @@ func ExampleListMachineTypes(computeClient *compute.VirtualMachineClient) {
 	}
 }
 
-func ExampleListImages(computeClient *compute.VirtualMachineClient) {
+func ExampleListImages() {
+	apiToken := os.Getenv("MGC_API_TOKEN")
+	if apiToken == "" {
+		log.Fatal("MGC_API_TOKEN environment variable is not set")
+	}
+
+	c := client.NewMgcClient(apiToken)
+	computeClient := compute.New(c)
+
 	// List images
 	images, err := computeClient.Images().List(context.Background(), compute.ImageListOptions{})
 	if err != nil {
