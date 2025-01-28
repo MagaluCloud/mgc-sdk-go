@@ -1,0 +1,156 @@
+name: Nightly Release
+
+on:
+  schedule:
+    - cron: '0 1 * * *'
+
+jobs:
+  release:
+    name: Release
+    runs-on: ${{ vars.RUNNER_RUNS_ON }}
+    permissions:
+      contents: write 
+    env:
+      GPG_PASSPHRASE: ${{ secrets.MAGALUBOT_GPG_PASSPHRASE }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.23"
+          cache: true
+          cache-dependency-path: |
+            **/go.mod
+            **/go.sum
+
+      - name: Run tests
+        id: run-tests
+        if: steps.validate-version.outcome == 'success'
+        run: go test -v ./...          
+      
+      - name: Get latest tag
+        id: get-latest-tag
+        run: |
+          # Pega a última tag ou define como v0.0.0 se não existir
+          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+          echo "Latest tag: $LATEST_TAG"
+          echo "LATEST_TAG=$LATEST_TAG" >> $GITHUB_ENV
+
+      - name: Check for new commits
+        id: check-commits
+        run: |
+          # Se não houver tag anterior, continua o workflow
+          if [ "$LATEST_TAG" = "v0.0.0" ]; then
+            echo "No previous tag found. Continuing..."
+            echo "HAS_NEW_COMMITS=true" >> $GITHUB_ENV
+            exit 0
+          fi
+
+          # Conta quantos commits existem entre a última tag e HEAD
+          COMMIT_COUNT=$(git rev-list $LATEST_TAG..HEAD --count)
+          echo "Found $COMMIT_COUNT new commits since $LATEST_TAG"
+          
+          if [ "$COMMIT_COUNT" -eq "0" ]; then
+            echo "No new commits found since last tag. Aborting..."
+            echo "HAS_NEW_COMMITS=false" >> $GITHUB_ENV
+          else
+            echo "Found new commits. Continuing..."
+            echo "HAS_NEW_COMMITS=true" >> $GITHUB_ENV
+          fi
+
+      - name: Generate new tag
+        if: env.HAS_NEW_COMMITS == 'true'
+        run: |
+          # Extrai os componentes da versão
+          CURRENT_VERSION=${LATEST_TAG#v}
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
+          
+          # Incrementa o número do patch
+          NEW_PATCH=$((PATCH + 1))
+          NEW_TAG="v$MAJOR.$MINOR.$NEW_PATCH"
+          
+          echo "Creating new tag: $NEW_TAG"
+          
+
+      - name: Validate version format
+        id: validate-version
+        run: |
+          if [[ ! "$NEW_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Invalid version format. Must be in format v1.0.0"
+            exit 1
+          fi
+
+      - name: Import and Trust GPG Key
+        id: import-gpg-key
+        if: steps.run-tests.outcome == 'success'
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.MAGALUBOT_GPG_PRIVATE_KEY }}
+        run: |
+          # Import the private key with passphrase
+          echo "$GPG_PRIVATE_KEY" | gpg --batch --yes --pinentry-mode loopback --passphrase "$GPG_PASSPHRASE" --import
+
+          # Get Key ID and Fingerprint
+          KEY_ID=$(gpg --list-secret-keys --keyid-format LONG | awk '/sec/ {split($2, a, "/"); print a[2]}')
+          FINGERPRINT=$(gpg --fingerprint --with-colons $KEY_ID | awk -F: '$1 == "fpr" {print $10; exit}')
+
+          # Trust the key ultimately
+          echo "${FINGERPRINT}:6:" | gpg --import-ownertrust
+
+          # Create GPG wrapper script
+          mkdir -p ~/bin
+          echo '#!/bin/sh' > ~/bin/git-gpg-wrapper
+          echo 'echo "$GPG_PASSPHRASE" | gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0 "$@"' >> ~/bin/git-gpg-wrapper
+          chmod +x ~/bin/git-gpg-wrapper
+          echo "$HOME/bin" >> $GITHUB_PATH
+
+          # Set GPG_TTY to avoid warnings
+          echo "GPG_TTY=$(tty)" >> $GITHUB_ENV
+
+      - name: Configure Git
+        id: config-git
+        if: steps.import-gpg-key.outcome == 'success'
+        run: |
+          git config --global user.email "${{vars.MAGALUBOT_EMAIL}}"
+          git config --global user.name "${{vars.MAGALUBOT_USER_NAME}}"
+          git config --global commit.gpgsign true
+          git config --global tag.gpgsign true
+          git config --global gpg.program git-gpg-wrapper
+          # Get and set the signing key
+          SIGNING_KEY=$(gpg --list-secret-keys --keyid-format LONG | awk '/sec/ {split($2, a, "/"); print a[2]}')
+          git config --global user.signingkey $SIGNING_KEY
+
+      - name: Create and push tag
+        id: create-and-push-tag
+        if: steps.config-git.outcome == 'success'
+        run: |
+          git tag -a $NEW_TAG -m "Nightly build $NEW_TAG"
+          git push origin $NEW_TAG
+
+      - name: Publish to Go package registry
+        id: publish-to-go-package-registry
+        if: steps.create-and-push-tag.outcome == 'success'
+        env:
+          GOPROXY: proxy.golang.org
+        run: |
+          go mod tidy
+          GOPROXY=proxy.golang.org go list -m github.com/${GITHUB_REPOSITORY}@$NEW_TAG
+      
+      - name: Create release
+        id: create-release
+        if: steps.publish-to-go-package-registry.outcome == 'success'
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            go.mod
+            go.sum
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag_name: $NEW_TAG
+          release_name: $NEW_TAG
+          body: "Nightly build $NEW_TAG"
+          draft: true
+          prerelease: false
+                    
