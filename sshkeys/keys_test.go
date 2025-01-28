@@ -36,7 +36,7 @@ func TestKeyService(t *testing.T) {
 	defer ts.Close()
 
 	cfg := client.NewMgcClient("test-api-key",
-		client.WithTimeout(20 * time.Second),
+		client.WithTimeout(20*time.Second),
 	)
 	c := New(cfg, WithGlobalBasePath(client.MgcUrl(ts.URL)))
 	service := c.Keys()
