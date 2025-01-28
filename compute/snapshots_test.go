@@ -138,8 +138,8 @@ func TestSnapshotService_Create(t *testing.T) {
 			wantErr:    true,
 		},
 		{
-			name: "invalid request",
-			req:  CreateSnapshotRequest{},
+			name:       "invalid request",
+			req:        CreateSnapshotRequest{},
 			response:   `{"error": "invalid request"}`,
 			statusCode: http.StatusBadRequest,
 			wantErr:    true,
