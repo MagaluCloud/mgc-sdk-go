@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"strconv"
 	"strings"
 	"time"
 
@@ -174,176 +173,151 @@ type volumeService struct {
 	client *BlockStorageClient
 }
 
+// executeSimpleRequest handles HTTP requests that don't require response body parsing
+func (s *volumeService) executeSimpleRequest(
+	ctx context.Context,
+	method string,
+	path string,
+	body interface{},
+) error {
+	req, err := s.client.newRequest(ctx, method, path, body)
+	if err != nil {
+		return err
+	}
+	_, err = mgc_http.Do[any](s.client.GetConfig(), ctx, req, nil)
+	return err
+}
+
+// executeVolumeSimpleRequest handles HTTP requests that require response body parsing
+func executeVolumeSimpleRequest[T any](
+	ctx context.Context,
+	s *volumeService,
+	method string,
+	path string,
+	body interface{},
+) (*T, error) {
+	req, err := s.client.newRequest(ctx, method, path, body)
+	if err != nil {
+		return nil, err
+	}
+
+	var result T
+	_, err = mgc_http.Do(s.client.GetConfig(), ctx, req, &result)
+	if err != nil {
+		return nil, err
+	}
+
+	return &result, nil
+}
+
 // List retrieves all volumes
 func (s *volumeService) List(ctx context.Context, opts ListOptions) ([]Volume, error) {
-	req, err := s.client.newRequest(ctx, http.MethodGet, "/v1/volumes", nil)
+	path := "/v1/volumes"
+	if opts.Limit != nil || opts.Offset != nil || opts.Sort != nil || len(opts.Expand) > 0 {
+		params := make([]string, 0)
+		if opts.Limit != nil {
+			params = append(params, fmt.Sprintf("_limit=%d", *opts.Limit))
+		}
+		if opts.Offset != nil {
+			params = append(params, fmt.Sprintf("_offset=%d", *opts.Offset))
+		}
+		if opts.Sort != nil {
+			params = append(params, fmt.Sprintf("_sort=%s", *opts.Sort))
+		}
+		if len(opts.Expand) > 0 {
+			params = append(params, fmt.Sprintf("expand=%s", strings.Join(opts.Expand, ",")))
+		}
+		path = fmt.Sprintf("%s?%s", path, strings.Join(params, "&"))
+	}
+
+	result, err := executeVolumeSimpleRequest[ListVolumesResponse](ctx, s, http.MethodGet, path, nil)
 	if err != nil {
 		return nil, err
 	}
-
-	q := req.URL.Query()
-	if opts.Limit != nil {
-		q.Add("_limit", strconv.Itoa(*opts.Limit))
-	}
-	if opts.Offset != nil {
-		q.Add("_offset", strconv.Itoa(*opts.Offset))
-	}
-	if opts.Sort != nil {
-		q.Add("_sort", *opts.Sort)
-	}
-	if len(opts.Expand) > 0 {
-		q.Add("expand", strings.Join(opts.Expand, ","))
-	}
-	req.URL.RawQuery = q.Encode()
-
-	resp, err := mgc_http.Do(s.client.GetConfig(), ctx, req, &ListVolumesResponse{})
-	if err != nil {
-		return nil, err
-	}
-
-	if resp == nil {
-		return nil, fmt.Errorf("empty response")
-	}
-
-	return resp.Volumes, nil
+	return result.Volumes, nil
 }
 
 // Create provisions a new volume
 func (s *volumeService) Create(ctx context.Context, req CreateVolumeRequest) (string, error) {
-	var result struct {
-		ID string `json:"id"`
-	}
-
-	httpReq, err := s.client.newRequest(ctx, http.MethodPost, "/v1/volumes", req)
+	result, err := executeVolumeSimpleRequest[struct{ ID string }](
+		ctx,
+		s,
+		http.MethodPost,
+		"/v1/volumes",
+		req,
+	)
 	if err != nil {
 		return "", err
 	}
-
-	resp, err := mgc_http.Do(s.client.GetConfig(), ctx, httpReq, &result)
-	if err != nil {
-		return "", err
-	}
-
-	if resp == nil {
-		return "", fmt.Errorf("empty response")
-	}
-
 	return result.ID, nil
 }
 
 // Get retrieves a specific volume
 func (s *volumeService) Get(ctx context.Context, id string, expand []string) (*Volume, error) {
-	req, err := s.client.newRequest(ctx, http.MethodGet, fmt.Sprintf("/v1/volumes/%s", id), nil)
-	if err != nil {
-		return nil, err
-	}
-
+	path := fmt.Sprintf("/v1/volumes/%s", id)
 	if len(expand) > 0 {
-		q := req.URL.Query()
-		q.Add("expand", strings.Join(expand, ","))
-		req.URL.RawQuery = q.Encode()
+		path = fmt.Sprintf("%s?expand=%s", path, strings.Join(expand, ","))
 	}
 
-	resp, err := mgc_http.Do(s.client.GetConfig(), ctx, req, &Volume{})
-	if err != nil {
-		return nil, err
-	}
-
-	return resp, nil
+	return executeVolumeSimpleRequest[Volume](ctx, s, http.MethodGet, path, nil)
 }
 
 // Delete removes a volume
 func (s *volumeService) Delete(ctx context.Context, id string) error {
-	req, err := s.client.newRequest(ctx, http.MethodDelete, fmt.Sprintf("/v1/volumes/%s", id), nil)
-	if err != nil {
-		return err
-	}
-
-	_, err = mgc_http.Do[any](s.client.GetConfig(), ctx, req, nil)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return s.executeSimpleRequest(
+		ctx,
+		http.MethodDelete,
+		fmt.Sprintf("/v1/volumes/%s", id),
+		nil,
+	)
 }
 
 // Rename changes the volume name
 func (s *volumeService) Rename(ctx context.Context, id string, newName string) error {
-	req, err := s.client.newRequest(ctx, http.MethodPatch,
+	return s.executeSimpleRequest(
+		ctx,
+		http.MethodPatch,
 		fmt.Sprintf("/v1/volumes/%s/rename", id),
-		RenameVolumeRequest{Name: newName})
-	if err != nil {
-		return err
-	}
-
-	_, err = mgc_http.Do[any](s.client.GetConfig(), ctx, req, nil)
-	if err != nil {
-		return err
-	}
-
-	return nil
+		RenameVolumeRequest{Name: newName},
+	)
 }
 
 // Extend increases the volume size
 func (s *volumeService) Extend(ctx context.Context, id string, req ExtendVolumeRequest) error {
-	httpReq, err := s.client.newRequest(ctx, http.MethodPost,
-		fmt.Sprintf("/v1/volumes/%s/extend", id), req)
-	if err != nil {
-		return err
-	}
-
-	_, err = mgc_http.Do[any](s.client.GetConfig(), ctx, httpReq, nil)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return s.executeSimpleRequest(
+		ctx,
+		http.MethodPost,
+		fmt.Sprintf("/v1/volumes/%s/extend", id),
+		req,
+	)
 }
 
 // Retype changes the volume type
 func (s *volumeService) Retype(ctx context.Context, id string, req RetypeVolumeRequest) error {
-	httpReq, err := s.client.newRequest(ctx, http.MethodPost,
-		fmt.Sprintf("/v1/volumes/%s/retype", id), req)
-	if err != nil {
-		return err
-	}
-
-	_, err = mgc_http.Do[any](s.client.GetConfig(), ctx, httpReq, nil)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return s.executeSimpleRequest(
+		ctx,
+		http.MethodPost,
+		fmt.Sprintf("/v1/volumes/%s/retype", id),
+		req,
+	)
 }
 
 // Attach connects a volume to an instance
 func (s *volumeService) Attach(ctx context.Context, volumeID string, instanceID string) error {
-	req, err := s.client.newRequest(ctx, http.MethodPost,
-		fmt.Sprintf("/v1/volumes/%s/attach/%s", volumeID, instanceID), nil)
-	if err != nil {
-		return err
-	}
-
-	_, err = mgc_http.Do[any](s.client.GetConfig(), ctx, req, nil)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return s.executeSimpleRequest(
+		ctx,
+		http.MethodPost,
+		fmt.Sprintf("/v1/volumes/%s/attach/%s", volumeID, instanceID),
+		nil,
+	)
 }
 
 // Detach disconnects a volume from an instance
 func (s *volumeService) Detach(ctx context.Context, volumeID string) error {
-	req, err := s.client.newRequest(ctx, http.MethodPost,
-		fmt.Sprintf("/v1/volumes/%s/detach", volumeID), nil)
-	if err != nil {
-		return err
-	}
-
-	_, err = mgc_http.Do[any](s.client.GetConfig(), ctx, req, nil)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return s.executeSimpleRequest(
+		ctx,
+		http.MethodPost,
+		fmt.Sprintf("/v1/volumes/%s/detach", volumeID),
+		nil,
+	)
 }
