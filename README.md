@@ -39,6 +39,17 @@ go get github.com/MagaluCloud/mgc-sdk-go
 - Audit
   - Events
   - Events Types
+- Database as a Service (DBaaS)
+  - Instances
+  - Instance Types
+  - Snapshots
+  - Replicas
+  - Engines
+- Container Registry
+  - Repositories
+  - Registries
+  - Images
+  - Credentials
 
 ## Authentication
 
