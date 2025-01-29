@@ -7,10 +7,13 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strconv"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/MagaluCloud/mgc-sdk-go/client"
 	"github.com/MagaluCloud/mgc-sdk-go/helpers"
+	"github.com/MagaluCloud/mgc-sdk-go/internal/utils"
 )
 
 func TestVPCService_Create(t *testing.T) {
@@ -605,4 +608,214 @@ func testVPCClient(baseURL string) VPCService {
 		client.WithBaseURL(client.MgcUrl(baseURL)),
 		client.WithHTTPClient(httpClient))
 	return New(core).VPCs()
+}
+
+func TestVPCService_List(t *testing.T) {
+	createdAt, _ := time.Parse(time.RFC3339, "2024-01-01T00:00:00Z")
+
+	tests := []struct {
+		name       string
+		opts       ListOptions
+		response   string
+		statusCode int
+		wantCount  int
+		wantErr    bool
+	}{
+		{
+			name: "successful list with expansion",
+			opts: ListOptions{
+				Limit:  helpers.IntPtr(10),
+				Offset: helpers.IntPtr(20),
+				Sort:   helpers.StrPtr("name"),
+				Expand: []string{SecurityGroupsExpand, SubnetsExpand},
+			},
+			response: `{
+				"vpcs": [
+					{
+						"id": "vpc1",
+						"name": "prod-vpc",
+						"security_groups": ["sg1", "sg2"],
+						"subnets": ["subnet1"],
+						"created_at": "2024-01-01T00:00:00"
+					}
+				]
+			}`,
+			statusCode: http.StatusOK,
+			wantCount:  1,
+			wantErr:    false,
+		},
+		{
+			name: "empty list",
+			response: `{
+				"vpcs": []
+			}`,
+			statusCode: http.StatusOK,
+			wantCount:  0,
+			wantErr:    false,
+		},
+		{
+			name: "invalid parameters",
+			opts: ListOptions{
+				Limit: helpers.IntPtr(1001),
+			},
+			response:   `{"error": "invalid limit"}`,
+			statusCode: http.StatusBadRequest,
+			wantErr:    true,
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				assertEqual(t, "/network/v0/vpcs", r.URL.Path)
+				assertEqual(t, http.MethodGet, r.Method)
+
+				query := r.URL.Query()
+				if tt.opts.Limit != nil {
+					assertEqual(t, strconv.Itoa(*tt.opts.Limit), query.Get("_limit"))
+				}
+				if tt.opts.Offset != nil {
+					assertEqual(t, strconv.Itoa(*tt.opts.Offset), query.Get("_offset"))
+				}
+				if tt.opts.Sort != nil {
+					assertEqual(t, *tt.opts.Sort, query.Get("_sort"))
+				}
+				if len(tt.opts.Expand) > 0 {
+					assertEqual(t, strings.Join(tt.opts.Expand, ","), query.Get("expand"))
+				}
+
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(tt.statusCode)
+				w.Write([]byte(tt.response))
+			}))
+			defer server.Close()
+
+			client := testVPCClient(server.URL)
+			vpcs, err := client.List(context.Background(), tt.opts)
+
+			if tt.wantErr {
+				assertError(t, err)
+				return
+			}
+
+			assertNoError(t, err)
+			assertEqual(t, tt.wantCount, len(vpcs))
+
+			if tt.wantCount > 0 {
+				assertEqual(t, "vpc1", vpcs[0].ID)
+				assertEqual(t, "prod-vpc", vpcs[0].Name)
+				assertEqual(t, createdAt.Format(utils.LocalDateTimeWithoutZoneLayout), vpcs[0].CreatedAt.String())
+
+				if len(tt.opts.Expand) > 0 {
+					assertEqual(t, 2, len(vpcs[0].SecurityGroups))
+					assertEqual(t, 1, len(vpcs[0].Subnets))
+				}
+			}
+		})
+	}
+}
+
+func TestVPCService_Get(t *testing.T) {
+	createdAt, _ := time.Parse(time.RFC3339, "2024-01-01T00:00:00Z")
+
+	tests := []struct {
+		name       string
+		id         string
+		expand     []string
+		response   string
+		statusCode int
+		want       *VPC
+		wantErr    bool
+	}{
+		{
+			name:   "successful get with expansion",
+			id:     "vpc1",
+			expand: []string{SecurityGroupsExpand, SubnetsExpand},
+			response: `{
+				"id": "vpc1",
+				"name": "prod-vpc",
+				"security_groups": ["sg1", "sg2"],
+				"subnets": ["subnet1"],
+				"created_at": "2024-01-01T00:00:00",
+				"is_default": true
+			}`,
+			statusCode: http.StatusOK,
+			want: &VPC{
+				ID:             "vpc1",
+				Name:           "prod-vpc",
+				SecurityGroups: []string{"sg1", "sg2"},
+				Subnets:        []string{"subnet1"},
+				CreatedAt:      utils.LocalDateTimeWithoutZone(createdAt),
+				IsDefault:      true,
+			},
+			wantErr: false,
+		},
+		{
+			name: "get without expansion",
+			id:   "vpc2",
+			response: `{
+				"id": "vpc2",
+				"name": "test-vpc",
+				"status": "active"
+			}`,
+			statusCode: http.StatusOK,
+			want: &VPC{
+				ID:     "vpc2",
+				Name:   "test-vpc",
+				Status: "active",
+			},
+			wantErr: false,
+		},
+		{
+			name:       "non-existent vpc",
+			id:         "invalid",
+			response:   `{"error": "vpc not found"}`,
+			statusCode: http.StatusNotFound,
+			wantErr:    true,
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				assertEqual(t, fmt.Sprintf("/network/v0/vpcs/%s", tt.id), r.URL.Path)
+				assertEqual(t, http.MethodGet, r.Method)
+
+				if len(tt.expand) > 0 {
+					assertEqual(t, strings.Join(tt.expand, ","), r.URL.Query().Get("expand"))
+				}
+
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(tt.statusCode)
+				w.Write([]byte(tt.response))
+			}))
+			defer server.Close()
+
+			client := testVPCClient(server.URL)
+			vpc, err := client.Get(context.Background(), tt.id, tt.expand)
+
+			if tt.wantErr {
+				assertError(t, err)
+				return
+			}
+
+			assertNoError(t, err)
+			assertEqual(t, tt.want.ID, vpc.ID)
+			assertEqual(t, tt.want.Name, vpc.Name)
+			assertEqual(t, tt.want.Status, vpc.Status)
+
+			if len(tt.expand) > 0 {
+				assertEqual(t, len(tt.want.SecurityGroups), len(vpc.SecurityGroups))
+				assertEqual(t, len(tt.want.Subnets), len(vpc.Subnets))
+			}
+
+			if tt.want.IsDefault {
+				assertEqual(t, tt.want.IsDefault, vpc.IsDefault)
+			}
+		})
+	}
 }
