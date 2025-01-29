@@ -50,6 +50,13 @@ go get github.com/MagaluCloud/mgc-sdk-go
   - Registries
   - Images
   - Credentials
+- Network
+  - VPCs
+  - Interfaces
+  - Subnets
+  - Security Groups
+  - Public IPs
+  - Subnetpools
 
 ## Authentication
 
@@ -71,7 +78,7 @@ When using global services, any region configuration set on the core client will
 
 ```go
 // Even if core client has a region set
-core := client.NewMgcClient(apiToken, client.WithRegion(client.BrMgl1))
+core := client.NewMgcClient(apiToken, client.WithBaseURL(client.BrMgl1))
 
 // Global services will ignore the region and use global endpoint
 sshClient := sshkeys.New(core) // Uses api.magalu.cloud
