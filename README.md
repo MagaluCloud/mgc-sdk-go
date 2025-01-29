@@ -78,7 +78,7 @@ When using global services, any region configuration set on the core client will
 
 ```go
 // Even if core client has a region set
-core := client.NewMgcClient(apiToken, client.WithBaseURL(client.BrMgl1))
+core := client.NewMgcClient(apiToken, client.WithBaseURL(client.BrSe1))
 
 // Global services will ignore the region and use global endpoint
 sshClient := sshkeys.New(core) // Uses api.magalu.cloud
@@ -137,6 +137,7 @@ c := client.NewMgcClient(
         30 * time.Second, // maxInterval
         1.5, // backoffFactor
     ),
+    client.WithBaseURL(client.BrSe1),
 )
 ```
 
@@ -146,7 +147,7 @@ Available options:
 - `WithLogger`: Configures a custom logger
 - `WithRetryConfig`: Customizes the retry behavior
 - `WithHTTPClient`: Uses a custom HTTP client
-- `WithBaseURL`: Changes the API endpoint (useful for testing)
+- `WithBaseURL`: Changes the API endpoint (useful for testing or setting a specific region to interact)
 
 ### Listing Instances
 
