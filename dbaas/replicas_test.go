@@ -104,7 +104,7 @@ func TestReplicaService_List(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				assertEqual(t, "/database/v1/replicas", r.URL.Path)
-				
+
 				query := r.URL.Query()
 				if tt.opts.Limit != nil {
 					assertEqual(t, strconv.Itoa(*tt.opts.Limit), query.Get("_limit"))
@@ -225,7 +225,7 @@ func TestReplicaService_Create(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				assertEqual(t, "/database/v1/replicas", r.URL.Path)
-				
+
 				var req ReplicaCreateRequest
 				json.NewDecoder(r.Body).Decode(&req)
 				assertEqual(t, tt.request.SourceID, req.SourceID)
@@ -336,7 +336,7 @@ func TestReplicaService_Resize(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				assertEqual(t, fmt.Sprintf("/database/v1/replicas/%s/resize", tt.id), r.URL.Path)
-				
+
 				var req ReplicaResizeRequest
 				json.NewDecoder(r.Body).Decode(&req)
 				assertEqual(t, tt.request.InstanceTypeID, req.InstanceTypeID)

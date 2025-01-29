@@ -109,11 +109,11 @@ func ExampleCreateInstance() {
 
 	// Create a new database instance
 	instance, err := dbaasClient.Instances().Create(context.Background(), dbaas.InstanceCreateRequest{
-		Name:          "example-db-instance",
-		EngineID:      "your-engine-id",     // Replace with actual engine ID
+		Name:           "example-db-instance",
+		EngineID:       "your-engine-id",        // Replace with actual engine ID
 		InstanceTypeID: "your-instance-type-id", // Replace with actual instance type ID
-		User:          "dbadmin",
-		Password:      "YourStrongPassword123!",
+		User:           "dbadmin",
+		Password:       "YourStrongPassword123!",
 		Volume: dbaas.InstanceVolumeRequest{
 			Size: 20, // Size in GB
 			Type: dbaas.VolumeTypeCloudNVME,

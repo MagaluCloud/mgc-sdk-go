@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
-	
+
 	mgc_http "github.com/MagaluCloud/mgc-sdk-go/internal/http"
 )
 
@@ -52,14 +52,14 @@ type (
 
 	ReplicaCreateRequest struct {
 		SourceID       string `json:"source_id"`
-		Name          string `json:"name"`
-		FlavorID      string `json:"flavor_id,omitempty"`
+		Name           string `json:"name"`
+		FlavorID       string `json:"flavor_id,omitempty"`
 		InstanceTypeID string `json:"instance_type_id,omitempty"`
 	}
 
 	ReplicaResizeRequest struct {
 		InstanceTypeID string `json:"instance_type_id,omitempty"`
-		FlavorID      string `json:"flavor_id,omitempty"`
+		FlavorID       string `json:"flavor_id,omitempty"`
 	}
 
 	ReplicaResponse struct {

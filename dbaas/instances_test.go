@@ -63,8 +63,8 @@ func TestInstanceService_List(t *testing.T) {
 			wantErr:    false,
 		},
 		{
-			name: "server error",
-			response: `{"error": "internal server error"}`,
+			name:       "server error",
+			response:   `{"error": "internal server error"}`,
 			statusCode: http.StatusInternalServerError,
 			wantErr:    true,
 		},
@@ -158,7 +158,7 @@ func TestInstanceService_Get(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				assertEqual(t, fmt.Sprintf("/database/v1/instances/%s", tt.id), r.URL.Path)
 				query := r.URL.Query()
-				
+
 				if len(tt.opts.ExpandedFields) > 0 {
 					assertEqual(t, strings.Join(tt.opts.ExpandedFields, ","), query.Get("_expand"))
 				}
@@ -223,7 +223,7 @@ func TestInstanceService_Create(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				assertEqual(t, "/database/v1/instances", r.URL.Path)
-				
+
 				var req InstanceCreateRequest
 				json.NewDecoder(r.Body).Decode(&req)
 				assertEqual(t, tt.request.Name, req.Name)
@@ -328,7 +328,7 @@ func TestInstanceService_Update(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				assertEqual(t, fmt.Sprintf("/database/v1/instances/%s", tt.id), r.URL.Path)
 				assertEqual(t, http.MethodPatch, r.Method)
-				
+
 				var req DatabaseInstanceUpdateRequest
 				json.NewDecoder(r.Body).Decode(&req)
 				assertEqual(t, *tt.request.BackupRetentionDays, *req.BackupRetentionDays)
@@ -390,7 +390,7 @@ func TestInstanceService_Resize(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				assertEqual(t, fmt.Sprintf("/database/v1/instances/%s/resize", tt.id), r.URL.Path)
 				assertEqual(t, http.MethodPost, r.Method)
-				
+
 				var req InstanceResizeRequest
 				json.NewDecoder(r.Body).Decode(&req)
 				assertEqual(t, tt.request.InstanceTypeID, req.InstanceTypeID)
@@ -513,7 +513,7 @@ func TestInstanceService_Snapshots(t *testing.T) {
 	t.Run("CreateSnapshot", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			assertEqual(t, "/database/v1/instances/inst1/snapshots", r.URL.Path)
-			
+
 			var req SnapshotCreateRequest
 			json.NewDecoder(r.Body).Decode(&req)
 			assertEqual(t, "daily-backup", req.Name)
@@ -595,36 +595,36 @@ func TestInstanceService_Snapshots(t *testing.T) {
 	})
 
 	t.Run("RestoreSnapshot", func(t *testing.T) {
-        server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-            assertEqual(t, "/database/v1/snapshots/snap1/restores", r.URL.Path)
-            assertEqual(t, http.MethodPost, r.Method)
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			assertEqual(t, "/database/v1/snapshots/snap1/restores", r.URL.Path)
+			assertEqual(t, http.MethodPost, r.Method)
 
-            var req RestoreSnapshotRequest
-            json.NewDecoder(r.Body).Decode(&req)
-            assertEqual(t, "restored-instance", req.Name)
-            assertEqual(t, "type-large", req.InstanceTypeID)
-            assertEqual(t, 100, req.Volume.Size)
-            assertEqual(t, VolumeTypeCloudNVME, req.Volume.Type)
+			var req RestoreSnapshotRequest
+			json.NewDecoder(r.Body).Decode(&req)
+			assertEqual(t, "restored-instance", req.Name)
+			assertEqual(t, "type-large", req.InstanceTypeID)
+			assertEqual(t, 100, req.Volume.Size)
+			assertEqual(t, VolumeTypeCloudNVME, req.Volume.Type)
 
-            w.Header().Set("Content-Type", "application/json")
-            w.WriteHeader(http.StatusOK)
-            w.Write([]byte(`{"id": "new-inst"}`))
-        }))
-        defer server.Close()
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte(`{"id": "new-inst"}`))
+		}))
+		defer server.Close()
 
-        client := testInstanceClient(server.URL)
-        result, err := client.RestoreSnapshot(context.Background(), "snap1", RestoreSnapshotRequest{
-            Name:           "restored-instance",
-            InstanceTypeID: "type-large",
-            Volume: &InstanceVolumeRequest{
-                Size: 100,
-                Type: VolumeTypeCloudNVME,
-            },
-        })
+		client := testInstanceClient(server.URL)
+		result, err := client.RestoreSnapshot(context.Background(), "snap1", RestoreSnapshotRequest{
+			Name:           "restored-instance",
+			InstanceTypeID: "type-large",
+			Volume: &InstanceVolumeRequest{
+				Size: 100,
+				Type: VolumeTypeCloudNVME,
+			},
+		})
 
-        assertNoError(t, err)
-        assertEqual(t, "new-inst", result.ID)
-    })
+		assertNoError(t, err)
+		assertEqual(t, "new-inst", result.ID)
+	})
 }
 
 func snapshotTypePtr(SnapshotTypeAutomated SnapshotType) *SnapshotType {

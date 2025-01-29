@@ -7,7 +7,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
-	
+
 	mgc_http "github.com/MagaluCloud/mgc-sdk-go/internal/http"
 )
 
@@ -161,17 +161,17 @@ type (
 	}
 
 	SnapshotDetailResponse struct {
-		ID            string                       `json:"id"`
+		ID            string                         `json:"id"`
 		Instance      SnapshotInstanceDetailResponse `json:"instance"`
-		Name          string                       `json:"name"`
-		Description   string                       `json:"description"`
-		Type          SnapshotType                 `json:"type"`
-		Status        SnapshotStatus               `json:"status"`
-		AllocatedSize int                          `json:"allocated_size"`
-		CreatedAt     string                       `json:"created_at"`
-		StartedAt     *string                      `json:"started_at,omitempty"`
-		FinishedAt    *string                      `json:"finished_at,omitempty"`
-		UpdatedAt     *string                      `json:"updated_at,omitempty"`
+		Name          string                         `json:"name"`
+		Description   string                         `json:"description"`
+		Type          SnapshotType                   `json:"type"`
+		Status        SnapshotStatus                 `json:"status"`
+		AllocatedSize int                            `json:"allocated_size"`
+		CreatedAt     string                         `json:"created_at"`
+		StartedAt     *string                        `json:"started_at,omitempty"`
+		FinishedAt    *string                        `json:"finished_at,omitempty"`
+		UpdatedAt     *string                        `json:"updated_at,omitempty"`
 	}
 
 	SnapshotInstanceDetailResponse struct {
@@ -194,18 +194,18 @@ type (
 	}
 
 	RestoreSnapshotRequest struct {
-		Name               string                 `json:"name"`
-		InstanceTypeID     string                 `json:"instance_type_id"`
-		Volume             *InstanceVolumeRequest `json:"volume,omitempty"`
-		BackupRetentionDays int                   `json:"backup_retention_days,omitempty"`
-		BackupStartAt      string                 `json:"backup_start_at,omitempty"`
+		Name                string                 `json:"name"`
+		InstanceTypeID      string                 `json:"instance_type_id"`
+		Volume              *InstanceVolumeRequest `json:"volume,omitempty"`
+		BackupRetentionDays int                    `json:"backup_retention_days,omitempty"`
+		BackupStartAt       string                 `json:"backup_start_at,omitempty"`
 	}
 
 	ListSnapshotOptions struct {
-		Offset  *int
-		Limit   *int
-		Type    *SnapshotType
-		Status  *SnapshotStatus
+		Offset *int
+		Limit  *int
+		Type   *SnapshotType
+		Status *SnapshotStatus
 	}
 )
 
@@ -491,7 +491,7 @@ func (s *instanceService) Stop(ctx context.Context, id string) (*InstanceDetail,
 // ListSnapshots returns a list of snapshots for a specific instance.
 func (s *instanceService) ListSnapshots(ctx context.Context, instanceID string, opts ListSnapshotOptions) ([]SnapshotDetailResponse, error) {
 	query := make(url.Values)
-	
+
 	if opts.Offset != nil {
 		query.Set("_offset", strconv.Itoa(*opts.Offset))
 	}

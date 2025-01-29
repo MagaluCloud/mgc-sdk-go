@@ -12,22 +12,22 @@ import (
 
 type (
 	ListInstanceTypesResponse struct {
-		Meta    MetaResponse    `json:"meta"`
-		Results []InstanceType  `json:"results"`
+		Meta    MetaResponse   `json:"meta"`
+		Results []InstanceType `json:"results"`
 	}
 
 	InstanceType struct {
-		ID               string             `json:"id"`
-		Name            string             `json:"name"`
-		Label           string             `json:"label"`
-		VCPU            string             `json:"vcpu"`
-		RAM             string             `json:"ram"`
-		FamilyDescription string           `json:"family_description"`
-		FamilySlug      string             `json:"family_slug"`
-		Size            string             `json:"size"`
-		SKUSource       string             `json:"sku_source"`
-		SKUReplica      string             `json:"sku_replica"`
-		Status          InstanceTypeStatus `json:"status,omitempty"`
+		ID                string             `json:"id"`
+		Name              string             `json:"name"`
+		Label             string             `json:"label"`
+		VCPU              string             `json:"vcpu"`
+		RAM               string             `json:"ram"`
+		FamilyDescription string             `json:"family_description"`
+		FamilySlug        string             `json:"family_slug"`
+		Size              string             `json:"size"`
+		SKUSource         string             `json:"sku_source"`
+		SKUReplica        string             `json:"sku_replica"`
+		Status            InstanceTypeStatus `json:"status,omitempty"`
 	}
 
 	InstanceTypeStatus string

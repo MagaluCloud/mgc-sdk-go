@@ -9,18 +9,18 @@ import (
 
 func TestNew(t *testing.T) {
 	tests := []struct {
-		name     string
-		core     *client.CoreClient
-		wantNil  bool
+		name    string
+		core    *client.CoreClient
+		wantNil bool
 	}{
 		{
-			name: "valid core client",
-			core: client.NewMgcClient("test-token"),
+			name:    "valid core client",
+			core:    client.NewMgcClient("test-token"),
 			wantNil: false,
 		},
 		{
-			name: "nil core client",
-			core: nil,
+			name:    "nil core client",
+			core:    nil,
 			wantNil: true,
 		},
 	}
@@ -39,7 +39,7 @@ func TestDBaaSClient_Services(t *testing.T) {
 	core := client.NewMgcClient("test-token",
 		client.WithHTTPClient(&http.Client{}),
 		client.WithBaseURL("https://api.test.com"))
-	
+
 	dbaas := New(core)
 
 	t.Run("Engines service", func(t *testing.T) {
