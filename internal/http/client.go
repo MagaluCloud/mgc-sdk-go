@@ -130,9 +130,23 @@ func Do[T any](c *client.Config, ctx context.Context, req *http.Request, v *T) (
 		}
 
 		if v != nil && resp.StatusCode != http.StatusNoContent {
-			if err := json.NewDecoder(resp.Body).Decode(v); err != nil {
+			var raw json.RawMessage
+			if err := json.NewDecoder(resp.Body).Decode(&raw); err != nil {
 				return nil, fmt.Errorf("error decoding response: %w", err)
 			}
+
+			var checkNull interface{}
+			if err := json.Unmarshal(raw, &checkNull); err != nil {
+				return nil, fmt.Errorf("error validating null response: %w", err)
+			}
+			if checkNull == nil {
+				return nil, fmt.Errorf("response body is null")
+			}
+
+			if err := json.Unmarshal(raw, v); err != nil {
+				return nil, fmt.Errorf("error decoding response: %w", err)
+			}
+
 			return v, nil
 		}
 
