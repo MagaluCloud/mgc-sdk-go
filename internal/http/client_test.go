@@ -126,7 +126,8 @@ func TestCoreClient_Do(t *testing.T) {
 				}))
 			},
 			setupContext: func() context.Context {
-				ctx, _ := context.WithTimeout(context.Background(), 1*time.Second)
+				ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+				defer cancel()
 				return ctx
 			},
 			wantErr: true,
@@ -788,10 +789,10 @@ func TestExecuteSimpleRequestWithRespBody(t *testing.T) {
 			},
 			Logger: testLogger, // Initialize Logger
 			RetryConfig: client.RetryConfig{
-				3,
-				100 * time.Millisecond,
-				500 * time.Millisecond,
-				1.5,
+				MaxAttempts:     3,
+				InitialInterval: 100 * time.Millisecond,
+				MaxInterval:     500 * time.Millisecond,
+				BackoffFactor:   1.5,
 			},
 		}
 
@@ -837,10 +838,10 @@ func TestExecuteSimpleRequest(t *testing.T) {
 			},
 			Logger: testLogger, // Initialize Logger
 			RetryConfig: client.RetryConfig{
-				3,
-				100 * time.Millisecond,
-				500 * time.Millisecond,
-				1.5,
+				MaxAttempts:     3,
+				InitialInterval: 100 * time.Millisecond,
+				MaxInterval:     500 * time.Millisecond,
+				BackoffFactor:   1.5,
 			},
 		}
 
@@ -924,10 +925,10 @@ func TestExecuteSimpleRequest(t *testing.T) {
 			},
 			Logger: testLogger, // Initialize Logger
 			RetryConfig: client.RetryConfig{
-				3,
-				100 * time.Millisecond,
-				500 * time.Millisecond,
-				1.5,
+				MaxAttempts:     3,
+				InitialInterval: 100 * time.Millisecond,
+				MaxInterval:     500 * time.Millisecond,
+				BackoffFactor:   1.5,
 			},
 		}
 
@@ -1058,10 +1059,10 @@ func TestDo_JSONHandling(t *testing.T) {
 				HTTPClient: &http.Client{},
 				Logger:     slog.Default(),
 				RetryConfig: client.RetryConfig{
-					3,
-					100 * time.Millisecond,
-					500 * time.Millisecond,
-					1.5,
+					MaxAttempts:     3,
+					InitialInterval: 100 * time.Millisecond,
+					MaxInterval:     500 * time.Millisecond,
+					BackoffFactor:   1.5,
 				},
 			}
 
@@ -1107,10 +1108,10 @@ func TestDo_NoResponseBody(t *testing.T) {
 		HTTPClient: &http.Client{},
 		Logger:     slog.Default(),
 		RetryConfig: client.RetryConfig{
-			3,
-			100 * time.Millisecond,
-			500 * time.Millisecond,
-			1.5,
+			MaxAttempts:     3,
+			InitialInterval: 100 * time.Millisecond,
+			MaxInterval:     500 * time.Millisecond,
+			BackoffFactor:   1.5,
 		},
 	}
 
@@ -1145,10 +1146,10 @@ func TestDo_InvalidContentType(t *testing.T) {
 		HTTPClient: &http.Client{},
 		Logger:     slog.Default(),
 		RetryConfig: client.RetryConfig{
-			3,
-			100 * time.Millisecond,
-			500 * time.Millisecond,
-			1.5,
+			MaxAttempts:     3,
+			InitialInterval: 100 * time.Millisecond,
+			MaxInterval:     500 * time.Millisecond,
+			BackoffFactor:   1.5,
 		},
 	}
 
