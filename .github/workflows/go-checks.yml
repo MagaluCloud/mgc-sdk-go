@@ -53,7 +53,7 @@ jobs:
 
       - name: Post PR comment with errors
         if: always()  
-        uses: actions/github-script@v60a0d83039c74a4aee543508d2ffcb1c3799cdea #v7.0.1
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea #v7.0.1
         env:
           FMT_ERRORS: ${{ steps.fmt.outputs.unformatted_files }}
           VET_ERRORS: ${{ steps.vet.outputs.vet_errors }}
