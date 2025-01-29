@@ -46,7 +46,7 @@ func getCredentials(c *client.CoreClient) {
 		log.Fatal(err)
 	}
 	fmt.Println("Credentials: ")
-	fmt.Println("User: ", credentials.Username, "Password: ", credentials.Password, "Email: ", credentials.Email)
+	fmt.Println("User: ", credentials.Username, "Password: ", "[REDACTED]", "Email: ", credentials.Email)
 }
 
 func resetPassword(c *client.CoreClient) {
@@ -56,7 +56,7 @@ func resetPassword(c *client.CoreClient) {
 		log.Fatal(err)
 	}
 	fmt.Println("Password reset successfully, new credentials:")
-	fmt.Println("User: ", credentials.Username, "Password: ", credentials.Password, "Email: ", credentials.Email)
+	fmt.Println("User: ", credentials.Username, "Password: ", "[REDACTED]", "Email: ", credentials.Email)
 }
 
 func listRegistries(c *client.CoreClient) {

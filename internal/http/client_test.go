@@ -950,3 +950,221 @@ func TestExecuteSimpleRequest(t *testing.T) {
 		}
 	})
 }
+
+func TestDo_JSONHandling(t *testing.T) {
+	tests := []struct {
+		name       string
+		response   string
+		statusCode int
+		want       *mockResponse
+		wantErr    bool
+		errMsg     string
+	}{
+		{
+			name:       "valid json response",
+			response:   `{"message": "success"}`,
+			statusCode: http.StatusOK,
+			want: &mockResponse{
+				Message: "success",
+			},
+			wantErr: false,
+		},
+		{
+			name:       "null response",
+			response:   "null",
+			statusCode: http.StatusOK,
+			want:       nil,
+			wantErr:    true,
+			errMsg:     "response body is null",
+		},
+		{
+			name:       "empty response",
+			response:   "",
+			statusCode: http.StatusOK,
+			want:       nil,
+			wantErr:    true,
+			errMsg:     "error decoding response",
+		},
+		{
+			name:       "malformed json",
+			response:   `{"message": "broken"`,
+			statusCode: http.StatusOK,
+			want:       nil,
+			wantErr:    true,
+			errMsg:     "error decoding response",
+		},
+		{
+			name:       "wrong type in json",
+			response:   `{"message": 123}`,
+			statusCode: http.StatusOK,
+			want:       nil,
+			wantErr:    true,
+			errMsg:     "error decoding response",
+		},
+		{
+			name:       "empty object",
+			response:   "{}",
+			statusCode: http.StatusOK,
+			want:       &mockResponse{},
+			wantErr:    false,
+		},
+		{
+			name:       "array instead of object",
+			response:   "[]",
+			statusCode: http.StatusOK,
+			want:       nil,
+			wantErr:    true,
+			errMsg:     "error decoding response",
+		},
+		{
+			name:       "invalid json for decoder",
+			response:   string([]byte{0x00, 0x01}),
+			statusCode: http.StatusOK,
+			want:       nil,
+			wantErr:    true,
+			errMsg:     "error decoding response",
+		},
+		{
+			name:       "invalid utf8 sequence",
+			response:   string([]byte{0xFF, 0xFE, 0xFD}),
+			statusCode: http.StatusOK,
+			want:       nil,
+			wantErr:    true,
+			errMsg:     "error decoding response",
+		},
+		{
+			name:       "valid json but invalid type",
+			response:   `{"message": {"nested": "invalid"}}`,
+			statusCode: http.StatusOK,
+			want:       nil,
+			wantErr:    true,
+			errMsg:     "error decoding response",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(tt.statusCode)
+				w.Write([]byte(tt.response))
+			}))
+			defer server.Close()
+
+			cfg := &client.Config{
+				BaseURL:    client.MgcUrl(server.URL),
+				APIKey:     "test-key",
+				UserAgent:  "test-agent",
+				HTTPClient: &http.Client{},
+				Logger:     slog.Default(),
+				RetryConfig: client.RetryConfig{
+					3,
+					100 * time.Millisecond,
+					500 * time.Millisecond,
+					1.5,
+				},
+			}
+
+			req, err := http.NewRequest(http.MethodGet, server.URL, nil)
+			if err != nil {
+				t.Fatalf("Failed to create request: %v", err)
+			}
+
+			var response mockResponse
+			got, err := Do(cfg, context.Background(), req, &response)
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Do() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			if tt.wantErr {
+				if err == nil || !strings.Contains(err.Error(), tt.errMsg) {
+					t.Errorf("Do() error message = %v, want containing %v", err, tt.errMsg)
+				}
+				return
+			}
+
+			if !tt.wantErr && got != nil {
+				if response.Message != tt.want.Message {
+					t.Errorf("Do() got = %v, want %v", response.Message, tt.want.Message)
+				}
+			}
+		})
+	}
+}
+
+func TestDo_NoResponseBody(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	defer server.Close()
+
+	cfg := &client.Config{
+		BaseURL:    client.MgcUrl(server.URL),
+		APIKey:     "test-key",
+		UserAgent:  "test-agent",
+		HTTPClient: &http.Client{},
+		Logger:     slog.Default(),
+		RetryConfig: client.RetryConfig{
+			3,
+			100 * time.Millisecond,
+			500 * time.Millisecond,
+			1.5,
+		},
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, server.URL, nil)
+	if err != nil {
+		t.Fatalf("Failed to create request: %v", err)
+	}
+
+	got, err := Do[any](cfg, context.Background(), req, nil)
+	if err != nil {
+		t.Errorf("Do() error = %v", err)
+		return
+	}
+
+	if got != nil {
+		t.Errorf("Do() got = %v, want nil", got)
+	}
+}
+
+func TestDo_InvalidContentType(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/plain")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"message": "success"}`))
+	}))
+	defer server.Close()
+
+	cfg := &client.Config{
+		BaseURL:    client.MgcUrl(server.URL),
+		APIKey:     "test-key",
+		UserAgent:  "test-agent",
+		HTTPClient: &http.Client{},
+		Logger:     slog.Default(),
+		RetryConfig: client.RetryConfig{
+			3,
+			100 * time.Millisecond,
+			500 * time.Millisecond,
+			1.5,
+		},
+	}
+
+	req, err := http.NewRequest(http.MethodGet, server.URL, nil)
+	if err != nil {
+		t.Fatalf("Failed to create request: %v", err)
+	}
+
+	var response mockResponse
+	got, err := Do(cfg, context.Background(), req, &response)
+	if err != nil {
+		t.Errorf("Do() error = %v", err)
+		return
+	}
+
+	if got == nil {
+		t.Error("Do() got nil, want non-nil")
+	}
+}
