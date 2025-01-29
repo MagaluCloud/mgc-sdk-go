@@ -45,6 +45,11 @@ go get github.com/MagaluCloud/mgc-sdk-go
   - Snapshots
   - Replicas
   - Engines
+- Container Registry
+  - Repositories
+  - Registries
+  - Images
+  - Credentials
 
 ## Authentication
 
