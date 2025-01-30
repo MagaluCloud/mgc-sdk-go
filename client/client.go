@@ -32,7 +32,7 @@ func NewMgcClient(apiKey string, opts ...Option) *CoreClient {
 		Logger:     slog.Default(),
 		APIKey:     apiKey,
 		UserAgent:  DefaultUserAgent,
-		BaseURL:    BrNe1,
+		BaseURL:    BrSe1,
 		Timeout:    DefaultTimeout,
 		RetryConfig: RetryConfig{
 			MaxAttempts:     DefaultMaxAttempts,
