@@ -8,10 +8,12 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/MagaluCloud/mgc-sdk-go/client"
 	"github.com/MagaluCloud/mgc-sdk-go/internal/retry"
+	"gopkg.in/yaml.v3"
 )
 
 // NewRequestFunc is a function that creates a new HTTP request.
@@ -130,30 +132,52 @@ func Do[T any](c *client.Config, ctx context.Context, req *http.Request, v *T) (
 		}
 
 		if v != nil && resp.StatusCode != http.StatusNoContent {
-			var raw json.RawMessage
-			if err := json.NewDecoder(resp.Body).Decode(&raw); err != nil {
-				return nil, fmt.Errorf("error decoding response: %w", err)
+			if strings.Contains(resp.Header.Get("Content-Type"), "application/json") {
+				return decodeJsonResponse(resp, v)
 			}
-
-			var checkNull interface{}
-			if err := json.Unmarshal(raw, &checkNull); err != nil {
-				return nil, fmt.Errorf("error validating null response: %w", err)
+			if strings.Contains(resp.Header.Get("Content-Type"), "application/x-yaml") {
+				return decodeYamlResponse(resp, v)
 			}
-			if checkNull == nil {
-				return nil, fmt.Errorf("response body is null")
-			}
-
-			if err := json.Unmarshal(raw, v); err != nil {
-				return nil, fmt.Errorf("error decoding response: %w", err)
-			}
-
-			return v, nil
 		}
 
 		return nil, nil
 	}
 
 	return nil, fmt.Errorf("max retry attempts reached: %w", lastError)
+}
+
+func decodeYamlResponse[T any](resp *http.Response, v *T) (*T, error) {
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("error reading response body: %w", err)
+	}
+
+	if err := yaml.Unmarshal(body, v); err != nil {
+		return nil, fmt.Errorf("error decoding yaml response: %w", err)
+	}
+
+	return v, nil
+}
+
+func decodeJsonResponse[T any](resp *http.Response, v *T) (*T, error) {
+	var raw json.RawMessage
+	if err := json.NewDecoder(resp.Body).Decode(&raw); err != nil {
+		return nil, fmt.Errorf("error decoding response: %w", err)
+	}
+
+	var checkNull interface{}
+	if err := json.Unmarshal(raw, &checkNull); err != nil {
+		return nil, fmt.Errorf("error validating null response: %w", err)
+	}
+	if checkNull == nil {
+		return nil, fmt.Errorf("response body is null")
+	}
+
+	if err := json.Unmarshal(raw, v); err != nil {
+		return nil, fmt.Errorf("error decoding response: %w", err)
+	}
+
+	return v, nil
 }
 
 // ExecuteSimpleRequestWithRespBody handles HTTP requests that require response body parsing

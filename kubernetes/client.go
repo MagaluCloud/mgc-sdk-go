@@ -37,3 +37,23 @@ func New(core *client.CoreClient, opts ...ClientOption) *KubernetesClient {
 func (c *KubernetesClient) newRequest(ctx context.Context, method, path string, body any) (*http.Request, error) {
 	return mgc_http.NewRequest(c.GetConfig(), ctx, method, DefaultBasePath+path, &body)
 }
+
+func (c *KubernetesClient) Clusters() ClusterService {
+	return &clusterService{client: c}
+}
+
+func (c *KubernetesClient) Flavors() FlavorService {
+	return &flavorService{client: c}
+}
+
+func (c *KubernetesClient) Info() InfoService {
+	return &infoService{client: c}
+}
+
+func (c *KubernetesClient) Nodepools() NodePoolService {
+	return &nodePoolService{client: c}
+}
+
+func (c *KubernetesClient) Versions() VersionService {
+	return &versionService{client: c}
+}
