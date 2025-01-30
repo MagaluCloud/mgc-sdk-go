@@ -50,6 +50,13 @@ go get github.com/MagaluCloud/mgc-sdk-go
   - Registries
   - Images
   - Credentials
+- Network
+  - VPCs
+  - Interfaces
+  - Subnets
+  - Security Groups
+  - Public IPs
+  - Subnetpools
 
 ## Authentication
 
