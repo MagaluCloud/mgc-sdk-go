@@ -132,12 +132,11 @@ func Do[T any](c *client.Config, ctx context.Context, req *http.Request, v *T) (
 		}
 
 		if v != nil && resp.StatusCode != http.StatusNoContent {
-			if strings.Contains(resp.Header.Get("Content-Type"), "application/json") {
-				return decodeJsonResponse(resp, v)
-			}
 			if strings.Contains(resp.Header.Get("Content-Type"), "application/x-yaml") {
 				return decodeYamlResponse(resp, v)
 			}
+			// JSON is the default
+			return decodeJsonResponse(resp, v)
 		}
 
 		return nil, nil
