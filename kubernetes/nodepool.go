@@ -131,7 +131,7 @@ func (s *nodePoolService) Get(ctx context.Context, clusterID, nodePoolID string)
 	}
 
 	resp, err := mgc_http.ExecuteSimpleRequestWithRespBody[NodePool](ctx, s.client.newRequest, s.client.GetConfig(), http.MethodGet,
-		fmt.Sprintf("clusterNodepoolURL", clusterID, nodePoolID), nil, nil)
+		fmt.Sprintf(clusterNodepoolURL, clusterID, nodePoolID), nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -148,7 +148,7 @@ func (s *nodePoolService) Update(ctx context.Context, clusterID, nodePoolID stri
 	}
 
 	resp, err := mgc_http.ExecuteSimpleRequestWithRespBody[NodePool](ctx, s.client.newRequest, s.client.GetConfig(), http.MethodPatch,
-		fmt.Sprintf("clusterNodepoolURL", clusterID, nodePoolID), req, nil)
+		fmt.Sprintf(clusterNodepoolURL, clusterID, nodePoolID), req, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -165,7 +165,7 @@ func (s *nodePoolService) Delete(ctx context.Context, clusterID, nodePoolID stri
 	}
 
 	err := mgc_http.ExecuteSimpleRequest(ctx, s.client.newRequest, s.client.GetConfig(), http.MethodDelete,
-		fmt.Sprintf("clusterNodepoolURL", clusterID, nodePoolID), nil, nil)
+		fmt.Sprintf(clusterNodepoolURL, clusterID, nodePoolID), nil, nil)
 	if err != nil {
 		return err
 	}
