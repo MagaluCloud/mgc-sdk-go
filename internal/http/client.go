@@ -174,8 +174,6 @@ func decodeJsonResponse[T any](resp *http.Response, v *T) (*T, error) {
 	}
 
 	decoder := json.NewDecoder(bytes.NewReader(raw))
-	decoder.DisallowUnknownFields()
-
 	if err := decoder.Decode(v); err != nil {
 		return nil, fmt.Errorf("error decoding response: %w", err)
 	}

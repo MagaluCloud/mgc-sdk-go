@@ -102,7 +102,7 @@ func TestInfoService_ListVersions(t *testing.T) {
 		},
 		{
 			name:       "invalid response",
-			response:   `{"invalid": "data"}`,
+			response:   `{"invalid": "d`,
 			statusCode: http.StatusOK,
 			wantErr:    true,
 		},

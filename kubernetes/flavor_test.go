@@ -39,7 +39,7 @@ func TestFlavorService_List(t *testing.T) {
 		},
 		{
 			name:       "invalid response format",
-			response:   `{"invalid": "data"}`,
+			response:   `{"invalid": "`,
 			statusCode: http.StatusOK,
 			wantErr:    true,
 		},
