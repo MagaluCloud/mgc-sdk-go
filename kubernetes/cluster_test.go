@@ -305,6 +305,13 @@ func TestClusterService_Update(t *testing.T) {
 			statusCode: http.StatusInternalServerError,
 			wantErr:    true,
 		},
+		{
+			name:       "empty cluster ID",
+			clusterID:  "",
+			request:    AllowedCIDRsUpdateRequest{},
+			statusCode: http.StatusBadRequest,
+			wantErr:    true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -352,6 +359,13 @@ func TestClusterService_GetKubeConfig(t *testing.T) {
 			clusterID:  "cluster-123",
 			response:   "",
 			statusCode: http.StatusOK,
+			wantErr:    true,
+		},
+		{
+			name:       "empty cluster ID",
+			clusterID:  "",
+			response:   "",
+			statusCode: http.StatusBadRequest,
 			wantErr:    true,
 		},
 	}
