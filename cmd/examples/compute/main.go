@@ -26,7 +26,7 @@ func ExampleListInstances() {
 	if apiToken == "" {
 		log.Fatal("MGC_API_TOKEN environment variable is not set")
 	}
-	c := client.NewMgcClient(apiToken)
+	c := client.NewMgcClient(apiToken, client.WithBaseURL("https://api.magalu.cloud"))
 	computeClient := compute.New(c)
 
 	// List instances with pagination and sorting

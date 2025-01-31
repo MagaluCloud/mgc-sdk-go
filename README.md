@@ -56,6 +56,13 @@ go get github.com/MagaluCloud/mgc-sdk-go
   - Info
   - Nodepool
   - Version
+- Network
+  - VPCs
+  - Interfaces
+  - Subnets
+  - Security Groups
+  - Public IPs
+  - Subnetpools
 
 ## Authentication
 
@@ -67,6 +74,20 @@ client := client.New("your-api-token")
 
 Find more information about how to generate an API token in the [Magalu Cloud documentation](https://docs.magalu.cloud/docs/devops-tools/api-keys/overview).
 
+## Regions
+
+The Magalu Cloud API is region-based, and each service is available in specific regions. You can set the region on the client to interact with a specific region.
+
+###  Brazil South East 1 (BR-SE1) - Default
+```go
+core := client.NewMgcClient(apiToken, client.WithBaseURL(client.BrSe1))
+```
+
+### Brazil North East 1 (BR-NE1)
+```go
+core := client.NewMgcClient(apiToken, client.WithBaseURL(client.BrNe1))
+```
+
 ## Global Services
 
 Some Magalu Cloud services operate globally and use a dedicated global endpoint (api.magalu.cloud). These global services are:
@@ -77,7 +98,7 @@ When using global services, any region configuration set on the core client will
 
 ```go
 // Even if core client has a region set
-core := client.NewMgcClient(apiToken, client.WithRegion(client.BrMgl1))
+core := client.NewMgcClient(apiToken, client.WithBaseURL(client.BrSe1))
 
 // Global services will ignore the region and use global endpoint
 sshClient := sshkeys.New(core) // Uses api.magalu.cloud
@@ -136,6 +157,7 @@ c := client.NewMgcClient(
         30 * time.Second, // maxInterval
         1.5, // backoffFactor
     ),
+    client.WithBaseURL(client.BrSe1),
 )
 ```
 
@@ -145,7 +167,7 @@ Available options:
 - `WithLogger`: Configures a custom logger
 - `WithRetryConfig`: Customizes the retry behavior
 - `WithHTTPClient`: Uses a custom HTTP client
-- `WithBaseURL`: Changes the API endpoint (useful for testing)
+- `WithBaseURL`: Changes the API endpoint (useful for testing or setting a specific region to interact)
 
 ### Listing Instances
 
