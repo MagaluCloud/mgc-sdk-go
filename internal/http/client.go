@@ -66,7 +66,7 @@ func NewRequest[T any](c *client.Config, ctx context.Context, method, path strin
 
 	req.Header.Set("X-API-Key", c.APIKey)
 	req.Header.Set("User-Agent", c.UserAgent)
-	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Content-Type", c.ContentType)
 
 	return req, nil
 }
@@ -132,8 +132,8 @@ func Do[T any](c *client.Config, ctx context.Context, req *http.Request, v *T) (
 		}
 
 		if v != nil && resp.StatusCode != http.StatusNoContent {
-			if strings.Contains(resp.Header.Get("Content-Type"), "application/x-yaml") ||
-				strings.Contains(resp.Header.Get("Content-Type"), "application/yaml") {
+			ct := resp.Header.Get("Content-Type")
+			if strings.Contains(ct, "application/x-yaml") || strings.Contains(ct, "application/yaml") {
 				return decodeYamlResponse(resp, v)
 			}
 			// JSON is the default

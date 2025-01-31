@@ -11,6 +11,11 @@ import (
 
 	"github.com/MagaluCloud/mgc-sdk-go/client"
 	mgc_http "github.com/MagaluCloud/mgc-sdk-go/internal/http"
+	"github.com/MagaluCloud/mgc-sdk-go/internal/utils"
+)
+
+const (
+	clusterUrlWithID = "/v0/clusters/%s"
 )
 
 type (
@@ -179,10 +184,10 @@ func (s *clusterService) Create(ctx context.Context, req ClusterRequest) (*Creat
 
 func (s *clusterService) Get(ctx context.Context, clusterID string, expand []string) (*Cluster, error) {
 	if clusterID == "" {
-		return nil, &client.ValidationError{Field: "clusterID", Message: "cannot be empty"}
+		return nil, &client.ValidationError{Field: "clusterID", Message: utils.CannotBeEmpty}
 	}
 
-	getClusterURL := fmt.Sprintf("/v0/clusters/%s", clusterID)
+	getClusterURL := fmt.Sprintf(clusterUrlWithID, clusterID)
 
 	if len(expand) > 0 {
 		q := url.Values{}
@@ -199,10 +204,10 @@ func (s *clusterService) Get(ctx context.Context, clusterID string, expand []str
 
 func (s *clusterService) Delete(ctx context.Context, clusterID string) error {
 	if clusterID == "" {
-		return &client.ValidationError{Field: "clusterID", Message: "cannot be empty"}
+		return &client.ValidationError{Field: "clusterID", Message: utils.CannotBeEmpty}
 	}
 
-	req, err := s.client.newRequest(ctx, http.MethodDelete, fmt.Sprintf("/v0/clusters/%s", clusterID), nil)
+	req, err := s.client.newRequest(ctx, http.MethodDelete, fmt.Sprintf(clusterUrlWithID, clusterID), nil)
 	if err != nil {
 		return err
 	}
@@ -213,11 +218,11 @@ func (s *clusterService) Delete(ctx context.Context, clusterID string) error {
 
 func (s *clusterService) Update(ctx context.Context, clusterID string, req AllowedCIDRsUpdateRequest) (*Cluster, error) {
 	if clusterID == "" {
-		return nil, &client.ValidationError{Field: "clusterID", Message: "cannot be empty"}
+		return nil, &client.ValidationError{Field: "clusterID", Message: utils.CannotBeEmpty}
 	}
 
 	httpReq, err := s.client.newRequest(ctx, http.MethodPatch,
-		fmt.Sprintf("/v0/clusters/%s", clusterID),
+		fmt.Sprintf(clusterUrlWithID, clusterID),
 		req)
 	if err != nil {
 		return nil, err
@@ -233,7 +238,7 @@ func (s *clusterService) Update(ctx context.Context, clusterID string, req Allow
 
 func (s *clusterService) GetKubeConfig(ctx context.Context, clusterID string) (*KubeConfig, error) {
 	if clusterID == "" {
-		return nil, &client.ValidationError{Field: "clusterID", Message: "cannot be empty"}
+		return nil, &client.ValidationError{Field: "clusterID", Message: utils.CannotBeEmpty}
 	}
 
 	kubeConfig, err := mgc_http.ExecuteSimpleRequestWithRespBody[KubeConfig](ctx, s.client.newRequest, s.client.GetConfig(), http.MethodGet, fmt.Sprintf("/v0/clusters/%s/kubeconfig", clusterID), nil, nil)

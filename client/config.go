@@ -21,6 +21,7 @@ type Config struct {
 	HTTPClient  *http.Client
 	Timeout     time.Duration
 	RetryConfig RetryConfig
+	ContentType string
 }
 
 type Option func(*Config)

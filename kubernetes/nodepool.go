@@ -10,6 +10,13 @@ import (
 
 	"github.com/MagaluCloud/mgc-sdk-go/client"
 	mgc_http "github.com/MagaluCloud/mgc-sdk-go/internal/http"
+	"github.com/MagaluCloud/mgc-sdk-go/internal/utils"
+)
+
+const (
+	nodePoolIdField    = "nodePoolID"
+	clusterIdField     = "clusterID"
+	clusterNodepoolURL = "/v0/clusters/%s/node_pools/%s"
 )
 
 type (
@@ -77,7 +84,7 @@ type (
 
 func (s *nodePoolService) List(ctx context.Context, clusterID string, opts ListOptions) ([]NodePool, error) {
 	if clusterID == "" {
-		return nil, &client.ValidationError{Field: "clusterID", Message: "cannot be empty"}
+		return nil, &client.ValidationError{Field: "clusterID", Message: utils.CannotBeEmpty}
 	}
 
 	query := url.Values{}
@@ -102,7 +109,7 @@ func (s *nodePoolService) List(ctx context.Context, clusterID string, opts ListO
 
 func (s *nodePoolService) Create(ctx context.Context, clusterID string, req CreateNodePoolRequest) (*NodePool, error) {
 	if clusterID == "" {
-		return nil, &client.ValidationError{Field: "clusterID", Message: "cannot be empty"}
+		return nil, &client.ValidationError{Field: clusterIdField, Message: utils.CannotBeEmpty}
 	}
 
 	resp, err := mgc_http.ExecuteSimpleRequestWithRespBody[NodePool](ctx, s.client.newRequest, s.client.GetConfig(), http.MethodPost,
@@ -115,12 +122,16 @@ func (s *nodePoolService) Create(ctx context.Context, clusterID string, req Crea
 }
 
 func (s *nodePoolService) Get(ctx context.Context, clusterID, nodePoolID string) (*NodePool, error) {
-	if clusterID == "" || nodePoolID == "" {
-		return nil, &client.ValidationError{Field: "clusterID/nodePoolID", Message: "cannot be empty"}
+	if nodePoolID == "" {
+		return nil, &client.ValidationError{Field: nodePoolIdField, Message: utils.CannotBeEmpty}
+	}
+
+	if clusterID == "" {
+		return nil, &client.ValidationError{Field: clusterIdField, Message: utils.CannotBeEmpty}
 	}
 
 	resp, err := mgc_http.ExecuteSimpleRequestWithRespBody[NodePool](ctx, s.client.newRequest, s.client.GetConfig(), http.MethodGet,
-		fmt.Sprintf("/v0/clusters/%s/node_pools/%s", clusterID, nodePoolID), nil, nil)
+		fmt.Sprintf("clusterNodepoolURL", clusterID, nodePoolID), nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -128,11 +139,16 @@ func (s *nodePoolService) Get(ctx context.Context, clusterID, nodePoolID string)
 }
 
 func (s *nodePoolService) Update(ctx context.Context, clusterID, nodePoolID string, req PatchNodePoolRequest) (*NodePool, error) {
-	if clusterID == "" || nodePoolID == "" {
-		return nil, &client.ValidationError{Field: "clusterID/nodePoolID", Message: "cannot be empty"}
+	if clusterID == "" {
+		return nil, &client.ValidationError{Field: clusterIdField, Message: utils.CannotBeEmpty}
 	}
+
+	if nodePoolID == "" {
+		return nil, &client.ValidationError{Field: nodePoolIdField, Message: utils.CannotBeEmpty}
+	}
+
 	resp, err := mgc_http.ExecuteSimpleRequestWithRespBody[NodePool](ctx, s.client.newRequest, s.client.GetConfig(), http.MethodPatch,
-		fmt.Sprintf("/v0/clusters/%s/node_pools/%s", clusterID, nodePoolID), req, nil)
+		fmt.Sprintf("clusterNodepoolURL", clusterID, nodePoolID), req, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -140,12 +156,16 @@ func (s *nodePoolService) Update(ctx context.Context, clusterID, nodePoolID stri
 }
 
 func (s *nodePoolService) Delete(ctx context.Context, clusterID, nodePoolID string) error {
-	if clusterID == "" || nodePoolID == "" {
-		return &client.ValidationError{Field: "clusterID/nodePoolID", Message: "cannot be empty"}
+	if clusterID == "" {
+		return &client.ValidationError{Field: clusterIdField, Message: utils.CannotBeEmpty}
+	}
+
+	if nodePoolID == "" {
+		return &client.ValidationError{Field: nodePoolIdField, Message: utils.CannotBeEmpty}
 	}
 
 	err := mgc_http.ExecuteSimpleRequest(ctx, s.client.newRequest, s.client.GetConfig(), http.MethodDelete,
-		fmt.Sprintf("/v0/clusters/%s/node_pools/%s", clusterID, nodePoolID), nil, nil)
+		fmt.Sprintf("clusterNodepoolURL", clusterID, nodePoolID), nil, nil)
 	if err != nil {
 		return err
 	}
