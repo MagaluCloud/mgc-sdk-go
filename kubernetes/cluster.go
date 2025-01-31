@@ -11,7 +11,6 @@ import (
 
 	"github.com/MagaluCloud/mgc-sdk-go/client"
 	mgc_http "github.com/MagaluCloud/mgc-sdk-go/internal/http"
-	"gopkg.in/yaml.v3"
 )
 
 type (
@@ -21,7 +20,7 @@ type (
 		Get(ctx context.Context, clusterID string, expand []string) (*Cluster, error)
 		Delete(ctx context.Context, clusterID string) error
 		Update(ctx context.Context, clusterID string, req AllowedCIDRsUpdateRequest) (*Cluster, error)
-		GetKubeConfig(ctx context.Context, clusterID string) (*KubeConfig, *string, error)
+		GetKubeConfig(ctx context.Context, clusterID string) (*KubeConfig, error)
 	}
 
 	Network struct {
@@ -232,20 +231,15 @@ func (s *clusterService) Update(ctx context.Context, clusterID string, req Allow
 	return resp, nil
 }
 
-func (s *clusterService) GetKubeConfig(ctx context.Context, clusterID string) (*KubeConfig, *string, error) {
+func (s *clusterService) GetKubeConfig(ctx context.Context, clusterID string) (*KubeConfig, error) {
 	if clusterID == "" {
-		return nil, nil, &client.ValidationError{Field: "clusterID", Message: "cannot be empty"}
+		return nil, &client.ValidationError{Field: "clusterID", Message: "cannot be empty"}
 	}
 
 	kubeConfig, err := mgc_http.ExecuteSimpleRequestWithRespBody[KubeConfig](ctx, s.client.newRequest, s.client.GetConfig(), http.MethodGet, fmt.Sprintf("/v0/clusters/%s/kubeconfig", clusterID), nil, nil)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
-	yamlData, err := yaml.Marshal(kubeConfig)
-	if err != nil {
-		return nil, nil, fmt.Errorf("erro ao converter para YAML: %w", err)
-	}
-	rawKubeConfig := string(yamlData)
-	return kubeConfig, &rawKubeConfig, nil
+	return kubeConfig, nil
 }

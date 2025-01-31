@@ -75,7 +75,7 @@ func (s *nodePoolService) List(ctx context.Context, clusterID string, opts ListO
 		return nil, &client.ValidationError{Field: "clusterID", Message: "cannot be empty"}
 	}
 
-	req, err := s.client.newRequest(ctx, http.MethodGet, fmt.Sprintf("/v1alpha0/clusters/%s/node_pools", clusterID), nil)
+	req, err := s.client.newRequest(ctx, http.MethodGet, fmt.Sprintf("/v1alpha0/clusters/%s/node-pools", clusterID), nil)
 	if err != nil {
 		return nil, err
 	}

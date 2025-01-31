@@ -11,7 +11,11 @@ import (
 
 type (
 	FlavorService interface {
-		List(ctx context.Context, opts ListOptions) (*FlavorsAvailable, error)
+		List(ctx context.Context, opts ListOptions) (*FlavorList, error)
+	}
+
+	FlavorList struct {
+		Results []FlavorsAvailable `json:"results"`
 	}
 
 	FlavorsAvailable struct {
@@ -33,7 +37,7 @@ type (
 	}
 )
 
-func (s *flavorService) List(ctx context.Context, opts ListOptions) (*FlavorsAvailable, error) {
+func (s *flavorService) List(ctx context.Context, opts ListOptions) (*FlavorList, error) {
 	req, err := s.client.newRequest(ctx, http.MethodGet, "/v1/flavors", nil)
 	if err != nil {
 		return nil, err
@@ -54,7 +58,7 @@ func (s *flavorService) List(ctx context.Context, opts ListOptions) (*FlavorsAva
 	}
 	req.URL.RawQuery = q.Encode()
 
-	var response FlavorsAvailable
+	var response FlavorList
 	_, err = mgc_http.Do(s.client.GetConfig(), ctx, req, &response)
 	if err != nil {
 		return nil, err
