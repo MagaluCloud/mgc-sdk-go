@@ -398,17 +398,6 @@ func ExampleNodePoolOperations(k8sClient *kubernetes.KubernetesClient, clusterID
 
 func ExampleListFlavorsAndVersions(k8sClient *kubernetes.KubernetesClient) {
 
-	// Listar versões disponíveis
-	versions, err := k8sClient.Info().ListVersions(context.Background())
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	fmt.Println("\nVersões disponíveis:")
-	for _, v := range versions {
-		fmt.Printf(" - %s (Deprecated: %v)\n", v.Version, v.Deprecated)
-	}
-
 	// Listar flavors disponíveis
 	flavors, err := k8sClient.Flavors().List(context.Background(), kubernetes.ListOptions{})
 	if err != nil {

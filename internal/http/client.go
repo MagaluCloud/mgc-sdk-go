@@ -132,7 +132,8 @@ func Do[T any](c *client.Config, ctx context.Context, req *http.Request, v *T) (
 		}
 
 		if v != nil && resp.StatusCode != http.StatusNoContent {
-			if strings.Contains(resp.Header.Get("Content-Type"), "application/x-yaml") {
+			if strings.Contains(resp.Header.Get("Content-Type"), "application/x-yaml") ||
+				strings.Contains(resp.Header.Get("Content-Type"), "application/yaml") {
 				return decodeYamlResponse(resp, v)
 			}
 			// JSON is the default
@@ -149,6 +150,14 @@ func decodeYamlResponse[T any](resp *http.Response, v *T) (*T, error) {
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("error reading response body: %w", err)
+	}
+
+	var checkNull interface{}
+	if err := yaml.Unmarshal(body, &checkNull); err != nil {
+		return nil, fmt.Errorf("error validating null response: %w", err)
+	}
+	if checkNull == nil {
+		return nil, fmt.Errorf("response body is null")
 	}
 
 	if err := yaml.Unmarshal(body, v); err != nil {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strconv"
 	"time"
 
@@ -25,6 +26,10 @@ type (
 		Get(ctx context.Context, clusterID, nodePoolID string) (*NodePool, error)
 		Update(ctx context.Context, clusterID, nodePoolID string, req PatchNodePoolRequest) (*NodePool, error)
 		Delete(ctx context.Context, clusterID, nodePoolID string) error
+	}
+
+	NodePoolList struct {
+		Results []NodePool `json:"results"`
 	}
 
 	NodePool struct {
@@ -75,27 +80,19 @@ func (s *nodePoolService) List(ctx context.Context, clusterID string, opts ListO
 		return nil, &client.ValidationError{Field: "clusterID", Message: "cannot be empty"}
 	}
 
-	req, err := s.client.newRequest(ctx, http.MethodGet, fmt.Sprintf("/v1alpha0/clusters/%s/node-pools", clusterID), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	q := req.URL.Query()
+	query := url.Values{}
 	if opts.Limit != nil {
-		q.Add("_limit", strconv.Itoa(*opts.Limit))
+		query.Add("_limit", strconv.Itoa(*opts.Limit))
 	}
 	if opts.Offset != nil {
-		q.Add("_offset", strconv.Itoa(*opts.Offset))
+		query.Add("_offset", strconv.Itoa(*opts.Offset))
 	}
 	if opts.Sort != nil {
-		q.Add("_sort", *opts.Sort)
+		query.Add("_sort", *opts.Sort)
 	}
-	req.URL.RawQuery = q.Encode()
 
-	var response struct {
-		Results []NodePool `json:"results"`
-	}
-	resp, err := mgc_http.Do(s.client.GetConfig(), ctx, req, &response)
+	resp, err := mgc_http.ExecuteSimpleRequestWithRespBody[NodePoolList](ctx, s.client.newRequest,
+		s.client.GetConfig(), http.MethodGet, fmt.Sprintf("/v1alpha0/clusters/%s/node-pools", clusterID), nil, query)
 	if err != nil {
 		return nil, err
 	}
@@ -108,18 +105,12 @@ func (s *nodePoolService) Create(ctx context.Context, clusterID string, req Crea
 		return nil, &client.ValidationError{Field: "clusterID", Message: "cannot be empty"}
 	}
 
-	httpReq, err := s.client.newRequest(ctx, http.MethodPost,
-		fmt.Sprintf("/v0/clusters/%s/node_pools", clusterID),
-		req)
+	resp, err := mgc_http.ExecuteSimpleRequestWithRespBody[NodePool](ctx, s.client.newRequest, s.client.GetConfig(), http.MethodPost,
+		fmt.Sprintf("/v0/clusters/%s/node_pools", clusterID), req, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	var nodePool NodePool
-	resp, err := mgc_http.Do(s.client.GetConfig(), ctx, httpReq, &nodePool)
-	if err != nil {
-		return nil, err
-	}
 	return resp, nil
 }
 
@@ -128,15 +119,8 @@ func (s *nodePoolService) Get(ctx context.Context, clusterID, nodePoolID string)
 		return nil, &client.ValidationError{Field: "clusterID/nodePoolID", Message: "cannot be empty"}
 	}
 
-	req, err := s.client.newRequest(ctx, http.MethodGet,
-		fmt.Sprintf("/v0/clusters/%s/node_pools/%s", clusterID, nodePoolID),
-		nil)
-	if err != nil {
-		return nil, err
-	}
-
-	var nodePool NodePool
-	resp, err := mgc_http.Do(s.client.GetConfig(), ctx, req, &nodePool)
+	resp, err := mgc_http.ExecuteSimpleRequestWithRespBody[NodePool](ctx, s.client.newRequest, s.client.GetConfig(), http.MethodGet,
+		fmt.Sprintf("/v0/clusters/%s/node_pools/%s", clusterID, nodePoolID), nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -147,16 +131,8 @@ func (s *nodePoolService) Update(ctx context.Context, clusterID, nodePoolID stri
 	if clusterID == "" || nodePoolID == "" {
 		return nil, &client.ValidationError{Field: "clusterID/nodePoolID", Message: "cannot be empty"}
 	}
-
-	httpReq, err := s.client.newRequest(ctx, http.MethodPatch,
-		fmt.Sprintf("/v0/clusters/%s/node_pools/%s", clusterID, nodePoolID),
-		req)
-	if err != nil {
-		return nil, err
-	}
-
-	var updatedNodePool NodePool
-	resp, err := mgc_http.Do(s.client.GetConfig(), ctx, httpReq, &updatedNodePool)
+	resp, err := mgc_http.ExecuteSimpleRequestWithRespBody[NodePool](ctx, s.client.newRequest, s.client.GetConfig(), http.MethodPatch,
+		fmt.Sprintf("/v0/clusters/%s/node_pools/%s", clusterID, nodePoolID), req, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -168,13 +144,11 @@ func (s *nodePoolService) Delete(ctx context.Context, clusterID, nodePoolID stri
 		return &client.ValidationError{Field: "clusterID/nodePoolID", Message: "cannot be empty"}
 	}
 
-	req, err := s.client.newRequest(ctx, http.MethodDelete,
-		fmt.Sprintf("/v0/clusters/%s/node_pools/%s", clusterID, nodePoolID),
-		nil)
+	err := mgc_http.ExecuteSimpleRequest(ctx, s.client.newRequest, s.client.GetConfig(), http.MethodDelete,
+		fmt.Sprintf("/v0/clusters/%s/node_pools/%s", clusterID, nodePoolID), nil, nil)
 	if err != nil {
 		return err
 	}
 
-	_, err = mgc_http.Do[any](s.client.GetConfig(), ctx, req, nil)
-	return err
+	return nil
 }

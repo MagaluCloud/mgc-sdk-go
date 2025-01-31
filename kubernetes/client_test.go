@@ -59,13 +59,6 @@ func TestKubernetesClient_Services(t *testing.T) {
 		}
 	})
 
-	t.Run("Info service", func(t *testing.T) {
-		service := k8sClient.Info()
-		if service == nil {
-			t.Error("Info() returned nil")
-		}
-	})
-
 	t.Run("Nodepools service", func(t *testing.T) {
 		service := k8sClient.Nodepools()
 		if service == nil {
@@ -140,7 +133,9 @@ func TestKubernetesClient_RetryConfiguration(t *testing.T) {
 }
 
 func TestKubernetesClient_DefaultBasePath(t *testing.T) {
-	core := client.NewMgcClient("test-token")
+	core := client.NewMgcClient("test-token",
+		client.WithBaseURL("https://api.test.com"),
+	)
 	k8sClient := New(core)
 
 	req, err := k8sClient.newRequest(context.Background(), http.MethodGet, "/test", nil)

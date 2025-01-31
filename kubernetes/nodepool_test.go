@@ -22,6 +22,11 @@ func TestNodePoolService_List(t *testing.T) {
 		{
 			name:      "successful list node pools",
 			clusterID: "cluster-123",
+			opts: ListOptions{
+				Limit:  intPtr(2),
+				Offset: intPtr(1),
+				Sort:   strPtr("name"),
+			},
 			response: `{
 				"results": [
 					{"id": "pool1", "name": "default-pool"},
@@ -147,6 +152,18 @@ func TestNodePoolService_Delete(t *testing.T) {
 			nodePoolID: "pool-456",
 			statusCode: http.StatusNoContent,
 			wantErr:    false,
+		},
+		{
+			name:       "invalid cluster ID",
+			clusterID:  "",
+			nodePoolID: "pool-456",
+			wantErr:    true,
+		},
+		{
+			name:       "invalid node pool ID",
+			clusterID:  "cluster-123",
+			nodePoolID: "asdasd",
+			wantErr:    true,
 		},
 	}
 
@@ -296,6 +313,33 @@ func TestNodePoolService_Update(t *testing.T) {
 			wantReplicas: 3,
 			wantErr:      false,
 		},
+		{
+			name:       "invalid cluster ID",
+			clusterID:  "",
+			nodePoolID: "pool-456",
+			wantErr:    true,
+		},
+		{
+			name:       "invalid node pool ID",
+			clusterID:  "cluster-123",
+			nodePoolID: "",
+			wantErr:    true,
+		},
+		{
+			name:       "invalid cluster ID",
+			clusterID:  "",
+			nodePoolID: "pool-456",
+			statusCode: http.StatusBadRequest,
+			wantErr:    true,
+		},
+		{
+			name:       "invalid node pool ID",
+			clusterID:  "cluster-123",
+			nodePoolID: "asfsd",
+			statusCode: http.StatusOK,
+			response:   `{"replica`,
+			wantErr:    true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -339,6 +383,36 @@ func TestNodePoolService_Get(t *testing.T) {
 			statusCode: http.StatusOK,
 			wantID:     "pool-456",
 			wantErr:    false,
+		},
+		{
+			name:       "invalid node pool ID",
+			clusterID:  "cluster-123",
+			nodePoolID: "",
+			statusCode: http.StatusBadRequest,
+			wantErr:    true,
+		},
+		{
+			name:       "invalid cluster ID",
+			clusterID:  "",
+			nodePoolID: "pool-456",
+			wantErr:    true,
+		},
+		{
+			name:       "invalid cluster ID",
+			nodePoolID: "pool-456",
+			wantErr:    true,
+		},
+		{
+			name:    "invalid cluster ID",
+			wantErr: true,
+		},
+		{
+			name:       "invalid node pool ID",
+			clusterID:  "cluster-123",
+			nodePoolID: "456456",
+			statusCode: http.StatusOK,
+			response:   `{"replica`,
+			wantErr:    true,
 		},
 	}
 

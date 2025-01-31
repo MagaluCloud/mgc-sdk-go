@@ -46,10 +46,6 @@ func (c *KubernetesClient) Flavors() FlavorService {
 	return &flavorService{client: c}
 }
 
-func (c *KubernetesClient) Info() InfoService {
-	return &infoService{client: c}
-}
-
 func (c *KubernetesClient) Nodepools() NodePoolService {
 	return &nodePoolService{client: c}
 }
