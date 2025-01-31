@@ -3,6 +3,7 @@ package kubernetes
 import (
 	"context"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 
@@ -11,7 +12,7 @@ import (
 
 type (
 	FlavorService interface {
-		List(ctx context.Context, opts ListOptions) (*FlavorList, error)
+		List(ctx context.Context, opts ListOptions) (*[]FlavorsAvailable, error)
 	}
 
 	FlavorList struct {
@@ -37,32 +38,25 @@ type (
 	}
 )
 
-func (s *flavorService) List(ctx context.Context, opts ListOptions) (*FlavorList, error) {
-	req, err := s.client.newRequest(ctx, http.MethodGet, "/v1/flavors", nil)
-	if err != nil {
-		return nil, err
-	}
-
-	q := req.URL.Query()
+func (s *flavorService) List(ctx context.Context, opts ListOptions) (*[]FlavorsAvailable, error) {
+	query := url.Values{}
 	if opts.Limit != nil {
-		q.Add("_limit", strconv.Itoa(*opts.Limit))
+		query.Add("_limit", strconv.Itoa(*opts.Limit))
 	}
 	if opts.Offset != nil {
-		q.Add("_offset", strconv.Itoa(*opts.Offset))
+		query.Add("_offset", strconv.Itoa(*opts.Offset))
 	}
 	if opts.Sort != nil {
-		q.Add("_sort", *opts.Sort)
+		query.Add("_sort", *opts.Sort)
 	}
 	if len(opts.Expand) > 0 {
-		q.Add("expand", strings.Join(opts.Expand, ","))
+		query.Add("expand", strings.Join(opts.Expand, ","))
 	}
-	req.URL.RawQuery = q.Encode()
 
-	var response FlavorList
-	_, err = mgc_http.Do(s.client.GetConfig(), ctx, req, &response)
+	response, err := mgc_http.ExecuteSimpleRequestWithRespBody[FlavorList](ctx, s.client.newRequest, s.client.GetConfig(), http.MethodGet, "/v1/flavors", nil, query)
 	if err != nil {
 		return nil, err
 	}
 
-	return &response, nil
+	return &response.Results, nil
 }

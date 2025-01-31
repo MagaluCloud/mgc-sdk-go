@@ -38,6 +38,11 @@ func TestFlavorService_List(t *testing.T) {
 			wantErr:    false,
 		},
 		{
+			opts: ListOptions{
+				Limit:  helpers.IntPtr(2),
+				Offset: helpers.IntPtr(1),
+				Sort:   helpers.StrPtr("name"),
+			},
 			name:       "invalid response format",
 			response:   `{"invalid": "`,
 			statusCode: http.StatusOK,
@@ -70,7 +75,7 @@ func TestFlavorService_List(t *testing.T) {
 			}
 
 			if !tt.wantErr {
-				total := len(result.Results[0].NodePool) + len(result.Results[0].ControlPlane)
+				total := len((*result)[0].NodePool) + len((*result)[0].ControlPlane)
 				if total != tt.want {
 					t.Errorf("List() got = %d, want %d", total, tt.want)
 				}
@@ -127,8 +132,8 @@ func TestFlavorService_List_EmptyResults(t *testing.T) {
 		t.Fatalf("Erro inesperado: %v", err)
 	}
 
-	if len(result.Results) != 0 {
-		t.Errorf("Esperado 0 resultados, obtido %d", len(result.Results))
+	if len(*result) != 0 {
+		t.Errorf("Esperado 0 resultados, obtido %d", len(*result))
 	}
 }
 
