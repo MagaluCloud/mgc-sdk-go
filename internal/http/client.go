@@ -173,7 +173,10 @@ func decodeJsonResponse[T any](resp *http.Response, v *T) (*T, error) {
 		return nil, fmt.Errorf("response body is null")
 	}
 
-	if err := json.Unmarshal(raw, v); err != nil {
+	decoder := json.NewDecoder(bytes.NewReader(raw))
+	decoder.DisallowUnknownFields()
+
+	if err := decoder.Decode(v); err != nil {
 		return nil, fmt.Errorf("error decoding response: %w", err)
 	}
 

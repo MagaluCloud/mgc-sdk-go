@@ -18,10 +18,12 @@ func TestClusterService_List(t *testing.T) {
 	}{
 		{
 			name: "successful list clusters",
-			response: `[
-				{"id": "cluster1", "name": "prod-cluster"},
-				{"id": "cluster2", "name": "staging-cluster"}
-			]`,
+			response: `{
+				"results": [
+					{"id": "cluster1", "name": "prod-cluster"},
+					{"id": "cluster2", "name": "staging-cluster"}
+				]
+			}`,
 			statusCode: http.StatusOK,
 			want:       2,
 			wantErr:    false,
@@ -31,7 +33,7 @@ func TestClusterService_List(t *testing.T) {
 			response:   `[]`,
 			statusCode: http.StatusOK,
 			want:       0,
-			wantErr:    false,
+			wantErr:    true,
 		},
 		{
 			name:       "server error",
@@ -43,6 +45,7 @@ func TestClusterService_List(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(tt.statusCode)
@@ -89,6 +92,7 @@ func TestClusterService_Create(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(tt.statusCode)
@@ -128,6 +132,7 @@ func TestClusterService_Delete(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(tt.statusCode)
 			}))
