@@ -42,6 +42,7 @@ func TestFlavorService_List(t *testing.T) {
 				Limit:  helpers.IntPtr(2),
 				Offset: helpers.IntPtr(1),
 				Sort:   helpers.StrPtr("name"),
+				Expand: []string{"controlplane", "nodepool"},
 			},
 			name:       "invalid response format",
 			response:   `{"invalid": "`,

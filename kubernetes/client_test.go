@@ -148,3 +148,25 @@ func TestKubernetesClient_DefaultBasePath(t *testing.T) {
 		t.Errorf("Caminho base padrão incorreto. Esperado: %s, Obtido: %s", expectedPath, req.URL.Path)
 	}
 }
+
+func TestNewKubernetesClient_WithOptions(t *testing.T) {
+	core := client.NewMgcClient("test-token",
+		client.WithBaseURL("https://api.test.com"),
+		client.WithHTTPClient(&http.Client{}),
+	)
+
+	var calledOpt bool
+	testOpt := func(c *KubernetesClient) {
+		calledOpt = true
+	}
+
+	bsClient := New(core, testOpt)
+
+	if !calledOpt {
+		t.Error("expected option to be called")
+	}
+
+	if bsClient == nil {
+		t.Error("expected client to not be nil")
+	}
+}

@@ -160,6 +160,12 @@ func TestNodePoolService_Delete(t *testing.T) {
 			wantErr:    true,
 		},
 		{
+			name:       "invalid cluster ID",
+			clusterID:  "pool-456",
+			nodePoolID: "",
+			wantErr:    true,
+		},
+		{
 			name:       "invalid node pool ID",
 			clusterID:  "cluster-123",
 			nodePoolID: "asdasd",

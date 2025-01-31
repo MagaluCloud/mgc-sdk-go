@@ -53,6 +53,10 @@ type (
 		MaxReplicas *int `json:"max_replicas,omitempty"`
 	}
 
+	ClusterListResponse struct {
+		Results []ClusterList `json:"results"`
+	}
+
 	ClusterList struct {
 		Name      string            `json:"name"`
 		ID        string            `json:"id"`
@@ -136,50 +140,35 @@ type (
 )
 
 func (s *clusterService) List(ctx context.Context, opts ListOptions) ([]ClusterList, error) {
-	req, err := s.client.newRequest(ctx, http.MethodGet, "/v0/clusters", nil)
-	if err != nil {
-		return nil, err
-	}
-
-	q := req.URL.Query()
+	query := url.Values{}
 	if opts.Limit != nil {
-		q.Add("_limit", strconv.Itoa(*opts.Limit))
+		query.Add("_limit", strconv.Itoa(*opts.Limit))
 	}
 	if opts.Offset != nil {
-		q.Add("_offset", strconv.Itoa(*opts.Offset))
+		query.Add("_offset", strconv.Itoa(*opts.Offset))
 	}
 	if opts.Sort != nil {
-		q.Add("_sort", *opts.Sort)
+		query.Add("_sort", *opts.Sort)
 	}
 	if len(opts.Expand) > 0 {
-		q.Add("expand", strings.Join(opts.Expand, ","))
+		query.Add("expand", strings.Join(opts.Expand, ","))
 	}
-	req.URL.RawQuery = q.Encode()
 
-	var response struct {
-		Results []ClusterList `json:"results"`
-	}
-	resp, err := mgc_http.Do(s.client.GetConfig(), ctx, req, &response)
+	resp, err := mgc_http.ExecuteSimpleRequestWithRespBody[ClusterListResponse](ctx, s.client.newRequest, s.client.GetConfig(), http.MethodGet, "/v0/clusters", nil, query)
 	if err != nil {
 		return nil, err
 	}
+
 	return resp.Results, nil
 }
 
 func (s *clusterService) Create(ctx context.Context, req ClusterRequest) (*CreateClusterResponse, error) {
-	var result CreateClusterResponse
-
-	httpReq, err := s.client.newRequest(ctx, http.MethodPost, "/v0/clusters", req)
+	response, err := mgc_http.ExecuteSimpleRequestWithRespBody[CreateClusterResponse](ctx, s.client.newRequest, s.client.GetConfig(), http.MethodPost, "/v0/clusters", req, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	resp, err := mgc_http.Do(s.client.GetConfig(), ctx, httpReq, &result)
-	if err != nil {
-		return nil, err
-	}
-
-	return resp, nil
+	return response, nil
 }
 
 func (s *clusterService) Get(ctx context.Context, clusterID string, expand []string) (*Cluster, error) {
@@ -207,13 +196,12 @@ func (s *clusterService) Delete(ctx context.Context, clusterID string) error {
 		return &client.ValidationError{Field: "clusterID", Message: utils.CannotBeEmpty}
 	}
 
-	req, err := s.client.newRequest(ctx, http.MethodDelete, fmt.Sprintf(clusterUrlWithID, clusterID), nil)
+	err := mgc_http.ExecuteSimpleRequest(ctx, s.client.newRequest, s.client.GetConfig(), http.MethodDelete, fmt.Sprintf(clusterUrlWithID, clusterID), nil, nil)
 	if err != nil {
 		return err
 	}
 
-	_, err = mgc_http.Do[any](s.client.GetConfig(), ctx, req, nil)
-	return err
+	return nil
 }
 
 func (s *clusterService) Update(ctx context.Context, clusterID string, req AllowedCIDRsUpdateRequest) (*Cluster, error) {
@@ -221,15 +209,7 @@ func (s *clusterService) Update(ctx context.Context, clusterID string, req Allow
 		return nil, &client.ValidationError{Field: "clusterID", Message: utils.CannotBeEmpty}
 	}
 
-	httpReq, err := s.client.newRequest(ctx, http.MethodPatch,
-		fmt.Sprintf(clusterUrlWithID, clusterID),
-		req)
-	if err != nil {
-		return nil, err
-	}
-
-	var updatedCluster Cluster
-	resp, err := mgc_http.Do(s.client.GetConfig(), ctx, httpReq, &updatedCluster)
+	resp, err := mgc_http.ExecuteSimpleRequestWithRespBody[Cluster](ctx, s.client.newRequest, s.client.GetConfig(), http.MethodPatch, fmt.Sprintf(clusterUrlWithID, clusterID), req, nil)
 	if err != nil {
 		return nil, err
 	}
