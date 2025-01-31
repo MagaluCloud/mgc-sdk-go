@@ -50,6 +50,12 @@ go get github.com/MagaluCloud/mgc-sdk-go
   - Registries
   - Images
   - Credentials
+- Kubernetes
+  - Clusters
+  - Flavors
+  - Info
+  - Nodepool
+  - Version
 - Network
   - VPCs
   - Interfaces

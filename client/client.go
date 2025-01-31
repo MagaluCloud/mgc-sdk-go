@@ -28,12 +28,13 @@ type CoreClient struct {
 
 func NewMgcClient(apiKey string, opts ...Option) *CoreClient {
 	cfg := &Config{
-		HTTPClient: http.DefaultClient,
-		Logger:     slog.Default(),
-		APIKey:     apiKey,
-		UserAgent:  DefaultUserAgent,
-		BaseURL:    BrSe1,
-		Timeout:    DefaultTimeout,
+		HTTPClient:  http.DefaultClient,
+		Logger:      slog.Default(),
+		APIKey:      apiKey,
+		UserAgent:   DefaultUserAgent,
+		BaseURL:     BrSe1,
+		Timeout:     DefaultTimeout,
+		ContentType: "application/json",
 		RetryConfig: RetryConfig{
 			MaxAttempts:     DefaultMaxAttempts,
 			InitialInterval: DefaultInitialInterval,

@@ -1137,6 +1137,7 @@ func TestInstanceService_GetFirstWindowsPassword(t *testing.T) {
 				if r.URL.Path != expectedPath {
 					t.Errorf("expected path %s, got %s", expectedPath, r.URL.Path)
 				}
+				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(tt.statusCode)
 				w.Write([]byte(tt.response))
 			}))

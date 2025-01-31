@@ -198,6 +198,8 @@ func TestVolumeTypeService_List_QueryParams(t *testing.T) {
 						t.Errorf("query param %s: got %s, want %s", param, actual, expected)
 					}
 				}
+
+				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusOK)
 				w.Write([]byte(`{"types": []}`))
 			}))

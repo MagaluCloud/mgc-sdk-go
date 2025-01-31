@@ -1169,3 +1169,99 @@ func TestDo_InvalidContentType(t *testing.T) {
 		t.Error("Do() got nil, want non-nil")
 	}
 }
+
+func TestDo_YAMLHandling(t *testing.T) {
+	tests := []struct {
+		name       string
+		response   string
+		statusCode int
+		want       *mockResponse
+		wantErr    bool
+		errMsg     string
+	}{
+		{
+			name:       "valid yaml response",
+			response:   `message: success`,
+			statusCode: http.StatusOK,
+			want: &mockResponse{
+				Message: "success",
+			},
+			wantErr: false,
+		},
+		{
+			name:       "null response",
+			response:   "null",
+			statusCode: http.StatusOK,
+			want:       nil,
+			wantErr:    true,
+			errMsg:     "response body is null",
+		},
+		{
+			name:       "empty response",
+			response:   "",
+			statusCode: http.StatusOK,
+			want:       nil,
+			wantErr:    true,
+			errMsg:     "response body is null",
+		},
+		{
+			name:       "malformed yaml",
+			response:   `message`,
+			statusCode: http.StatusOK,
+			want:       nil,
+			wantErr:    true,
+			errMsg:     "error decoding yaml response: yaml: unmarshal errors:\n  line 1: cannot unmarshal !!str `message` into mgc_http.mockResponse",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/x-yaml")
+				w.WriteHeader(tt.statusCode)
+				w.Write([]byte(tt.response))
+			}))
+			defer server.Close()
+
+			cfg := &client.Config{
+				BaseURL:    client.MgcUrl(server.URL),
+				APIKey:     "test-key",
+				UserAgent:  "test-agent",
+				HTTPClient: &http.Client{},
+				Logger:     slog.Default(),
+				RetryConfig: client.RetryConfig{
+					MaxAttempts:     3,
+					InitialInterval: 100 * time.Millisecond,
+					MaxInterval:     500 * time.Millisecond,
+					BackoffFactor:   1.5,
+				},
+			}
+
+			req, err := http.NewRequest(http.MethodGet, server.URL, nil)
+			if err != nil {
+				t.Fatalf("Failed to create request: %v", err)
+			}
+
+			var response mockResponse
+			got, err := Do(cfg, context.Background(), req, &response)
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Do() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			if tt.wantErr {
+				if err == nil || !strings.Contains(err.Error(), tt.errMsg) {
+					t.Errorf("Do() error message = %v, want containing %v", err, tt.errMsg)
+				}
+				return
+			}
+
+			if !tt.wantErr && got != nil {
+				if response.Message != tt.want.Message {
+					t.Errorf("Do() got = %v, want %v", response.Message, tt.want.Message)
+				}
+			}
+		})
+	}
+}
