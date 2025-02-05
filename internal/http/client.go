@@ -153,7 +153,7 @@ func Do[T any](c *client.Config, ctx context.Context, req *http.Request, v *T) (
 		return nil, nil
 	}
 
-	return nil, fmt.Errorf("max retry attempts reached: %w", lastError)
+	return nil, &client.RetryError{LastError: lastError, Retries: c.RetryConfig.MaxAttempts}
 }
 
 // ExecuteSimpleRequestWithRespBody handles HTTP requests that require response body parsing
