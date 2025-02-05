@@ -50,6 +50,12 @@ go get github.com/MagaluCloud/mgc-sdk-go
   - Registries
   - Images
   - Credentials
+- Kubernetes
+  - Clusters
+  - Flavors
+  - Info
+  - Nodepool
+  - Version
 - Network
   - VPCs
   - Interfaces
@@ -67,6 +73,20 @@ client := client.New("your-api-token")
 ```
 
 Find more information about how to generate an API token in the [Magalu Cloud documentation](https://docs.magalu.cloud/docs/devops-tools/api-keys/overview).
+
+## Regions
+
+The Magalu Cloud API is region-based, and each service is available in specific regions. You can set the region on the client to interact with a specific region.
+
+###  Brazil South East 1 (BR-SE1) - Default
+```go
+core := client.NewMgcClient(apiToken, client.WithBaseURL(client.BrSe1))
+```
+
+### Brazil North East 1 (BR-NE1)
+```go
+core := client.NewMgcClient(apiToken, client.WithBaseURL(client.BrNe1))
+```
 
 ## Global Services
 
