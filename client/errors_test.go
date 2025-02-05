@@ -2,6 +2,7 @@ package client
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"net/http"
 	"testing"
@@ -129,6 +130,46 @@ func TestValidationError_Error(t *testing.T) {
 			}
 			if got := e.Error(); got != tt.want {
 				t.Errorf("ValidationError.Error() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestRetryError_Error(t *testing.T) {
+	tests := []struct {
+		name      string
+		lastError error
+		retries   int
+		want      string
+	}{
+		{
+			name:      "with HTTP error",
+			lastError: &HTTPError{StatusCode: 500, Status: "500 Internal Server Error"},
+			retries:   3,
+			want:      "max retry attempts reached: HTTP error: 500 500 Internal Server Error",
+		},
+		{
+			name:      "with simple error",
+			lastError: fmt.Errorf("connection timeout"),
+			retries:   5,
+			want:      "max retry attempts reached: connection timeout",
+		},
+		{
+			name:      "with nil error",
+			lastError: nil,
+			retries:   1,
+			want:      "max retry attempts reached: <nil>",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e := &RetryError{
+				LastError: tt.lastError,
+				Retries:   tt.retries,
+			}
+			if got := e.Error(); got != tt.want {
+				t.Errorf("RetryError.Error() = %v, want %v", got, tt.want)
 			}
 		})
 	}

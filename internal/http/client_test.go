@@ -1170,6 +1170,46 @@ func TestDo_InvalidContentType(t *testing.T) {
 	}
 }
 
+func TestRetryError_Type(t *testing.T) {
+	attempts := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		attempts++
+		w.WriteHeader(http.StatusServiceUnavailable)
+	}))
+	defer server.Close()
+
+	ct := client.NewMgcClient("test-api-key",
+		client.WithBaseURL(client.MgcUrl(server.URL)),
+		client.WithRetryConfig(3, 10*time.Millisecond, 50*time.Millisecond, 1.5))
+
+	req, err := NewRequest[any](ct.GetConfig(), context.Background(), http.MethodGet, "/test", nil)
+	if err != nil {
+		t.Fatalf("Failed to create request: %v", err)
+	}
+
+	_, err = Do[any](ct.GetConfig(), context.Background(), req, nil)
+
+	// Check if error is of type RetryError
+	retryErr, ok := err.(*client.RetryError)
+	if !ok {
+		t.Fatalf("Expected error of type *client.RetryError, got %T", err)
+	}
+
+	// Validate RetryError fields
+	if retryErr.Retries != 3 {
+		t.Errorf("Expected MaxAttempts=3, got %d", retryErr.Retries)
+	}
+
+	if attempts != 3 {
+		t.Errorf("Expected 3 attempts, got %d", attempts)
+	}
+
+	expectedErrMsg := "max retry attempts reached: HTTP error: 503 503 Service Unavailable"
+	if retryErr.Error() != expectedErrMsg {
+		t.Errorf("Expected error message %q, got %q", expectedErrMsg, retryErr.Error())
+	}
+}
+
 func TestDo_YAMLHandling(t *testing.T) {
 	tests := []struct {
 		name       string

@@ -35,3 +35,12 @@ type ValidationError struct {
 func (e *ValidationError) Error() string {
 	return fmt.Sprintf("validation error: %s - %s", e.Field, e.Message)
 }
+
+type RetryError struct {
+	LastError error
+	Retries   int
+}
+
+func (e *RetryError) Error() string {
+	return fmt.Sprintf("max retry attempts reached: %v", e.LastError)
+}
