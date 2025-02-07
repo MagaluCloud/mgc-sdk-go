@@ -24,9 +24,26 @@ func main() {
 	ExampleListVolumeTypes()
 	ExampleListVolumes()
 	id := ExampleCreateVolume()
+	ExampleGetVolume(id)
 	ExampleManageVolume(id)
 	ExampleVolumeAttachments(id)
 	ExampleDeleteVolume(id)
+}
+
+func ExampleGetVolume(id string) {
+	apiToken := os.Getenv("MGC_API_TOKEN")
+	if apiToken == "" {
+		log.Fatal("MGC_API_TOKEN environment variable is not set")
+	}
+	c := client.NewMgcClient(apiToken)
+	blockClient := blockstorage.New(c)
+
+	volume, err := blockClient.Volumes().Get(context.Background(), id, []string{blockstorage.VolumeTypeExpand, blockstorage.VolumeAttachExpand})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Printf("Volume: %s (ID: %s)\n", volume.Name, volume.ID)
 }
 
 func ExampleListVolumes() {
