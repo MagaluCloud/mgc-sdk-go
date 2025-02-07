@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
-	"strings"
 	"time"
 
 	mgc_http "github.com/MagaluCloud/mgc-sdk-go/internal/http"
@@ -21,6 +20,18 @@ type (
 	ListVolumesResponse struct {
 		Volumes []Volume `json:"volumes"`
 	}
+	Iops struct {
+		Read  int `json:"read"`
+		Write int `json:"write"`
+		Total int `json:"total"`
+	}
+	Type struct {
+		Iops     *Iops   `json:"iops,omitempty"`
+		ID       string  `json:"id"`
+		Name     *string `json:"name,omitempty"`
+		DiskType *string `json:"disk_type,omitempty"`
+		Status   *string `json:"status,omitempty"`
+	}
 
 	Volume struct {
 		ID                string            `json:"id"`
@@ -30,7 +41,7 @@ type (
 		State             string            `json:"state"`
 		CreatedAt         time.Time         `json:"created_at"`
 		UpdatedAt         time.Time         `json:"updated_at"`
-		Type              IDOrName          `json:"type"`
+		Type              Type              `json:"type"`
 		Error             *VolumeError      `json:"error,omitempty"`
 		Attachment        *VolumeAttachment `json:"attachment,omitempty"`
 		AvailabilityZone  string            `json:"availability_zone"`
@@ -190,7 +201,9 @@ func (s *volumeService) List(ctx context.Context, opts ListOptions) ([]Volume, e
 		query.Set("_sort", *opts.Sort)
 	}
 	if len(opts.Expand) > 0 {
-		query.Set("expand", strings.Join(opts.Expand, ","))
+		for _, expand := range opts.Expand {
+			query.Add("expand", expand)
+		}
 	}
 
 	result, err := mgc_http.ExecuteSimpleRequestWithRespBody[ListVolumesResponse](
@@ -228,8 +241,11 @@ func (s *volumeService) Create(ctx context.Context, req CreateVolumeRequest) (st
 // Get retrieves a specific volume
 func (s *volumeService) Get(ctx context.Context, id string, expand []string) (*Volume, error) {
 	path := fmt.Sprintf("/v1/volumes/%s", id)
+	query := make(url.Values)
 	if len(expand) > 0 {
-		path = fmt.Sprintf("%s?expand=%s", path, strings.Join(expand, ","))
+		for _, expand := range expand {
+			query.Add("expand", expand)
+		}
 	}
 
 	return mgc_http.ExecuteSimpleRequestWithRespBody[Volume](
@@ -239,7 +255,7 @@ func (s *volumeService) Get(ctx context.Context, id string, expand []string) (*V
 		http.MethodGet,
 		path,
 		nil,
-		nil,
+		query,
 	)
 }
 

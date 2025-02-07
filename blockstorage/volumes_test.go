@@ -232,7 +232,7 @@ func TestVolumeService_Get(t *testing.T) {
 			want: &Volume{
 				ID:     "vol1",
 				Status: "completed",
-				Type:   IDOrName{ID: helpers.StrPtr("type1")},
+				Type:   Type{ID: "type1"},
 			},
 			wantErr: false,
 		},
