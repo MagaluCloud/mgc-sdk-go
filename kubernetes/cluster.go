@@ -79,7 +79,7 @@ type (
 		ControlPlane  *NodePool      `json:"control_plane"`
 		KubeApiServer *KubeApiServer `json:"kube_api_server"`
 		NodePools     []NodePool     `json:"node_pools"`
-		Addonds       *Addons        `json:"addons"`
+		Addons        *Addons        `json:"addons"`
 		AllowedCIDRs  []string       `json:"allowed_cidrs"`
 	}
 

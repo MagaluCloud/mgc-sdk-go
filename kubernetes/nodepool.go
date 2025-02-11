@@ -39,17 +39,28 @@ type (
 		Results []NodePool `json:"results"`
 	}
 
+	InstanceTemplate struct {
+		Flavor    Flavor `json:"flavor"`
+		NodeImage string `json:"node_image"`
+		DiskSize  int    `json:"disk_size"`
+		DiskType  string `json:"disk_type"`
+	}
+
 	NodePool struct {
-		ID        string     `json:"id"`
-		Name      string     `json:"name"`
-		Flavor    string     `json:"flavor"`
-		Replicas  int        `json:"replicas"`
-		Tags      []string   `json:"tags"`
-		Taints    []Taint    `json:"taints"`
-		AutoScale *AutoScale `json:"auto_scale,omitempty"`
-		Status    Status     `json:"status"`
-		CreatedAt time.Time  `json:"created_at"`
-		UpdatedAt *time.Time `json:"updated_at,omitempty"`
+		ID              string           `json:"id"`
+		Name            string           `json:"name"`
+		IntanceTemplate InstanceTemplate `json:"instance_template"`
+		Replicas        int              `json:"replicas"`
+		Zone            []string         `json:"zone,omitempty"`
+		Tags            []string         `json:"tags"`
+		Labels          []string         `json:"labels,omitempty"`
+		Taints          []Taint          `json:"taints"`
+		SecurityGroups  []string         `json:"security_groups,omitempty"`
+		CreatedAt       time.Time        `json:"created_at"`
+		UpdatedAt       *time.Time       `json:"updated_at,omitempty"`
+		AutoScale       *AutoScale       `json:"auto_scale,omitempty"`
+		Status          Status           `json:"status"`
+		Flavor          string           `json:"flavor"`
 	}
 
 	CreateNodePoolRequest struct {

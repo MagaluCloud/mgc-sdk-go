@@ -20,17 +20,16 @@ type (
 	}
 
 	FlavorsAvailable struct {
-		NodePool     []FlavorWithSku `json:"nodepool"`
-		ControlPlane []FlavorWithSku `json:"controlplane"`
+		NodePool     []Flavor `json:"nodepool"`
+		ControlPlane []Flavor `json:"controlplane"`
 	}
 
-	FlavorWithSku struct {
+	Flavor struct {
 		Name string `json:"name"`
 		ID   string `json:"id"`
 		VCPU int    `json:"vcpu"`
 		RAM  int    `json:"ram"`
 		Size int    `json:"size"`
-		SKU  string `json:"sku"`
 	}
 
 	flavorService struct {
