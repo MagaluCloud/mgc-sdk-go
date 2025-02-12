@@ -55,21 +55,19 @@ type (
 		SSHKeyName       string        `json:"ssh_key_name,omitempty"`
 		AvailabilityZone string        `json:"availability_zone,omitempty"`
 		Network          Network       `json:"network"`
+		UserData         string        `json:"user_data,omitempty"`
+		Labels           []string      `json:"labels"`
 	}
 
 	CreateRequest struct {
 		AvailabilityZone *string                  `json:"availability_zone,omitempty"`
 		Image            IDOrName                 `json:"image"`
-		Labels           *CreateParametersLabels  `json:"labels,omitempty"`
+		Labels           *[]string                `json:"labels,omitempty"`
 		MachineType      IDOrName                 `json:"machine_type"`
 		Name             string                   `json:"name"`
 		Network          *CreateParametersNetwork `json:"network,omitempty"`
 		SshKeyName       *string                  `json:"ssh_key_name,omitempty"`
 		UserData         *string                  `json:"user_data,omitempty"`
-	}
-
-	CreateParametersLabels struct {
-		Values []string
 	}
 
 	CreateParametersNetwork struct {
@@ -79,21 +77,17 @@ type (
 	}
 
 	CreateParametersNetworkInterface struct {
-		Interface      IDOrName                                        `json:"interface"`
-		SecurityGroups *CreateParametersNetworkInterfaceSecurityGroups `json:"security_groups,omitempty"`
+		Interface      IDOrName                                              `json:"interface"`
+		SecurityGroups *[]CreateParametersNetworkInterfaceSecurityGroupsItem `json:"security_groups,omitempty"`
 	}
 
 	CreateParametersNetworkInterfaceSecurityGroupsItem struct {
 		Id string `json:"id"`
 	}
 
-	CreateParametersNetworkInterfaceSecurityGroups struct {
-		Items []CreateParametersNetworkInterfaceSecurityGroupsItem
-	}
-
 	CreateParametersNetworkVpc struct {
-		Vpc            IDOrName                                        `json:"vpc"`
-		SecurityGroups *CreateParametersNetworkInterfaceSecurityGroups `json:"security_groups,omitempty"`
+		Vpc            IDOrName                                              `json:"vpc"`
+		SecurityGroups *[]CreateParametersNetworkInterfaceSecurityGroupsItem `json:"security_groups,omitempty"`
 	}
 
 	IDOrName struct {
@@ -144,7 +138,7 @@ type (
 	}
 
 	Network struct {
-		Vpc        *IDOrName          `json:"vpc,omitempty"`
+		Vpc        IDOrName           `json:"vpc,omitempty"`
 		Interfaces []NetworkInterface `json:"interfaces,omitempty"`
 	}
 )
