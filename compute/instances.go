@@ -19,22 +19,42 @@ const (
 	InstanceNetworkExpand     = "network"
 )
 
+const (
+	VmInstanceHeaderVersionName = "x-api-version"
+	VmInstanceHeaderVersion     = "1.1"
+)
+
 type (
 	ListInstancesResponse struct {
 		Instances []Instance `json:"instances"`
 	}
 
+	InstanceTypes struct {
+		ID    string `json:"id"`
+		Name  string `json:"name"`
+		Vcpus int    `json:"vcpus"`
+		Ram   int    `json:"ram"`
+		Disk  int    `json:"disk"`
+	}
+
+	VmImage struct {
+		ID       string  `json:"id"`
+		Name     string  `json:"name"`
+		Platform *string `json:"platform,omitempty"`
+	}
+
 	Instance struct {
-		ID               string     `json:"id"`
-		Name             string     `json:"name,omitempty"`
-		MachineType      IDOrName   `json:"machine_type"`
-		Image            IDOrName   `json:"image"`
-		Status           string     `json:"status"`
-		State            string     `json:"state"`
-		CreatedAt        time.Time  `json:"created_at"`
-		UpdatedAt        *time.Time `json:"updated_at,omitempty"`
-		SSHKeyName       string     `json:"ssh_key_name,omitempty"`
-		AvailabilityZone string     `json:"availability_zone,omitempty"`
+		ID               string        `json:"id"`
+		Name             string        `json:"name,omitempty"`
+		MachineType      InstanceTypes `json:"machine_type"`
+		Image            VmImage       `json:"image"`
+		Status           string        `json:"status"`
+		State            string        `json:"state"`
+		CreatedAt        time.Time     `json:"created_at"`
+		UpdatedAt        *time.Time    `json:"updated_at,omitempty"`
+		SSHKeyName       string        `json:"ssh_key_name,omitempty"`
+		AvailabilityZone string        `json:"availability_zone,omitempty"`
+		Network          Network       `json:"network"`
 	}
 
 	CreateRequest struct {
@@ -107,6 +127,25 @@ type (
 
 	NICRequestInterface struct {
 		Interface IDOrName `json:"interface"`
+	}
+
+	IpAddressNewExpand struct {
+		PrivateIpv4 string `json:"private_ipv4"`
+		PublicIpv6  string `json:"public_ipv6,omitempty"`
+	}
+
+	NetworkInterface struct {
+		ID                   string             `json:"id"`
+		Name                 string             `json:"name"`
+		SecurityGroups       []string           `json:"security_groups"`
+		Primary              bool               `json:"primary"`
+		AssociatedPublicIpv4 string             `json:"associated_public_ipv4,omitempty"`
+		IpAddresses          IpAddressNewExpand `json:"ip_addresses"`
+	}
+
+	Network struct {
+		Vpc        *IDOrName          `json:"vpc,omitempty"`
+		Interfaces []NetworkInterface `json:"interfaces,omitempty"`
 	}
 )
 
@@ -181,6 +220,9 @@ func (s *instanceService) List(ctx context.Context, opts ListOptions) ([]Instanc
 		return nil, err
 	}
 
+	// Set API version header
+	req.Header.Set(VmInstanceHeaderVersionName, VmInstanceHeaderVersion)
+
 	q := req.URL.Query()
 	if opts.Limit != nil {
 		q.Add("_limit", strconv.Itoa(*opts.Limit))
@@ -199,32 +241,29 @@ func (s *instanceService) List(ctx context.Context, opts ListOptions) ([]Instanc
 	var response struct {
 		Instances []Instance `json:"instances"`
 	}
+
 	resp, err := mgc_http.Do(s.client.GetConfig(), ctx, req, &response)
 	if err != nil {
 		return nil, err
 	}
-
 	return resp.Instances, nil
 }
 
 // Create creates a new instance
 func (s *instanceService) Create(ctx context.Context, createReq CreateRequest) (string, error) {
-	var result struct {
-		ID string `json:"id"`
-	}
-
-	req, err := s.client.newRequest(ctx, http.MethodPost, "/v1/instances", createReq)
+	res, err := mgc_http.ExecuteSimpleRequestWithRespBody[struct{ ID string }](
+		ctx,
+		s.client.newRequest,
+		s.client.GetConfig(),
+		http.MethodPost,
+		"/v1/instances",
+		createReq,
+		nil,
+	)
 	if err != nil {
 		return "", err
 	}
-
-	resp, err := mgc_http.Do(s.client.GetConfig(), ctx, req, &result)
-	if err != nil {
-		return "", err
-	}
-
-	return resp.ID, nil
-
+	return res.ID, nil
 }
 
 // Get retrieves a specific instance
@@ -233,6 +272,9 @@ func (s *instanceService) Get(ctx context.Context, id string, expand []string) (
 	if err != nil {
 		return nil, err
 	}
+
+	// Set API version header
+	req.Header.Set(VmInstanceHeaderVersionName, VmInstanceHeaderVersion)
 
 	if len(expand) > 0 {
 		q := req.URL.Query()
@@ -271,19 +313,16 @@ func (s *instanceService) Rename(ctx context.Context, id string, newName string)
 	if id == "" {
 		return &client.ValidationError{Field: "id", Message: "cannot be empty"}
 	}
-
-	req, err := s.client.newRequest(ctx, http.MethodPatch,
-		fmt.Sprintf("/v1/instances/%s/rename", id),
-		UpdateNameRequest{Name: newName})
-	if err != nil {
-		return err
-	}
-
-	_, err = mgc_http.Do[any](s.client.GetConfig(), ctx, req, nil)
-	if err != nil {
-		return err
-	}
-	return nil
+	path := fmt.Sprintf("/v1/instances/%s/rename", id)
+	return mgc_http.ExecuteSimpleRequest(
+		ctx,
+		s.client.newRequest,
+		s.client.GetConfig(),
+		http.MethodPatch,
+		path,
+		UpdateNameRequest{Name: newName},
+		nil,
+	)
 }
 
 // Retype changes the instance machine type
@@ -291,19 +330,16 @@ func (s *instanceService) Retype(ctx context.Context, id string, retypeReq Retyp
 	if id == "" {
 		return &client.ValidationError{Field: "id", Message: "cannot be empty"}
 	}
-
-	req, err := s.client.newRequest(ctx, http.MethodPost,
-		fmt.Sprintf("/v1/instances/%s/retype", id),
-		retypeReq)
-	if err != nil {
-		return err
-	}
-
-	_, err = mgc_http.Do[any](s.client.GetConfig(), ctx, req, nil)
-	if err != nil {
-		return err
-	}
-	return nil
+	path := fmt.Sprintf("/v1/instances/%s/retype", id)
+	return mgc_http.ExecuteSimpleRequest(
+		ctx,
+		s.client.newRequest,
+		s.client.GetConfig(),
+		http.MethodPost,
+		path,
+		retypeReq,
+		nil,
+	)
 }
 
 // Start the instance
@@ -326,63 +362,58 @@ func (s *instanceService) executeInstanceAction(ctx context.Context, id string, 
 	if id == "" {
 		return &client.ValidationError{Field: "id", Message: "cannot be empty"}
 	}
-
-	req, err := s.client.newRequest(ctx, http.MethodPost,
-		fmt.Sprintf("/v1/instances/%s/%s", id, action),
-		nil)
-	if err != nil {
-		return err
-	}
-
-	_, err = mgc_http.Do[any](s.client.GetConfig(), ctx, req, nil)
-	if err != nil {
-		return err
-	}
-	return nil
+	path := fmt.Sprintf("/v1/instances/%s/%s", id, action)
+	return mgc_http.ExecuteSimpleRequest(
+		ctx,
+		s.client.newRequest,
+		s.client.GetConfig(),
+		http.MethodPost,
+		path,
+		nil,
+		nil,
+	)
 }
 
 func (s *instanceService) GetFirstWindowsPassword(ctx context.Context, id string) (*WindowsPasswordResponse, error) {
 	if id == "" {
 		return nil, &client.ValidationError{Field: "id", Message: "cannot be empty"}
 	}
-
-	req, err := s.client.newRequest(ctx, http.MethodGet,
-		fmt.Sprintf("/v1/instances/config/%s/first-windows-password", id), nil)
+	path := fmt.Sprintf("/v1/instances/config/%s/first-windows-password", id)
+	result, err := mgc_http.ExecuteSimpleRequestWithRespBody[WindowsPasswordResponse](
+		ctx,
+		s.client.newRequest,
+		s.client.GetConfig(),
+		http.MethodGet,
+		path,
+		nil,
+		nil,
+	)
 	if err != nil {
 		return nil, err
 	}
-
-	var response WindowsPasswordResponse
-	resp, err := mgc_http.Do(s.client.GetConfig(), ctx, req, &response)
-	if err != nil {
-		return nil, err
-	}
-
-	return resp, nil
+	return result, nil
 }
 
 func (s *instanceService) AttachNetworkInterface(ctx context.Context, req NICRequest) error {
-	httpReq, err := s.client.newRequest(ctx, http.MethodPost, "/v1/instances/network-interface/attach", req)
-	if err != nil {
-		return err
-	}
-
-	_, err = mgc_http.Do[any](s.client.GetConfig(), ctx, httpReq, nil)
-	if err != nil {
-		return err
-	}
-	return nil
+	return mgc_http.ExecuteSimpleRequest(
+		ctx,
+		s.client.newRequest,
+		s.client.GetConfig(),
+		http.MethodPost,
+		"/v1/instances/network-interface/attach",
+		req,
+		nil,
+	)
 }
 
 func (s *instanceService) DetachNetworkInterface(ctx context.Context, req NICRequest) error {
-	httpReq, err := s.client.newRequest(ctx, http.MethodPost, "/v1/instances/network-interface/detach", req)
-	if err != nil {
-		return err
-	}
-
-	_, err = mgc_http.Do[any](s.client.GetConfig(), ctx, httpReq, nil)
-	if err != nil {
-		return err
-	}
-	return nil
+	return mgc_http.ExecuteSimpleRequest(
+		ctx,
+		s.client.newRequest,
+		s.client.GetConfig(),
+		http.MethodPost,
+		"/v1/instances/network-interface/detach",
+		req,
+		nil,
+	)
 }

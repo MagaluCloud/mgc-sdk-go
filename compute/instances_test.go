@@ -13,6 +13,7 @@ import (
 )
 
 func TestInstanceService_List(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name       string
 		opts       ListOptions
@@ -114,6 +115,7 @@ func TestInstanceService_List(t *testing.T) {
 }
 
 func TestInstanceService_Create(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name       string
 		req        CreateRequest
@@ -203,6 +205,7 @@ func TestInstanceService_Create(t *testing.T) {
 }
 
 func TestInstanceService_Get(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name       string
 		id         string
@@ -292,6 +295,7 @@ func TestInstanceService_Get(t *testing.T) {
 }
 
 func TestInstanceService_Delete(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name           string
 		id             string
@@ -351,6 +355,7 @@ func TestInstanceService_Delete(t *testing.T) {
 }
 
 func TestInstanceService_Rename(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name       string
 		id         string
@@ -409,6 +414,7 @@ func TestInstanceService_Rename(t *testing.T) {
 }
 
 func TestInstanceService_Retype(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name       string
 		id         string
@@ -475,6 +481,7 @@ func TestInstanceService_Retype(t *testing.T) {
 }
 
 func TestInstanceService_StateOperations(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name       string
 		operation  string
@@ -584,6 +591,7 @@ func TestInstanceService_StateOperations(t *testing.T) {
 }
 
 func TestInstanceService_Concurrent(t *testing.T) {
+	t.Parallel()
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
@@ -631,6 +639,7 @@ func strPtr(s string) *string {
 
 // here
 func TestInstanceService_ListWithExpand(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name       string
 		opts       ListOptions
@@ -762,6 +771,7 @@ func TestInstanceService_ListWithExpand(t *testing.T) {
 }
 
 func TestInstanceService_GetWithExpand(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name       string
 		id         string
@@ -906,6 +916,7 @@ func TestInstanceService_GetWithExpand(t *testing.T) {
 }
 
 func TestInstanceService_AttachNetworkInterface(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name       string
 		req        NICRequest
@@ -987,6 +998,7 @@ func TestInstanceService_AttachNetworkInterface(t *testing.T) {
 }
 
 func TestInstanceService_DetachNetworkInterface(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name       string
 		req        NICRequest
@@ -1068,6 +1080,7 @@ func TestInstanceService_DetachNetworkInterface(t *testing.T) {
 }
 
 func TestInstanceService_GetFirstWindowsPassword(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name       string
 		id         string
