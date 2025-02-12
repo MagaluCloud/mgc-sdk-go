@@ -251,7 +251,6 @@ func (s *instanceService) List(ctx context.Context, opts ListOptions) ([]Instanc
 
 // Create creates a new instance
 func (s *instanceService) Create(ctx context.Context, createReq CreateRequest) (string, error) {
-	// updated to use ExecuteSimpleRequestWithRespBody with inline response
 	res, err := mgc_http.ExecuteSimpleRequestWithRespBody[struct{ ID string }](
 		ctx,
 		s.client.newRequest,
