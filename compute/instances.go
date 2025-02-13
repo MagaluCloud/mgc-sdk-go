@@ -51,12 +51,18 @@ type (
 		Status           string        `json:"status"`
 		State            string        `json:"state"`
 		CreatedAt        time.Time     `json:"created_at"`
-		UpdatedAt        *time.Time    `json:"updated_at,omitempty"`
+		UpdatedAt        time.Time     `json:"updated_at,omitempty"`
 		SSHKeyName       string        `json:"ssh_key_name,omitempty"`
 		AvailabilityZone string        `json:"availability_zone,omitempty"`
 		Network          Network       `json:"network"`
 		UserData         string        `json:"user_data,omitempty"`
 		Labels           []string      `json:"labels"`
+		Error            Error         `json:"error,omitempty"`
+	}
+
+	Error struct {
+		Message string `json:"message"`
+		Slug    string `json:"slug"`
 	}
 
 	CreateRequest struct {
