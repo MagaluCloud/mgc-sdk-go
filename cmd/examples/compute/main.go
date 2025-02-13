@@ -2,9 +2,11 @@ package main
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"log"
 	"os"
+	"time"
 
 	"github.com/MagaluCloud/mgc-sdk-go/client"
 	"github.com/MagaluCloud/mgc-sdk-go/compute"
@@ -16,6 +18,7 @@ func main() {
 	ExampleListImages()
 	ExampleListInstances()
 	id := ExampleCreateInstance()
+	time.Sleep(5 * time.Second)
 	ExampleGetInstance(id)
 	ExampleRenameAndRetypeInstance(id)
 	ExampleDeleteInstance(id)
@@ -103,8 +106,11 @@ func ExampleCreateInstance() string {
 	computeClient := compute.New(c)
 
 	// Create a new instance
+	userData := "#!/bin/bash\necho \"Hello World\"\n"
+	base64UserData := base64.StdEncoding.EncodeToString([]byte(userData))
+	date := time.Now().Format("2006-01-02-15-04-05")
 	createReq := compute.CreateRequest{
-		Name: "my-test-vm",
+		Name: "my-test-" + date,
 		MachineType: compute.IDOrName{
 			Name: helpers.StrPtr("BV1-1-40"),
 		},
@@ -115,6 +121,7 @@ func ExampleCreateInstance() string {
 			AssociatePublicIp: helpers.BoolPtr(false),
 		},
 		SshKeyName: helpers.StrPtr("publio"),
+		UserData:   helpers.StrPtr(base64UserData),
 	}
 
 	id, err := computeClient.Instances().Create(context.Background(), createReq)
@@ -137,7 +144,7 @@ func ExampleGetInstance(id string) {
 	ctx := context.Background()
 
 	// Get instance details
-	instance, err := computeClient.Instances().Get(ctx, id, []string{compute.InstanceNetworkExpand})
+	instance, err := computeClient.Instances().Get(ctx, id, []string{compute.InstanceNetworkExpand, compute.InstanceMachineTypeExpand, compute.InstanceImageExpand})
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -149,8 +156,13 @@ func ExampleGetInstance(id string) {
 	fmt.Printf("  State: %s\n", instance.State)
 	fmt.Printf("  Created At: %s\n", instance.CreatedAt)
 	fmt.Printf("  Updated At: %s\n", instance.UpdatedAt)
-	fmt.Printf("  VPC ID: %s\n", *instance.Network.Vpc.ID)
-	fmt.Printf("  VPC Name: %s\n", *instance.Network.Vpc.Name)
+	if instance.Network.Vpc.ID != nil {
+		fmt.Printf("  VPC ID: %s\n", *instance.Network.Vpc.ID)
+	}
+	if instance.Network.Vpc.Name != nil {
+		fmt.Printf("  VPC Name: %s\n", *instance.Network.Vpc.Name)
+	}
+	fmt.Println("  User Data: ", instance.UserData)
 	for _, ni := range instance.Network.Interfaces {
 		fmt.Println("  Interface ID: ", ni.ID)
 		fmt.Println("  Interface Name: ", ni.Name)
