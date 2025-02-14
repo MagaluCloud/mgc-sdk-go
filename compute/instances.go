@@ -57,6 +57,12 @@ type (
 		Network          *Network       `json:"network"`
 		UserData         *string        `json:"user_data,omitempty"`
 		Labels           *[]string      `json:"labels"`
+		Error            *Error         `json:"error,omitempty"`
+	}
+
+	Error struct {
+		Message string `json:"message"`
+		Slug    string `json:"slug"`
 	}
 
 	CreateRequest struct {
