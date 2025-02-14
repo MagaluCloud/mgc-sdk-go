@@ -25,8 +25,8 @@ type (
 		EndStandardSupportAt *string             `json:"end_standard_support_at,omitempty"`
 		EndLifeAt            *string             `json:"end_life_at,omitempty"`
 		MinimumRequirements  MinimumRequirements `json:"minimum_requirements"`
-		Labels               []string            `json:"labels,omitempty"`
-		AvailabilityZones    []string            `json:"availability_zones,omitempty"`
+		Labels               *[]string           `json:"labels,omitempty"`
+		AvailabilityZones    *[]string           `json:"availability_zones,omitempty"`
 	}
 
 	// MinimumRequirements represents the minimum hardware requirements for an image

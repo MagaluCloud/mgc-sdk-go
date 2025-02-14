@@ -30,34 +30,34 @@ type (
 	}
 
 	InstanceTypes struct {
-		ID    string `json:"id"`
-		Name  string `json:"name"`
-		Vcpus int    `json:"vcpus"`
-		Ram   int    `json:"ram"`
-		Disk  int    `json:"disk"`
+		ID    string  `json:"id"`
+		Name  *string `json:"name"`
+		Vcpus *int    `json:"vcpus"`
+		Ram   *int    `json:"ram"`
+		Disk  *int    `json:"disk"`
 	}
 
 	VmImage struct {
 		ID       string  `json:"id"`
-		Name     string  `json:"name"`
+		Name     *string `json:"name"`
 		Platform *string `json:"platform,omitempty"`
 	}
 
 	Instance struct {
-		ID               string        `json:"id"`
-		Name             string        `json:"name,omitempty"`
-		MachineType      InstanceTypes `json:"machine_type"`
-		Image            VmImage       `json:"image"`
-		Status           string        `json:"status"`
-		State            string        `json:"state"`
-		CreatedAt        time.Time     `json:"created_at"`
-		UpdatedAt        time.Time     `json:"updated_at,omitempty"`
-		SSHKeyName       string        `json:"ssh_key_name,omitempty"`
-		AvailabilityZone string        `json:"availability_zone,omitempty"`
-		Network          Network       `json:"network"`
-		UserData         string        `json:"user_data,omitempty"`
-		Labels           []string      `json:"labels"`
-		Error            Error         `json:"error,omitempty"`
+		ID               string         `json:"id"`
+		Name             *string        `json:"name,omitempty"`
+		MachineType      *InstanceTypes `json:"machine_type"`
+		Image            *VmImage       `json:"image"`
+		Status           string         `json:"status"`
+		State            string         `json:"state"`
+		CreatedAt        time.Time      `json:"created_at"`
+		UpdatedAt        *time.Time     `json:"updated_at,omitempty"`
+		SSHKeyName       *string        `json:"ssh_key_name,omitempty"`
+		AvailabilityZone *string        `json:"availability_zone,omitempty"`
+		Network          *Network       `json:"network"`
+		UserData         *string        `json:"user_data,omitempty"`
+		Labels           *[]string      `json:"labels"`
+		Error            *Error         `json:"error,omitempty"`
 	}
 
 	Error struct {
@@ -137,15 +137,15 @@ type (
 	NetworkInterface struct {
 		ID                   string             `json:"id"`
 		Name                 string             `json:"name"`
-		SecurityGroups       []string           `json:"security_groups"`
-		Primary              bool               `json:"primary"`
-		AssociatedPublicIpv4 string             `json:"associated_public_ipv4,omitempty"`
+		SecurityGroups       *[]string          `json:"security_groups"`
+		Primary              *bool              `json:"primary"`
+		AssociatedPublicIpv4 *string            `json:"associated_public_ipv4,omitempty"`
 		IpAddresses          IpAddressNewExpand `json:"ip_addresses"`
 	}
 
 	Network struct {
-		Vpc        IDOrName           `json:"vpc,omitempty"`
-		Interfaces []NetworkInterface `json:"interfaces,omitempty"`
+		Vpc        *IDOrName           `json:"vpc,omitempty"`
+		Interfaces *[]NetworkInterface `json:"interfaces,omitempty"`
 	}
 )
 
