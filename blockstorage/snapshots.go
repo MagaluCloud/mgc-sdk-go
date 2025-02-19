@@ -25,7 +25,7 @@ type (
 		ID                string           `json:"id"`
 		Name              string           `json:"name"`
 		Size              int              `json:"size"`
-		Description       string           `json:"description"`
+		Description       *string          `json:"description"`
 		State             SnapshotStateV1  `json:"state"`
 		Status            SnapshotStatusV1 `json:"status"`
 		CreatedAt         time.Time        `json:"created_at"`
