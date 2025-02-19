@@ -96,8 +96,8 @@ func ExampleCreateClusterWithoutNodepool(k8sClient *kubernetes.KubernetesClient)
 	// Criar um novo cluster
 	createReq := kubernetes.ClusterRequest{
 		Name:         randomString(),
-		Version:      "v1.30.2",
-		Description:  "Cluster de exemplo",
+		Version:      strPtr("v1.30.2"),
+		Description:  strPtr("Cluster de exemplo"),
 		NodePools:    []kubernetes.CreateNodePoolRequest{},
 		AllowedCIDRs: []string{"192.168.0.0/24"},
 	}
@@ -117,8 +117,8 @@ func ExampleCreateCluster(k8sClient *kubernetes.KubernetesClient) string {
 	// Criar um novo cluster
 	createReq := kubernetes.ClusterRequest{
 		Name:        randomString(),
-		Version:     "v1.30.2",
-		Description: "Cluster de exemplo",
+		Version:     strPtr("v1.30.2"),
+		Description: strPtr("Cluster de exemplo"),
 		NodePools: []kubernetes.CreateNodePoolRequest{
 			{
 				Name:     randomString(),
@@ -137,6 +137,10 @@ func ExampleCreateCluster(k8sClient *kubernetes.KubernetesClient) string {
 
 	fmt.Printf("Cluster criado com ID: %s\n", cluster.ID)
 	return cluster.ID
+}
+
+func strPtr(s string) *string {
+	return &s
 }
 
 func ExampleListClusters(k8sClient *kubernetes.KubernetesClient) {

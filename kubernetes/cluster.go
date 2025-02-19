@@ -29,16 +29,16 @@ type (
 	}
 
 	Network struct {
-		UUID     string `json:"uuid"`
-		CIDR     string `json:"cidr"`
-		Name     string `json:"name"`
-		SubnetID string `json:"subnet_id"`
+		UUID     string  `json:"uuid"`
+		CIDR     string  `json:"cidr"`
+		Name     *string `json:"name,omitempty"`
+		SubnetID string  `json:"subnet_id"`
 	}
 
 	Addons struct {
-		Loadbalance string `json:"loadbalance"`
-		Volume      string `json:"volume"`
-		Secrets     string `json:"secrets"`
+		Loadbalance *string `json:"loadbalance,omitempty"`
+		Volume      *string `json:"volume,omitempty"`
+		Secrets     *string `json:"secrets,omitempty"`
 	}
 
 	KubeApiServer struct {
@@ -71,16 +71,16 @@ type (
 		ID            string         `json:"id"`
 		Status        Status         `json:"status"`
 		Version       string         `json:"version"`
-		Description   *string        `json:"description"`
-		Region        string         `json:"region"`
-		CreatedAt     *time.Time     `json:"created_at"`
+		Description   *string        `json:"description,omitempty"`
+		Region        *string        `json:"region,omitempty"`
+		CreatedAt     time.Time      `json:"created_at"`
 		UpdatedAt     *time.Time     `json:"updated_at,omitempty"`
-		Network       *Network       `json:"network"`
-		ControlPlane  *NodePool      `json:"control_plane"`
-		KubeApiServer *KubeApiServer `json:"kube_api_server"`
-		NodePools     []NodePool     `json:"node_pools"`
-		Addons        *Addons        `json:"addons"`
-		AllowedCIDRs  []string       `json:"allowed_cidrs"`
+		Network       *Network       `json:"network,omitempty"`
+		ControlPlane  *NodePool      `json:"control_plane,omitempty"`
+		KubeApiServer *KubeApiServer `json:"kube_api_server,omitempty"`
+		NodePools     []NodePool     `json:"node_pools,omitempty"`
+		Addons        *Addons        `json:"addons,omitempty"`
+		AllowedCIDRs  []string       `json:"allowed_cidrs,omitempty"`
 	}
 
 	CreateClusterResponse struct {
@@ -91,9 +91,9 @@ type (
 
 	ClusterRequest struct {
 		Name         string                  `json:"name"`
-		Version      string                  `json:"version"`
-		Description  string                  `json:"description,omitempty"`
-		NodePools    []CreateNodePoolRequest `json:"node_pools"`
+		Version      *string                 `json:"version,omitempty"`
+		Description  *string                 `json:"description,omitempty"`
+		NodePools    []CreateNodePoolRequest `json:"node_pools,omitempty"`
 		AllowedCIDRs []string                `json:"allowed_cidrs,omitempty"`
 	}
 
