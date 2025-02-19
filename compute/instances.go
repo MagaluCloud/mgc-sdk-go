@@ -61,7 +61,7 @@ type (
 	}
 
 	Error struct {
-		Message string `json:"message"`
+		Message string `json:"messaage"`
 		Slug    string `json:"slug"`
 	}
 
