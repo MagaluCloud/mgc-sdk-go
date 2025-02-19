@@ -83,8 +83,8 @@ type (
 	}
 
 	CreateParametersNetworkInterface struct {
-		Interface      IDOrName                                              `json:"interface"`
-		SecurityGroups *[]CreateParametersNetworkInterfaceSecurityGroupsItem `json:"security_groups,omitempty"`
+		Interface      IDOrName                                             `json:"interface"`
+		SecurityGroups []CreateParametersNetworkInterfaceSecurityGroupsItem `json:"security_groups,omitempty"`
 	}
 
 	CreateParametersNetworkInterfaceSecurityGroupsItem struct {
@@ -92,8 +92,8 @@ type (
 	}
 
 	CreateParametersNetworkVpc struct {
-		Vpc            IDOrName                                              `json:"vpc"`
-		SecurityGroups *[]CreateParametersNetworkInterfaceSecurityGroupsItem `json:"security_groups,omitempty"`
+		Vpc            IDOrName                                             `json:"vpc"`
+		SecurityGroups []CreateParametersNetworkInterfaceSecurityGroupsItem `json:"security_groups,omitempty"`
 	}
 
 	IDOrName struct {
