@@ -17,16 +17,16 @@ type (
 
 	// SubnetResponse represents a subnet resource response
 	SubnetResponse struct {
-		ID           string                         `json:"id"`
-		VPCID        string                         `json:"vpc_id"`
-		Name         string                         `json:"name,omitempty"`
-		Description  string                         `json:"description,omitempty"`
-		CIDRBlock    string                         `json:"cidr_block"`
-		SubnetPoolID string                         `json:"subnetpool_id"`
-		IPVersion    string                         `json:"ip_version"`
-		Zone         string                         `json:"zone"`
-		CreatedAt    utils.LocalDateTimeWithoutZone `json:"created_at,omitempty"`
-		Updated      utils.LocalDateTimeWithoutZone `json:"updated,omitempty"`
+		ID           string                          `json:"id"`
+		VPCID        string                          `json:"vpc_id"`
+		Name         *string                         `json:"name,omitempty"`
+		Description  *string                         `json:"description,omitempty"`
+		CIDRBlock    string                          `json:"cidr_block"`
+		SubnetPoolID string                          `json:"subnetpool_id"`
+		IPVersion    string                          `json:"ip_version"`
+		Zone         string                          `json:"zone"`
+		CreatedAt    *utils.LocalDateTimeWithoutZone `json:"created_at,omitempty"`
+		Updated      *utils.LocalDateTimeWithoutZone `json:"updated,omitempty"`
 	}
 
 	SubnetResponseDetail struct {
@@ -43,16 +43,16 @@ type (
 
 	// SubnetCreateRequest represents parameters for creating a new subnet
 	SubnetCreateRequest struct {
-		Name           string   `json:"name"`
-		Description    string   `json:"description,omitempty"`
-		CIDRBlock      string   `json:"cidr_block"`
-		IPVersion      int      `json:"ip_version"`
-		DNSNameservers []string `json:"dns_nameservers,omitempty"`
-		SubnetPoolID   string   `json:"subnetpool_id,omitempty"`
+		Name           string    `json:"name"`
+		Description    *string   `json:"description,omitempty"`
+		CIDRBlock      string    `json:"cidr_block"`
+		IPVersion      int       `json:"ip_version"`
+		DNSNameservers *[]string `json:"dns_nameservers,omitempty"`
+		SubnetPoolID   *string   `json:"subnetpool_id,omitempty"`
 	}
 
 	SubnetPatchRequest struct {
-		DNSNameservers []string `json:"dns_nameservers,omitempty"`
+		DNSNameservers *[]string `json:"dns_nameservers,omitempty"`
 	}
 
 	// SubnetCreateResponse represents the response after creating a subnet

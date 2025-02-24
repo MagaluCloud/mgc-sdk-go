@@ -17,30 +17,31 @@ type (
 
 	// SecurityGroupResponse represents a security group resource
 	SecurityGroupResponse struct {
-		ID          string                         `json:"id,omitempty"`
-		VPCID       string                         `json:"vpc_id,omitempty"`
-		Name        string                         `json:"name,omitempty"`
-		Description string                         `json:"description,omitempty"`
-		CreatedAt   utils.LocalDateTimeWithoutZone `json:"created_at,omitempty"`
-		Updated     utils.LocalDateTimeWithoutZone `json:"updated,omitempty"`
-		Status      string                         `json:"status"`
-		Error       string                         `json:"error,omitempty"`
-		TenantID    string                         `json:"tenant_id,omitempty"`
-		ProjectType string                         `json:"project_type,omitempty"`
-		IsDefault   bool                           `json:"is_default,omitempty"`
+		ID          *string                         `json:"id,omitempty"`
+		VPCID       *string                         `json:"vpc_id,omitempty"`
+		Name        *string                         `json:"name,omitempty"`
+		Description *string                         `json:"description,omitempty"`
+		CreatedAt   *utils.LocalDateTimeWithoutZone `json:"created_at,omitempty"`
+		Updated     *utils.LocalDateTimeWithoutZone `json:"updated,omitempty"`
+		Status      string                          `json:"status"`
+		Error       *string                         `json:"error,omitempty"`
+		TenantID    *string                         `json:"tenant_id,omitempty"`
+		ProjectType *string                         `json:"project_type,omitempty"`
+		IsDefault   *bool                           `json:"is_default,omitempty"`
 	}
 
 	// SecurityGroupDetailResponse represents detailed information about a security group
 	SecurityGroupDetailResponse struct {
 		SecurityGroupResponse
-		ExternalID string         `json:"external_id,omitempty"`
-		Rules      []RuleResponse `json:"rules"`
+		ExternalID *string         `json:"external_id,omitempty"`
+		Rules      *[]RuleResponse `json:"rules"`
 	}
 
 	// SecurityGroupCreateRequest represents the parameters for creating a new security group
 	SecurityGroupCreateRequest struct {
-		Name        string `json:"name"`
-		Description string `json:"description,omitempty"`
+		Name             string  `json:"name"`
+		Description      *string `json:"description,omitempty"`
+		SkipDefaultRules *bool   `json:"skip_default_rules,omitempty"`
 	}
 
 	// SecurityGroupCreateResponse represents the response after creating a security group

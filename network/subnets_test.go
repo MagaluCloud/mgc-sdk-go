@@ -10,12 +10,13 @@ import (
 	"time"
 
 	"github.com/MagaluCloud/mgc-sdk-go/client"
+	"github.com/MagaluCloud/mgc-sdk-go/helpers"
 	"github.com/MagaluCloud/mgc-sdk-go/internal/utils"
 )
 
 func TestSubnetService_Get(t *testing.T) {
-	createdAt, _ := time.Parse(time.RFC3339, "2024-01-01T00:00:00Z")
-	updatedAt, _ := time.Parse(time.RFC3339, "2024-01-01T00:00:00Z")
+	timeparsed, _ := time.Parse(time.RFC3339, "2024-01-01T00:00:00Z")
+	localDatew := utils.LocalDateTimeWithoutZone(timeparsed)
 
 	tests := []struct {
 		name       string
@@ -43,11 +44,11 @@ func TestSubnetService_Get(t *testing.T) {
 			want: &SubnetResponseDetail{
 				SubnetResponse: SubnetResponse{
 					ID:        "subnet1",
-					Name:      "prod-subnet",
+					Name:      helpers.StrPtr("prod-subnet"),
 					VPCID:     "vpc1",
 					CIDRBlock: "10.0.0.0/24",
-					CreatedAt: utils.LocalDateTimeWithoutZone(createdAt),
-					Updated:   utils.LocalDateTimeWithoutZone(updatedAt),
+					CreatedAt: &localDatew,
+					Updated:   &localDatew,
 				},
 				GatewayIP:      "10.0.0.1",
 				DNSNameservers: []string{"8.8.8.8"},
@@ -96,7 +97,7 @@ func TestSubnetService_Get(t *testing.T) {
 
 			assertNoError(t, err)
 			assertEqual(t, tt.want.ID, subnet.ID)
-			assertEqual(t, tt.want.Name, subnet.Name)
+			assertEqual(t, *tt.want.Name, *subnet.Name)
 			assertEqual(t, tt.want.GatewayIP, subnet.GatewayIP)
 			assertEqual(t, len(tt.want.DNSNameservers), len(subnet.DNSNameservers))
 			assertEqual(t, len(tt.want.DHCPPools), len(subnet.DHCPPools))
@@ -175,7 +176,7 @@ func TestSubnetService_Update(t *testing.T) {
 			name: "successful update dns",
 			id:   "subnet1",
 			request: SubnetPatchRequest{
-				DNSNameservers: []string{"8.8.8.8", "1.1.1.1"},
+				DNSNameservers: &[]string{"8.8.8.8", "1.1.1.1"},
 			},
 			response:   `{"id": "subnet1"}`,
 			statusCode: http.StatusOK,
@@ -186,7 +187,7 @@ func TestSubnetService_Update(t *testing.T) {
 			name: "empty dns servers",
 			id:   "subnet1",
 			request: SubnetPatchRequest{
-				DNSNameservers: []string{},
+				DNSNameservers: &[]string{},
 			},
 			response:   `{"id": "subnet1"}`,
 			statusCode: http.StatusOK,
@@ -207,7 +208,7 @@ func TestSubnetService_Update(t *testing.T) {
 			name: "non-existent subnet",
 			id:   "invalid",
 			request: SubnetPatchRequest{
-				DNSNameservers: []string{"8.8.8.8"},
+				DNSNameservers: &[]string{"8.8.8.8"},
 			},
 			response:   `{"error": "subnet not found"}`,
 			statusCode: http.StatusNotFound,
@@ -223,12 +224,13 @@ func TestSubnetService_Update(t *testing.T) {
 				assertEqual(t, fmt.Sprintf("/network/v0/subnets/%s", tt.id), r.URL.Path)
 				assertEqual(t, http.MethodPatch, r.Method)
 
-				var req SubnetPatchRequest
-				err := json.NewDecoder(r.Body).Decode(&req)
-				assertNoError(t, err)
+				if !tt.wantErr {
+					var req SubnetPatchRequest
+					err := json.NewDecoder(r.Body).Decode(&req)
+					assertNoError(t, err)
 
-				assertEqualSlice(t, tt.request.DNSNameservers, req.DNSNameservers)
-
+					assertEqualSlice(t, *tt.request.DNSNameservers, *req.DNSNameservers)
+				}
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(tt.statusCode)
 				w.Write([]byte(tt.response))

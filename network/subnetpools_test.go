@@ -125,7 +125,7 @@ func TestSubnetPoolService_Get(t *testing.T) {
 			want: &SubnetPoolDetailsResponse{
 				ID:        "pool1",
 				Name:      "test-pool",
-				CIDR:      "10.0.0.0/16",
+				CIDR:      helpers.StrPtr("10.0.0.0/16"),
 				IPVersion: 4,
 				CreatedAt: utils.LocalDateTimeWithoutZone(createdAt),
 			},
@@ -164,7 +164,7 @@ func TestSubnetPoolService_Get(t *testing.T) {
 			assertNoError(t, err)
 			assertEqual(t, tt.want.ID, pool.ID)
 			assertEqual(t, tt.want.Name, pool.Name)
-			assertEqual(t, tt.want.CIDR, pool.CIDR)
+			assertEqual(t, *tt.want.CIDR, *pool.CIDR)
 		})
 	}
 }
@@ -183,7 +183,7 @@ func TestSubnetPoolService_Create(t *testing.T) {
 			request: CreateSubnetPoolRequest{
 				Name:        "test-pool",
 				Description: "test description",
-				CIDR:        "10.0.0.0/16",
+				CIDR:        helpers.StrPtr("10.0.0.0/16"),
 			},
 			response:   `{"id": "pool-new"}`,
 			statusCode: http.StatusOK,
@@ -209,13 +209,14 @@ func TestSubnetPoolService_Create(t *testing.T) {
 				assertEqual(t, "/network/v0/subnetpools", r.URL.Path)
 				assertEqual(t, http.MethodPost, r.Method)
 
-				var req CreateSubnetPoolRequest
-				err := json.NewDecoder(r.Body).Decode(&req)
-				assertNoError(t, err)
-				assertEqual(t, tt.request.Name, req.Name)
-				assertEqual(t, tt.request.Description, req.Description)
-				assertEqual(t, tt.request.CIDR, req.CIDR)
-
+				if !tt.wantErr {
+					var req CreateSubnetPoolRequest
+					err := json.NewDecoder(r.Body).Decode(&req)
+					assertNoError(t, err)
+					assertEqual(t, tt.request.Name, req.Name)
+					assertEqual(t, tt.request.Description, req.Description)
+					assertEqual(t, *tt.request.CIDR, *req.CIDR)
+				}
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(tt.statusCode)
 				w.Write([]byte(tt.response))

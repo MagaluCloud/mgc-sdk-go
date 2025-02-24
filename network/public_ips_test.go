@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/MagaluCloud/mgc-sdk-go/client"
+	"github.com/MagaluCloud/mgc-sdk-go/helpers"
 	"github.com/MagaluCloud/mgc-sdk-go/internal/utils"
 )
 
@@ -77,9 +78,8 @@ func TestPublicIPService_List(t *testing.T) {
 
 func TestPublicIPService_Get(t *testing.T) {
 	t.Parallel()
-	createdAt, _ := time.Parse(time.RFC3339, "2024-01-01T00:00:00Z")
-	updatedAt, _ := time.Parse(time.RFC3339, "2024-01-02T00:00:00Z")
-
+	b, _ := time.Parse(time.RFC3339, "2024-01-01T00:00:00Z")
+	parsedTime := utils.LocalDateTimeWithoutZone(b)
 	tests := []struct {
 		name       string
 		ipID       string
@@ -101,12 +101,12 @@ func TestPublicIPService_Get(t *testing.T) {
 			}`,
 			statusCode: http.StatusOK,
 			want: &PublicIPResponse{
-				ID:        "ip1",
-				PublicIP:  "203.0.113.5",
-				VPCID:     "vpc1",
-				Status:    "ACTIVE",
-				CreatedAt: utils.LocalDateTimeWithoutZone(createdAt),
-				Updated:   utils.LocalDateTimeWithoutZone(updatedAt),
+				ID:        helpers.StrPtr("ip1"),
+				PublicIP:  helpers.StrPtr("203.0.113.5"),
+				VPCID:     helpers.StrPtr("vpc1"),
+				Status:    helpers.StrPtr("ACTIVE"),
+				Updated:   &parsedTime,
+				CreatedAt: &parsedTime,
 			},
 			wantErr: false,
 		},
@@ -148,9 +148,9 @@ func TestPublicIPService_Get(t *testing.T) {
 			}
 
 			assertNoError(t, err)
-			assertEqual(t, tt.want.ID, ip.ID)
-			assertEqual(t, tt.want.PublicIP, ip.PublicIP)
-			assertEqual(t, tt.want.Status, ip.Status)
+			assertEqual(t, *tt.want.ID, *ip.ID)
+			assertEqual(t, *tt.want.PublicIP, *ip.PublicIP)
+			assertEqual(t, *tt.want.Status, *ip.Status)
 		})
 	}
 }
