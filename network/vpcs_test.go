@@ -29,7 +29,7 @@ func TestVPCService_Create(t *testing.T) {
 			name: "successful create",
 			request: CreateVPCRequest{
 				Name:        "prod-vpc",
-				Description: "Production VPC",
+				Description: helpers.StrPtr("Production VPC"),
 			},
 			response:   `{"id": "vpc1", "status": "creating"}`,
 			statusCode: http.StatusCreated,
@@ -39,7 +39,7 @@ func TestVPCService_Create(t *testing.T) {
 		{
 			name: "missing name",
 			request: CreateVPCRequest{
-				Description: "Invalid VPC",
+				Description: helpers.StrPtr("Invalid VPC"),
 			},
 			response:   `{"error": "name is required"}`,
 			statusCode: http.StatusBadRequest,
@@ -59,7 +59,7 @@ func TestVPCService_Create(t *testing.T) {
 				err := json.NewDecoder(r.Body).Decode(&req)
 				assertNoError(t, err)
 				assertEqual(t, tt.request.Name, req.Name)
-				assertEqual(t, tt.request.Description, req.Description)
+				assertEqual(t, *tt.request.Description, *req.Description)
 
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(tt.statusCode)
@@ -265,14 +265,11 @@ func TestVPCService_ListPorts(t *testing.T) {
 
 			assertNoError(t, err)
 
-			switch res := result.(type) {
-			case []PortResponse:
-				assertEqual(t, tt.wantCount, len(res))
-			case []PortSimpleResponse:
-				assertEqual(t, tt.wantCount, len(res))
-			default:
-				t.Errorf("unexpected response type")
+			if tt.detailed {
+				assertEqual(t, tt.wantCount, len(*result.Ports))
+				return
 			}
+			assertEqual(t, tt.wantCount, len(result.PortsSimplified))
 		})
 	}
 }
@@ -292,9 +289,9 @@ func TestVPCService_CreatePort(t *testing.T) {
 			vpcID: "vpc1",
 			request: PortCreateRequest{
 				Name:           "web-port",
-				HasPIP:         true,
-				Subnets:        []string{"subnet1"},
-				SecurityGroups: []string{"sg1"},
+				HasPIP:         helpers.BoolPtr(true),
+				Subnets:        &[]string{"subnet1"},
+				SecurityGroups: &[]string{"sg1"},
 			},
 			response:   `{"id": "port-new"}`,
 			statusCode: http.StatusCreated,
@@ -321,12 +318,13 @@ func TestVPCService_CreatePort(t *testing.T) {
 				assertEqual(t, fmt.Sprintf("/network/v0/vpcs/%s/ports", tt.vpcID), r.URL.Path)
 				assertEqual(t, http.MethodPost, r.Method)
 
-				var req PortCreateRequest
-				err := json.NewDecoder(r.Body).Decode(&req)
-				assertNoError(t, err)
-				assertEqual(t, tt.request.Name, req.Name)
-				assertEqualSlice(t, tt.request.Subnets, req.Subnets)
-
+				if !tt.wantErr {
+					var req PortCreateRequest
+					err := json.NewDecoder(r.Body).Decode(&req)
+					assertNoError(t, err)
+					assertEqual(t, tt.request.Name, req.Name)
+					assertEqualSlice(t, *tt.request.Subnets, *req.Subnets)
+				}
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(tt.statusCode)
 				w.Write([]byte(tt.response))
@@ -615,7 +613,6 @@ func TestVPCService_List(t *testing.T) {
 
 	tests := []struct {
 		name       string
-		opts       ListOptions
 		response   string
 		statusCode int
 		wantCount  int
@@ -623,12 +620,6 @@ func TestVPCService_List(t *testing.T) {
 	}{
 		{
 			name: "successful list with expansion",
-			opts: ListOptions{
-				Limit:  helpers.IntPtr(10),
-				Offset: helpers.IntPtr(20),
-				Sort:   helpers.StrPtr("name"),
-				Expand: []string{SecurityGroupsExpand, SubnetsExpand},
-			},
 			response: `{
 				"vpcs": [
 					{
@@ -654,10 +645,7 @@ func TestVPCService_List(t *testing.T) {
 			wantErr:    false,
 		},
 		{
-			name: "invalid parameters",
-			opts: ListOptions{
-				Limit: helpers.IntPtr(1001),
-			},
+			name:       "invalid parameters",
 			response:   `{"error": "invalid limit"}`,
 			statusCode: http.StatusBadRequest,
 			wantErr:    true,
@@ -672,20 +660,6 @@ func TestVPCService_List(t *testing.T) {
 				assertEqual(t, "/network/v0/vpcs", r.URL.Path)
 				assertEqual(t, http.MethodGet, r.Method)
 
-				query := r.URL.Query()
-				if tt.opts.Limit != nil {
-					assertEqual(t, strconv.Itoa(*tt.opts.Limit), query.Get("_limit"))
-				}
-				if tt.opts.Offset != nil {
-					assertEqual(t, strconv.Itoa(*tt.opts.Offset), query.Get("_offset"))
-				}
-				if tt.opts.Sort != nil {
-					assertEqual(t, *tt.opts.Sort, query.Get("_sort"))
-				}
-				if len(tt.opts.Expand) > 0 {
-					assertEqual(t, strings.Join(tt.opts.Expand, ","), query.Get("expand"))
-				}
-
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(tt.statusCode)
 				w.Write([]byte(tt.response))
@@ -693,7 +667,7 @@ func TestVPCService_List(t *testing.T) {
 			defer server.Close()
 
 			client := testVPCClient(server.URL)
-			vpcs, err := client.List(context.Background(), tt.opts)
+			vpcs, err := client.List(context.Background())
 
 			if tt.wantErr {
 				assertError(t, err)
@@ -704,21 +678,17 @@ func TestVPCService_List(t *testing.T) {
 			assertEqual(t, tt.wantCount, len(vpcs))
 
 			if tt.wantCount > 0 {
-				assertEqual(t, "vpc1", vpcs[0].ID)
-				assertEqual(t, "prod-vpc", vpcs[0].Name)
+				assertEqual(t, "vpc1", *vpcs[0].ID)
+				assertEqual(t, "prod-vpc", *vpcs[0].Name)
 				assertEqual(t, createdAt.Format(utils.LocalDateTimeWithoutZoneLayout), vpcs[0].CreatedAt.String())
-
-				if len(tt.opts.Expand) > 0 {
-					assertEqual(t, 2, len(vpcs[0].SecurityGroups))
-					assertEqual(t, 1, len(vpcs[0].Subnets))
-				}
 			}
 		})
 	}
 }
 
 func TestVPCService_Get(t *testing.T) {
-	createdAt, _ := time.Parse(time.RFC3339, "2024-01-01T00:00:00Z")
+	time, _ := time.Parse(time.RFC3339, "2024-01-01T00:00:00Z")
+	createdAt := utils.LocalDateTimeWithoutZone(time)
 
 	tests := []struct {
 		name       string
@@ -743,12 +713,12 @@ func TestVPCService_Get(t *testing.T) {
 			}`,
 			statusCode: http.StatusOK,
 			want: &VPC{
-				ID:             "vpc1",
-				Name:           "prod-vpc",
-				SecurityGroups: []string{"sg1", "sg2"},
-				Subnets:        []string{"subnet1"},
-				CreatedAt:      utils.LocalDateTimeWithoutZone(createdAt),
-				IsDefault:      true,
+				ID:             helpers.StrPtr("vpc1"),
+				Name:           helpers.StrPtr("prod-vpc"),
+				SecurityGroups: &[]string{"sg1", "sg2"},
+				Subnets:        &[]string{"subnet1"},
+				CreatedAt:      &createdAt,
+				IsDefault:      helpers.BoolPtr(true),
 			},
 			wantErr: false,
 		},
@@ -762,9 +732,10 @@ func TestVPCService_Get(t *testing.T) {
 			}`,
 			statusCode: http.StatusOK,
 			want: &VPC{
-				ID:     "vpc2",
-				Name:   "test-vpc",
-				Status: "active",
+				ID:        helpers.StrPtr("vpc2"),
+				Name:      helpers.StrPtr("test-vpc"),
+				Status:    "active",
+				IsDefault: helpers.BoolPtr(false),
 			},
 			wantErr: false,
 		},
@@ -804,17 +775,17 @@ func TestVPCService_Get(t *testing.T) {
 			}
 
 			assertNoError(t, err)
-			assertEqual(t, tt.want.ID, vpc.ID)
-			assertEqual(t, tt.want.Name, vpc.Name)
+			assertEqual(t, *tt.want.ID, *vpc.ID)
+			assertEqual(t, *tt.want.Name, *vpc.Name)
 			assertEqual(t, tt.want.Status, vpc.Status)
 
 			if len(tt.expand) > 0 {
-				assertEqual(t, len(tt.want.SecurityGroups), len(vpc.SecurityGroups))
-				assertEqual(t, len(tt.want.Subnets), len(vpc.Subnets))
+				assertEqual(t, len(*tt.want.SecurityGroups), len(*vpc.SecurityGroups))
+				assertEqual(t, len(*tt.want.Subnets), len(*vpc.Subnets))
 			}
 
-			if tt.want.IsDefault {
-				assertEqual(t, tt.want.IsDefault, vpc.IsDefault)
+			if *tt.want.IsDefault {
+				assertEqual(t, *tt.want.IsDefault, *vpc.IsDefault)
 			}
 		})
 	}

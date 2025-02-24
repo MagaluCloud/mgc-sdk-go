@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/MagaluCloud/mgc-sdk-go/client"
+	"github.com/MagaluCloud/mgc-sdk-go/helpers"
 )
 
 // Helper functions
@@ -124,15 +125,21 @@ func TestPortService_Get(t *testing.T) {
 			}`,
 			statusCode: http.StatusOK,
 			want: &PortResponse{
-				ID:             "port1",
-				Name:           "test-port",
-				VPCID:          "vpc1",
-				SecurityGroups: []string{"sg1", "sg2"},
-				PublicIP: []PublicIpResponsePort{
-					{PublicIPID: "ip1", PublicIP: "203.0.113.5"},
+				ID:             helpers.StrPtr("port1"),
+				Name:           helpers.StrPtr("test-port"),
+				VPCID:          helpers.StrPtr("vpc1"),
+				SecurityGroups: &[]string{"sg1", "sg2"},
+				PublicIP: &[]PublicIpResponsePort{
+					{
+						PublicIPID: helpers.StrPtr("ip1"),
+						PublicIP:   helpers.StrPtr("203.0.113.5"),
+					},
 				},
-				IPAddress: []IpAddress{
-					{IPAddress: "10.0.0.2", SubnetID: "subnet1"},
+				IPAddress: &[]IpAddress{
+					{
+						IPAddress: "10.0.0.2",
+						SubnetID:  "subnet1",
+					},
 				},
 			},
 			wantErr: false,
@@ -175,12 +182,12 @@ func TestPortService_Get(t *testing.T) {
 			}
 
 			assertNoError(t, err)
-			assertEqual(t, tt.want.ID, port.ID)
-			assertEqual(t, tt.want.Name, port.Name)
-			assertEqual(t, tt.want.VPCID, port.VPCID)
-			assertEqual(t, len(tt.want.SecurityGroups), len(port.SecurityGroups))
-			assertEqual(t, len(tt.want.PublicIP), len(port.PublicIP))
-			assertEqual(t, len(tt.want.IPAddress), len(port.IPAddress))
+			assertEqual(t, *tt.want.ID, *port.ID)
+			assertEqual(t, *tt.want.Name, *port.Name)
+			assertEqual(t, *tt.want.VPCID, *port.VPCID)
+			assertEqual(t, len(*tt.want.SecurityGroups), len(*port.SecurityGroups))
+			assertEqual(t, len(*tt.want.PublicIP), len(*port.PublicIP))
+			assertEqual(t, len(*tt.want.IPAddress), len(*port.IPAddress))
 		})
 	}
 }

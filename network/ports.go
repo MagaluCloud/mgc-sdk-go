@@ -12,30 +12,30 @@ import (
 type (
 	// PublicIpResponsePort represents a public IP associated with a port
 	PublicIpResponsePort struct {
-		PublicIPID string `json:"public_ip_id,omitempty"`
-		PublicIP   string `json:"public_ip,omitempty"`
+		PublicIPID *string `json:"public_ip_id,omitempty"`
+		PublicIP   *string `json:"public_ip,omitempty"`
 	}
 
 	// IpAddress represents an IP address configuration for a port
 	IpAddress struct {
-		IPAddress string `json:"ip_address"`
-		SubnetID  string `json:"subnet_id"`
-		Ethertype string `json:"ethertype,omitempty"`
+		IPAddress string  `json:"ip_address"`
+		SubnetID  string  `json:"subnet_id"`
+		Ethertype *string `json:"ethertype,omitempty"`
 	}
 
 	// PortResponse represents a network port resource
 	PortResponse struct {
-		ID                    string                         `json:"id,omitempty"`
-		Name                  string                         `json:"name,omitempty"`
-		Description           string                         `json:"description,omitempty"`
-		IsAdminStateUp        bool                           `json:"is_admin_state_up,omitempty"`
-		VPCID                 string                         `json:"vpc_id,omitempty"`
-		IsPortSecurityEnabled bool                           `json:"is_port_security_enabled,omitempty"`
-		SecurityGroups        []string                       `json:"security_groups"`
-		PublicIP              []PublicIpResponsePort         `json:"public_ip"`
-		IPAddress             []IpAddress                    `json:"ip_address"`
-		CreatedAt             utils.LocalDateTimeWithoutZone `json:"created_at,omitempty"`
-		Updated               utils.LocalDateTimeWithoutZone `json:"updated,omitempty"`
+		ID                    *string                         `json:"id,omitempty"`
+		Name                  *string                         `json:"name,omitempty"`
+		Description           *string                         `json:"description,omitempty"`
+		IsAdminStateUp        *bool                           `json:"is_admin_state_up,omitempty"`
+		VPCID                 *string                         `json:"vpc_id,omitempty"`
+		IsPortSecurityEnabled *bool                           `json:"is_port_security_enabled,omitempty"`
+		SecurityGroups        *[]string                       `json:"security_groups"`
+		PublicIP              *[]PublicIpResponsePort         `json:"public_ip"`
+		IPAddress             *[]IpAddress                    `json:"ip_address"`
+		CreatedAt             *utils.LocalDateTimeWithoutZone `json:"created_at,omitempty"`
+		Updated               *utils.LocalDateTimeWithoutZone `json:"updated,omitempty"`
 	}
 )
 

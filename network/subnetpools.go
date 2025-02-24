@@ -12,6 +12,16 @@ import (
 )
 
 type (
+	// ListOptions represents parameters for filtering and pagination
+	ListSubnetPoolsOptions struct {
+		// Limit specifies the maximum number of items to return
+		Limit *int
+		// Offset specifies the number of items to skip
+		Offset *int
+		// Sort specifies the field and direction for sorting results
+		Sort *string
+	}
+
 	// ListSubnetPoolsResponse represents a list of subnet pools response
 	ListSubnetPoolsResponse struct {
 		Meta    MetaModel            `json:"meta"`
@@ -24,10 +34,10 @@ type (
 	}
 
 	PageModel struct {
-		Limit  int `json:"limit,omitempty"`
-		Offset int `json:"offset,omitempty"`
-		Count  int `json:"count"`
-		Total  int `json:"total"`
+		Limit  *int `json:"limit,omitempty"`
+		Offset *int `json:"offset,omitempty"`
+		Count  int  `json:"count"`
+		Total  int  `json:"total"`
 	}
 
 	LinkModel struct {
@@ -38,16 +48,16 @@ type (
 
 	// SubnetPoolResponse represents a subnet pool resource response
 	SubnetPoolResponse struct {
-		CIDR        string `json:"cidr,omitempty"`
-		ID          string `json:"id"`
-		Name        string `json:"name"`
-		TenantID    string `json:"tenant_id"`
-		Description string `json:"description,omitempty"`
-		IsDefault   bool   `json:"is_default"`
+		CIDR        *string `json:"cidr,omitempty"`
+		ID          string  `json:"id"`
+		Name        string  `json:"name"`
+		TenantID    string  `json:"tenant_id"`
+		Description *string `json:"description,omitempty"`
+		IsDefault   bool    `json:"is_default"`
 	}
 
 	SubnetPoolDetailsResponse struct {
-		CIDR        string                         `json:"cidr,omitempty"`
+		CIDR        *string                        `json:"cidr,omitempty"`
 		ID          string                         `json:"id"`
 		CreatedAt   utils.LocalDateTimeWithoutZone `json:"created_at"`
 		TenantID    string                         `json:"tenant_id"`
@@ -59,10 +69,10 @@ type (
 
 	// CreateSubnetPoolRequest represents parameters for creating a new subnet pool
 	CreateSubnetPoolRequest struct {
-		CIDR        string `json:"cidr,omitempty"`
-		Name        string `json:"name"`
-		Description string `json:"description"`
-		Type        string `json:"type,omitempty"`
+		CIDR        *string `json:"cidr,omitempty"`
+		Name        string  `json:"name"`
+		Description string  `json:"description"`
+		Type        *string `json:"type,omitempty"`
 	}
 
 	BookCIDRRequest struct {

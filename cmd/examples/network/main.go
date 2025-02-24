@@ -5,16 +5,10 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"time"
 
 	"github.com/MagaluCloud/mgc-sdk-go/client"
 	"github.com/MagaluCloud/mgc-sdk-go/helpers"
 	"github.com/MagaluCloud/mgc-sdk-go/network"
-)
-
-const (
-	waitTimeout   = 5 * time.Minute
-	retryInterval = 5 * time.Second
 )
 
 func main() {
@@ -41,11 +35,7 @@ func ExampleListVPCs() {
 	networkClient := network.New(c)
 
 	// List VPCs with pagination and expansion
-	vpcs, err := networkClient.VPCs().List(context.Background(), network.ListOptions{
-		Limit:  helpers.IntPtr(10),
-		Offset: helpers.IntPtr(0),
-		Expand: []string{network.SubnetsExpand, network.SecurityGroupsExpand},
-	})
+	vpcs, err := networkClient.VPCs().List(context.Background())
 
 	if err != nil {
 		log.Fatal(err)
@@ -53,10 +43,9 @@ func ExampleListVPCs() {
 
 	// Print VPC details
 	for _, vpc := range vpcs {
-		fmt.Printf("VPC: %s (ID: %s)\n", vpc.Name, vpc.ID)
+		fmt.Printf("VPC: %s (ID: %s)\n", *vpc.Name, *vpc.ID)
 		fmt.Printf("  Status: %s\n", vpc.Status)
-		fmt.Printf("  Router ID: %s\n", vpc.RouterID)
-		fmt.Printf("  External Network: %s\n", vpc.ExternalNetwork)
+		fmt.Printf("  External Network: %s\n", *vpc.ExternalNetwork)
 		fmt.Printf("  Created At: %s\n", vpc.CreatedAt)
 		fmt.Printf("  Subnets: %v\n", vpc.Subnets)
 		fmt.Printf("  Security Groups: %v\n", vpc.SecurityGroups)
@@ -74,7 +63,7 @@ func ExampleCreateVPC() string {
 	// Create a new VPC
 	createReq := network.CreateVPCRequest{
 		Name:        "my-test-vpc",
-		Description: "Test VPC created via SDK",
+		Description: helpers.StrPtr("Test VPC created via SDK"),
 	}
 
 	id, err := networkClient.VPCs().Create(context.Background(), createReq)
@@ -101,10 +90,10 @@ func ExampleManageVPC(id string) {
 		log.Fatal(err)
 	}
 
-	fmt.Printf("VPC: %s (ID: %s)\n", vpc.Name, vpc.ID)
+	fmt.Printf("VPC: %s (ID: %s)\n", *vpc.Name, *vpc.ID)
 
 	// Rename the VPC
-	if err := networkClient.VPCs().Rename(ctx, vpc.ID, "new-vpc-name"); err != nil {
+	if err := networkClient.VPCs().Rename(ctx, *vpc.ID, "new-vpc-name"); err != nil {
 		log.Fatal(err)
 	}
 	fmt.Println("VPC renamed successfully")
@@ -134,7 +123,7 @@ func ExampleManageSubnets(vpcID string) {
 	createSubnetReq := network.SubnetCreateRequest{
 		Name:        "my-subnet",
 		CIDRBlock:   "192.168.1.0/24",
-		Description: "Test subnet created via SDK",
+		Description: helpers.StrPtr("Test subnet created via SDK"),
 	}
 
 	subnetID, err := networkClient.VPCs().CreateSubnet(ctx, vpcID, createSubnetReq)
@@ -161,17 +150,17 @@ func ExampleManagePorts(vpcID string) {
 	}
 
 	fmt.Printf("Ports in VPC %s:\n", vpcID)
-	if portList, ok := ports.([]network.PortResponse); ok {
-		for _, port := range portList {
-			fmt.Printf("  Port: %s\n", port.ID)
+	if ports.Ports != nil {
+		for _, port := range *ports.Ports {
+			fmt.Printf("  Port: %s\n", *port.ID)
 		}
 	}
 
 	// Create a new port
 	createPortReq := network.PortCreateRequest{
 		Name:   "my-port",
-		HasPIP: true,
-		HasSG:  true,
+		HasPIP: helpers.BoolPtr(true),
+		HasSG:  helpers.BoolPtr(true),
 	}
 
 	portID, err := networkClient.VPCs().CreatePort(ctx, vpcID, createPortReq)
@@ -217,7 +206,7 @@ func ExampleSubnets() {
 
 	fmt.Printf("Subnet Details:\n")
 	fmt.Printf("  ID: %s\n", subnet.ID)
-	fmt.Printf("  Name: %s\n", subnet.Name)
+	fmt.Printf("  Name: %s\n", *subnet.Name)
 	fmt.Printf("  CIDR Block: %s\n", subnet.CIDRBlock)
 	fmt.Printf("  Gateway IP: %s\n", subnet.GatewayIP)
 	fmt.Printf("  IP Version: %s\n", subnet.IPVersion)
@@ -226,7 +215,7 @@ func ExampleSubnets() {
 
 	// Update subnet DNS nameservers
 	updateReq := network.SubnetPatchRequest{
-		DNSNameservers: []string{"8.8.8.8", "8.8.4.4"},
+		DNSNameservers: &[]string{"8.8.8.8", "8.8.4.4"},
 	}
 
 	updatedSubnet, err := networkClient.Subnets().Update(ctx, subnetID, updateReq)
@@ -264,16 +253,16 @@ func ExampleSubnetPools() {
 	for _, pool := range pools {
 		fmt.Printf("  ID: %s\n", pool.ID)
 		fmt.Printf("  Name: %s\n", pool.Name)
-		fmt.Printf("  CIDR: %s\n", pool.CIDR)
+		fmt.Printf("  CIDR: %s\n", *pool.CIDR)
 		fmt.Printf("  Is Default: %v\n", pool.IsDefault)
-		fmt.Printf("  Description: %s\n\n", pool.Description)
+		fmt.Printf("  Description: %s\n\n", *pool.Description)
 	}
 
 	// Create a new subnet pool
 	createReq := network.CreateSubnetPoolRequest{
 		Name:        "my-subnet-pool",
 		Description: "Test subnet pool created via SDK",
-		CIDR:        "192.168.0.0/16",
+		CIDR:        helpers.StrPtr("192.168.0.0/16"),
 	}
 
 	poolID, err := networkClient.SubnetPools().Create(ctx, createReq)
@@ -291,7 +280,7 @@ func ExampleSubnetPools() {
 	fmt.Printf("\nSubnet Pool Details:\n")
 	fmt.Printf("  ID: %s\n", pool.ID)
 	fmt.Printf("  Name: %s\n", pool.Name)
-	fmt.Printf("  CIDR: %s\n", pool.CIDR)
+	fmt.Printf("  CIDR: %s\n", *pool.CIDR)
 	fmt.Printf("  IP Version: %d\n", pool.IPVersion)
 	fmt.Printf("  Created At: %s\n", pool.CreatedAt)
 
@@ -340,10 +329,10 @@ func ExampleSecurityGroups() {
 
 	fmt.Println("Available Security Groups:")
 	for _, sg := range securityGroups {
-		fmt.Printf("  ID: %s\n", sg.ID)
-		fmt.Printf("  Name: %s\n", sg.Name)
-		fmt.Printf("  Description: %s\n", sg.Description)
-		fmt.Printf("  VPC ID: %s\n", sg.VPCID)
+		fmt.Printf("  ID: %s\n", *sg.ID)
+		fmt.Printf("  Name: %s\n", *sg.Name)
+		fmt.Printf("  Description: %s\n", *sg.Description)
+		fmt.Printf("  VPC ID: %s\n", *sg.VPCID)
 		fmt.Printf("  Status: %s\n", sg.Status)
 		fmt.Printf("  Is Default: %v\n", sg.IsDefault)
 		fmt.Printf("  Created At: %s\n\n", sg.CreatedAt)
@@ -352,7 +341,7 @@ func ExampleSecurityGroups() {
 	// Create a new security group
 	createReq := network.SecurityGroupCreateRequest{
 		Name:        "my-security-group",
-		Description: "Test security group created via SDK",
+		Description: helpers.StrPtr("Test security group created via SDK"),
 	}
 
 	sgID, err := networkClient.SecurityGroups().Create(ctx, createReq)
@@ -368,27 +357,26 @@ func ExampleSecurityGroups() {
 	}
 
 	fmt.Printf("\nSecurity Group Details:\n")
-	fmt.Printf("  ID: %s\n", sg.ID)
-	fmt.Printf("  Name: %s\n", sg.Name)
-	fmt.Printf("  Description: %s\n", sg.Description)
-	fmt.Printf("  VPC ID: %s\n", sg.VPCID)
+	fmt.Printf("  ID: %s\n", *sg.ID)
+	fmt.Printf("  Name: %s\n", *sg.Name)
+	fmt.Printf("  Description: %s\n", *sg.Description)
+	fmt.Printf("  VPC ID: %s\n", *sg.VPCID)
 	fmt.Printf("  Status: %s\n", sg.Status)
-	fmt.Printf("  Rules Count: %d\n", len(sg.Rules))
 
 	// Print security rules if any exist
-	if len(sg.Rules) > 0 {
+	if sg.Rules != nil {
 		fmt.Println("\nSecurity Rules:")
-		for _, rule := range sg.Rules {
-			fmt.Printf("  Direction: %s\n", rule.Direction)
-			fmt.Printf("  Protocol: %s\n", rule.Protocol)
+		for _, rule := range *sg.Rules {
+			fmt.Printf("  Direction: %s\n", *rule.Direction)
+			fmt.Printf("  Protocol: %s\n", *rule.Protocol)
 			if rule.PortRangeMin != nil {
 				fmt.Printf("  Port Range Min: %d\n", *rule.PortRangeMin)
 			}
 			if rule.PortRangeMax != nil {
 				fmt.Printf("  Port Range Max: %d\n", *rule.PortRangeMax)
 			}
-			fmt.Printf("  Remote IP Prefix: %s\n", rule.RemoteIPPrefix)
-			fmt.Printf("  Description: %s\n\n", rule.Description)
+			fmt.Printf("  Remote IP Prefix: %s\n", *rule.RemoteIPPrefix)
+			fmt.Printf("  Description: %s\n\n", *rule.Description)
 		}
 	}
 
@@ -411,7 +399,7 @@ func ExampleSecurityGroupRules() {
 	// First, create a security group for the rules
 	sgCreateReq := network.SecurityGroupCreateRequest{
 		Name:        "test-sg-with-rules",
-		Description: "Security group for testing rules",
+		Description: helpers.StrPtr("Security group for testing rules"),
 	}
 
 	sgID, err := networkClient.SecurityGroups().Create(ctx, sgCreateReq)
@@ -422,13 +410,13 @@ func ExampleSecurityGroupRules() {
 
 	// Create an inbound rule allowing SSH access
 	sshRule := network.RuleCreateRequest{
-		Direction:      "ingress",
+		Direction:      helpers.StrPtr("ingress"),
 		PortRangeMin:   helpers.IntPtr(22),
 		PortRangeMax:   helpers.IntPtr(22),
-		Protocol:       "tcp",
-		RemoteIPPrefix: "0.0.0.0/0",
+		Protocol:       helpers.StrPtr("tcp"),
+		RemoteIPPrefix: helpers.StrPtr("0.0.0.0/0"),
 		EtherType:      "IPv4",
-		Description:    "Allow SSH access",
+		Description:    helpers.StrPtr("Allow SSH access"),
 	}
 
 	sshRuleID, err := networkClient.Rules().Create(ctx, sgID, sshRule)
@@ -439,13 +427,13 @@ func ExampleSecurityGroupRules() {
 
 	// Create an inbound rule allowing HTTPS access
 	httpsRule := network.RuleCreateRequest{
-		Direction:      "ingress",
+		Direction:      helpers.StrPtr("ingress"),
 		PortRangeMin:   helpers.IntPtr(443),
 		PortRangeMax:   helpers.IntPtr(443),
-		Protocol:       "tcp",
-		RemoteIPPrefix: "0.0.0.0/0",
+		Protocol:       helpers.StrPtr("tcp"),
+		RemoteIPPrefix: helpers.StrPtr("0.0.0.0/0"),
 		EtherType:      "IPv4",
-		Description:    "Allow HTTPS access",
+		Description:    helpers.StrPtr("Allow HTTPS access"),
 	}
 
 	httpsRuleID, err := networkClient.Rules().Create(ctx, sgID, httpsRule)
@@ -462,14 +450,14 @@ func ExampleSecurityGroupRules() {
 
 	fmt.Printf("\nRules in security group %s:\n", sgID)
 	for _, rule := range rules {
-		fmt.Printf("Rule ID: %s\n", rule.ID)
-		fmt.Printf("  Direction: %s\n", rule.Direction)
-		fmt.Printf("  Protocol: %s\n", rule.Protocol)
+		fmt.Printf("Rule ID: %s\n", *rule.ID)
+		fmt.Printf("  Direction: %s\n", *rule.Direction)
+		fmt.Printf("  Protocol: %s\n", *rule.Protocol)
 		if rule.PortRangeMin != nil {
 			fmt.Printf("  Port Range: %d-%d\n", *rule.PortRangeMin, *rule.PortRangeMax)
 		}
-		fmt.Printf("  Remote IP Prefix: %s\n", rule.RemoteIPPrefix)
-		fmt.Printf("  Description: %s\n", rule.Description)
+		fmt.Printf("  Remote IP Prefix: %s\n", *rule.RemoteIPPrefix)
+		fmt.Printf("  Description: %s\n", *rule.Description)
 		fmt.Printf("  Status: %s\n\n", rule.Status)
 	}
 
@@ -480,11 +468,11 @@ func ExampleSecurityGroupRules() {
 	}
 
 	fmt.Printf("SSH Rule Details:\n")
-	fmt.Printf("  ID: %s\n", ruleDetails.ID)
-	fmt.Printf("  Direction: %s\n", ruleDetails.Direction)
-	fmt.Printf("  Protocol: %s\n", ruleDetails.Protocol)
+	fmt.Printf("  ID: %s\n", *ruleDetails.ID)
+	fmt.Printf("  Direction: %s\n", *ruleDetails.Direction)
+	fmt.Printf("  Protocol: %s\n", *ruleDetails.Protocol)
 	fmt.Printf("  Port: %d\n", *ruleDetails.PortRangeMin)
-	fmt.Printf("  Remote IP Prefix: %s\n", ruleDetails.RemoteIPPrefix)
+	fmt.Printf("  Remote IP Prefix: %s\n", *ruleDetails.RemoteIPPrefix)
 
 	// Clean up - delete rules and security group
 	fmt.Println("\nCleaning up resources...")
@@ -524,18 +512,18 @@ func ExamplePublicIPs() {
 
 	fmt.Println("Available Public IPs:")
 	for _, pip := range publicIPs {
-		fmt.Printf("  ID: %s\n", pip.ID)
-		fmt.Printf("  Public IP: %s\n", pip.PublicIP)
-		fmt.Printf("  VPC ID: %s\n", pip.VPCID)
-		fmt.Printf("  Port ID: %s\n", pip.PortID)
-		fmt.Printf("  Status: %s\n", pip.Status)
+		fmt.Printf("  ID: %s\n", *pip.ID)
+		fmt.Printf("  Public IP: %s\n", *pip.PublicIP)
+		fmt.Printf("  VPC ID: %s\n", *pip.VPCID)
+		fmt.Printf("  Port ID: %s\n", *pip.PortID)
+		fmt.Printf("  Status: %s\n", *pip.Status)
 		fmt.Printf("  Created At: %s\n\n", pip.CreatedAt)
 	}
 
 	// Create a VPC and port for testing public IP operations
 	vpcReq := network.CreateVPCRequest{
 		Name:        "test-vpc-for-pip",
-		Description: "VPC for testing public IP operations",
+		Description: helpers.StrPtr("VPC for testing public IP operations"),
 	}
 
 	vpcID, err := networkClient.VPCs().Create(ctx, vpcReq)
@@ -547,8 +535,8 @@ func ExamplePublicIPs() {
 	// Create a port in the VPC
 	portReq := network.PortCreateRequest{
 		Name:   "test-port-for-pip",
-		HasPIP: true,
-		HasSG:  false,
+		HasPIP: helpers.BoolPtr(true),
+		HasSG:  helpers.BoolPtr(false),
 	}
 
 	portID, err := networkClient.VPCs().CreatePort(ctx, vpcID, portReq)
@@ -575,10 +563,10 @@ func ExamplePublicIPs() {
 	}
 
 	fmt.Printf("\nPublic IP Details:\n")
-	fmt.Printf("  ID: %s\n", pip.ID)
-	fmt.Printf("  Public IP: %s\n", pip.PublicIP)
-	fmt.Printf("  Description: %s\n", pip.Description)
-	fmt.Printf("  Status: %s\n", pip.Status)
+	fmt.Printf("  ID: %s\n", *pip.ID)
+	fmt.Printf("  Public IP: %s\n", *pip.PublicIP)
+	fmt.Printf("  Description: %s\n", *pip.Description)
+	fmt.Printf("  Status: %s\n", *pip.Status)
 
 	// Attach public IP to port
 	if err := networkClient.PublicIPs().AttachToPort(ctx, pipID, portID); err != nil {
@@ -591,7 +579,7 @@ func ExamplePublicIPs() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Printf("Public IP %s is now attached to port %s\n", pip.PublicIP, pip.PortID)
+	fmt.Printf("Public IP %s is now attached to port %s\n", *pip.PublicIP, *pip.PortID)
 
 	// Detach public IP from port
 	if err := networkClient.PublicIPs().DetachFromPort(ctx, pipID, portID); err != nil {
@@ -632,25 +620,25 @@ func ExamplePorts() {
 
 	fmt.Println("Available Ports:")
 	for _, port := range ports {
-		fmt.Printf("  ID: %s\n", port.ID)
-		fmt.Printf("  Name: %s\n", port.Name)
-		fmt.Printf("  VPC ID: %s\n", port.VPCID)
-		fmt.Printf("  Security Groups: %v\n", port.SecurityGroups)
-		fmt.Printf("  Created At: %s\n", port.CreatedAt)
+		fmt.Printf("  ID: %s\n", *port.ID)
+		fmt.Printf("  Name: %s\n", *port.Name)
+		fmt.Printf("  VPC ID: %s\n", *port.VPCID)
+		fmt.Printf("  Security Groups: %v\n", *port.SecurityGroups)
+		fmt.Printf("  Created At: %s\n", *port.CreatedAt)
 
 		// Print IP addresses
-		if len(port.IPAddress) > 0 {
+		if port.IPAddress != nil {
 			fmt.Println("  IP Addresses:")
-			for _, ip := range port.IPAddress {
+			for _, ip := range *port.IPAddress {
 				fmt.Printf("    %s (Subnet: %s)\n", ip.IPAddress, ip.SubnetID)
 			}
 		}
 
 		// Print public IPs if any
-		if len(port.PublicIP) > 0 {
+		if port.PublicIP != nil {
 			fmt.Println("  Public IPs:")
-			for _, pip := range port.PublicIP {
-				fmt.Printf("    %s (ID: %s)\n", pip.PublicIP, pip.PublicIPID)
+			for _, pip := range *port.PublicIP {
+				fmt.Printf("    %s (ID: %s)\n", *pip.PublicIP, *pip.PublicIPID)
 			}
 		}
 		fmt.Println()
@@ -659,7 +647,7 @@ func ExamplePorts() {
 	// Create a security group for testing
 	sgCreateReq := network.SecurityGroupCreateRequest{
 		Name:        "test-sg-for-port",
-		Description: "Security group for testing port operations",
+		Description: helpers.StrPtr("Security group for testing port operations"),
 	}
 
 	sgID, err := networkClient.SecurityGroups().Create(ctx, sgCreateReq)
@@ -669,37 +657,37 @@ func ExamplePorts() {
 	fmt.Printf("Created security group with ID: %s\n", sgID)
 
 	// Get port details by ID (using first port from list if available)
-	if len(ports) > 0 {
-		portDetails, err := networkClient.Ports().Get(ctx, ports[0].ID)
+	if ports != nil || len(ports) > 0 {
+		portDetails, err := networkClient.Ports().Get(ctx, *ports[0].ID)
 		if err != nil {
 			log.Fatal(err)
 		}
 
 		fmt.Printf("\nPort Details:\n")
-		fmt.Printf("  ID: %s\n", portDetails.ID)
-		fmt.Printf("  Name: %s\n", portDetails.Name)
-		fmt.Printf("  Description: %s\n", portDetails.Description)
-		fmt.Printf("  VPC ID: %s\n", portDetails.VPCID)
-		fmt.Printf("  Security Groups: %v\n", portDetails.SecurityGroups)
+		fmt.Printf("  ID: %s\n", *portDetails.ID)
+		fmt.Printf("  Name: %s\n", *portDetails.Name)
+		fmt.Printf("  Description: %s\n", *portDetails.Description)
+		fmt.Printf("  VPC ID: %s\n", *portDetails.VPCID)
+		fmt.Printf("  Security Groups: %v\n", *portDetails.SecurityGroups)
 
 		// Attach security group to port
-		if err := networkClient.Ports().AttachSecurityGroup(ctx, portDetails.ID, sgID); err != nil {
+		if err := networkClient.Ports().AttachSecurityGroup(ctx, *portDetails.ID, sgID); err != nil {
 			log.Fatal(err)
 		}
-		fmt.Printf("Attached security group %s to port %s\n", sgID, portDetails.ID)
+		fmt.Printf("Attached security group %s to port %s\n", sgID, *portDetails.ID)
 
 		// Get updated port details
-		portDetails, err = networkClient.Ports().Get(ctx, portDetails.ID)
+		portDetails, err = networkClient.Ports().Get(ctx, *portDetails.ID)
 		if err != nil {
 			log.Fatal(err)
 		}
 		fmt.Printf("Updated security groups: %v\n", portDetails.SecurityGroups)
 
 		// Detach security group from port
-		if err := networkClient.Ports().DetachSecurityGroup(ctx, portDetails.ID, sgID); err != nil {
+		if err := networkClient.Ports().DetachSecurityGroup(ctx, *portDetails.ID, sgID); err != nil {
 			log.Fatal(err)
 		}
-		fmt.Printf("Detached security group %s from port %s\n", sgID, portDetails.ID)
+		fmt.Printf("Detached security group %s from port %s\n", sgID, *portDetails.ID)
 	}
 
 	// Clean up resources

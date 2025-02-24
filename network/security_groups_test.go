@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/MagaluCloud/mgc-sdk-go/client"
+	"github.com/MagaluCloud/mgc-sdk-go/helpers"
 	"github.com/MagaluCloud/mgc-sdk-go/internal/utils"
 )
 
@@ -76,8 +77,8 @@ func TestSecurityGroupService_List(t *testing.T) {
 }
 
 func TestSecurityGroupService_Get(t *testing.T) {
-	createdAt, _ := time.Parse(time.RFC3339, "2024-01-01T00:00:00Z")
-	updatedAt, _ := time.Parse(time.RFC3339, "2024-01-01T00:00:00Z")
+	basetime, _ := time.Parse(time.RFC3339, "2024-01-01T00:00:00Z")
+	parsedTime := utils.LocalDateTimeWithoutZone(basetime)
 
 	tests := []struct {
 		name       string
@@ -104,15 +105,15 @@ func TestSecurityGroupService_Get(t *testing.T) {
 			statusCode: http.StatusOK,
 			want: &SecurityGroupDetailResponse{
 				SecurityGroupResponse: SecurityGroupResponse{
-					ID:        "sg1",
-					Name:      "test-sg",
+					ID:        helpers.StrPtr("sg1"),
+					Name:      helpers.StrPtr("test-sg"),
 					Status:    "ACTIVE",
-					CreatedAt: utils.LocalDateTimeWithoutZone(createdAt),
-					Updated:   utils.LocalDateTimeWithoutZone(updatedAt),
+					CreatedAt: &parsedTime,
+					Updated:   &parsedTime,
 				},
-				ExternalID: "ext123",
-				Rules: []RuleResponse{
-					{ID: "rule1", Direction: "ingress"},
+				ExternalID: helpers.StrPtr("ext123"),
+				Rules: &[]RuleResponse{
+					{ID: helpers.StrPtr("rule1"), Direction: helpers.StrPtr("ingress")},
 				},
 			},
 			wantErr: false,
@@ -148,10 +149,10 @@ func TestSecurityGroupService_Get(t *testing.T) {
 			}
 
 			assertNoError(t, err)
-			assertEqual(t, tt.want.ID, group.ID)
-			assertEqual(t, tt.want.Name, group.Name)
-			assertEqual(t, tt.want.ExternalID, group.ExternalID)
-			assertEqual(t, len(tt.want.Rules), len(group.Rules))
+			assertEqual(t, *tt.want.ID, *group.ID)
+			assertEqual(t, *tt.want.Name, *group.Name)
+			assertEqual(t, *tt.want.ExternalID, *group.ExternalID)
+			assertEqual(t, len(*tt.want.Rules), len(*group.Rules))
 		})
 	}
 }
@@ -169,7 +170,7 @@ func TestSecurityGroupService_Create(t *testing.T) {
 			name: "successful create",
 			request: SecurityGroupCreateRequest{
 				Name:        "test-sg",
-				Description: "test description",
+				Description: helpers.StrPtr("test description"),
 			},
 			response:   `{"id": "sg-new"}`,
 			statusCode: http.StatusOK,
@@ -179,7 +180,7 @@ func TestSecurityGroupService_Create(t *testing.T) {
 		{
 			name: "missing name",
 			request: SecurityGroupCreateRequest{
-				Description: "invalid",
+				Description: helpers.StrPtr("invalid"),
 			},
 			response:   `{"error": "name is required"}`,
 			statusCode: http.StatusBadRequest,
@@ -199,7 +200,7 @@ func TestSecurityGroupService_Create(t *testing.T) {
 				err := json.NewDecoder(r.Body).Decode(&req)
 				assertNoError(t, err)
 				assertEqual(t, tt.request.Name, req.Name)
-				assertEqual(t, tt.request.Description, req.Description)
+				assertEqual(t, *tt.request.Description, *req.Description)
 
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(tt.statusCode)
