@@ -38,38 +38,23 @@ func main() {
 	ExampleNodePoolOperationsWithEmptyTaints(k8sClient, idComNodePool)
 	ExampleNodePoolOperationsWithTaints(k8sClient, idComNodePool)
 	ExampleListFlavorsAndVersions(k8sClient)
+
+	// Get nodes
+	_ = GetNodes(k8sClient, idComNodePool, idNodepool)
 }
 
-func deleteAllClusters(k8sClient *kubernetes.KubernetesClient) {
-	clusters, err := k8sClient.Clusters().List(context.Background(), kubernetes.ListOptions{})
+func GetNodes(k8sClient *kubernetes.KubernetesClient, clusterID string, nodePoolID string) []kubernetes.Node {
+	nodes, err := k8sClient.Nodepools().Nodes(context.Background(), clusterID, nodePoolID)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	for _, cluster := range clusters {
-		err = k8sClient.Clusters().Delete(context.Background(), cluster.ID)
-		if err != nil {
-			log.Fatal(err)
-		}
-		fmt.Println("Cluster deleted:", cluster.ID)
+	fmt.Println("\n\nNodes:")
+	for _, node := range nodes {
+		fmt.Println(node.ID)
 	}
 
-	//Check if all clusters are deleted
-	for {
-		clusters, err = k8sClient.Clusters().List(context.Background(), kubernetes.ListOptions{})
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		if len(clusters) == 0 {
-			break
-		}
-
-		time.Sleep(10 * time.Second)
-		fmt.Println("Waiting for clusters to be deleted")
-	}
-
-	fmt.Println("All clusters deleted")
+	return nodes
 }
 
 func WaitClusterRunning(k8sClient *kubernetes.KubernetesClient, clusterID string) {
