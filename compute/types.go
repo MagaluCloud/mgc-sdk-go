@@ -11,15 +11,15 @@ import (
 
 // MachineType represents a virtual machine instance type configuration
 type MachineType struct {
-	ID                string   `json:"id"`
-	Name              string   `json:"name"`
-	VCPUs             int      `json:"vcpus"`
-	RAM               int      `json:"ram"`
-	Disk              int      `json:"disk"`
-	GPU               int      `json:"gpu"`
-	Status            string   `json:"status"`
-	SKU               *string  `json:"sku,omitempty"`
-	AvailabilityZones []string `json:"availability_zones,omitempty"`
+	ID                string    `json:"id"`
+	Name              string    `json:"name"`
+	VCPUs             int       `json:"vcpus"`
+	RAM               int       `json:"ram"`
+	Disk              int       `json:"disk"`
+	GPU               *int      `json:"gpu,omitempty"`
+	Status            string    `json:"status"`
+	SKU               *string   `json:"sku,omitempty"`
+	AvailabilityZones *[]string `json:"availability_zones,omitempty"`
 }
 
 // MachineTypeService provides operations for querying available machine types

@@ -73,26 +73,32 @@ func ExampleListInstances() {
 
 	// Print instance details
 	for _, instance := range instances {
-		fmt.Printf("Instance: %s (ID: %s)\n", instance.Name, instance.ID)
-		fmt.Printf("  Machine Type: %s\n", instance.MachineType.Name)
-		fmt.Printf("  Image: %s\n", instance.Image.Name)
+		fmt.Printf("Instance: %s (ID: %s)\n", *instance.Name, instance.ID)
+		fmt.Printf("  Machine Type: %s\n", *instance.MachineType.Name)
+		fmt.Printf("  Image: %s\n", *instance.Image.Name)
 		fmt.Printf("  Status: %s\n", instance.Status)
 		fmt.Printf("  State: %s\n", instance.State)
 		fmt.Printf("  Created At: %s\n", instance.CreatedAt)
 		fmt.Printf("  Updated At: %s\n", instance.UpdatedAt)
-		fmt.Printf("  VPC ID: %s\n", *instance.Network.Vpc.ID)
-		fmt.Printf("  VPC Name: %s\n", *instance.Network.Vpc.Name)
-		for _, ni := range instance.Network.Interfaces {
-			fmt.Println("  Interface ID: ", ni.ID)
-			fmt.Println("  Interface Name: ", ni.Name)
-			fmt.Println("  Interface IPv4: ", ni.AssociatedPublicIpv4)
-			fmt.Println("  Interface IPv6: ", ni.IpAddresses.PublicIpv6)
-			fmt.Println("  Interface Local IPv4: ", ni.IpAddresses.PrivateIpv4)
-			fmt.Println("Is Primary: ", ni.Primary)
-			for _, sg := range ni.SecurityGroups {
-				fmt.Println("  Security Group ID: ", sg)
+		if instance.Network != nil {
+			if instance.Network.Vpc.ID != nil {
+				fmt.Printf("  VPC ID: %s\n", *instance.Network.Vpc.ID)
+				fmt.Printf("  VPC Name: %s\n", *instance.Network.Vpc.Name)
 			}
-			fmt.Println("--------")
+			if instance.Network.Interfaces != nil {
+				for _, ni := range *instance.Network.Interfaces {
+					fmt.Println("  Interface ID: ", ni.ID)
+					fmt.Println("  Interface Name: ", ni.Name)
+					fmt.Println("  Interface IPv4: ", ni.AssociatedPublicIpv4)
+					fmt.Println("  Interface IPv6: ", ni.IpAddresses.PublicIpv6)
+					fmt.Println("  Interface Local IPv4: ", ni.IpAddresses.PrivateIpv4)
+					fmt.Println("Is Primary: ", ni.Primary)
+					for _, sg := range *ni.SecurityGroups {
+						fmt.Println("  Security Group ID: ", sg)
+					}
+					fmt.Println("--------")
+				}
+			}
 		}
 	}
 }
@@ -149,29 +155,35 @@ func ExampleGetInstance(id string) {
 		log.Fatal(err)
 	}
 
-	fmt.Printf("Instance: %s (ID: %s)\n", instance.Name, instance.ID)
-	fmt.Printf("  Machine Type: %s\n", instance.MachineType.Name)
-	fmt.Printf("  Image: %s\n", instance.Image.Name)
+	fmt.Printf("Instance: %s (ID: %s)\n", *instance.Name, instance.ID)
+	fmt.Printf("  Machine Type: %s\n", *instance.MachineType.Name)
+	fmt.Printf("  Image: %s\n", *instance.Image.Name)
 	fmt.Printf("  Status: %s\n", instance.Status)
 	fmt.Printf("  State: %s\n", instance.State)
 	fmt.Printf("  Created At: %s\n", instance.CreatedAt)
 	fmt.Printf("  Updated At: %s\n", instance.UpdatedAt)
-	if instance.Network.Vpc.ID != nil {
-		fmt.Printf("  VPC ID: %s\n", *instance.Network.Vpc.ID)
-	}
-	if instance.Network.Vpc.Name != nil {
-		fmt.Printf("  VPC Name: %s\n", *instance.Network.Vpc.Name)
-	}
-	fmt.Println("  User Data: ", instance.UserData)
-	for _, ni := range instance.Network.Interfaces {
-		fmt.Println("  Interface ID: ", ni.ID)
-		fmt.Println("  Interface Name: ", ni.Name)
-		fmt.Println("  Interface IPv4: ", ni.AssociatedPublicIpv4)
-		fmt.Println("  Interface IPv6: ", ni.IpAddresses.PublicIpv6)
-		fmt.Println("  Interface Local IPv4: ", ni.IpAddresses.PrivateIpv4)
-		fmt.Println("Is Primary: ", ni.Primary)
-		for _, sg := range ni.SecurityGroups {
-			fmt.Println("  Security Group ID: ", sg)
+	if instance.Network != nil {
+		if instance.Network.Vpc != nil {
+			if instance.Network.Vpc.ID != nil {
+				fmt.Printf("  VPC ID: %s\n", *instance.Network.Vpc.ID)
+			}
+			if instance.Network.Vpc.Name != nil {
+				fmt.Printf("  VPC Name: %s\n", *instance.Network.Vpc.Name)
+			}
+		}
+		fmt.Println("  User Data: ", instance.UserData)
+		if instance.Network.Vpc != nil {
+			for _, ni := range *instance.Network.Interfaces {
+				fmt.Println("  Interface ID: ", ni.ID)
+				fmt.Println("  Interface Name: ", ni.Name)
+				fmt.Println("  Interface IPv4: ", ni.AssociatedPublicIpv4)
+				fmt.Println("  Interface IPv6: ", ni.IpAddresses.PublicIpv6)
+				fmt.Println("  Interface Local IPv4: ", ni.IpAddresses.PrivateIpv4)
+				fmt.Println("Is Primary: ", ni.Primary)
+				for _, sg := range *ni.SecurityGroups {
+					fmt.Println("  Security Group ID: ", sg)
+				}
+			}
 		}
 	}
 }

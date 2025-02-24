@@ -12,18 +12,18 @@ import (
 type (
 	// PublicIPResponse represents a public IP resource response
 	PublicIPResponse struct {
-		ID          string                         `json:"id,omitempty"`
-		ExternalID  string                         `json:"external_id,omitempty"`
-		VPCID       string                         `json:"vpc_id,omitempty"`
-		TenantID    string                         `json:"tenant_id,omitempty"`
-		ProjectType string                         `json:"project_type,omitempty"`
-		Description string                         `json:"description,omitempty"`
-		PublicIP    string                         `json:"public_ip,omitempty"`
-		PortID      string                         `json:"port_id,omitempty"`
-		CreatedAt   utils.LocalDateTimeWithoutZone `json:"created_at,omitempty"`
-		Updated     utils.LocalDateTimeWithoutZone `json:"updated,omitempty"`
-		Status      string                         `json:"status,omitempty"`
-		Error       string                         `json:"error,omitempty"`
+		ID          *string                         `json:"id,omitempty"`
+		ExternalID  *string                         `json:"external_id,omitempty"`
+		VPCID       *string                         `json:"vpc_id,omitempty"`
+		TenantID    *string                         `json:"tenant_id,omitempty"`
+		ProjectType *string                         `json:"project_type,omitempty"`
+		Description *string                         `json:"description,omitempty"`
+		PublicIP    *string                         `json:"public_ip,omitempty"`
+		PortID      *string                         `json:"port_id,omitempty"`
+		CreatedAt   *utils.LocalDateTimeWithoutZone `json:"created_at,omitempty"`
+		Updated     *utils.LocalDateTimeWithoutZone `json:"updated,omitempty"`
+		Status      *string                         `json:"status,omitempty"`
+		Error       *string                         `json:"error,omitempty"`
 	}
 
 	// PublicIPListResponse represents a list of public IPs response

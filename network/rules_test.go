@@ -82,7 +82,8 @@ func TestRuleService_List(t *testing.T) {
 }
 
 func TestRuleService_Get(t *testing.T) {
-	createdAt, _ := time.Parse(time.RFC3339, "2024-01-01T00:00:00Z")
+	basetime, _ := time.Parse(time.RFC3339, "2024-01-01T00:00:00Z")
+	parsedTime := utils.LocalDateTimeWithoutZone(basetime)
 
 	tests := []struct {
 		name       string
@@ -106,12 +107,12 @@ func TestRuleService_Get(t *testing.T) {
 			}`,
 			statusCode: http.StatusOK,
 			want: &RuleResponse{
-				ID:           "rule1",
-				Direction:    "ingress",
-				Protocol:     "tcp",
+				ID:           helpers.StrPtr("rule1"),
+				Direction:    helpers.StrPtr("ingress"),
+				Protocol:     helpers.StrPtr("tcp"),
 				PortRangeMin: helpers.IntPtr(80),
 				PortRangeMax: helpers.IntPtr(80),
-				CreatedAt:    utils.LocalDateTimeWithoutZone(createdAt),
+				CreatedAt:    &parsedTime,
 				Status:       "ACTIVE",
 			},
 			wantErr: false,
@@ -154,9 +155,9 @@ func TestRuleService_Get(t *testing.T) {
 			}
 
 			assertNoError(t, err)
-			assertEqual(t, tt.want.ID, rule.ID)
-			assertEqual(t, tt.want.Direction, rule.Direction)
-			assertEqual(t, tt.want.Protocol, rule.Protocol)
+			assertEqual(t, *tt.want.ID, *rule.ID)
+			assertEqual(t, *tt.want.Direction, *rule.Direction)
+			assertEqual(t, *tt.want.Protocol, *rule.Protocol)
 		})
 	}
 }
@@ -175,8 +176,8 @@ func TestRuleService_Create(t *testing.T) {
 			name:            "successful create",
 			securityGroupID: "sg1",
 			request: RuleCreateRequest{
-				Direction:    "ingress",
-				Protocol:     "tcp",
+				Direction:    helpers.StrPtr("ingress"),
+				Protocol:     helpers.StrPtr("tcp"),
 				PortRangeMin: helpers.IntPtr(80),
 				PortRangeMax: helpers.IntPtr(80),
 				EtherType:    "IPv4",
@@ -190,8 +191,8 @@ func TestRuleService_Create(t *testing.T) {
 			name:            "invalid protocol",
 			securityGroupID: "sg1",
 			request: RuleCreateRequest{
-				Direction: "ingress",
-				Protocol:  "invalid",
+				Direction: helpers.StrPtr("ingress"),
+				Protocol:  helpers.StrPtr("invalid"),
 			},
 			response:   `{"error": "invalid protocol"}`,
 			statusCode: http.StatusBadRequest,
@@ -201,8 +202,8 @@ func TestRuleService_Create(t *testing.T) {
 			name:            "invalid security group",
 			securityGroupID: "invalid",
 			request: RuleCreateRequest{
-				Direction: "ingress",
-				Protocol:  "tcp",
+				Direction: helpers.StrPtr("ingress"),
+				Protocol:  helpers.StrPtr("tcp"),
 			},
 			response:   `{"error": "security group not found"}`,
 			statusCode: http.StatusNotFound,
@@ -222,8 +223,8 @@ func TestRuleService_Create(t *testing.T) {
 				var req RuleCreateRequest
 				err := json.NewDecoder(r.Body).Decode(&req)
 				assertNoError(t, err)
-				assertEqual(t, tt.request.Direction, req.Direction)
-				assertEqual(t, tt.request.Protocol, req.Protocol)
+				assertEqual(t, *tt.request.Direction, *req.Direction)
+				assertEqual(t, *tt.request.Protocol, *req.Protocol)
 
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(tt.statusCode)

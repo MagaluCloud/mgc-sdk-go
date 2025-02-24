@@ -31,25 +31,25 @@ type (
 
 	// VPC represents a Virtual Private Cloud resource
 	VPC struct {
-		ID              string                         `json:"id"`
-		TenantID        string                         `json:"tenant_id"`
-		Name            string                         `json:"name"`
-		Description     string                         `json:"description"`
-		Status          string                         `json:"status"`
-		RouterID        string                         `json:"router_id"`
-		ExternalNetwork string                         `json:"external_network"`
-		NetworkID       string                         `json:"network_id"`
-		Subnets         []string                       `json:"subnets"`
-		SecurityGroups  []string                       `json:"security_groups"`
-		CreatedAt       utils.LocalDateTimeWithoutZone `json:"created_at"`
-		Updated         utils.LocalDateTimeWithoutZone `json:"updated"`
-		IsDefault       bool                           `json:"is_default"`
+		ID              *string                         `json:"id,omitempty"`
+		TenantID        *string                         `json:"tenant_id,omitempty"`
+		Name            *string                         `json:"name,omitempty"`
+		Description     *string                         `json:"description,omitempty"`
+		Status          string                          `json:"status"`
+		RouterID        *string                         `json:"router_id,omitempty"`
+		ExternalNetwork *string                         `json:"external_network,omitempty"`
+		NetworkID       *string                         `json:"network_id,omitempty"`
+		Subnets         *[]string                       `json:"subnets,omitempty"`
+		SecurityGroups  *[]string                       `json:"security_groups,omitempty"`
+		CreatedAt       *utils.LocalDateTimeWithoutZone `json:"created_at,omitempty"`
+		Updated         *utils.LocalDateTimeWithoutZone `json:"updated,omitempty"`
+		IsDefault       *bool                           `json:"is_default,omitempty"`
 	}
 
 	// CreateVPCRequest represents the parameters for creating a new VPC
 	CreateVPCRequest struct {
-		Name        string `json:"name"`
-		Description string `json:"description,omitempty"`
+		Name        string  `json:"name"`
+		Description *string `json:"description,omitempty"`
 	}
 
 	// RenameVPCRequest represents the parameters for renaming a VPC
@@ -65,8 +65,6 @@ type (
 		Offset *int
 		// Sort specifies the field and direction for sorting results
 		Sort *string
-		// Expand specifies related resources to include in the response
-		Expand []string
 	}
 
 	// CreateVPCResponse represents the response after creating a VPC
@@ -76,11 +74,11 @@ type (
 	}
 
 	PortCreateRequest struct {
-		Name           string   `json:"name"`
-		HasPIP         bool     `json:"has_pip"`
-		HasSG          bool     `json:"has_sg"`
-		Subnets        []string `json:"subnets"`
-		SecurityGroups []string `json:"security_groups_id"`
+		Name           string    `json:"name"`
+		HasPIP         *bool     `json:"has_pip,omitempty"`
+		HasSG          *bool     `json:"has_sg,omitempty"`
+		Subnets        *[]string `json:"subnets,omitempty"`
+		SecurityGroups *[]string `json:"security_groups_id,omitempty"`
 	}
 
 	PublicIPCreateRequest struct {
@@ -95,47 +93,64 @@ type (
 		ID string `json:"id"`
 	}
 
-	PortsList struct {
-		Ports []PortResponse `json:"ports"`
-	}
-
-	PortsListSimplified struct {
-		PortsSimplified []PortSimpleResponse `json:"ports_simplified"`
-	}
-
 	PublicIPsList struct {
 		PublicIPs []PublicIPDb `json:"public_ips"`
 	}
 
-	PortSimpleResponse struct {
-		ID        string      `json:"id,omitempty"`
-		IPAddress []IPAddress `json:"ip_address"`
-	}
-
 	IPAddress struct {
-		IPAddress string `json:"ip_address"`
-		SubnetID  string `json:"subnet_id"`
-		EtherType string `json:"ethertype,omitempty"`
-	}
-
-	PublicIPResponsePort struct {
-		PublicIPID string `json:"public_ip_id,omitempty"`
-		PublicIP   string `json:"public_ip,omitempty"`
+		IPAddress string  `json:"ip_address"`
+		SubnetID  string  `json:"subnet_id"`
+		EtherType *string `json:"ethertype,omitempty"`
 	}
 
 	PublicIPDb struct {
-		ID          string                         `json:"id,omitempty"`
-		ExternalID  string                         `json:"external_id,omitempty"`
-		VPCID       string                         `json:"vpc_id,omitempty"`
-		TenantID    string                         `json:"tenant_id,omitempty"`
-		ProjectType string                         `json:"project_type,omitempty"`
-		Description string                         `json:"description,omitempty"`
-		PublicIP    string                         `json:"public_ip,omitempty"`
-		PortID      string                         `json:"port_id,omitempty"`
-		CreatedAt   utils.LocalDateTimeWithoutZone `json:"created_at,omitempty"`
-		Updated     utils.LocalDateTimeWithoutZone `json:"updated,omitempty"`
-		Status      string                         `json:"status,omitempty"`
-		Error       string                         `json:"error,omitempty"`
+		ID          *string                         `json:"id,omitempty"`
+		ExternalID  *string                         `json:"external_id,omitempty"`
+		VPCID       *string                         `json:"vpc_id,omitempty"`
+		TenantID    *string                         `json:"tenant_id,omitempty"`
+		ProjectType *string                         `json:"project_type,omitempty"`
+		Description *string                         `json:"description,omitempty"`
+		PublicIP    *string                         `json:"public_ip,omitempty"`
+		PortID      *string                         `json:"port_id,omitempty"`
+		CreatedAt   *utils.LocalDateTimeWithoutZone `json:"created_at,omitempty"`
+		Updated     *utils.LocalDateTimeWithoutZone `json:"updated,omitempty"`
+		Status      *string                         `json:"status,omitempty"`
+		Error       *string                         `json:"error,omitempty"`
+	}
+
+	PortListResponse struct {
+		CreatedAt             *string         `json:"created_at,omitempty"`
+		Description           *string         `json:"description,omitempty"`
+		ID                    *string         `json:"id,omitempty"`
+		IPAddress             []PortIPAddress `json:"ip_address,omitempty"`
+		IsAdminStateUp        *bool           `json:"is_admin_state_up,omitempty"`
+		IsPortSecurityEnabled *bool           `json:"is_port_security_enabled,omitempty"`
+		Name                  *string         `json:"name,omitempty"`
+		PublicIP              []PortPublicIP  `json:"public_ip,omitempty"`
+		SecurityGroups        []string        `json:"security_groups,omitempty"`
+		Updated               *string         `json:"updated,omitempty"`
+		VPCID                 *string         `json:"vpc_id,omitempty"`
+	}
+
+	PortIPAddress struct {
+		Ethertype *string `json:"ethertype,omitempty"`
+		IPAddress string  `json:"ip_address"`
+		SubnetID  string  `json:"subnet_id"`
+	}
+
+	PortPublicIP struct {
+		PublicIP   *string `json:"public_ip,omitempty"`
+		PublicIPID *string `json:"public_ip_id,omitempty"`
+	}
+
+	PortsList struct {
+		Ports           *[]PortResponse      `json:"ports,omitempty"`
+		PortsSimplified []PortSimpleResponse `json:"ports_simplified"`
+	}
+
+	PortSimpleResponse struct {
+		ID        *string         `json:"id,omitempty"`
+		IPAddress []PortIPAddress `json:"ip_address,omitempty"`
 	}
 )
 
@@ -165,7 +180,7 @@ const (
 // VPCService provides operations for managing VPCs
 type VPCService interface {
 	// List returns a slice of VPCs based on the provided listing options
-	List(ctx context.Context, opts ListOptions) ([]VPC, error)
+	List(ctx context.Context) ([]VPC, error)
 
 	// Get retrieves detailed information about a specific VPC
 	Get(ctx context.Context, id string, expand []string) (*VPC, error)
@@ -180,7 +195,7 @@ type VPCService interface {
 	Rename(ctx context.Context, id string, newName string) error
 
 	// ListPorts returns all ports for a VPC
-	ListPorts(ctx context.Context, vpcID string, detailed bool, opts ListOptions) (interface{}, error)
+	ListPorts(ctx context.Context, vpcID string, detailed bool, opts ListOptions) (*PortsList, error)
 
 	// CreatePort creates a new port in a VPC
 	CreatePort(ctx context.Context, vpcID string, req PortCreateRequest) (string, error)
@@ -203,31 +218,15 @@ type vpcService struct {
 }
 
 // List retrieves a list of VPCs based on the provided options
-func (s *vpcService) List(ctx context.Context, opts ListOptions) ([]VPC, error) {
-	path := "/v0/vpcs"
-	query := make(url.Values)
-
-	if opts.Limit != nil {
-		query.Set("_limit", strconv.Itoa(*opts.Limit))
-	}
-	if opts.Offset != nil {
-		query.Set("_offset", strconv.Itoa(*opts.Offset))
-	}
-	if opts.Sort != nil {
-		query.Set("_sort", *opts.Sort)
-	}
-	if len(opts.Expand) > 0 {
-		query.Set("expand", strings.Join(opts.Expand, ","))
-	}
-
+func (s *vpcService) List(ctx context.Context) ([]VPC, error) {
 	result, err := mgc_http.ExecuteSimpleRequestWithRespBody[ListVPCsResponse](
 		ctx,
 		s.client.newRequest,
 		s.client.GetConfig(),
 		http.MethodGet,
-		path,
+		"/v0/vpcs",
 		nil,
-		query,
+		nil,
 	)
 	if err != nil {
 		return nil, err
@@ -297,39 +296,25 @@ func (s *vpcService) Rename(ctx context.Context, id string, newName string) erro
 }
 
 // ListPorts returns all network ports associated with a VPC
-func (s *vpcService) ListPorts(ctx context.Context, vpcID string, detailed bool, opts ListOptions) (interface{}, error) {
+func (s *vpcService) ListPorts(ctx context.Context, vpcID string, detailed bool, opts ListOptions) (*PortsList, error) {
 	query := makeListOptionsQuery(opts)
-	query.Set("detailed", fmt.Sprintf("%v", detailed))
+	query.Set("detailed", strconv.FormatBool(detailed))
 
-	if detailed {
-		result, err := mgc_http.ExecuteSimpleRequestWithRespBody[PortsList](
-			ctx,
-			s.client.newRequest,
-			s.client.GetConfig(),
-			http.MethodGet,
-			fmt.Sprintf("/v0/vpcs/%s/ports", vpcID),
-			nil,
-			query,
-		)
-		if err != nil {
-			return nil, err
-		}
-		return result.Ports, nil
-	}
+	path := fmt.Sprintf("/v0/vpcs/%s/ports", vpcID)
 
-	result, err := mgc_http.ExecuteSimpleRequestWithRespBody[PortsListSimplified](
+	result, err := mgc_http.ExecuteSimpleRequestWithRespBody[PortsList](
 		ctx,
 		s.client.newRequest,
 		s.client.GetConfig(),
 		http.MethodGet,
-		fmt.Sprintf("/v0/vpcs/%s/ports", vpcID),
+		path,
 		nil,
 		query,
 	)
 	if err != nil {
 		return nil, err
 	}
-	return result.PortsSimplified, nil
+	return result, nil
 }
 
 // CreatePort creates a new network port in the specified VPC
