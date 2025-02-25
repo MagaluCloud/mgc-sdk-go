@@ -28,6 +28,7 @@ type (
 	}
 
 	NodePoolService interface {
+		Nodes(ctx context.Context, clusterID, nodePoolID string) ([]Node, error)
 		List(ctx context.Context, clusterID string, opts ListOptions) ([]NodePool, error)
 		Create(ctx context.Context, clusterID string, req CreateNodePoolRequest) (*NodePool, error)
 		Get(ctx context.Context, clusterID, nodePoolID string) (*NodePool, error)
@@ -63,6 +64,57 @@ type (
 		Flavor           string            `json:"flavor"`
 	}
 
+	Addresses struct {
+		Address string `json:"address"`
+		Type    string `json:"type"`
+	}
+
+	Allocatable struct {
+		CPU              string `json:"cpu"`
+		EphemeralStorage string `json:"ephemeral_storage"`
+		Hugepages1Gi     string `json:"hugepages_1Gi"`
+		Hugepages2Mi     string `json:"hugepages_2Mi"`
+		Memory           string `json:"memory"`
+		Pods             string `json:"pods"`
+	}
+	Capacity struct {
+		CPU              string `json:"cpu"`
+		EphemeralStorage string `json:"ephemeral_storage"`
+		Hugepages1Gi     string `json:"hugepages_1Gi"`
+		Hugepages2Mi     string `json:"hugepages_2Mi"`
+		Memory           string `json:"memory"`
+		Pods             string `json:"pods"`
+	}
+	Infrastructure struct {
+		Allocatable             Allocatable `json:"allocatable"`
+		Architecture            string      `json:"architecture"`
+		Capacity                Capacity    `json:"capacity"`
+		ContainerRuntimeVersion string      `json:"containerRuntimeVersion"`
+		KernelVersion           string      `json:"kernelVersion"`
+		KubeProxyVersion        string      `json:"kubeProxyVersion"`
+		KubeletVersion          string      `json:"kubeletVersion"`
+		OperatingSystem         string      `json:"operatingSystem"`
+		OsImage                 string      `json:"osImage"`
+	}
+
+	Node struct {
+		Addresses      []Addresses       `json:"addresses"`
+		Annotations    map[string]string `json:"annotations"`
+		ClusterName    string            `json:"cluster_name"`
+		CreatedAt      time.Time         `json:"created_at"`
+		Flavor         string            `json:"flavor"`
+		ID             string            `json:"id"`
+		Infrastructure Infrastructure    `json:"infrastructure"`
+		Labels         map[string]string `json:"labels"`
+		Name           string            `json:"name"`
+		Namespace      string            `json:"namespace"`
+		NodeImage      string            `json:"node_image"`
+		NodepoolName   string            `json:"nodepool_name"`
+		Status         Status            `json:"status"`
+		Taints         []Taint           `json:"taints"`
+		Zone           *string           `json:"zone"`
+	}
+
 	CreateNodePoolRequest struct {
 		Name      string     `json:"name"`
 		Flavor    string     `json:"flavor"`
@@ -92,6 +144,30 @@ type (
 		client *KubernetesClient
 	}
 )
+
+func (s *nodePoolService) Nodes(ctx context.Context, clusterID, nodePoolID string) ([]Node, error) {
+	if clusterID == "" {
+		return nil, &client.ValidationError{Field: "clusterID", Message: utils.CannotBeEmpty}
+	}
+
+	if nodePoolID == "" {
+		return nil, &client.ValidationError{Field: "nodePoolID", Message: utils.CannotBeEmpty}
+	}
+
+	type NodeList struct {
+		Results []Node `json:"results"`
+	}
+
+	resp, err := mgc_http.ExecuteSimpleRequestWithRespBody[NodeList](ctx, s.client.newRequest,
+		s.client.GetConfig(), http.MethodGet,
+		fmt.Sprintf(clusterNodepoolURL+"/nodes", clusterID, nodePoolID), nil, nil)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return resp.Results, nil
+}
 
 func (s *nodePoolService) List(ctx context.Context, clusterID string, opts ListOptions) ([]NodePool, error) {
 	if clusterID == "" {
