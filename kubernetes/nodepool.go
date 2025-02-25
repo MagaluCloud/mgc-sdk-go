@@ -112,7 +112,7 @@ type (
 		NodepoolName   string            `json:"nodepool_name"`
 		Status         Status            `json:"status"`
 		Taints         []Taint           `json:"taints"`
-		Zone           string            `json:"zone"`
+		Zone           *string           `json:"zone"`
 	}
 
 	CreateNodePoolRequest struct {
