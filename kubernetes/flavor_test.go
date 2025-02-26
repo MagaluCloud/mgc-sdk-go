@@ -127,15 +127,12 @@ func TestFlavorService_List_EmptyResults(t *testing.T) {
 	defer server.Close()
 
 	client := testClient(server.URL)
-	result, err := client.Flavors().List(context.Background(), ListOptions{})
+	_, err := client.Flavors().List(context.Background(), ListOptions{})
 
-	if err != nil {
-		t.Fatalf("Erro inesperado: %v", err)
+	if err == nil {
+		t.Fatalf("Esperado erro, obtido nil")
 	}
 
-	if len(result.NodePool) != 0 {
-		t.Errorf("Esperado 0 resultados, obtido %d", len(result.NodePool))
-	}
 }
 
 func TestFlavorService_List_AuthorizationError(t *testing.T) {

@@ -2,6 +2,7 @@ package kubernetes
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -55,6 +56,10 @@ func (s *flavorService) List(ctx context.Context, opts ListOptions) (*FlavorsAva
 	response, err := mgc_http.ExecuteSimpleRequestWithRespBody[FlavorList](ctx, s.client.newRequest, s.client.GetConfig(), http.MethodGet, "/v1/flavors", nil, query)
 	if err != nil {
 		return nil, err
+	}
+
+	if len(response.Results) == 0 {
+		return nil, errors.New("no flavors available")
 	}
 
 	return &response.Results[0], nil
