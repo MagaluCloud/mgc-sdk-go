@@ -99,8 +99,8 @@ func TestSecurityGroupService_Get(t *testing.T) {
 				"rules": [
 					{"id": "rule1", "direction": "ingress"}
 				],
-				"created_at": "2024-01-01T00:00:00",
-				"updated": "2024-01-01T00:00:00"
+				"created_at": "2024-01-01T00:00:00.000000",
+				"updated": "2024-01-01T00:00:00.000000"
 			}`,
 			statusCode: http.StatusOK,
 			want: &SecurityGroupDetailResponse{

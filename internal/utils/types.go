@@ -7,7 +7,7 @@ import (
 
 type LocalDateTimeWithoutZone time.Time
 
-const LocalDateTimeWithoutZoneLayout = "2006-01-02T15:04:05"
+const LocalDateTimeWithoutZoneLayout = "2006-01-02T15:04:05.000000"
 
 func (ct *LocalDateTimeWithoutZone) UnmarshalJSON(data []byte) error {
 	s := strings.Trim(string(data), `"`)

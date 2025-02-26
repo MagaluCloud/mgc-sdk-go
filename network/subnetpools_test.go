@@ -119,7 +119,7 @@ func TestSubnetPoolService_Get(t *testing.T) {
 				"name": "test-pool",
 				"cidr": "10.0.0.0/16",
 				"ip_version": 4,
-				"created_at": "2024-01-01T00:00:00"
+				"created_at": "2024-01-01T00:00:00.000000"
 			}`,
 			statusCode: http.StatusOK,
 			want: &SubnetPoolDetailsResponse{
