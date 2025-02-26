@@ -14,18 +14,18 @@ func TestLocalDateTimeWithoutZone_UnmarshalJSON(t *testing.T) {
 	}{
 		{
 			name:    "valid time",
-			data:    []byte(`"2023-01-02T12:34:56"`),
+			data:    []byte(`"2023-01-02T12:34:56.000000"`),
 			want:    time.Date(2023, time.January, 2, 12, 34, 56, 0, time.UTC),
 			wantErr: false,
 		},
 		{
 			name:    "invalid format with space",
-			data:    []byte(`"2023-01-02 12:34:56"`),
+			data:    []byte(`"2023-01-02 12:34:56.000000"`),
 			wantErr: true,
 		},
 		{
 			name:    "invalid month",
-			data:    []byte(`"2023-13-02T12:34:56"`),
+			data:    []byte(`"2023-13-02T12:34:56.000000"`),
 			wantErr: true,
 		},
 		{
@@ -71,19 +71,19 @@ func TestLocalDateTimeWithoutZone_MarshalJSON(t *testing.T) {
 		{
 			name:    "valid UTC time",
 			ct:      LocalDateTimeWithoutZone(time.Date(2023, time.January, 2, 12, 34, 56, 0, time.UTC)),
-			want:    []byte(`"2023-01-02T12:34:56"`),
+			want:    []byte(`"2023-01-02T12:34:56.000000"`),
 			wantErr: false,
 		},
 		{
 			name:    "valid non-UTC time",
 			ct:      LocalDateTimeWithoutZone(time.Date(2023, time.January, 2, 12, 34, 56, 0, loc)),
-			want:    []byte(`"2023-01-02T12:34:56"`),
+			want:    []byte(`"2023-01-02T12:34:56.000000"`),
 			wantErr: false,
 		},
 		{
 			name:    "zero time",
 			ct:      LocalDateTimeWithoutZone(time.Time{}),
-			want:    []byte(`"0001-01-01T00:00:00"`),
+			want:    []byte(`"0001-01-01T00:00:00.000000"`),
 			wantErr: false,
 		},
 	}
@@ -111,12 +111,12 @@ func TestLocalDateTimeWithoutZone_String(t *testing.T) {
 		{
 			name: "valid time",
 			ct:   LocalDateTimeWithoutZone(time.Date(2023, time.January, 2, 12, 34, 56, 0, time.UTC)),
-			want: "2023-01-02T12:34:56",
+			want: "2023-01-02T12:34:56.000000",
 		},
 		{
 			name: "zero time",
 			ct:   LocalDateTimeWithoutZone(time.Time{}),
-			want: "0001-01-01T00:00:00",
+			want: "0001-01-01T00:00:00.000000",
 		},
 	}
 

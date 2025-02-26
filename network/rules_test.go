@@ -102,7 +102,7 @@ func TestRuleService_Get(t *testing.T) {
 				"protocol": "tcp",
 				"port_range_min": 80,
 				"port_range_max": 80,
-				"created_at": "2024-01-01T00:00:00",
+				"created_at": "2024-01-01T00:00:00.000000",
 				"status": "ACTIVE"
 			}`,
 			statusCode: http.StatusOK,
