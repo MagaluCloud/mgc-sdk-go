@@ -96,8 +96,8 @@ func TestPublicIPService_Get(t *testing.T) {
 				"public_ip": "203.0.113.5",
 				"vpc_id": "vpc1",
 				"status": "ACTIVE",
-				"created_at": "2024-01-01T00:00:00",
-				"updated": "2024-01-02T00:00:00"
+				"created_at": "2024-01-01T00:00:00.000000",
+				"updated": "2024-01-02T00:00:00.000000"
 			}`,
 			statusCode: http.StatusOK,
 			want: &PublicIPResponse{

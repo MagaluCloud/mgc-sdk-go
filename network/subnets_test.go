@@ -37,8 +37,8 @@ func TestSubnetService_Get(t *testing.T) {
 				"gateway_ip": "10.0.0.1",
 				"dns_nameservers": ["8.8.8.8"],
 				"dhcp_pools": [{"start": "10.0.0.100", "end": "10.0.0.200"}],
-				"created_at": "2024-01-01T00:00:00",
-				"updated": "2024-01-01T00:00:00"
+				"created_at": "2024-01-01T00:00:00.000000",
+				"updated": "2024-01-01T00:00:00.000000"
 			}`,
 			statusCode: http.StatusOK,
 			want: &SubnetResponseDetail{

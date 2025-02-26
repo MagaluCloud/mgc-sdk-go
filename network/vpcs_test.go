@@ -359,7 +359,7 @@ func TestVPCService_ListPublicIPs(t *testing.T) {
 			vpcID: "vpc1",
 			response: `{
 				"public_ips": [
-					{"id": "ip1", "public_ip": "203.0.113.1", "created_at": "2024-01-01T00:00:00"},
+					{"id": "ip1", "public_ip": "203.0.113.1", "created_at": "2024-01-01T00:00:00.000000"},
 					{"id": "ip2", "public_ip": "203.0.113.2"}
 				]
 			}`,
@@ -627,7 +627,7 @@ func TestVPCService_List(t *testing.T) {
 						"name": "prod-vpc",
 						"security_groups": ["sg1", "sg2"],
 						"subnets": ["subnet1"],
-						"created_at": "2024-01-01T00:00:00"
+						"created_at": "2024-01-01T00:00:00.000000"
 					}
 				]
 			}`,
@@ -708,7 +708,7 @@ func TestVPCService_Get(t *testing.T) {
 				"name": "prod-vpc",
 				"security_groups": ["sg1", "sg2"],
 				"subnets": ["subnet1"],
-				"created_at": "2024-01-01T00:00:00",
+				"created_at": "2024-01-01T00:00:00.000000",
 				"is_default": true
 			}`,
 			statusCode: http.StatusOK,
