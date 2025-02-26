@@ -347,10 +347,10 @@ func ExampleListFlavorsAndVersions(k8sClient *kubernetes.KubernetesClient) {
 	}
 
 	fmt.Println("\nFlavors para Node Pools:")
-	for _, f := range (*flavors)[0].ControlPlane {
+	for _, f := range flavors.ControlPlane {
 		fmt.Printf("CP - %s (%d vCPUs, %dMB RAM)\n", f.Name, f.VCPU, f.RAM)
 	}
-	for _, f := range (*flavors)[0].NodePool {
+	for _, f := range flavors.NodePool {
 		fmt.Printf("NP - %s (%d vCPUs, %dMB RAM)\n", f.Name, f.VCPU, f.RAM)
 	}
 }

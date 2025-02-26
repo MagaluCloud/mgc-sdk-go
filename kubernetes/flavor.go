@@ -2,6 +2,7 @@ package kubernetes
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -12,7 +13,7 @@ import (
 
 type (
 	FlavorService interface {
-		List(ctx context.Context, opts ListOptions) (*[]FlavorsAvailable, error)
+		List(ctx context.Context, opts ListOptions) (*FlavorsAvailable, error)
 	}
 
 	FlavorList struct {
@@ -37,7 +38,7 @@ type (
 	}
 )
 
-func (s *flavorService) List(ctx context.Context, opts ListOptions) (*[]FlavorsAvailable, error) {
+func (s *flavorService) List(ctx context.Context, opts ListOptions) (*FlavorsAvailable, error) {
 	query := url.Values{}
 	if opts.Limit != nil {
 		query.Add("_limit", strconv.Itoa(*opts.Limit))
@@ -57,5 +58,9 @@ func (s *flavorService) List(ctx context.Context, opts ListOptions) (*[]FlavorsA
 		return nil, err
 	}
 
-	return &response.Results, nil
+	if len(response.Results) == 0 {
+		return nil, errors.New("no flavors available")
+	}
+
+	return &response.Results[0], nil
 }
