@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strconv"
-	"strings"
 	"testing"
 	"time"
 
@@ -693,16 +692,14 @@ func TestVPCService_Get(t *testing.T) {
 	tests := []struct {
 		name       string
 		id         string
-		expand     []string
 		response   string
 		statusCode int
 		want       *VPC
 		wantErr    bool
 	}{
 		{
-			name:   "successful get with expansion",
-			id:     "vpc1",
-			expand: []string{SecurityGroupsExpand, SubnetsExpand},
+			name: "successful get with expansion",
+			id:   "vpc1",
 			response: `{
 				"id": "vpc1",
 				"name": "prod-vpc",
@@ -756,10 +753,6 @@ func TestVPCService_Get(t *testing.T) {
 				assertEqual(t, fmt.Sprintf("/network/v0/vpcs/%s", tt.id), r.URL.Path)
 				assertEqual(t, http.MethodGet, r.Method)
 
-				if len(tt.expand) > 0 {
-					assertEqual(t, strings.Join(tt.expand, ","), r.URL.Query().Get("expand"))
-				}
-
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(tt.statusCode)
 				w.Write([]byte(tt.response))
@@ -767,7 +760,7 @@ func TestVPCService_Get(t *testing.T) {
 			defer server.Close()
 
 			client := testVPCClient(server.URL)
-			vpc, err := client.Get(context.Background(), tt.id, tt.expand)
+			vpc, err := client.Get(context.Background(), tt.id)
 
 			if tt.wantErr {
 				assertError(t, err)
@@ -778,11 +771,6 @@ func TestVPCService_Get(t *testing.T) {
 			assertEqual(t, *tt.want.ID, *vpc.ID)
 			assertEqual(t, *tt.want.Name, *vpc.Name)
 			assertEqual(t, tt.want.Status, vpc.Status)
-
-			if len(tt.expand) > 0 {
-				assertEqual(t, len(*tt.want.SecurityGroups), len(*vpc.SecurityGroups))
-				assertEqual(t, len(*tt.want.Subnets), len(*vpc.Subnets))
-			}
 
 			if *tt.want.IsDefault {
 				assertEqual(t, *tt.want.IsDefault, *vpc.IsDefault)
