@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
-	"strings"
 
 	mgc_http "github.com/MagaluCloud/mgc-sdk-go/internal/http"
 	"github.com/MagaluCloud/mgc-sdk-go/internal/utils"
@@ -183,7 +182,7 @@ type VPCService interface {
 	List(ctx context.Context) ([]VPC, error)
 
 	// Get retrieves detailed information about a specific VPC
-	Get(ctx context.Context, id string, expand []string) (*VPC, error)
+	Get(ctx context.Context, id string) (*VPC, error)
 
 	// Create provisions a new VPC
 	Create(ctx context.Context, req CreateVPCRequest) (string, error)
@@ -235,12 +234,8 @@ func (s *vpcService) List(ctx context.Context) ([]VPC, error) {
 }
 
 // Get retrieves detailed information about a specific VPC
-func (s *vpcService) Get(ctx context.Context, id string, expand []string) (*VPC, error) {
+func (s *vpcService) Get(ctx context.Context, id string) (*VPC, error) {
 	path := fmt.Sprintf("/v0/vpcs/%s", id)
-	if len(expand) > 0 {
-		path = fmt.Sprintf("%s?expand=%s", path, strings.Join(expand, ","))
-	}
-
 	return mgc_http.ExecuteSimpleRequestWithRespBody[VPC](
 		ctx,
 		s.client.newRequest,

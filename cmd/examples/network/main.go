@@ -85,7 +85,7 @@ func ExampleManageVPC(id string) {
 	ctx := context.Background()
 
 	// Get VPC details
-	vpc, err := networkClient.VPCs().Get(ctx, id, []string{network.SubnetsExpand})
+	vpc, err := networkClient.VPCs().Get(ctx, id)
 	if err != nil {
 		log.Fatal(err)
 	}
