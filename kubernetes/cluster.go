@@ -76,7 +76,7 @@ type (
 		CreatedAt     time.Time      `json:"created_at"`
 		UpdatedAt     *time.Time     `json:"updated_at,omitempty"`
 		Network       *Network       `json:"network,omitempty"`
-		ControlPlane  *NodePool      `json:"control_plane,omitempty"`
+		ControlPlane  *NodePool      `json:"controlplane,omitempty"`
 		KubeApiServer *KubeApiServer `json:"kube_api_server,omitempty"`
 		NodePools     []NodePool     `json:"node_pools,omitempty"`
 		Addons        *Addons        `json:"addons,omitempty"`
