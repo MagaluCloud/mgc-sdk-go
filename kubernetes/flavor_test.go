@@ -76,7 +76,7 @@ func TestFlavorService_List(t *testing.T) {
 			}
 
 			if !tt.wantErr {
-				total := len((*result)[0].NodePool) + len((*result)[0].ControlPlane)
+				total := len(result.NodePool) + len(result.ControlPlane)
 				if total != tt.want {
 					t.Errorf("List() got = %d, want %d", total, tt.want)
 				}
@@ -133,8 +133,8 @@ func TestFlavorService_List_EmptyResults(t *testing.T) {
 		t.Fatalf("Erro inesperado: %v", err)
 	}
 
-	if len(*result) != 0 {
-		t.Errorf("Esperado 0 resultados, obtido %d", len(*result))
+	if len(result.NodePool) != 0 {
+		t.Errorf("Esperado 0 resultados, obtido %d", len(result.NodePool))
 	}
 }
 
