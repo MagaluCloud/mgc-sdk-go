@@ -261,7 +261,7 @@ func ExampleNodePoolOperationsWithTaints(k8sClient *kubernetes.KubernetesClient,
 		Flavor:   "cloud-k8s.gp1.small",
 		Replicas: 1,
 		Tags:     []string{"ai"},
-		Taints: []kubernetes.Taint{
+		Taints: &[]kubernetes.Taint{
 			{
 				Key:    "gpu",
 				Effect: "NoSchedule",
@@ -309,7 +309,7 @@ func ExampleNodePoolOperationsWithEmptyTaints(k8sClient *kubernetes.KubernetesCl
 		Flavor:   "cloud-k8s.gp1.small",
 		Replicas: 1,
 		Tags:     []string{"ai"},
-		Taints:   []kubernetes.Taint{},
+		Taints:   &[]kubernetes.Taint{},
 	}
 
 	newPool, err := k8sClient.Nodepools().Create(ctx, clusterID, poolReq)

@@ -55,7 +55,7 @@ type (
 		Zone             []string          `json:"zone,omitempty"`
 		Tags             []string          `json:"tags"`
 		Labels           map[string]string `json:"labels,omitempty"`
-		Taints           []Taint           `json:"taints"`
+		Taints           *[]Taint          `json:"taints,omitempty"`
 		SecurityGroups   []string          `json:"security_groups,omitempty"`
 		CreatedAt        time.Time         `json:"created_at"`
 		UpdatedAt        *time.Time        `json:"updated_at,omitempty"`
@@ -111,8 +111,8 @@ type (
 		NodeImage      string            `json:"node_image"`
 		NodepoolName   string            `json:"nodepool_name"`
 		Status         Status            `json:"status"`
-		Taints         []Taint           `json:"taints"`
-		Zone           *string           `json:"zone"`
+		Taints         *[]Taint          `json:"taints,omitempty"`
+		Zone           *string           `json:"zone,omitempty"`
 	}
 
 	CreateNodePoolRequest struct {
@@ -120,7 +120,7 @@ type (
 		Flavor    string     `json:"flavor"`
 		Replicas  int        `json:"replicas"`
 		Tags      []string   `json:"tags,omitempty"`
-		Taints    []Taint    `json:"taints,omitempty"`
+		Taints    *[]Taint   `json:"taints,omitempty"`
 		AutoScale *AutoScale `json:"auto_scale,omitempty"`
 	}
 
