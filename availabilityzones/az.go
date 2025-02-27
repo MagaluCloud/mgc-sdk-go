@@ -16,7 +16,7 @@ type ListOptions struct {
 
 // Service defines the interface for availability zone operations
 type Service interface {
-	List(ctx context.Context, opts ListOptions) (*ListResponse, error)
+	List(ctx context.Context, opts ListOptions) ([]Region, error)
 }
 
 type service struct {
@@ -50,11 +50,11 @@ type ListResponse struct {
 }
 
 // List retrieves all availability zones
-func (s *service) List(ctx context.Context, opts ListOptions) (*ListResponse, error) {
+func (s *service) List(ctx context.Context, opts ListOptions) ([]Region, error) {
 	query := url.Values{}
 	query.Set("show_is_blocked", strconv.FormatBool(opts.ShowBlocked))
 
-	return mgc_http.ExecuteSimpleRequestWithRespBody[ListResponse](
+	result, err := mgc_http.ExecuteSimpleRequestWithRespBody[ListResponse](
 		ctx,
 		s.client.newRequest,
 		s.client.GetConfig(),
@@ -63,4 +63,9 @@ func (s *service) List(ctx context.Context, opts ListOptions) (*ListResponse, er
 		nil,
 		query,
 	)
+	if err != nil {
+		return nil, err
+	}
+
+	return result.Results, nil
 }
