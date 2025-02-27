@@ -278,6 +278,7 @@ func TestVPCService_CreatePort(t *testing.T) {
 		name       string
 		vpcID      string
 		request    PortCreateRequest
+		opts       PortCreateOptions
 		response   string
 		statusCode int
 		wantID     string
@@ -292,6 +293,9 @@ func TestVPCService_CreatePort(t *testing.T) {
 				Subnets:        &[]string{"subnet1"},
 				SecurityGroups: &[]string{"sg1"},
 			},
+			opts: PortCreateOptions{
+				Zone: helpers.StrPtr("zone1"),
+			},
 			response:   `{"id": "port-new"}`,
 			statusCode: http.StatusCreated,
 			wantID:     "port-new",
@@ -303,6 +307,7 @@ func TestVPCService_CreatePort(t *testing.T) {
 			request: PortCreateRequest{
 				Name: "invalid-port",
 			},
+			opts:       PortCreateOptions{},
 			response:   `{"error": "subnets required"}`,
 			statusCode: http.StatusBadRequest,
 			wantErr:    true,
@@ -316,6 +321,11 @@ func TestVPCService_CreatePort(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				assertEqual(t, fmt.Sprintf("/network/v0/vpcs/%s/ports", tt.vpcID), r.URL.Path)
 				assertEqual(t, http.MethodPost, r.Method)
+
+				// Check for the x-zone header if provided
+				if tt.opts.Zone != nil {
+					assertEqual(t, *tt.opts.Zone, r.Header.Get("x-zone"))
+				}
 
 				if !tt.wantErr {
 					var req PortCreateRequest
@@ -331,7 +341,7 @@ func TestVPCService_CreatePort(t *testing.T) {
 			defer server.Close()
 
 			client := testVPCClient(server.URL)
-			id, err := client.CreatePort(context.Background(), tt.vpcID, tt.request)
+			id, err := client.CreatePort(context.Background(), tt.vpcID, tt.request, tt.opts)
 
 			if tt.wantErr {
 				assertError(t, err)
@@ -534,6 +544,7 @@ func TestVPCService_CreateSubnet(t *testing.T) {
 		name       string
 		vpcID      string
 		request    SubnetCreateRequest
+		opts       SubnetCreateOptions
 		response   string
 		statusCode int
 		wantID     string
@@ -547,6 +558,9 @@ func TestVPCService_CreateSubnet(t *testing.T) {
 				CIDRBlock: "10.0.0.0/24",
 				IPVersion: 4,
 			},
+			opts: SubnetCreateOptions{
+				Zone: helpers.StrPtr("zone2"),
+			},
 			response:   `{"id": "subnet-new"}`,
 			statusCode: http.StatusCreated,
 			wantID:     "subnet-new",
@@ -559,6 +573,7 @@ func TestVPCService_CreateSubnet(t *testing.T) {
 				Name:      "invalid",
 				CIDRBlock: "invalid",
 			},
+			opts:       SubnetCreateOptions{},
 			response:   `{"error": "invalid CIDR"}`,
 			statusCode: http.StatusBadRequest,
 			wantErr:    true,
@@ -573,6 +588,11 @@ func TestVPCService_CreateSubnet(t *testing.T) {
 				assertEqual(t, fmt.Sprintf("/network/v0/vpcs/%s/subnets", tt.vpcID), r.URL.Path)
 				assertEqual(t, http.MethodPost, r.Method)
 
+				// Check for the x-zone header if provided
+				if tt.opts.Zone != nil {
+					assertEqual(t, *tt.opts.Zone, r.Header.Get("x-zone"))
+				}
+
 				var req SubnetCreateRequest
 				err := json.NewDecoder(r.Body).Decode(&req)
 				assertNoError(t, err)
@@ -586,7 +606,7 @@ func TestVPCService_CreateSubnet(t *testing.T) {
 			defer server.Close()
 
 			client := testVPCClient(server.URL)
-			id, err := client.CreateSubnet(context.Background(), tt.vpcID, tt.request)
+			id, err := client.CreateSubnet(context.Background(), tt.vpcID, tt.request, tt.opts)
 
 			if tt.wantErr {
 				assertError(t, err)

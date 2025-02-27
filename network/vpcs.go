@@ -80,6 +80,10 @@ type (
 		SecurityGroups *[]string `json:"security_groups_id,omitempty"`
 	}
 
+	PortCreateOptions struct {
+		Zone *string `json:"zone,omitempty"`
+	}
+
 	PublicIPCreateRequest struct {
 		Description string `json:"description,omitempty"`
 	}
@@ -197,7 +201,7 @@ type VPCService interface {
 	ListPorts(ctx context.Context, vpcID string, detailed bool, opts ListOptions) (*PortsList, error)
 
 	// CreatePort creates a new port in a VPC
-	CreatePort(ctx context.Context, vpcID string, req PortCreateRequest) (string, error)
+	CreatePort(ctx context.Context, vpcID string, req PortCreateRequest, opts PortCreateOptions) (string, error)
 
 	// ListPublicIPs returns all public IPs for a VPC
 	ListPublicIPs(ctx context.Context, vpcID string) ([]PublicIPDb, error)
@@ -209,7 +213,7 @@ type VPCService interface {
 	ListSubnets(ctx context.Context, vpcID string) ([]SubnetResponse, error)
 
 	// CreateSubnet creates a new subnet in a VPC
-	CreateSubnet(ctx context.Context, vpcID string, req SubnetCreateRequest) (string, error)
+	CreateSubnet(ctx context.Context, vpcID string, req SubnetCreateRequest, opts SubnetCreateOptions) (string, error)
 }
 
 type vpcService struct {
@@ -313,19 +317,21 @@ func (s *vpcService) ListPorts(ctx context.Context, vpcID string, detailed bool,
 }
 
 // CreatePort creates a new network port in the specified VPC
-func (s *vpcService) CreatePort(ctx context.Context, vpcID string, req PortCreateRequest) (string, error) {
-	result, err := mgc_http.ExecuteSimpleRequestWithRespBody[PortCreateResponse](
-		ctx,
-		s.client.newRequest,
-		s.client.GetConfig(),
-		http.MethodPost,
-		fmt.Sprintf("/v0/vpcs/%s/ports", vpcID),
-		req,
-		nil,
-	)
+func (s *vpcService) CreatePort(ctx context.Context, vpcID string, req PortCreateRequest, opts PortCreateOptions) (string, error) {
+	nreq, err := s.client.newRequest(ctx, http.MethodPost, fmt.Sprintf("/v0/vpcs/%s/ports", vpcID), req)
 	if err != nil {
 		return "", err
 	}
+
+	if opts.Zone != nil {
+		nreq.Header.Set("x-zone", *opts.Zone)
+	}
+
+	result, err := mgc_http.Do(s.client.GetConfig(), ctx, nreq, &PortCreateResponse{})
+	if err != nil {
+		return "", err
+	}
+
 	return result.ID, nil
 }
 
@@ -381,16 +387,17 @@ func (s *vpcService) ListSubnets(ctx context.Context, vpcID string) ([]SubnetRes
 }
 
 // CreateSubnet creates a new subnet in the specified VPC
-func (s *vpcService) CreateSubnet(ctx context.Context, vpcID string, req SubnetCreateRequest) (string, error) {
-	result, err := mgc_http.ExecuteSimpleRequestWithRespBody[SubnetCreateResponse](
-		ctx,
-		s.client.newRequest,
-		s.client.GetConfig(),
-		http.MethodPost,
-		fmt.Sprintf("/v0/vpcs/%s/subnets", vpcID),
-		req,
-		nil,
-	)
+func (s *vpcService) CreateSubnet(ctx context.Context, vpcID string, req SubnetCreateRequest, opts SubnetCreateOptions) (string, error) {
+	nreq, err := s.client.newRequest(ctx, http.MethodPost, fmt.Sprintf("/v0/vpcs/%s/subnets", vpcID), req)
+	if err != nil {
+		return "", err
+	}
+
+	if opts.Zone != nil {
+		nreq.Header.Set("x-zone", *opts.Zone)
+	}
+
+	result, err := mgc_http.Do(s.client.GetConfig(), ctx, nreq, &SubnetCreateResponse{})
 	if err != nil {
 		return "", err
 	}
