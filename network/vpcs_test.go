@@ -232,6 +232,42 @@ func TestVPCService_ListPorts(t *testing.T) {
 			wantCount:  2,
 			wantErr:    false,
 		},
+		{
+			name:     "ports list with sorting",
+			vpcID:    "vpc1",
+			detailed: true,
+			opts: ListOptions{
+				Sort: helpers.StrPtr("name:asc"),
+			},
+			response: `{
+				"ports": [
+					{"id": "port1", "name": "app-port"},
+					{"id": "port2", "name": "web-port"}
+				]
+			}`,
+			statusCode: http.StatusOK,
+			wantCount:  2,
+			wantErr:    false,
+		},
+		{
+			name:     "ports list with all query parameters",
+			vpcID:    "vpc1",
+			detailed: true,
+			opts: ListOptions{
+				Limit:  helpers.IntPtr(5),
+				Offset: helpers.IntPtr(10),
+				Sort:   helpers.StrPtr("created_at:desc"),
+			},
+			response: `{
+				"ports": [
+					{"id": "port1", "name": "newest-port"},
+					{"id": "port2", "name": "older-port"}
+				]
+			}`,
+			statusCode: http.StatusOK,
+			wantCount:  2,
+			wantErr:    false,
+		},
 	}
 
 	for _, tt := range tests {
@@ -245,6 +281,12 @@ func TestVPCService_ListPorts(t *testing.T) {
 				query := r.URL.Query()
 				if tt.opts.Limit != nil {
 					assertEqual(t, strconv.Itoa(*tt.opts.Limit), query.Get("_limit"))
+				}
+				if tt.opts.Offset != nil {
+					assertEqual(t, strconv.Itoa(*tt.opts.Offset), query.Get("_offset"))
+				}
+				if tt.opts.Sort != nil {
+					assertEqual(t, *tt.opts.Sort, query.Get("_sort"))
 				}
 				assertEqual(t, strconv.FormatBool(tt.detailed), query.Get("detailed"))
 
