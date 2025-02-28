@@ -84,10 +84,10 @@ func TestService(t *testing.T) {
 				t.Errorf("expected show_is_blocked=true, got %s", capturedShowBlocked)
 			}
 
-			if len(res.Results) != 1 {
-				t.Fatalf("expected 1 region, got %d", len(res.Results))
+			if len(res) != 1 {
+				t.Fatalf("expected 1 region, got %d", len(res))
 			}
-			region := res.Results[0]
+			region := res[0]
 			if len(region.AvailabilityZones) != 2 {
 				t.Errorf("expected 2 availability zones, got %d", len(region.AvailabilityZones))
 			}
@@ -122,10 +122,10 @@ func TestService(t *testing.T) {
 				t.Fatalf("unexpected error: %v", err)
 			}
 
-			if len(res.Results) != 1 {
-				t.Fatalf("expected 1 region, got %d", len(res.Results))
+			if len(res) != 1 {
+				t.Fatalf("expected 1 region, got %d", len(res))
 			}
-			region := res.Results[0]
+			region := res[0]
 			if region.ID != "region1" {
 				t.Errorf("expected region ID 'region1', got %s", region.ID)
 			}

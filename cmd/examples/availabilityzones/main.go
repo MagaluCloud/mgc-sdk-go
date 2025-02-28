@@ -29,8 +29,8 @@ func ExampleListAvailabilityZones() {
 		log.Fatal(err)
 	}
 
-	fmt.Printf("Found %d regions:\n", len(response.Results))
-	for _, region := range response.Results {
+	fmt.Printf("Found %d regions:\n", len(response))
+	for _, region := range response {
 		fmt.Printf("Region: %s\n", region.ID)
 		fmt.Printf("  Availability Zones:\n")
 		for _, az := range region.AvailabilityZones {
