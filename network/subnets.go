@@ -51,6 +51,10 @@ type (
 		SubnetPoolID   *string   `json:"subnetpool_id,omitempty"`
 	}
 
+	SubnetCreateOptions struct {
+		Zone *string `json:"zone,omitempty"`
+	}
+
 	SubnetPatchRequest struct {
 		DNSNameservers *[]string `json:"dns_nameservers,omitempty"`
 	}
