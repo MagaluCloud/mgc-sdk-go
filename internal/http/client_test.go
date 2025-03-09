@@ -83,6 +83,20 @@ func TestCoreClient_NewRequest(t *testing.T) {
 	}
 }
 
+func TestCoreClient_NewRequest_CustomHeaders(t *testing.T) {
+	ct := client.NewMgcClient("test-api-key", client.WithCustomHeader("X-Custom-Header", "custom-value"))
+
+	req, err := NewRequest[any](ct.GetConfig(), context.Background(), http.MethodGet, "/test", nil)
+	if err != nil {
+		t.Errorf("NewRequest() error = %v", err)
+		return
+	}
+
+	if req.Header.Get("X-Custom-Header") != "custom-value" {
+		t.Error("expected X-Custom-Header header")
+	}
+}
+
 func TestCoreClient_Do(t *testing.T) {
 	tests := []struct {
 		name           string

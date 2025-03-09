@@ -14,14 +14,15 @@ type RetryConfig struct {
 }
 
 type Config struct {
-	APIKey      string
-	BaseURL     MgcUrl
-	UserAgent   string
-	Logger      *slog.Logger
-	HTTPClient  *http.Client
-	Timeout     time.Duration
-	RetryConfig RetryConfig
-	ContentType string
+	APIKey        string
+	BaseURL       MgcUrl
+	UserAgent     string
+	Logger        *slog.Logger
+	HTTPClient    *http.Client
+	Timeout       time.Duration
+	RetryConfig   RetryConfig
+	ContentType   string
+	CustomHeaders map[string]string
 }
 
 type Option func(*Config)
@@ -70,5 +71,14 @@ func WithRetryConfig(maxAttempts int, initialInterval, maxInterval time.Duration
 			MaxInterval:     maxInterval,
 			BackoffFactor:   backoffFactor,
 		}
+	}
+}
+
+func WithCustomHeader(key, value string) Option {
+	return func(c *Config) {
+		if c.CustomHeaders == nil {
+			c.CustomHeaders = make(map[string]string)
+		}
+		c.CustomHeaders[key] = value
 	}
 }

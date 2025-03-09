@@ -68,6 +68,13 @@ func NewRequest[T any](c *client.Config, ctx context.Context, method, path strin
 	req.Header.Set("User-Agent", c.UserAgent)
 	req.Header.Set("Content-Type", c.ContentType)
 
+	if c.CustomHeaders != nil {
+		for k, v := range c.CustomHeaders {
+			req.Header.Set(k, v)
+			c.Logger.Debug("Request with custom header", "key", k, "value", v)
+		}
+	}
+
 	return req, nil
 }
 
@@ -92,7 +99,7 @@ func Do[T any](c *client.Config, ctx context.Context, req *http.Request, v *T) (
 	}
 
 	var lastError error
-	for attempt := 0; attempt < c.RetryConfig.MaxAttempts; attempt++ {
+	for attempt := range c.RetryConfig.MaxAttempts {
 		if attempt > 0 {
 			backoff := retry.GetNextBackoff(attempt-1, c.RetryConfig.BackoffFactor, c.RetryConfig.InitialInterval, c.RetryConfig.MaxInterval)
 			timer := time.NewTimer(backoff)
@@ -152,7 +159,7 @@ func decodeYamlResponse[T any](resp *http.Response, v *T) (*T, error) {
 		return nil, fmt.Errorf("error reading response body: %w", err)
 	}
 
-	var checkNull interface{}
+	var checkNull any
 	if err := yaml.Unmarshal(body, &checkNull); err != nil {
 		return nil, fmt.Errorf("error validating null response: %w", err)
 	}
@@ -173,7 +180,7 @@ func decodeJsonResponse[T any](resp *http.Response, v *T) (*T, error) {
 		return nil, fmt.Errorf("error decoding response: %w", err)
 	}
 
-	var checkNull interface{}
+	var checkNull any
 	if err := json.Unmarshal(raw, &checkNull); err != nil {
 		return nil, fmt.Errorf("error validating null response: %w", err)
 	}
