@@ -271,3 +271,22 @@ func TestOverrideRetryConfig(t *testing.T) {
 			config.RetryConfig, override)
 	}
 }
+
+func TestWithCustomHeader(t *testing.T) {
+	config := &Config{}
+	WithCustomHeader("X-Custom-Header", "custom-value")(config)
+
+	if config.CustomHeaders == nil || len(config.CustomHeaders) != 1 {
+		t.Error("CustomHeaders were not properly set")
+	}
+
+	if config.CustomHeaders["X-Custom-Header"] != "custom-value" {
+		t.Errorf("CustomHeaders value mismatch. Got %s, want %s",
+			config.CustomHeaders["X-Custom-Header"], "custom-value")
+	}
+
+	if len(config.CustomHeaders) != 1 {
+		t.Errorf("CustomHeaders length mismatch. Got %d, want %d",
+			len(config.CustomHeaders), 1)
+	}
+}

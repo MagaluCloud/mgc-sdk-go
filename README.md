@@ -168,6 +168,7 @@ Available options:
 - `WithRetryConfig`: Customizes the retry behavior
 - `WithHTTPClient`: Uses a custom HTTP client
 - `WithBaseURL`: Changes the API endpoint (useful for testing or setting a specific region to interact)
+- `WithCustomHeader`: Adds custom headers to all requests
 
 ### Listing Instances
 
