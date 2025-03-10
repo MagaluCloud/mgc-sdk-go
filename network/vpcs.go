@@ -85,7 +85,7 @@ type (
 	}
 
 	PublicIPCreateRequest struct {
-		Description string `json:"description,omitempty"`
+		Description *string `json:"description,omitempty"`
 	}
 
 	PublicIPCreateResponse struct {
