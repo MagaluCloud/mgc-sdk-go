@@ -570,7 +570,7 @@ func TestVPCService_CreatePublicIP(t *testing.T) {
 			name:  "successful create",
 			vpcID: "vpc1",
 			request: PublicIPCreateRequest{
-				Description: "Web server IP",
+				Description: helpers.StrPtr("Web server IP"),
 			},
 			response:   `{"id": "ip-new"}`,
 			statusCode: http.StatusCreated,
@@ -598,10 +598,15 @@ func TestVPCService_CreatePublicIP(t *testing.T) {
 				assertEqual(t, fmt.Sprintf("/network/v0/vpcs/%s/public_ips", tt.vpcID), r.URL.Path)
 				assertEqual(t, http.MethodPost, r.Method)
 
-				var req PublicIPCreateRequest
-				err := json.NewDecoder(r.Body).Decode(&req)
-				assertNoError(t, err)
-				assertEqual(t, tt.request.Description, req.Description)
+				if !tt.wantErr {
+					var req PublicIPCreateRequest
+					err := json.NewDecoder(r.Body).Decode(&req)
+					assertNoError(t, err)
+
+					if tt.request.Description != nil {
+						assertEqual(t, *tt.request.Description, *req.Description)
+					}
+				}
 
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(tt.statusCode)

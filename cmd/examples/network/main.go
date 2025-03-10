@@ -594,7 +594,7 @@ func createPublicIP(networkClient *network.NetworkClient, vpcID string) string {
 	defer cancel()
 
 	pipReq := network.PublicIPCreateRequest{
-		Description: "Public IP created via SDK example",
+		Description: helpers.StrPtr("Public IP created via SDK example"),
 	}
 
 	pipID, err := networkClient.VPCs().CreatePublicIP(ctx, vpcID, pipReq)
