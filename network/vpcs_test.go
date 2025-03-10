@@ -108,7 +108,7 @@ func TestVPCService_Delete(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				assertEqual(t, fmt.Sprintf("/network/v1/vpcs/%s", tt.id), r.URL.Path)
+				assertEqual(t, fmt.Sprintf("/network/v0/vpcs/%s", tt.id), r.URL.Path)
 				assertEqual(t, http.MethodDelete, r.Method)
 				w.WriteHeader(tt.statusCode)
 				if tt.response != "" {

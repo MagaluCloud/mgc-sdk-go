@@ -275,7 +275,7 @@ func (s *vpcService) Delete(ctx context.Context, id string) error {
 		s.client.newRequest,
 		s.client.GetConfig(),
 		http.MethodDelete,
-		fmt.Sprintf("/v1/vpcs/%s", id),
+		fmt.Sprintf("/v0/vpcs/%s", id),
 		nil,
 		nil,
 	)
