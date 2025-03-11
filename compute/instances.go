@@ -40,7 +40,7 @@ type (
 	VmImage struct {
 		ID       string  `json:"id"`
 		Name     *string `json:"name"`
-		Platform *string `json:"platform,omitempty"`
+		Platform *string `json:"platform,omitempty,omitzero"`
 	}
 
 	Instance struct {
@@ -51,9 +51,9 @@ type (
 		Status           string         `json:"status"`
 		State            string         `json:"state"`
 		CreatedAt        time.Time      `json:"created_at"`
-		UpdatedAt        *time.Time     `json:"updated_at,omitempty"`
+		UpdatedAt        *time.Time     `json:"updated_at,omitempty,omitzero"`
 		SSHKeyName       *string        `json:"ssh_key_name,omitempty"`
-		AvailabilityZone *string        `json:"availability_zone,omitempty"`
+		AvailabilityZone *string        `json:"availability_zone,omitempty,omitzero"`
 		Network          *Network       `json:"network"`
 		UserData         *string        `json:"user_data,omitempty"`
 		Labels           *[]string      `json:"labels"`
@@ -97,8 +97,8 @@ type (
 	}
 
 	IDOrName struct {
-		ID   *string `json:"id,omitempty"`
-		Name *string `json:"name,omitempty"`
+		ID   *string `json:"id,omitempty,omitzero"`
+		Name *string `json:"name,omitempty,omitzero"`
 	}
 
 	UpdateNameRequest struct {
