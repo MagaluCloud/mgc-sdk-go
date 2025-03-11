@@ -22,7 +22,7 @@ type (
 	ClusterService interface {
 		List(ctx context.Context, opts ListOptions) ([]ClusterList, error)
 		Create(ctx context.Context, req ClusterRequest) (*CreateClusterResponse, error)
-		Get(ctx context.Context, clusterID string, expand []string) (*Cluster, error)
+		Get(ctx context.Context, clusterID string) (*Cluster, error)
 		Delete(ctx context.Context, clusterID string) error
 		Update(ctx context.Context, clusterID string, req AllowedCIDRsUpdateRequest) (*Cluster, error)
 		GetKubeConfig(ctx context.Context, clusterID string) (*KubeConfig, error)
@@ -195,18 +195,11 @@ func (s *clusterService) Create(ctx context.Context, req ClusterRequest) (*Creat
 	return response, nil
 }
 
-func (s *clusterService) Get(ctx context.Context, clusterID string, expand []string) (*Cluster, error) {
+func (s *clusterService) Get(ctx context.Context, clusterID string) (*Cluster, error) {
 	if clusterID == "" {
 		return nil, &client.ValidationError{Field: "clusterID", Message: utils.CannotBeEmpty}
 	}
-
 	getClusterURL := fmt.Sprintf(clusterUrlWithID, clusterID)
-
-	if len(expand) > 0 {
-		q := url.Values{}
-		q.Add("expand", strings.Join(expand, ","))
-		getClusterURL += "?" + q.Encode()
-	}
 
 	cluster, err := mgc_http.ExecuteSimpleRequestWithRespBody[Cluster](ctx, s.client.newRequest, s.client.GetConfig(), http.MethodGet, getClusterURL, nil, nil)
 	if err != nil {
