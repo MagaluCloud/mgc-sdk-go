@@ -58,43 +58,67 @@ type (
 	}
 
 	ClusterList struct {
-		Name      string            `json:"name"`
-		ID        string            `json:"id"`
-		Status    Status            `json:"status"`
-		Flavor    string            `json:"flavor"`
-		Replicas  int               `json:"replicas"`
-		AutoScale AutoScaleResponse `json:"auto_scale"`
+		Description   *string        `json:"description,omitempty"`
+		ID            string         `json:"id"`
+		KubeApiServer *KubeApiServer `json:"kube_api_server,omitempty"`
+		Name          string         `json:"name"`
+		Region        *string        `json:"region,omitempty"`
+		Status        *MessageState  `json:"status,omitempty"`
+		Version       *string        `json:"version,omitempty"`
+	}
+
+	MessageState struct {
+		State   string `json:"state"`
+		Message string `json:"message"`
 	}
 
 	Cluster struct {
 		Name          string         `json:"name"`
 		ID            string         `json:"id"`
-		Status        Status         `json:"status"`
+		Status        *Status        `json:"status"`
 		Version       string         `json:"version"`
 		Description   *string        `json:"description,omitempty"`
 		Region        *string        `json:"region,omitempty"`
-		CreatedAt     time.Time      `json:"created_at"`
+		CreatedAt     *time.Time     `json:"created_at"`
 		UpdatedAt     *time.Time     `json:"updated_at,omitempty"`
 		Network       *Network       `json:"network,omitempty"`
 		ControlPlane  *NodePool      `json:"controlplane,omitempty"`
 		KubeApiServer *KubeApiServer `json:"kube_api_server,omitempty"`
-		NodePools     []NodePool     `json:"node_pools,omitempty"`
+		NodePools     *[]NodePool    `json:"node_pools,omitempty"`
 		Addons        *Addons        `json:"addons,omitempty"`
-		AllowedCIDRs  []string       `json:"allowed_cidrs,omitempty"`
+		AllowedCIDRs  *[]string      `json:"allowed_cidrs,omitempty"`
+	}
+
+	Controlplane struct {
+		AutoScale        AutoScale        `json:"auto_scale"`
+		CreatedAt        *string          `json:"created_at,omitempty"`
+		Id               string           `json:"id"`
+		InstanceTemplate InstanceTemplate `json:"instance_template"`
+		Labels           []string         `json:"labels"`
+		Name             string           `json:"name"`
+		Replicas         int              `json:"replicas"`
+		SecurityGroups   *[]string        `json:"securityGroups,omitempty"`
+		Status           *Status          `json:"status"`
+		Tags             *[]string        `json:"tags,omitempty"`
+		Taints           *[]Taint         `json:"taints,omitempty"`
+		UpdatedAt        *string          `json:"updated_at,omitempty"`
+		Zone             *[]string        `json:"zone"`
 	}
 
 	CreateClusterResponse struct {
-		ID     string `json:"id"`
-		Name   string `json:"name"`
-		Status Status `json:"status"`
+		ID           string       `json:"id"`
+		Name         string       `json:"name"`
+		Status       MessageState `json:"status"`
+		AllowedCidrs *[]string    `json:"allowed_cidrs,omitempty"`
 	}
 
 	ClusterRequest struct {
-		Name         string                  `json:"name"`
-		Version      *string                 `json:"version,omitempty"`
-		Description  *string                 `json:"description,omitempty"`
-		NodePools    []CreateNodePoolRequest `json:"node_pools,omitempty"`
-		AllowedCIDRs []string                `json:"allowed_cidrs,omitempty"`
+		Name               string                   `json:"name"`
+		Version            *string                  `json:"version,omitempty"`
+		Description        *string                  `json:"description,omitempty"`
+		EnabledServerGroup *bool                    `json:"enabled_server_group,omitempty"`
+		NodePools          *[]CreateNodePoolRequest `json:"node_pools,omitempty"`
+		AllowedCIDRs       *[]string                `json:"allowed_cidrs,omitempty"`
 	}
 
 	AllowedCIDRsUpdateRequest struct {
@@ -102,8 +126,8 @@ type (
 	}
 
 	Status struct {
-		State   string `json:"state"`
-		Message string `json:"message,omitempty"`
+		State    string   `json:"state"`
+		Messages []string `json:"messages,omitempty"`
 	}
 
 	KubeConfig struct {

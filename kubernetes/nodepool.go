@@ -52,12 +52,12 @@ type (
 		Name             string            `json:"name"`
 		InstanceTemplate InstanceTemplate  `json:"instance_template"`
 		Replicas         int               `json:"replicas"`
-		Zone             []string          `json:"zone,omitempty"`
-		Tags             []string          `json:"tags"`
+		Zone             *[]string         `json:"zone,omitempty"`
+		Tags             *[]string         `json:"tags"`
 		Labels           map[string]string `json:"labels,omitempty"`
 		Taints           *[]Taint          `json:"taints,omitempty"`
-		SecurityGroups   []string          `json:"security_groups,omitempty"`
-		CreatedAt        time.Time         `json:"created_at"`
+		SecurityGroups   *[]string         `json:"security_groups,omitempty"`
+		CreatedAt        *time.Time        `json:"created_at"`
 		UpdatedAt        *time.Time        `json:"updated_at,omitempty"`
 		AutoScale        *AutoScale        `json:"auto_scale,omitempty"`
 		Status           Status            `json:"status"`
@@ -119,7 +119,7 @@ type (
 		Name      string     `json:"name"`
 		Flavor    string     `json:"flavor"`
 		Replicas  int        `json:"replicas"`
-		Tags      []string   `json:"tags,omitempty"`
+		Tags      *[]string  `json:"tags,omitempty"`
 		Taints    *[]Taint   `json:"taints,omitempty"`
 		AutoScale *AutoScale `json:"auto_scale,omitempty"`
 	}
@@ -136,8 +136,8 @@ type (
 	}
 
 	AutoScale struct {
-		MinReplicas int `json:"min_replicas"`
-		MaxReplicas int `json:"max_replicas"`
+		MinReplicas *int `json:"min_replicas"`
+		MaxReplicas *int `json:"max_replicas"`
 	}
 
 	nodePoolService struct {
