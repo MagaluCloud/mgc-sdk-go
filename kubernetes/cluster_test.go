@@ -330,8 +330,8 @@ func TestClusterService_Update(t *testing.T) {
 				return
 			}
 
-			if !tt.wantErr && len(result.AllowedCIDRs) != tt.wantCIDRs {
-				t.Errorf("Update() CIDRs = %d, want %d", len(result.AllowedCIDRs), tt.wantCIDRs)
+			if !tt.wantErr && len(*result.AllowedCIDRs) != tt.wantCIDRs {
+				t.Errorf("Update() CIDRs = %d, want %d", len(*result.AllowedCIDRs), tt.wantCIDRs)
 			}
 		})
 	}
