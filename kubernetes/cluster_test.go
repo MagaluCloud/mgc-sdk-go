@@ -251,7 +251,7 @@ func TestClusterService_Get(t *testing.T) {
 			defer server.Close()
 
 			client := testClient(server.URL)
-			result, err := client.Clusters().Get(context.Background(), tt.clusterID, []string{"network"})
+			result, err := client.Clusters().Get(context.Background(), tt.clusterID)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Get() error = %v, wantErr %v", err, tt.wantErr)
@@ -421,7 +421,7 @@ func TestClusterService_ValidationErrors(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			client := testClient("http://dummy")
-			_, err := client.Clusters().Get(context.Background(), tt.clusterID, []string{})
+			_, err := client.Clusters().Get(context.Background(), tt.clusterID)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Validation error = %v, wantErr %v", err, tt.wantErr)
@@ -442,7 +442,7 @@ func TestClusterService_EdgeCases(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
 		defer cancel()
 
-		_, err := client.Clusters().Get(ctx, "cluster-123", []string{})
+		_, err := client.Clusters().Get(ctx, "cluster-123")
 		if err == nil {
 			t.Error("Esperado erro de timeout")
 		}
@@ -456,7 +456,7 @@ func TestClusterService_EdgeCases(t *testing.T) {
 		defer server.Close()
 
 		client := testClient(server.URL)
-		_, err := client.Clusters().Get(context.Background(), "cluster-123", []string{})
+		_, err := client.Clusters().Get(context.Background(), "cluster-123")
 		if err == nil {
 			t.Error("Esperado erro de parsing")
 		}

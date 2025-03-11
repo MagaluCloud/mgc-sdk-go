@@ -55,7 +55,7 @@ func GetNodes(k8sClient *kubernetes.KubernetesClient, clusterID string, nodePool
 
 func WaitClusterRunning(k8sClient *kubernetes.KubernetesClient, clusterID string) {
 	for {
-		cluster, err := k8sClient.Clusters().Get(context.Background(), clusterID, nil)
+		cluster, err := k8sClient.Clusters().Get(context.Background(), clusterID)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -144,7 +144,7 @@ func ExampleListClusters(k8sClient *kubernetes.KubernetesClient) {
 func ExampleGetCluster(k8sClient *kubernetes.KubernetesClient, clusterID string) {
 	ctx := context.Background()
 
-	cluster, err := k8sClient.Clusters().Get(ctx, clusterID, []string{"node_pools"})
+	cluster, err := k8sClient.Clusters().Get(ctx, clusterID)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -359,7 +359,7 @@ func waitForClusterStatus(ctx context.Context, client *kubernetes.KubernetesClie
 		case <-ctx.Done():
 			return fmt.Errorf("timeout esperando status do cluster")
 		case <-ticker.C:
-			cluster, err := client.Clusters().Get(ctx, clusterID, nil)
+			cluster, err := client.Clusters().Get(ctx, clusterID)
 			if err != nil {
 				return err
 			}
