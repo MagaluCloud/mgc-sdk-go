@@ -110,7 +110,7 @@ type (
 		Namespace      string            `json:"namespace"`
 		NodeImage      string            `json:"node_image"`
 		NodepoolName   string            `json:"nodepool_name"`
-		Status         Status            `json:"status"`
+		Status         MessageState      `json:"status"`
 		Taints         *[]Taint          `json:"taints,omitempty"`
 		Zone           *string           `json:"zone,omitempty"`
 	}
