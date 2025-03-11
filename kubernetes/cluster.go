@@ -75,7 +75,7 @@ type (
 	Cluster struct {
 		Name          string         `json:"name"`
 		ID            string         `json:"id"`
-		Status        *Status        `json:"status"`
+		Status        *MessageState  `json:"status"`
 		Version       string         `json:"version"`
 		Description   *string        `json:"description,omitempty"`
 		Region        *string        `json:"region,omitempty"`

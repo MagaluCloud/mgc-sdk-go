@@ -436,7 +436,7 @@ func waitForClusterStatus(ctx context.Context, client *kubernetes.KubernetesClie
 			}
 
 			if cluster.Status.State == "error" {
-				return fmt.Errorf("cluster em estado de erro: %s", cluster.Status.Messages)
+				return fmt.Errorf("cluster em estado de erro: %s", cluster.Status.Message)
 			}
 		}
 	}
