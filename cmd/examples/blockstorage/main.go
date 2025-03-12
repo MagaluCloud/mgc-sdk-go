@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/MagaluCloud/mgc-sdk-go/blockstorage"
@@ -79,7 +78,7 @@ func ExampleListVolumes() {
 		fmt.Printf("  Created At: %s\n", vol.CreatedAt)
 
 		if vol.Attachment != nil {
-			fmt.Printf("  Attached to: %s\n", vol.Attachment.Instance.ID)
+			fmt.Printf("  Attached to: %s\n", *vol.Attachment.Instance.ID)
 		}
 	}
 }
@@ -99,7 +98,7 @@ func ExampleCreateVolume() string {
 		Type: blockstorage.IDOrName{
 			Name: helpers.StrPtr("cloud_nvme1k"),
 		},
-		Encrypted: true,
+		Encrypted: helpers.BoolPtr(true),
 	}
 
 	id, err := blockClient.Volumes().Create(context.Background(), createReq)
@@ -185,7 +184,7 @@ func ExampleVolumeAttachments(volumeID string) {
 
 	if volume.Attachment != nil {
 		fmt.Printf("Attachment details:\n")
-		fmt.Printf("  Instance: %s\n", volume.Attachment.Instance.ID)
+		fmt.Printf("  Instance: %s\n", *volume.Attachment.Instance.ID)
 		fmt.Printf("  Device: %s\n", *volume.Attachment.Device)
 		fmt.Printf("  Attached At: %s\n", volume.Attachment.AttachedAt)
 	}
@@ -234,31 +233,5 @@ func ExampleListVolumeTypes() {
 		fmt.Printf("  IOPS: Read=%d, Write=%d, Total=%d\n", vt.IOPS.Read, vt.IOPS.Write, vt.IOPS.Total)
 		fmt.Printf("  Availability Zones: %v\n", vt.AvailabilityZones)
 		fmt.Printf("  Allows Encryption: %v\n", vt.AllowsEncryption)
-	}
-}
-
-// Helper function to wait for volume status
-func waitForVolumeStatus(ctx context.Context, client *blockstorage.BlockStorageClient, volumeID, targetStatus string) error {
-	ctx, cancel := context.WithTimeout(ctx, waitTimeout)
-	defer cancel()
-
-	for {
-		select {
-		case <-ctx.Done():
-			return fmt.Errorf("timeout waiting for volume status")
-		case <-time.After(retryInterval):
-			volume, err := client.Volumes().Get(ctx, volumeID, nil)
-			if err != nil {
-				return err
-			}
-
-			if volume.Status == targetStatus {
-				return nil
-			}
-
-			if strings.HasSuffix(volume.Status, "error") {
-				return fmt.Errorf("volume in error state: %s", volume.Status)
-			}
-		}
 	}
 }
