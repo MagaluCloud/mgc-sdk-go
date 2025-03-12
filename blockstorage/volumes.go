@@ -46,7 +46,7 @@ type (
 		Attachment        *VolumeAttachment `json:"attachment,omitempty"`
 		AvailabilityZone  string            `json:"availability_zone"`
 		AvailabilityZones []string          `json:"availability_zones"`
-		Encrypted         bool              `json:"encrypted"`
+		Encrypted         *bool             `json:"encrypted,omitempty"`
 	}
 
 	VolumeError struct {
