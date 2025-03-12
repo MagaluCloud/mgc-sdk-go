@@ -42,10 +42,11 @@ type (
 	}
 
 	CreateSnapshotRequest struct {
-		Name        string    `json:"name"`
-		Volume      *IDOrName `json:"volume,omitempty"`
-		Description string    `json:"description"`
-		Type        string    `json:"type"`
+		Name           string    `json:"name"`
+		Volume         *IDOrName `json:"volume,omitempty"`
+		Description    *string   `json:"description"`
+		Type           *string   `json:"type"`
+		SourceSnapshot *IDOrName `json:"source_snapshot,omitempty"`
 	}
 
 	RenameSnapshotRequest struct {

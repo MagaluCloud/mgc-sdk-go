@@ -125,8 +125,8 @@ func TestSnapshotService_Create(t *testing.T) {
 			request: CreateSnapshotRequest{
 				Name:        "backup",
 				Volume:      &IDOrName{ID: helpers.StrPtr("vol1")},
-				Description: "test backup",
-				Type:        "daily",
+				Description: helpers.StrPtr("test backup"),
+				Type:        helpers.StrPtr("daily"),
 			},
 			response:   `{"id": "snap1"}`,
 			statusCode: http.StatusOK,

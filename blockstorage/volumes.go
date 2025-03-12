@@ -61,12 +61,12 @@ type (
 	}
 
 	AttachmentInstance struct {
-		ID        string    `json:"id"`
-		Name      string    `json:"name"`
-		Status    string    `json:"status"`
-		State     string    `json:"state"`
-		CreatedAt time.Time `json:"created_at"`
-		UpdatedAt time.Time `json:"updated_at"`
+		ID        *string    `json:"id"`
+		Name      *string    `json:"name"`
+		Status    *string    `json:"status"`
+		State     *string    `json:"state"`
+		CreatedAt *time.Time `json:"created_at"`
+		UpdatedAt *time.Time `json:"updated_at"`
 	}
 
 	CreateVolumeRequest struct {
@@ -75,7 +75,7 @@ type (
 		Size             int       `json:"size"`
 		Type             IDOrName  `json:"type"`
 		Snapshot         *IDOrName `json:"snapshot,omitempty"`
-		Encrypted        bool      `json:"encrypted"`
+		Encrypted        *bool     `json:"encrypted"`
 	}
 
 	ExtendVolumeRequest struct {
