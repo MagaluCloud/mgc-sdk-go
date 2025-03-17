@@ -47,7 +47,7 @@ func TestInstanceTypeService_List(t *testing.T) {
 			opts: ListInstanceTypeOptions{
 				Limit:  helpers.IntPtr(10),
 				Offset: helpers.IntPtr(5),
-				Status: instanceTypeStatusPtr(InstanceTypeStatusActive),
+				Status: helpers.StrPtr("ACTIVE"),
 			},
 			response: `{
 				"meta": {"total": 1},
@@ -157,8 +157,4 @@ func TestInstanceTypeService_Get(t *testing.T) {
 			assertEqual(t, tt.wantID, result.ID)
 		})
 	}
-}
-
-func instanceTypeStatusPtr(status InstanceTypeStatus) *InstanceTypeStatus {
-	return &status
 }

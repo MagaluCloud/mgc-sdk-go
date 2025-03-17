@@ -17,25 +17,18 @@ type (
 	}
 
 	InstanceType struct {
-		ID                string             `json:"id"`
-		Name              string             `json:"name"`
-		Label             string             `json:"label"`
-		VCPU              string             `json:"vcpu"`
-		RAM               string             `json:"ram"`
-		FamilyDescription string             `json:"family_description"`
-		FamilySlug        string             `json:"family_slug"`
-		Size              string             `json:"size"`
-		SKUSource         string             `json:"sku_source"`
-		SKUReplica        string             `json:"sku_replica"`
-		Status            InstanceTypeStatus `json:"status,omitempty"`
+		ID                string `json:"id"`
+		Name              string `json:"name"`
+		Label             string `json:"label"`
+		VCPU              string `json:"vcpu"`
+		RAM               string `json:"ram"`
+		FamilyDescription string `json:"family_description"`
+		FamilySlug        string `json:"family_slug"`
+		Size              string `json:"size"`
+		SKUSource         string `json:"sku_source"`
+		SKUReplica        string `json:"sku_replica"`
+		Status            string `json:"status,omitempty"`
 	}
-
-	InstanceTypeStatus string
-)
-
-const (
-	InstanceTypeStatusActive     InstanceTypeStatus = "ACTIVE"
-	InstanceTypeStatusDeprecated InstanceTypeStatus = "DEPRECATED"
 )
 
 type (
@@ -52,9 +45,9 @@ type (
 	}
 
 	ListInstanceTypeOptions struct {
-		Offset *int
-		Limit  *int
-		Status *InstanceTypeStatus
+		Offset *int    `json:"offset,omitempty"`
+		Limit  *int    `json:"limit,omitempty"`
+		Status *string `json:"status,omitempty"`
 	}
 )
 
@@ -68,7 +61,7 @@ func (s *instanceTypeService) List(ctx context.Context, opts ListInstanceTypeOpt
 		query.Set("_limit", strconv.Itoa(*opts.Limit))
 	}
 	if opts.Status != nil {
-		query.Set("status", string(*opts.Status))
+		query.Set("status", *opts.Status)
 	}
 
 	result, err := mgc_http.ExecuteSimpleRequestWithRespBody[ListInstanceTypesResponse](
