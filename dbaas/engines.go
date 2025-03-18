@@ -37,6 +37,7 @@ type (
 	EngineDetail struct {
 		ID      string `json:"id"`
 		Name    string `json:"name"`
+		Engine  string `json:"engine"`
 		Version string `json:"version"`
 		Status  string `json:"status"`
 	}
