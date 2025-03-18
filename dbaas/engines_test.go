@@ -47,7 +47,7 @@ func TestEngineService_List(t *testing.T) {
 			opts: ListEngineOptions{
 				Limit:  helpers.IntPtr(10),
 				Offset: helpers.IntPtr(5),
-				Status: engineStatusPtr(EngineStatusActive),
+				Status: helpers.StrPtr("ACTIVE"),
 			},
 			response: `{
 				"meta": {"total": 1},
@@ -156,8 +156,4 @@ func TestEngineService_Get(t *testing.T) {
 			assertEqual(t, tt.wantID, result.ID)
 		})
 	}
-}
-
-func engineStatusPtr(status EngineStatus) *EngineStatus {
-	return &status
 }

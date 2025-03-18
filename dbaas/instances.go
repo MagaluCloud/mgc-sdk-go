@@ -84,13 +84,13 @@ type (
 	}
 
 	InstanceParametersResponse struct {
-		Name  string      `json:"name"`
-		Value interface{} `json:"value"`
+		Name  string `json:"name"`
+		Value string `json:"value"`
 	}
 
 	InstanceParametersRequest struct {
-		Name  string      `json:"name"`
-		Value interface{} `json:"value"`
+		Name  string `json:"name"`
+		Value string `json:"value"`
 	}
 
 	InstanceVolumeRequest struct {
@@ -104,21 +104,19 @@ type (
 	}
 
 	InstanceCreateRequest struct {
-		Name                string                      `json:"name"`
-		EngineID            string                      `json:"engine_id,omitempty"`
-		DatastoreID         string                      `json:"datastore_id,omitempty"`
-		FlavorID            string                      `json:"flavor_id,omitempty"`
-		InstanceTypeID      string                      `json:"instance_type_id,omitempty"`
-		User                string                      `json:"user"`
-		Password            string                      `json:"password"`
-		Volume              InstanceVolumeRequest       `json:"volume"`
-		Parameters          []InstanceParametersRequest `json:"parameters,omitempty"`
-		BackupRetentionDays int                         `json:"backup_retention_days,omitempty"`
-		BackupStartAt       string                      `json:"backup_start_at,omitempty"`
+		Name                string                       `json:"name"`
+		EngineID            *string                      `json:"engine_id,omitempty"`
+		InstanceTypeID      *string                      `json:"instance_type_id,omitempty"`
+		User                string                       `json:"user"`
+		Password            string                       `json:"password"`
+		Volume              InstanceVolumeRequest        `json:"volume"`
+		Parameters          *[]InstanceParametersRequest `json:"parameters,omitempty"`
+		BackupRetentionDays *int                         `json:"backup_retention_days,omitempty"`
+		BackupStartAt       *string                      `json:"backup_start_at,omitempty"`
 	}
 
 	InstanceResizeRequest struct {
-		InstanceTypeID string                       `json:"instance_type_id,omitempty"`
+		InstanceTypeID *string                      `json:"instance_type_id,omitempty"`
 		FlavorID       string                       `json:"flavor_id,omitempty"`
 		Volume         *InstanceVolumeResizeRequest `json:"volume,omitempty"`
 	}
@@ -134,8 +132,6 @@ type (
 		SourceID               string                       `json:"source_id"`
 		Name                   string                       `json:"name"`
 		EngineID               string                       `json:"engine_id"`
-		DatastoreID            string                       `json:"datastore_id"`
-		FlavorID               string                       `json:"flavor_id"`
 		InstanceTypeID         string                       `json:"instance_type_id"`
 		Volume                 Volume                       `json:"volume"`
 		Addresses              []ReplicaAddressResponse     `json:"addresses"`
@@ -202,10 +198,10 @@ type (
 	}
 
 	ListSnapshotOptions struct {
-		Offset *int
-		Limit  *int
-		Type   *SnapshotType
-		Status *SnapshotStatus
+		Offset *int            `json:"offset,omitempty"`
+		Limit  *int            `json:"limit,omitempty"`
+		Type   *SnapshotType   `json:"type,omitempty"`
+		Status *SnapshotStatus `json:"status,omitempty"`
 	}
 )
 

@@ -110,16 +110,16 @@ func ExampleCreateInstance() {
 	// Create a new database instance
 	instance, err := dbaasClient.Instances().Create(context.Background(), dbaas.InstanceCreateRequest{
 		Name:           "example-db-instance",
-		EngineID:       "your-engine-id",        // Replace with actual engine ID
-		InstanceTypeID: "your-instance-type-id", // Replace with actual instance type ID
+		EngineID:       helpers.StrPtr("your-engine-id"),        // Replace with actual engine ID
+		InstanceTypeID: helpers.StrPtr("your-instance-type-id"), // Replace with actual instance type ID
 		User:           "dbadmin",
 		Password:       "YourStrongPassword123!",
 		Volume: dbaas.InstanceVolumeRequest{
 			Size: 20, // Size in GB
 			Type: dbaas.VolumeTypeCloudNVME,
 		},
-		BackupRetentionDays: 7,
-		BackupStartAt:       "02:00", // Start backup at 2 AM
+		BackupRetentionDays: helpers.IntPtr(7),
+		BackupStartAt:       helpers.StrPtr("02:00"), // Start backup at 2 AM
 	})
 	if err != nil {
 		log.Fatal(err)

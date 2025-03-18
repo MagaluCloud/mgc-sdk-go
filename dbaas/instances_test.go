@@ -368,7 +368,7 @@ func TestInstanceService_Resize(t *testing.T) {
 			name: "resize instance type",
 			id:   "inst1",
 			request: InstanceResizeRequest{
-				InstanceTypeID: "type-large",
+				InstanceTypeID: helpers.StrPtr("type-large"),
 				Volume: &InstanceVolumeResizeRequest{
 					Size: 200,
 					Type: VolumeTypeCloudNVME,
@@ -393,7 +393,7 @@ func TestInstanceService_Resize(t *testing.T) {
 
 				var req InstanceResizeRequest
 				json.NewDecoder(r.Body).Decode(&req)
-				assertEqual(t, tt.request.InstanceTypeID, req.InstanceTypeID)
+				assertEqual(t, *tt.request.InstanceTypeID, *req.InstanceTypeID)
 				assertEqual(t, tt.request.Volume.Size, req.Volume.Size)
 
 				w.Header().Set("Content-Type", "application/json")
