@@ -35,19 +35,11 @@ type (
 	}
 
 	EngineDetail struct {
-		ID      string       `json:"id"`
-		Name    string       `json:"name"`
-		Version string       `json:"version"`
-		Status  EngineStatus `json:"status"`
+		ID      string `json:"id"`
+		Name    string `json:"name"`
+		Version string `json:"version"`
+		Status  string `json:"status"`
 	}
-)
-
-// EngineStatus represents the status of a database engine
-type EngineStatus string
-
-const (
-	EngineStatusActive     EngineStatus = "ACTIVE"
-	EngineStatusDeprecated EngineStatus = "DEPRECATED"
 )
 
 type (
@@ -66,7 +58,7 @@ type (
 	ListEngineOptions struct {
 		Offset *int
 		Limit  *int
-		Status *EngineStatus
+		Status *string
 	}
 )
 
