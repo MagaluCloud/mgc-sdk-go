@@ -33,7 +33,7 @@ func TestCoreClient_NewRequest(t *testing.T) {
 		name     string
 		method   string
 		path     string
-		body     interface{}
+		body     any
 		ctxFunc  func() context.Context
 		wantErr  bool
 		checkReq func(*testing.T, *http.Request)
@@ -102,7 +102,7 @@ func TestCoreClient_Do(t *testing.T) {
 		name           string
 		setupServer    func() *httptest.Server
 		setupContext   func() context.Context
-		expectedResult interface{}
+		expectedResult any
 		wantErr        bool
 	}{
 		{
@@ -329,7 +329,7 @@ func TestNewRequest_ErrorCases(t *testing.T) {
 		name    string
 		method  string
 		path    string
-		body    interface{}
+		body    any
 		wantErr string
 	}{
 		{
@@ -475,7 +475,7 @@ func TestResponseError_Handling(t *testing.T) {
 
 			client := client.NewMgcClient("test-api-key", client.WithBaseURL(client.MgcUrl(server.URL)))
 			req, _ := NewRequest[any](client.GetConfig(), context.Background(), http.MethodGet, "/test", nil)
-			var response interface{}
+			var response any
 			_, err := Do(client.GetConfig(), context.Background(), req, &response)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Do() error = %v, wantErr %v", err, tt.wantErr)
@@ -565,7 +565,7 @@ func TestRequestIDHandling(t *testing.T) {
 func TestRequestIDHandling_TableDriven(t *testing.T) {
 	tests := []struct {
 		name           string
-		requestIDValue interface{}
+		requestIDValue any
 		wantHeader     string
 		wantLogMsg     string
 	}{
@@ -663,7 +663,7 @@ func TestConcurrentRequests_DifferentRequestIDs(t *testing.T) {
 	ct := client.NewMgcClient("test-api-key", client.WithBaseURL(client.MgcUrl(server.URL)))
 	var wg sync.WaitGroup
 
-	for i := 0; i < 5; i++ {
+	for i := range 5 {
 		wg.Add(1)
 		requestID := fmt.Sprintf("request-%d", i)
 		go func(rid string) {
@@ -685,7 +685,7 @@ func TestConcurrentRequests_DifferentRequestIDs(t *testing.T) {
 		receivedMap[id] = true
 	}
 
-	for i := 0; i < 5; i++ {
+	for i := range 5 {
 		expectedID := fmt.Sprintf("request-%d", i)
 		if !receivedMap[expectedID] {
 			t.Errorf("Request ID %s not received by server", expectedID)
@@ -1317,5 +1317,69 @@ func TestDo_YAMLHandling(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestRetryPreservesRequestBody(t *testing.T) {
+	var requestBodies []string
+	var requestMutex sync.Mutex
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		bodyBytes, err := io.ReadAll(r.Body)
+		if err != nil {
+			t.Errorf("Failed to read request body: %v", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		requestMutex.Lock()
+		requestBodies = append(requestBodies, string(bodyBytes))
+		attempts := len(requestBodies)
+		requestMutex.Unlock()
+
+		if attempts < 3 {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"message":"success"}`))
+	}))
+	defer server.Close()
+
+	ct := client.NewMgcClient("test-api-key",
+		client.WithBaseURL(client.MgcUrl(server.URL)),
+		client.WithRetryConfig(3, 10*time.Millisecond, 50*time.Millisecond, 1.5))
+
+	originalBody := `{"test":"data"}`
+
+	req, err := http.NewRequestWithContext(
+		context.Background(),
+		http.MethodPost,
+		server.URL+"/test",
+		strings.NewReader(originalBody),
+	)
+	if err != nil {
+		t.Fatalf("Failed to create request: %v", err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+
+	var response mockResponse
+	_, err = Do(ct.GetConfig(), context.Background(), req, &response)
+	if err != nil {
+		t.Fatalf("Request failed: %v", err)
+	}
+
+	if len(requestBodies) != 3 {
+		t.Errorf("Expected 3 request attempts, got %d", len(requestBodies))
+	}
+
+	for i, body := range requestBodies {
+		if body != originalBody {
+			t.Errorf("Request body on attempt %d does not match original body.\nGot: %s\nWant: %s",
+				i+1, body, originalBody)
+		}
 	}
 }
