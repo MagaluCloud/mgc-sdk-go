@@ -92,6 +92,16 @@ func Do[T any](c *client.Config, ctx context.Context, req *http.Request, v *T) (
 		return nil, fmt.Errorf("HTTP client is nil")
 	}
 
+	var bodyBytes []byte
+	if req.Body != nil {
+		var err error
+		bodyBytes, err = io.ReadAll(req.Body)
+		if err != nil {
+			return nil, err
+		}
+		req.Body.Close()
+	}
+
 	if c.Timeout > 0 {
 		var cancel context.CancelFunc
 		ctx, cancel = context.WithTimeout(ctx, c.Timeout)
@@ -111,12 +121,17 @@ func Do[T any](c *client.Config, ctx context.Context, req *http.Request, v *T) (
 			}
 		}
 
+		clonedReq := req.Clone(ctx)
+		if len(bodyBytes) > 0 {
+			clonedReq.Body = io.NopCloser(bytes.NewReader(bodyBytes))
+		}
+
 		c.Logger.Info("making request",
-			"method", req.Method,
-			"url", req.URL.String(),
+			"method", clonedReq.Method,
+			"url", clonedReq.URL.String(),
 			"attempt", attempt+1)
 
-		resp, err := c.HTTPClient.Do(req.Clone(ctx))
+		resp, err := c.HTTPClient.Do(clonedReq)
 		if err != nil {
 			lastError = err
 			continue
@@ -128,6 +143,12 @@ func Do[T any](c *client.Config, ctx context.Context, req *http.Request, v *T) (
 			c.Logger.Info("X-Request-ID received in response", "requestID", xRequestID)
 		} else {
 			c.Logger.Info("X-Request-ID not found in response")
+		}
+
+		if xTraceID := resp.Header.Get("X-Mgc-Trace-Id"); xTraceID != "" {
+			c.Logger.Info("X-Mgc-Trace-ID received in response", "mgcTraceID", xTraceID)
+		} else {
+			c.Logger.Info("X-Mgc-Trace-ID not found in response")
 		}
 
 		if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
