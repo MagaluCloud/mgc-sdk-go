@@ -28,6 +28,7 @@ type (
 		TenantID    *string                         `json:"tenant_id,omitempty"`
 		ProjectType *string                         `json:"project_type,omitempty"`
 		IsDefault   *bool                           `json:"is_default,omitempty"`
+		Ports       *[]string                       `json:"ports,omitempty"`
 	}
 
 	// SecurityGroupDetailResponse represents detailed information about a security group

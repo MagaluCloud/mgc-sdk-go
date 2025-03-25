@@ -23,7 +23,6 @@ type (
 		PortRangeMax    *int                            `json:"port_range_max,omitempty"`
 		Protocol        *string                         `json:"protocol,omitempty"`
 		RemoteIPPrefix  *string                         `json:"remote_ip_prefix,omitempty"`
-		RemoteGroupID   *string                         `json:"remote_group_id,omitempty"`
 		EtherType       *string                         `json:"ethertype"`
 		CreatedAt       *utils.LocalDateTimeWithoutZone `json:"created_at,omitempty"`
 		Status          string                          `json:"status"`
@@ -37,7 +36,6 @@ type (
 		PortRangeMax   *int    `json:"port_range_max,omitempty"`
 		Protocol       *string `json:"protocol,omitempty"`
 		RemoteIPPrefix *string `json:"remote_ip_prefix,omitempty"`
-		RemoteGroupID  *string `json:"remote_group_id,omitempty"`
 		EtherType      string  `json:"ethertype"`
 		Description    *string `json:"description,omitempty"`
 	}
