@@ -378,7 +378,8 @@ func listSecurityGroups(networkClient *network.NetworkClient) {
 		fmt.Printf("  ID: %s\n", *sg.ID)
 		fmt.Printf("  Name: %s\n", *sg.Name)
 		fmt.Printf("  VPC ID: %s\n", *sg.VPCID)
-		fmt.Printf("  Is Default: %v\n\n", sg.IsDefault)
+		fmt.Printf("  Is Default: %v\n", sg.IsDefault)
+		fmt.Printf("  Ports: %v\n\n", sg.Ports)
 	}
 }
 
