@@ -47,7 +47,7 @@ func New(core *client.CoreClient, opts ...ClientOption) *Client {
 		CoreClient: core,
 	}
 
-	core.GetConfig().BaseURL = client.Global
+	azClient.GetConfig().BaseURL = client.Global
 
 	for _, opt := range opts {
 		opt(azClient)

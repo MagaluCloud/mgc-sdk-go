@@ -23,7 +23,7 @@ type (
 )
 
 type CoreClient struct {
-	config *Config
+	config Config
 }
 
 func NewMgcClient(apiKey string, opts ...Option) *CoreClient {
@@ -50,9 +50,9 @@ func NewMgcClient(apiKey string, opts ...Option) *CoreClient {
 	cfg.Logger.Debug("creating new core client",
 		"baseURL", cfg.BaseURL.String(),
 		"userAgent", cfg.UserAgent)
-	return &CoreClient{config: cfg}
+	return &CoreClient{config: *cfg}
 }
 
 func (c *CoreClient) GetConfig() *Config {
-	return c.config
+	return &c.config
 }

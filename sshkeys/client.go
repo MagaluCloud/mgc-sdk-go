@@ -47,7 +47,7 @@ func New(core *client.CoreClient, opts ...ClientOption) *SSHKeyClient {
 		CoreClient: core,
 	}
 
-	core.GetConfig().BaseURL = client.Global
+	sshClient.GetConfig().BaseURL = client.Global
 
 	for _, opt := range opts {
 		opt(sshClient)

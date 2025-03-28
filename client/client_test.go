@@ -44,10 +44,6 @@ func TestNew(t *testing.T) {
 				t.Error("expected non-nil client")
 				return
 			}
-			if client.config == nil {
-				t.Error("expected non-nil config")
-				return
-			}
 			if client.config.APIKey != tt.apiKey {
 				t.Errorf("expected API key %s, got %s", tt.apiKey, client.config.APIKey)
 			}
