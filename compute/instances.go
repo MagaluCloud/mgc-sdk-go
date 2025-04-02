@@ -79,7 +79,7 @@ type (
 	CreateParametersNetwork struct {
 		AssociatePublicIp *bool                             `json:"associate_public_ip,omitempty"`
 		Interface         *CreateParametersNetworkInterface `json:"interface,omitempty"`
-		Vpc               *IDOrName                         `json:"vpc"`
+		Vpc               *IDOrName                         `json:"vpc,omitempty"`
 	}
 
 	CreateParametersNetworkInterface struct {
