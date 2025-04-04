@@ -14,6 +14,7 @@ The MGC Go SDK provides a convenient way to interact with the Magalu Cloud API f
 This is an very active project and work in progress, with many products support comming soon.
 
 For more information about Magalu Cloud, visit:
+
 - Website: [https://magalu.cloud/](https://magalu.cloud/)
 - Documentation: [https://docs.magalu.cloud/](https://docs.magalu.cloud/)
 
@@ -45,6 +46,8 @@ go get github.com/MagaluCloud/mgc-sdk-go
   - Snapshots
   - Replicas
   - Engines
+  - Clusters
+  - Parameters
 - Container Registry
   - Repositories
   - Registries
@@ -78,12 +81,14 @@ Find more information about how to generate an API token in the [Magalu Cloud do
 
 The Magalu Cloud API is region-based, and each service is available in specific regions. You can set the region on the client to interact with a specific region.
 
-###  Brazil South East 1 (BR-SE1) - Default
+### Brazil South East 1 (BR-SE1) - Default
+
 ```go
 core := client.NewMgcClient(apiToken, client.WithBaseURL(client.BrSe1))
 ```
 
 ### Brazil North East 1 (BR-NE1)
+
 ```go
 core := client.NewMgcClient(apiToken, client.WithBaseURL(client.BrNe1))
 ```
@@ -91,6 +96,7 @@ core := client.NewMgcClient(apiToken, client.WithBaseURL(client.BrNe1))
 ## Global Services
 
 Some Magalu Cloud services operate globally and use a dedicated global endpoint (api.magalu.cloud). These global services are:
+
 - SSH Keys Management
 - Availability Zones
 
@@ -162,6 +168,7 @@ c := client.NewMgcClient(
 ```
 
 Available options:
+
 - `WithTimeout`: Sets the client timeout for requests
 - `WithUserAgent`: Sets a custom User-Agent header
 - `WithLogger`: Configures a custom logger
@@ -234,6 +241,7 @@ instances, err := computeClient.Instances().List(ctx, compute.ListOptions{})
 ```
 
 The request ID will be:
+
 - Must be a valid UUIDv4 string (e.g. "123e4567-e89b-12d3-a456-426614174000")
 - Included in the request as `X-Request-ID` header
 - Logged in the client's logger
@@ -242,6 +250,7 @@ The request ID will be:
 ## Error Handling
 
 ### HTTP Errors
+
 ```go
 err := computeClient.Instances().Delete(ctx, id)
 if httpErr, ok := err.(*client.HTTPError); ok {
@@ -258,6 +267,7 @@ if httpErr, ok := err.(*client.HTTPError); ok {
 ```
 
 ### Validation Errors
+
 ```go
 _, err := computeClient.Instances().Create(ctx, compute.CreateRequest{})
 if validErr, ok := err.(*client.ValidationError); ok {
@@ -310,7 +320,9 @@ if detailed, ok := err.(interface{ ErrorDetails() map[string]interface{} }); ok 
 ```
 
 ### Retries
+
 The client automatically retries on network errors and 5xx responses:
+
 ```go
 client := client.NewMgcClient(
     apiToken,
