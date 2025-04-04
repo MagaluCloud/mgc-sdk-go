@@ -59,7 +59,6 @@ type (
 
 	ReplicaResizeRequest struct {
 		InstanceTypeID string `json:"instance_type_id,omitempty"`
-		FlavorID       string `json:"flavor_id,omitempty"`
 	}
 
 	ReplicaResponse struct {
@@ -91,7 +90,7 @@ func (s *replicaService) List(ctx context.Context, opts ListReplicaOptions) ([]R
 		s.client.newRequest,
 		s.client.GetConfig(),
 		http.MethodGet,
-		"/v1/replicas",
+		"/v2/replicas",
 		nil,
 		query,
 	)
@@ -109,7 +108,7 @@ func (s *replicaService) Get(ctx context.Context, id string) (*ReplicaDetailResp
 		s.client.newRequest,
 		s.client.GetConfig(),
 		http.MethodGet,
-		fmt.Sprintf("/v1/replicas/%s", id),
+		fmt.Sprintf("/v2/replicas/%s", id),
 		nil,
 		nil,
 	)
@@ -122,7 +121,7 @@ func (s *replicaService) Create(ctx context.Context, req ReplicaCreateRequest) (
 		s.client.newRequest,
 		s.client.GetConfig(),
 		http.MethodPost,
-		"/v1/replicas",
+		"/v2/replicas",
 		req,
 		nil,
 	)
@@ -135,7 +134,7 @@ func (s *replicaService) Delete(ctx context.Context, id string) error {
 		s.client.newRequest,
 		s.client.GetConfig(),
 		http.MethodDelete,
-		fmt.Sprintf("/v1/replicas/%s", id),
+		fmt.Sprintf("/v2/replicas/%s", id),
 		nil,
 		nil,
 	)
@@ -148,7 +147,7 @@ func (s *replicaService) Resize(ctx context.Context, id string, req ReplicaResiz
 		s.client.newRequest,
 		s.client.GetConfig(),
 		http.MethodPost,
-		fmt.Sprintf("/v1/replicas/%s/resize", id),
+		fmt.Sprintf("/v2/replicas/%s/resize", id),
 		req,
 		nil,
 	)
@@ -161,7 +160,7 @@ func (s *replicaService) Start(ctx context.Context, id string) (*ReplicaDetailRe
 		s.client.newRequest,
 		s.client.GetConfig(),
 		http.MethodPost,
-		fmt.Sprintf("/v1/replicas/%s/start", id),
+		fmt.Sprintf("/v2/replicas/%s/start", id),
 		nil,
 		nil,
 	)
@@ -174,7 +173,7 @@ func (s *replicaService) Stop(ctx context.Context, id string) (*ReplicaDetailRes
 		s.client.newRequest,
 		s.client.GetConfig(),
 		http.MethodPost,
-		fmt.Sprintf("/v1/replicas/%s/stop", id),
+		fmt.Sprintf("/v2/replicas/%s/stop", id),
 		nil,
 		nil,
 	)
