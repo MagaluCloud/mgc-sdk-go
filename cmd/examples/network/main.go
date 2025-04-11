@@ -388,8 +388,9 @@ func createSecurityGroup(networkClient *network.NetworkClient) string {
 	defer cancel()
 
 	createReq := network.SecurityGroupCreateRequest{
-		Name:        "example-security-group",
-		Description: helpers.StrPtr("Security group created via SDK example"),
+		Name:             "example-security-group",
+		Description:      helpers.StrPtr("Security group created via SDK example"),
+		SkipDefaultRules: helpers.BoolPtr(true),
 	}
 
 	sgID, err := networkClient.SecurityGroups().Create(ctx, createReq)

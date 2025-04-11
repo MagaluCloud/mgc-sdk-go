@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/url"
+	"strconv"
 
 	mgc_http "github.com/MagaluCloud/mgc-sdk-go/internal/http"
 	"github.com/MagaluCloud/mgc-sdk-go/internal/utils"
@@ -102,6 +104,11 @@ func (s *securityGroupService) Get(ctx context.Context, id string) (*SecurityGro
 
 // Create creates a new security group with the provided configuration
 func (s *securityGroupService) Create(ctx context.Context, req SecurityGroupCreateRequest) (string, error) {
+	queryParams := url.Values{}
+	if req.SkipDefaultRules != nil {
+		queryParams.Add("skip_default_rules", strconv.FormatBool(*req.SkipDefaultRules))
+	}
+
 	result, err := mgc_http.ExecuteSimpleRequestWithRespBody[SecurityGroupCreateResponse](
 		ctx,
 		s.client.newRequest,
@@ -109,7 +116,7 @@ func (s *securityGroupService) Create(ctx context.Context, req SecurityGroupCrea
 		http.MethodPost,
 		"/v0/security_groups",
 		req,
-		nil,
+		queryParams,
 	)
 	if err != nil {
 		return "", err
