@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"testing"
 	"time"
 
@@ -178,6 +179,18 @@ func TestSecurityGroupService_Create(t *testing.T) {
 			wantErr:    false,
 		},
 		{
+			name: "create with skip default rules",
+			request: SecurityGroupCreateRequest{
+				Name:             "test-sg-no-defaults",
+				Description:      helpers.StrPtr("test without default rules"),
+				SkipDefaultRules: helpers.BoolPtr(true),
+			},
+			response:   `{"id": "sg-no-defaults"}`,
+			statusCode: http.StatusOK,
+			wantID:     "sg-no-defaults",
+			wantErr:    false,
+		},
+		{
 			name: "missing name",
 			request: SecurityGroupCreateRequest{
 				Description: helpers.StrPtr("invalid"),
@@ -200,7 +213,13 @@ func TestSecurityGroupService_Create(t *testing.T) {
 				err := json.NewDecoder(r.Body).Decode(&req)
 				assertNoError(t, err)
 				assertEqual(t, tt.request.Name, req.Name)
-				assertEqual(t, *tt.request.Description, *req.Description)
+				if tt.request.Description != nil {
+					assertEqual(t, *tt.request.Description, *req.Description)
+				}
+				if tt.request.SkipDefaultRules != nil {
+					skipDefaultRules := r.URL.Query().Get("skip_default_rules")
+					assertEqual(t, strconv.FormatBool(*tt.request.SkipDefaultRules), skipDefaultRules)
+				}
 
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(tt.statusCode)
