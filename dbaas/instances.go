@@ -96,15 +96,16 @@ type (
 	}
 
 	InstanceCreateRequest struct {
-		Name             string                `json:"name"`
-		EngineID         *string               `json:"engine_id,omitempty"`
-		InstanceTypeID   *string               `json:"instance_type_id,omitempty"`
-		User             string                `json:"user"`
-		Password         string                `json:"password"`
-		Volume           InstanceVolumeRequest `json:"volume"`
-		ParameterGroupID *string               `json:"parameter_group_id,omitempty"`
-		AvailabilityZone *string               `json:"availability_zone,omitempty"`
-		BackupStartAt    *string               `json:"backup_start_at,omitempty"`
+		Name                string                `json:"name"`
+		EngineID            *string               `json:"engine_id,omitempty"`
+		InstanceTypeID      *string               `json:"instance_type_id,omitempty"`
+		User                string                `json:"user"`
+		Password            string                `json:"password"`
+		Volume              InstanceVolumeRequest `json:"volume"`
+		ParameterGroupID    *string               `json:"parameter_group_id,omitempty"`
+		AvailabilityZone    *string               `json:"availability_zone,omitempty"`
+		BackupStartAt       *string               `json:"backup_start_at,omitempty"`
+		BackupRetentionDays *int                  `json:"backup_retention_days,omitempty"`
 	}
 
 	InstanceResizeRequest struct {
