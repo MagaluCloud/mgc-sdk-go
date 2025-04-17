@@ -73,7 +73,7 @@ func TestInstanceService_List(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				assertEqual(t, "/database/v1/instances", r.URL.Path)
+				assertEqual(t, "/database/v2/instances", r.URL.Path)
 				query := r.URL.Query()
 
 				if tt.opts.Limit != nil {
@@ -156,7 +156,7 @@ func TestInstanceService_Get(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				assertEqual(t, fmt.Sprintf("/database/v1/instances/%s", tt.id), r.URL.Path)
+				assertEqual(t, fmt.Sprintf("/database/v2/instances/%s", tt.id), r.URL.Path)
 				query := r.URL.Query()
 
 				if len(tt.opts.ExpandedFields) > 0 {
@@ -200,7 +200,7 @@ func TestInstanceService_Create(t *testing.T) {
 				Password: "secret",
 				Volume: InstanceVolumeRequest{
 					Size: 100,
-					Type: VolumeTypeCloudNVME,
+					Type: "nvme",
 				},
 			},
 			response:   `{"id": "inst-new"}`,
@@ -222,7 +222,7 @@ func TestInstanceService_Create(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				assertEqual(t, "/database/v1/instances", r.URL.Path)
+				assertEqual(t, "/database/v2/instances", r.URL.Path)
 
 				var req InstanceCreateRequest
 				json.NewDecoder(r.Body).Decode(&req)
@@ -276,7 +276,7 @@ func TestInstanceService_Delete(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				assertEqual(t, fmt.Sprintf("/database/v1/instances/%s", tt.id), r.URL.Path)
+				assertEqual(t, fmt.Sprintf("/database/v2/instances/%s", tt.id), r.URL.Path)
 				w.WriteHeader(tt.statusCode)
 				w.Write([]byte(tt.response))
 			}))
@@ -326,7 +326,7 @@ func TestInstanceService_Update(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				assertEqual(t, fmt.Sprintf("/database/v1/instances/%s", tt.id), r.URL.Path)
+				assertEqual(t, fmt.Sprintf("/database/v2/instances/%s", tt.id), r.URL.Path)
 				assertEqual(t, http.MethodPatch, r.Method)
 
 				var req DatabaseInstanceUpdateRequest
@@ -371,7 +371,7 @@ func TestInstanceService_Resize(t *testing.T) {
 				InstanceTypeID: helpers.StrPtr("type-large"),
 				Volume: &InstanceVolumeResizeRequest{
 					Size: 200,
-					Type: VolumeTypeCloudNVME,
+					Type: "nvme",
 				},
 			},
 			response: `{
@@ -388,7 +388,7 @@ func TestInstanceService_Resize(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				assertEqual(t, fmt.Sprintf("/database/v1/instances/%s/resize", tt.id), r.URL.Path)
+				assertEqual(t, fmt.Sprintf("/database/v2/instances/%s/resize", tt.id), r.URL.Path)
 				assertEqual(t, http.MethodPost, r.Method)
 
 				var req InstanceResizeRequest
@@ -452,9 +452,9 @@ func TestInstanceService_StartStop(t *testing.T) {
 				var expectedPath string
 				switch tt.method {
 				case "Start":
-					expectedPath = fmt.Sprintf("/database/v1/instances/%s/start", tt.id)
+					expectedPath = fmt.Sprintf("/database/v2/instances/%s/start", tt.id)
 				case "Stop":
-					expectedPath = fmt.Sprintf("/database/v1/instances/%s/stop", tt.id)
+					expectedPath = fmt.Sprintf("/database/v2/instances/%s/stop", tt.id)
 				}
 				assertEqual(t, expectedPath, r.URL.Path)
 				assertEqual(t, http.MethodPost, r.Method)
@@ -490,7 +490,7 @@ func TestInstanceService_StartStop(t *testing.T) {
 func TestInstanceService_Snapshots(t *testing.T) {
 	t.Run("ListSnapshots", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			assertEqual(t, "/database/v1/instances/inst1/snapshots", r.URL.Path)
+			assertEqual(t, "/database/v2/instances/inst1/snapshots", r.URL.Path)
 			query := r.URL.Query()
 			assertEqual(t, "10", query.Get("_limit"))
 			assertEqual(t, "AUTOMATED", query.Get("type"))
@@ -512,7 +512,7 @@ func TestInstanceService_Snapshots(t *testing.T) {
 
 	t.Run("CreateSnapshot", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			assertEqual(t, "/database/v1/instances/inst1/snapshots", r.URL.Path)
+			assertEqual(t, "/database/v2/instances/inst1/snapshots", r.URL.Path)
 
 			var req SnapshotCreateRequest
 			json.NewDecoder(r.Body).Decode(&req)
@@ -534,7 +534,7 @@ func TestInstanceService_Snapshots(t *testing.T) {
 
 	t.Run("GetSnapshot", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			assertEqual(t, "/database/v1/instances/inst1/snapshots/snap1", r.URL.Path)
+			assertEqual(t, "/database/v2/instances/inst1/snapshots/snap1", r.URL.Path)
 			w.Header().Set("Content-Type", "application/json")
 			w.Write([]byte(`{"id": "snap1", "status": "AVAILABLE"}`))
 		}))
@@ -549,7 +549,7 @@ func TestInstanceService_Snapshots(t *testing.T) {
 
 	t.Run("DeleteSnapshot", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			assertEqual(t, "/database/v1/instances/inst1/snapshots/snap1", r.URL.Path)
+			assertEqual(t, "/database/v2/instances/inst1/snapshots/snap1", r.URL.Path)
 			assertEqual(t, http.MethodDelete, r.Method)
 
 			w.WriteHeader(http.StatusNoContent)
@@ -564,7 +564,7 @@ func TestInstanceService_Snapshots(t *testing.T) {
 
 	t.Run("UpdateSnapshot", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			assertEqual(t, "/database/v1/instances/inst1/snapshots/snap1", r.URL.Path)
+			assertEqual(t, "/database/v2/instances/inst1/snapshots/snap1", r.URL.Path)
 			assertEqual(t, http.MethodPatch, r.Method)
 
 			var req SnapshotUpdateRequest
@@ -596,7 +596,7 @@ func TestInstanceService_Snapshots(t *testing.T) {
 
 	t.Run("RestoreSnapshot", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			assertEqual(t, "/database/v1/snapshots/snap1/restores", r.URL.Path)
+			assertEqual(t, "/database/v2/instances/inst1/snapshots/snap1/restore", r.URL.Path)
 			assertEqual(t, http.MethodPost, r.Method)
 
 			var req RestoreSnapshotRequest
@@ -604,7 +604,7 @@ func TestInstanceService_Snapshots(t *testing.T) {
 			assertEqual(t, "restored-instance", req.Name)
 			assertEqual(t, "type-large", req.InstanceTypeID)
 			assertEqual(t, 100, req.Volume.Size)
-			assertEqual(t, VolumeTypeCloudNVME, req.Volume.Type)
+			assertEqual(t, "nvme", req.Volume.Type)
 
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
@@ -613,12 +613,12 @@ func TestInstanceService_Snapshots(t *testing.T) {
 		defer server.Close()
 
 		client := testInstanceClient(server.URL)
-		result, err := client.RestoreSnapshot(context.Background(), "snap1", RestoreSnapshotRequest{
+		result, err := client.RestoreSnapshot(context.Background(), "inst1", "snap1", RestoreSnapshotRequest{
 			Name:           "restored-instance",
 			InstanceTypeID: "type-large",
 			Volume: &InstanceVolumeRequest{
 				Size: 100,
-				Type: VolumeTypeCloudNVME,
+				Type: "nvme",
 			},
 		})
 
