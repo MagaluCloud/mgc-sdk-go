@@ -20,26 +20,26 @@ const (
 func main() {
 	networkClient := createNetworkClient()
 
-	// fmt.Println("\n=== VPC Examples ===")
-	// demoVPCOperations(networkClient)
+	fmt.Println("\n=== VPC Examples ===")
+	demoVPCOperations(networkClient)
 
-	// fmt.Println("\n=== Subnet Examples ===")
-	// demoSubnetOperations(networkClient)
+	fmt.Println("\n=== Subnet Examples ===")
+	demoSubnetOperations(networkClient)
 
-	// fmt.Println("\n=== Subnet Pool Examples ===")
-	// demoSubnetPoolOperations(networkClient)
+	fmt.Println("\n=== Subnet Pool Examples ===")
+	demoSubnetPoolOperations(networkClient)
 
-	// fmt.Println("\n=== Security Group Examples ===")
-	// demoSecurityGroupOperations(networkClient)
+	fmt.Println("\n=== Security Group Examples ===")
+	demoSecurityGroupOperations(networkClient)
 
-	// fmt.Println("\n=== Security Group Rule Examples ===")
-	// demoSecurityGroupRuleOperations(networkClient)
+	fmt.Println("\n=== Security Group Rule Examples ===")
+	demoSecurityGroupRuleOperations(networkClient)
 
-	// fmt.Println("\n=== Public IP Examples ===")
-	// demoPublicIPOperations(networkClient)
+	fmt.Println("\n=== Public IP Examples ===")
+	demoPublicIPOperations(networkClient)
 
-	// fmt.Println("\n=== Port Examples ===")
-	// demoPortOperations(networkClient)
+	fmt.Println("\n=== Port Examples ===")
+	demoPortOperations(networkClient)
 
 	fmt.Println("\n=== NAT Gateway Examples ===")
 	demoNATGatewayOperations(networkClient)
