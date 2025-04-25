@@ -20,26 +20,29 @@ const (
 func main() {
 	networkClient := createNetworkClient()
 
-	fmt.Println("\n=== VPC Examples ===")
-	demoVPCOperations(networkClient)
+	// fmt.Println("\n=== VPC Examples ===")
+	// demoVPCOperations(networkClient)
 
-	fmt.Println("\n=== Subnet Examples ===")
-	demoSubnetOperations(networkClient)
+	// fmt.Println("\n=== Subnet Examples ===")
+	// demoSubnetOperations(networkClient)
 
-	fmt.Println("\n=== Subnet Pool Examples ===")
-	demoSubnetPoolOperations(networkClient)
+	// fmt.Println("\n=== Subnet Pool Examples ===")
+	// demoSubnetPoolOperations(networkClient)
 
-	fmt.Println("\n=== Security Group Examples ===")
-	demoSecurityGroupOperations(networkClient)
+	// fmt.Println("\n=== Security Group Examples ===")
+	// demoSecurityGroupOperations(networkClient)
 
-	fmt.Println("\n=== Security Group Rule Examples ===")
-	demoSecurityGroupRuleOperations(networkClient)
+	// fmt.Println("\n=== Security Group Rule Examples ===")
+	// demoSecurityGroupRuleOperations(networkClient)
 
-	fmt.Println("\n=== Public IP Examples ===")
-	demoPublicIPOperations(networkClient)
+	// fmt.Println("\n=== Public IP Examples ===")
+	// demoPublicIPOperations(networkClient)
 
-	fmt.Println("\n=== Port Examples ===")
-	demoPortOperations(networkClient)
+	// fmt.Println("\n=== Port Examples ===")
+	// demoPortOperations(networkClient)
+
+	fmt.Println("\n=== NAT Gateway Examples ===")
+	demoNATGatewayOperations(networkClient)
 }
 
 func createNetworkClient() *network.NetworkClient {
@@ -89,7 +92,7 @@ func createVPC(networkClient *network.NetworkClient) string {
 	defer cancel()
 
 	createReq := network.CreateVPCRequest{
-		Name:        "example-vpc",
+		Name:        "example-vpc2",
 		Description: helpers.StrPtr("VPC created via SDK example"),
 	}
 
@@ -785,4 +788,76 @@ func deletePort(networkClient *network.NetworkClient, portID string) {
 
 func cleanupVPC(networkClient *network.NetworkClient, vpcID string) {
 	deleteVPC(networkClient, vpcID)
+}
+
+func demoNATGatewayOperations(networkClient *network.NetworkClient) {
+	vpcID := createVPC(networkClient)
+	defer cleanupVPC(networkClient, vpcID)
+
+	natGatewayID := createNATGateway(networkClient, vpcID)
+
+	getNATGatewayDetails(networkClient, natGatewayID)
+	listNATGateways(networkClient, vpcID)
+	deleteNATGateway(networkClient, natGatewayID)
+}
+
+func createNATGateway(networkClient *network.NetworkClient, vpcID string) string {
+	ctx, cancel := getContext()
+	defer cancel()
+
+	natGatewayID, err := networkClient.NatGateways().Create(ctx, network.CreateNatGatewayRequest{
+		Name:        "example-nat-gateway",
+		Description: helpers.StrPtr("NAT gateway created via SDK example"),
+		Zone:        defaultZone,
+		VPCID:       vpcID,
+	})
+	if err != nil {
+		log.Fatalf("Failed to create NAT gateway: %v", err)
+	}
+
+	return natGatewayID
+}
+
+func listNATGateways(networkClient *network.NetworkClient, vpcID string) {
+	ctx, cancel := getContext()
+	defer cancel()
+
+	natGateways, err := networkClient.NatGateways().List(ctx, vpcID, network.ListOptions{})
+	if err != nil {
+		log.Fatalf("Failed to list NAT gateways: %v", err)
+	}
+
+	fmt.Printf("Found %d NAT gateways\n", len(natGateways))
+	for _, natGateway := range natGateways {
+		fmt.Printf("  NAT Gateway: %s\n", *natGateway.ID)
+		fmt.Printf("    Name: %s\n", *natGateway.Name)
+		fmt.Printf("    Zone: %s\n", *natGateway.Zone)
+		fmt.Printf("    VPC ID: %s\n", *natGateway.VPCID)
+		fmt.Printf("    Description: %s\n", *natGateway.Description)
+	}
+}
+
+func getNATGatewayDetails(networkClient *network.NetworkClient, natGatewayID string) {
+	ctx, cancel := getContext()
+	defer cancel()
+
+	natGateway, err := networkClient.NatGateways().Get(ctx, natGatewayID)
+	if err != nil {
+		log.Fatalf("Failed to get NAT gateway details: %v", err)
+	}
+
+	fmt.Printf("NAT Gateway Details for %s:\n", natGatewayID)
+	fmt.Printf("  Name: %s\n", *natGateway.Name)
+
+}
+
+func deleteNATGateway(networkClient *network.NetworkClient, natGatewayID string) {
+	ctx, cancel := getContext()
+	defer cancel()
+
+	if err := networkClient.NatGateways().Delete(ctx, natGatewayID); err != nil {
+		log.Fatalf("Failed to delete NAT gateway: %v", err)
+	}
+
+	fmt.Printf("NAT Gateway %s deleted successfully\n", natGatewayID)
 }
