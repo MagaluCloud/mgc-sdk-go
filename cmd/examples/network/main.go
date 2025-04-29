@@ -92,7 +92,7 @@ func createVPC(networkClient *network.NetworkClient) string {
 	defer cancel()
 
 	createReq := network.CreateVPCRequest{
-		Name:        "example-vpc2",
+		Name:        "example-vpc",
 		Description: helpers.StrPtr("VPC created via SDK example"),
 	}
 
@@ -787,6 +787,19 @@ func deletePort(networkClient *network.NetworkClient, portID string) {
 }
 
 func cleanupVPC(networkClient *network.NetworkClient, vpcID string) {
+
+	for {
+		vpc, err := networkClient.VPCs().Get(context.Background(), vpcID)
+		if err != nil {
+			log.Fatalf("Failed to get VPC details: %v", err)
+		}
+		fmt.Printf("VPC status: %s\n", vpc.Status)
+		if vpc.Status == "created" {
+			break
+		}
+		time.Sleep(1 * time.Second)
+	}
+
 	deleteVPC(networkClient, vpcID)
 }
 
