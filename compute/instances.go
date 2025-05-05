@@ -206,6 +206,8 @@ type ListOptions struct {
 	Sort *string
 	// Expand lists related resources to include in the response
 	Expand []string
+	// Name filters listed resources based on name field
+	Name *string
 }
 
 // List retrieves all instances
@@ -231,6 +233,10 @@ func (s *instanceService) List(ctx context.Context, opts ListOptions) ([]Instanc
 	if len(opts.Expand) > 0 {
 		q.Add("expand", strings.Join(opts.Expand, ","))
 	}
+	if opts.Name != nil {
+		q.Add("name", *opts.Name)
+	}
+
 	req.URL.RawQuery = q.Encode()
 
 	var response struct {
