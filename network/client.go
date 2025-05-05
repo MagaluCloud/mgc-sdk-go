@@ -67,3 +67,8 @@ func (c *NetworkClient) PublicIPs() PublicIPService {
 func (c *NetworkClient) SubnetPools() SubnetPoolService {
 	return &subnetPoolService{client: c}
 }
+
+// NatGateways returns a service for managing NAT gateway resources
+func (c *NetworkClient) NatGateways() NatGatewayService {
+	return &natGatewayService{client: c}
+}
