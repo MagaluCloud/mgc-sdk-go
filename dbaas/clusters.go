@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"time"
 
 	mgc_http "github.com/MagaluCloud/mgc-sdk-go/internal/http"
 )
@@ -90,8 +91,8 @@ type (
 		ApplyParametersPending bool                  `json:"apply_parameters_pending"`
 		BackupRetentionDays    int                   `json:"backup_retention_days"`
 		BackupStartAt          string                `json:"backup_start_at"`
-		CreatedAt              string                `json:"created_at"`
-		UpdatedAt              *string               `json:"updated_at,omitempty"`
+		CreatedAt              time.Time             `json:"created_at"`
+		UpdatedAt              *time.Time            `json:"updated_at,omitempty"`
 		StartedAt              *string               `json:"started_at,omitempty"`
 		FinishedAt             *string               `json:"finished_at,omitempty"`
 	}

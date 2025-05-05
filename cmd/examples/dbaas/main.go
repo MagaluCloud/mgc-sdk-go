@@ -121,13 +121,13 @@ func ExampleCreateInstance() {
 	// Create a new database instance
 	instance, err := dbaasClient.Instances().Create(context.Background(), dbaas.InstanceCreateRequest{
 		Name:           "example-db-instance",
-		EngineID:       helpers.StrPtr("your-engine-id"),        // Replace with actual engine ID
-		InstanceTypeID: helpers.StrPtr("your-instance-type-id"), // Replace with actual instance type ID
+		EngineID:       helpers.StrPtr("063f3994-b6c2-4c37-96c9-bab8d82d36f7"), // Replace with actual engine ID
+		InstanceTypeID: helpers.StrPtr("8bbe8e01-40c8-4d2b-80e8-189debc44b1c"), // Replace with actual instance type ID
 		User:           "dbadmin",
 		Password:       "YourStrongPassword123!",
 		Volume: dbaas.InstanceVolumeRequest{
 			Size: 20, // Size in GB
-			Type: "NVME",
+			Type: "CLOUD_NVME15K",
 		},
 		BackupStartAt: helpers.StrPtr("02:00"), // Start backup at 2 AM
 	})
@@ -147,8 +147,7 @@ func ExampleListClusters() {
 	dbaasClient := dbaas.New(c)
 
 	clusters, err := dbaasClient.Clusters().List(context.Background(), dbaas.ListClustersOptions{
-		Limit:  helpers.IntPtr(10),
-		Status: (*dbaas.ClusterStatus)(helpers.StrPtr(string(dbaas.ClusterStatusActive))),
+		Limit: helpers.IntPtr(10),
 	})
 	if err != nil {
 		log.Fatal(err)
@@ -183,21 +182,21 @@ func ExampleCreateCluster() {
 	dbaasClient := dbaas.New(c)
 
 	// Create a new database cluster
-	volumeType := "NVME"
-	paramGroupID := "your-parameter-group-id" // Replace with actual parameter group ID
+	volumeType := "CLOUD_NVME15K"
+	// paramGroupID := "your-parameter-group-id" // Replace with actual parameter group ID
 	backupRetention := 7
 
 	cluster, err := dbaasClient.Clusters().Create(context.Background(), dbaas.ClusterCreateRequest{
 		Name:           "example-db-cluster",
-		EngineID:       "your-engine-id",        // Replace with actual engine ID
-		InstanceTypeID: "your-instance-type-id", // Replace with actual instance type ID
+		EngineID:       "063f3994-b6c2-4c37-96c9-bab8d82d36f7", // Replace with actual engine ID
+		InstanceTypeID: "8bbe8e01-40c8-4d2b-80e8-189debc44b1c", // Replace with actual instance type ID
 		User:           "dbadmin",
 		Password:       "YourStrongPassword123!",
 		Volume: dbaas.ClusterVolumeRequest{
 			Size: 50, // Size in GB
 			Type: &volumeType,
 		},
-		ParameterGroupID:    &paramGroupID,
+		// ParameterGroupID:    &paramGroupID,
 		BackupRetentionDays: &backupRetention,
 		BackupStartAt:       helpers.StrPtr("03:00"), // Start backup at 3 AM
 	})

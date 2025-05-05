@@ -14,7 +14,7 @@ import (
 )
 
 // Helper functions
-func assertEqual(t *testing.T, expected, actual interface{}, msgAndArgs ...interface{}) {
+func assertEqual(t *testing.T, expected, actual any, msgAndArgs ...any) {
 	t.Helper()
 	if expected != actual {
 		t.Errorf("Expected %v but got %v. %v", expected, actual, msgAndArgs)

@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 
 	mgc_http "github.com/MagaluCloud/mgc-sdk-go/internal/http"
 )
@@ -118,23 +119,6 @@ type (
 		BackupStartAt       *string `json:"backup_start_at,omitempty"`
 	}
 
-	ReplicaDetailResponse struct {
-		ID                     string                   `json:"id"`
-		SourceID               string                   `json:"source_id"`
-		Name                   string                   `json:"name"`
-		EngineID               string                   `json:"engine_id"`
-		InstanceTypeID         string                   `json:"instance_type_id"`
-		Volume                 Volume                   `json:"volume"`
-		Addresses              []ReplicaAddressResponse `json:"addresses"`
-		Status                 InstanceStatus           `json:"status"`
-		Generation             string                   `json:"generation"`
-		CreatedAt              string                   `json:"created_at"`
-		UpdatedAt              *string                  `json:"updated_at,omitempty"`
-		StartedAt              *string                  `json:"started_at,omitempty"`
-		FinishedAt             *string                  `json:"finished_at,omitempty"`
-		MaintenanceScheduledAt *string                  `json:"maintenance_scheduled_at,omitempty"`
-	}
-
 	ReplicaAddressResponse struct {
 		Access  AddressAccess `json:"access"`
 		Type    *AddressType  `json:"type,omitempty"`
@@ -154,11 +138,11 @@ type (
 		Type             SnapshotType                   `json:"type"`
 		Status           SnapshotStatus                 `json:"status"`
 		AllocatedSize    int                            `json:"allocated_size"`
-		CreatedAt        string                         `json:"created_at"`
+		CreatedAt        time.Time                      `json:"created_at"`
 		StartedAt        *string                        `json:"started_at,omitempty"`
 		AvailabilityZone string                         `json:"availability_zone"`
 		FinishedAt       *string                        `json:"finished_at,omitempty"`
-		UpdatedAt        *string                        `json:"updated_at,omitempty"`
+		UpdatedAt        *time.Time                     `json:"updated_at,omitempty"`
 	}
 
 	SnapshotInstanceDetailResponse struct {

@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"time"
 
 	mgc_http "github.com/MagaluCloud/mgc-sdk-go/internal/http"
 )
@@ -45,16 +46,32 @@ type (
 		SourceID *string
 	}
 
+	ReplicaDetailResponse struct {
+		ID                     string                   `json:"id"`
+		SourceID               string                   `json:"source_id"`
+		Name                   string                   `json:"name"`
+		EngineID               string                   `json:"engine_id"`
+		InstanceTypeID         string                   `json:"instance_type_id"`
+		Volume                 Volume                   `json:"volume"`
+		Addresses              []ReplicaAddressResponse `json:"addresses"`
+		Status                 InstanceStatus           `json:"status"`
+		Generation             string                   `json:"generation"`
+		CreatedAt              time.Time                `json:"created_at"`
+		UpdatedAt              *time.Time               `json:"updated_at,omitempty"`
+		StartedAt              *string                  `json:"started_at,omitempty"`
+		FinishedAt             *string                  `json:"finished_at,omitempty"`
+		MaintenanceScheduledAt *string                  `json:"maintenance_scheduled_at,omitempty"`
+	}
+
 	ReplicasResponse struct {
 		Meta    MetaResponse            `json:"meta"`
 		Results []ReplicaDetailResponse `json:"results"`
 	}
 
 	ReplicaCreateRequest struct {
-		SourceID       string `json:"source_id"`
-		Name           string `json:"name"`
-		FlavorID       string `json:"flavor_id,omitempty"`
-		InstanceTypeID string `json:"instance_type_id,omitempty"`
+		SourceID       string  `json:"source_id"`
+		Name           string  `json:"name"`
+		InstanceTypeID *string `json:"instance_type_id,omitempty"`
 	}
 
 	ReplicaResizeRequest struct {
