@@ -10,174 +10,101 @@ import (
 	mgc_http "github.com/MagaluCloud/mgc-sdk-go/internal/http"
 )
 
-// ParameterGroupType defines the type of parameter group
-type ParameterGroupType string
+type ParameterCreateRequest struct {
+	Name  string `json:"name"`
+	Value any    `json:"value"`
+}
 
-const (
-	// ParameterGroupTypeSystem represents a system parameter group
-	ParameterGroupTypeSystem ParameterGroupType = "SYSTEM"
-	// ParameterGroupTypeUser represents a user-defined parameter group
-	ParameterGroupTypeUser ParameterGroupType = "USER"
-)
+type ParameterResponse struct {
+	ID string `json:"id"`
+}
 
-type (
-	// ListParameterGroupsOptions defines query parameters for listing parameter groups
-	ListParameterGroupsOptions struct {
-		Offset   *int
-		Limit    *int
-		Type     *ParameterGroupType
-		EngineID *string
-	}
+type ParameterUpdateRequest struct {
+	Value any `json:"value"`
+}
 
-	// ParameterGroupsResponse represents the API response for multiple parameter groups
-	ParameterGroupsResponse struct {
-		Meta    MetaResponse                   `json:"meta"`
-		Results []ParameterGroupDetailResponse `json:"results"`
-	}
+type ParameterDetailResponse struct {
+	ID    string `json:"id"`
+	Name  string `json:"name"`
+	Value any    `json:"value"`
+}
 
-	// ParameterGroupCreateRequest contains the data for creating a new parameter group
-	ParameterGroupCreateRequest struct {
-		Name        string  `json:"name"`
-		EngineID    string  `json:"engine_id"`
-		Description *string `json:"description,omitempty"`
-	}
+type ParametersResponse struct {
+	Meta    MetaResponse              `json:"meta"`
+	Results []ParameterDetailResponse `json:"results"`
+}
 
-	// ParameterGroupResponse contains the ID of a newly created parameter group
-	ParameterGroupResponse struct {
-		ID string `json:"id"`
-	}
+type ListParametersOptions struct {
+	ParameterGroupID string
+	Offset           *int
+	Limit            *int
+}
 
-	// ParameterGroupDetailResponse represents the detailed view of a parameter group
-	ParameterGroupDetailResponse struct {
-		ID          string             `json:"id"`
-		Name        string             `json:"name"`
-		Description string             `json:"description"`
-		Type        ParameterGroupType `json:"type"`
-		EngineID    string             `json:"engine_id"`
-	}
+type ParameterService interface {
+	List(ctx context.Context, opts ListParametersOptions) ([]ParameterDetailResponse, error)
+	Create(ctx context.Context, groupID string, req ParameterCreateRequest) (*ParameterResponse, error)
+	Update(ctx context.Context, groupID, parameterID string, req ParameterUpdateRequest) (*ParameterDetailResponse, error)
+	Delete(ctx context.Context, groupID, parameterID string) error
+}
 
-	// ParameterGroupUpdateRequest contains the fields that can be updated for a parameter group
-	ParameterGroupUpdateRequest struct {
-		Name        *string `json:"name,omitempty"`
-		Description *string `json:"description,omitempty"`
-	}
+type parameterService struct {
+	client *DBaaSClient
+}
 
-	// ParameterGroupService defines the interface for parameter group operations
-	ParameterGroupService interface {
-		// ListParameterGroups retrieves a list of parameter groups for the tenant.
-		List(ctx context.Context, opts ListParameterGroupsOptions) ([]ParameterGroupDetailResponse, error)
-
-		// CreateParameterGroup creates a new custom parameter group.
-		Create(ctx context.Context, req ParameterGroupCreateRequest) (*ParameterGroupResponse, error)
-
-		// GetParameterGroup retrieves details of a specific parameter group by its ID.
-		Get(ctx context.Context, ID string) (*ParameterGroupDetailResponse, error)
-
-		// UpdateParameterGroup updates the name or description of a parameter group.
-		Update(ctx context.Context, ID string, req ParameterGroupUpdateRequest) (*ParameterGroupDetailResponse, error)
-
-		// DeleteParameterGroup deletes a custom parameter group.
-		Delete(ctx context.Context, ID string) error
-	}
-
-	// parameterGroupService implements the ParameterGroupService interface
-	parameterGroupService struct {
-		client *DBaaSClient
-	}
-)
-
-// List retrieves a list of parameter groups for the tenant.
-func (s *parameterGroupService) List(ctx context.Context, opts ListParameterGroupsOptions) ([]ParameterGroupDetailResponse, error) {
-	query := make(url.Values)
-
+func (s *parameterService) List(ctx context.Context, opts ListParametersOptions) ([]ParameterDetailResponse, error) {
+	q := make(url.Values)
 	if opts.Offset != nil {
-		query.Set("_offset", strconv.Itoa(*opts.Offset))
+		q.Set("_offset", strconv.Itoa(*opts.Offset))
 	}
 	if opts.Limit != nil {
-		query.Set("_limit", strconv.Itoa(*opts.Limit))
+		q.Set("_limit", strconv.Itoa(*opts.Limit))
 	}
-	if opts.Type != nil {
-		query.Set("type", string(*opts.Type))
-	}
-	if opts.EngineID != nil {
-		query.Set("engine_id", *opts.EngineID)
-	}
-
-	result, err := mgc_http.ExecuteSimpleRequestWithRespBody[ParameterGroupsResponse](
+	resp, err := mgc_http.ExecuteSimpleRequestWithRespBody[ParametersResponse](
 		ctx,
 		s.client.newRequest,
 		s.client.GetConfig(),
 		http.MethodGet,
-		"/v2/parameter-groups",
+		fmt.Sprintf("/v2/parameter-groups/%s/parameters", opts.ParameterGroupID),
 		nil,
-		query,
+		q,
 	)
 	if err != nil {
 		return nil, err
 	}
-
-	return result.Results, nil
+	return resp.Results, nil
 }
 
-// CreateParameterGroup creates a new custom parameter group.
-func (s *parameterGroupService) Create(ctx context.Context, req ParameterGroupCreateRequest) (*ParameterGroupResponse, error) {
-	return mgc_http.ExecuteSimpleRequestWithRespBody[ParameterGroupResponse](
+func (s *parameterService) Create(ctx context.Context, groupID string, req ParameterCreateRequest) (*ParameterResponse, error) {
+	return mgc_http.ExecuteSimpleRequestWithRespBody[ParameterResponse](
 		ctx,
 		s.client.newRequest,
 		s.client.GetConfig(),
 		http.MethodPost,
-		"/v2/parameter-groups",
+		fmt.Sprintf("/v2/parameter-groups/%s/parameters", groupID),
 		req,
 		nil,
 	)
 }
 
-// Get retrieves details of a specific parameter group by its ID.
-func (s *parameterGroupService) Get(ctx context.Context, ID string) (*ParameterGroupDetailResponse, error) {
-	if ID == "" {
-		return nil, fmt.Errorf("ID cannot be empty")
-	}
-
-	return mgc_http.ExecuteSimpleRequestWithRespBody[ParameterGroupDetailResponse](
-		ctx,
-		s.client.newRequest,
-		s.client.GetConfig(),
-		http.MethodGet,
-		fmt.Sprintf("/v2/parameter-groups/%s", ID),
-		nil,
-		nil,
-	)
-}
-
-// Update updates the name or description of a parameter group.
-func (s *parameterGroupService) Update(ctx context.Context, ID string, req ParameterGroupUpdateRequest) (*ParameterGroupDetailResponse, error) {
-	if ID == "" {
-		return nil, fmt.Errorf("ID cannot be empty")
-	}
-
-	return mgc_http.ExecuteSimpleRequestWithRespBody[ParameterGroupDetailResponse](
+func (s *parameterService) Update(ctx context.Context, groupID, parameterID string, req ParameterUpdateRequest) (*ParameterDetailResponse, error) {
+	return mgc_http.ExecuteSimpleRequestWithRespBody[ParameterDetailResponse](
 		ctx,
 		s.client.newRequest,
 		s.client.GetConfig(),
 		http.MethodPatch,
-		fmt.Sprintf("/v2/parameter-groups/%s", ID),
+		fmt.Sprintf("/v2/parameter-groups/%s/parameters/%s", groupID, parameterID),
 		req,
 		nil,
 	)
 }
 
-// Delete deletes a custom parameter group.
-func (s *parameterGroupService) Delete(ctx context.Context, ID string) error {
-	if ID == "" {
-		return fmt.Errorf("ID cannot be empty")
-	}
-
+func (s *parameterService) Delete(ctx context.Context, groupID, parameterID string) error {
 	return mgc_http.ExecuteSimpleRequest(
 		ctx,
 		s.client.newRequest,
 		s.client.GetConfig(),
 		http.MethodDelete,
-		fmt.Sprintf("/v2/parameter-groups/%s", ID),
+		fmt.Sprintf("/v2/parameter-groups/%s/parameters/%s", groupID, parameterID),
 		nil,
 		nil,
 	)

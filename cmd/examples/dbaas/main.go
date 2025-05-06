@@ -27,6 +27,11 @@ func main() {
 	ExampleCreateParameterGroup()
 	ExampleGetParameterGroup()
 	ExampleUpdateParameterGroup()
+	ExampleListParametersGroup()
+	ExampleListParameters()
+	ExampleCreateParameter()
+	ExampleUpdateParameter()
+	ExampleDeleteParameter()
 }
 
 func ExampleListEngines() {
@@ -259,7 +264,7 @@ func ExampleUpdateCluster() {
 }
 
 // Example for parameter groups
-func ExampleListParameters() {
+func ExampleListParametersGroup() {
 	apiToken := os.Getenv("MGC_API_TOKEN")
 	if apiToken == "" {
 		log.Fatal("MGC_API_TOKEN environment variable is not set")
@@ -267,7 +272,7 @@ func ExampleListParameters() {
 	c := client.NewMgcClient(apiToken)
 	dbaasClient := dbaas.New(c)
 
-	paramGroups, err := dbaasClient.Parameters().List(context.Background(), dbaas.ListParameterGroupsOptions{
+	paramGroups, err := dbaasClient.ParametersGroup().List(context.Background(), dbaas.ListParameterGroupsOptions{
 		Limit: helpers.IntPtr(10),
 	})
 	if err != nil {
@@ -293,7 +298,7 @@ func ExampleCreateParameterGroup() {
 
 	description := "Custom parameter group for MySQL production databases"
 
-	paramGroup, err := dbaasClient.Parameters().Create(context.Background(), dbaas.ParameterGroupCreateRequest{
+	paramGroup, err := dbaasClient.ParametersGroup().Create(context.Background(), dbaas.ParameterGroupCreateRequest{
 		Name:        "mysql-production-params",
 		EngineID:    "your-engine-id", // Replace with actual engine ID
 		Description: &description,
@@ -314,7 +319,7 @@ func ExampleGetParameterGroup() {
 	dbaasClient := dbaas.New(c)
 
 	paramGroupID := "your-parameter-group-id" // Replace with actual parameter group ID
-	paramGroup, err := dbaasClient.Parameters().Get(context.Background(), paramGroupID)
+	paramGroup, err := dbaasClient.ParametersGroup().Get(context.Background(), paramGroupID)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -337,7 +342,7 @@ func ExampleUpdateParameterGroup() {
 	newName := "mysql-optimized-params"
 	newDescription := "Optimized parameter group for MySQL high-traffic workloads"
 
-	updatedParamGroup, err := dbaasClient.Parameters().Update(context.Background(), paramGroupID, dbaas.ParameterGroupUpdateRequest{
+	updatedParamGroup, err := dbaasClient.ParametersGroup().Update(context.Background(), paramGroupID, dbaas.ParameterGroupUpdateRequest{
 		Name:        &newName,
 		Description: &newDescription,
 	})
@@ -348,4 +353,89 @@ func ExampleUpdateParameterGroup() {
 	fmt.Printf("Successfully updated parameter group %s\n", updatedParamGroup.ID)
 	fmt.Printf("  New Name: %s\n", updatedParamGroup.Name)
 	fmt.Printf("  New Description: %s\n", updatedParamGroup.Description)
+}
+
+func ExampleListParameters() {
+	apiToken := os.Getenv("MGC_API_TOKEN")
+	if apiToken == "" {
+		log.Fatal("MGC_API_TOKEN environment variable is not set")
+	}
+	c := client.NewMgcClient(apiToken)
+	dbaasClient := dbaas.New(c)
+
+	params, err := dbaasClient.Parameters().List(context.Background(), dbaas.ListParametersOptions{
+		ParameterGroupID: "88bd17e0-779c-43a5-9695-5cb9f6f918c0",
+		Limit:            helpers.IntPtr(10),
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Printf("Found %d parameters:\n", len(params))
+	for _, p := range params {
+		fmt.Printf("Parameter: %s (ID: %s) = %v\n", p.Name, p.ID, p.Value)
+	}
+}
+
+func ExampleCreateParameter() {
+	apiToken := os.Getenv("MGC_API_TOKEN")
+	if apiToken == "" {
+		log.Fatal("MGC_API_TOKEN environment variable is not set")
+	}
+	c := client.NewMgcClient(apiToken)
+	dbaasClient := dbaas.New(c)
+
+	created, err := dbaasClient.Parameters().Create(context.Background(),
+		"88bd17e0-779c-43a5-9695-5cb9f6f918c0",
+		dbaas.ParameterCreateRequest{
+			Name:  "LOWER_CASE_TABLE_NAMES",
+			Value: 1,
+		},
+	)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Printf("Created parameter with ID: %s\n", created.ID)
+}
+
+func ExampleUpdateParameter() {
+	apiToken := os.Getenv("MGC_API_TOKEN")
+	if apiToken == "" {
+		log.Fatal("MGC_API_TOKEN environment variable is not set")
+	}
+	c := client.NewMgcClient(apiToken)
+	dbaasClient := dbaas.New(c)
+
+	updated, err := dbaasClient.Parameters().Update(context.Background(),
+		"88bd17e0-779c-43a5-9695-5cb9f6f918c0",
+		"68378760-c4e0-484a-b71a-b900942e7758",
+		dbaas.ParameterUpdateRequest{
+			Value: 0,
+		},
+	)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Printf("Updated parameter %s (ID: %s) to %v\n", updated.Name, updated.ID, updated.Value)
+}
+
+func ExampleDeleteParameter() {
+	apiToken := os.Getenv("MGC_API_TOKEN")
+	if apiToken == "" {
+		log.Fatal("MGC_API_TOKEN environment variable is not set")
+	}
+	c := client.NewMgcClient(apiToken)
+	dbaasClient := dbaas.New(c)
+
+	err := dbaasClient.Parameters().Delete(context.Background(),
+		"88bd17e0-779c-43a5-9695-5cb9f6f918c0",
+		"68378760-c4e0-484a-b71a-b900942e7758",
+	)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println("Parameter deleted successfully")
 }
