@@ -54,8 +54,12 @@ func (c *DBaaSClient) Replicas() ReplicaService {
 	return &replicaService{client: c}
 }
 
-func (c *DBaaSClient) Parameters() ParameterGroupService {
+func (c *DBaaSClient) ParametersGroup() ParameterGroupService {
 	return &parameterGroupService{client: c}
+}
+
+func (c *DBaaSClient) Parameters() ParameterService {
+	return &parameterService{client: c}
 }
 
 func (c *DBaaSClient) Clusters() ClusterService {
