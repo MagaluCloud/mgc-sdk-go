@@ -570,7 +570,7 @@ func TestInstanceService_Snapshots(t *testing.T) {
 			var req SnapshotUpdateRequest
 			json.NewDecoder(r.Body).Decode(&req)
 			assertEqual(t, "updated-name", req.Name)
-			assertEqual(t, "updated description", req.Description)
+			assertEqual(t, "updated description", *req.Description)
 
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
@@ -585,7 +585,7 @@ func TestInstanceService_Snapshots(t *testing.T) {
 		client := testInstanceClient(server.URL)
 		result, err := client.UpdateSnapshot(context.Background(), "inst1", "snap1", SnapshotUpdateRequest{
 			Name:        "updated-name",
-			Description: "updated description",
+			Description: helpers.StrPtr("updated description"),
 		})
 
 		assertNoError(t, err)

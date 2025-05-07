@@ -151,13 +151,13 @@ type (
 	}
 
 	SnapshotCreateRequest struct {
-		Name        string `json:"name"`
-		Description string `json:"description,omitempty"`
+		Name        string  `json:"name"`
+		Description *string `json:"description,omitempty"`
 	}
 
 	SnapshotUpdateRequest struct {
-		Name        string `json:"name,omitempty"`
-		Description string `json:"description,omitempty"`
+		Name        string  `json:"name,omitempty"`
+		Description *string `json:"description,omitempty"`
 	}
 
 	SnapshotResponse struct {
@@ -168,8 +168,8 @@ type (
 		Name                string                 `json:"name"`
 		InstanceTypeID      string                 `json:"instance_type_id"`
 		Volume              *InstanceVolumeRequest `json:"volume,omitempty"`
-		BackupRetentionDays int                    `json:"backup_retention_days,omitempty"`
-		BackupStartAt       string                 `json:"backup_start_at,omitempty"`
+		BackupRetentionDays *int                   `json:"backup_retention_days,omitempty"`
+		BackupStartAt       *string                `json:"backup_start_at,omitempty"`
 	}
 
 	ListSnapshotOptions struct {
