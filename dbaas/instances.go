@@ -12,6 +12,11 @@ import (
 	mgc_http "github.com/MagaluCloud/mgc-sdk-go/internal/http"
 )
 
+const (
+	InstancePath = "/v2/instances"
+	SnapshotPath = "/snapshots"
+)
+
 type (
 	InstanceStatus string
 	AddressAccess  string
@@ -151,13 +156,13 @@ type (
 	}
 
 	SnapshotCreateRequest struct {
-		Name        string `json:"name"`
-		Description string `json:"description,omitempty"`
+		Name        string  `json:"name"`
+		Description *string `json:"description,omitempty"`
 	}
 
 	SnapshotUpdateRequest struct {
-		Name        string `json:"name,omitempty"`
-		Description string `json:"description,omitempty"`
+		Name        string  `json:"name,omitempty"`
+		Description *string `json:"description,omitempty"`
 	}
 
 	SnapshotResponse struct {
@@ -168,8 +173,8 @@ type (
 		Name                string                 `json:"name"`
 		InstanceTypeID      string                 `json:"instance_type_id"`
 		Volume              *InstanceVolumeRequest `json:"volume,omitempty"`
-		BackupRetentionDays int                    `json:"backup_retention_days,omitempty"`
-		BackupStartAt       string                 `json:"backup_start_at,omitempty"`
+		BackupRetentionDays *int                   `json:"backup_retention_days,omitempty"`
+		BackupStartAt       *string                `json:"backup_start_at,omitempty"`
 	}
 
 	ListSnapshotOptions struct {
@@ -332,7 +337,7 @@ func (s *instanceService) List(ctx context.Context, opts ListInstanceOptions) ([
 		s.client.newRequest,
 		s.client.GetConfig(),
 		http.MethodGet,
-		"/v2/instances",
+		InstancePath,
 		nil,
 		query,
 	)
@@ -356,7 +361,7 @@ func (s *instanceService) Get(ctx context.Context, id string, opts GetInstanceOp
 		s.client.newRequest,
 		s.client.GetConfig(),
 		http.MethodGet,
-		fmt.Sprintf("/v2/instances/%s", id),
+		fmt.Sprintf("%s/%s", InstancePath, id),
 		nil,
 		query,
 	)
@@ -370,7 +375,7 @@ func (s *instanceService) Create(ctx context.Context, req InstanceCreateRequest)
 		s.client.newRequest,
 		s.client.GetConfig(),
 		http.MethodPost,
-		"/v2/instances",
+		InstancePath,
 		req,
 		nil,
 	)
@@ -384,7 +389,7 @@ func (s *instanceService) Delete(ctx context.Context, id string) error {
 		s.client.newRequest,
 		s.client.GetConfig(),
 		http.MethodDelete,
-		fmt.Sprintf("/v2/instances/%s", id),
+		fmt.Sprintf("%s/%s", InstancePath, id),
 		nil,
 		nil,
 	)
@@ -398,7 +403,7 @@ func (s *instanceService) Update(ctx context.Context, id string, req DatabaseIns
 		s.client.newRequest,
 		s.client.GetConfig(),
 		http.MethodPatch,
-		fmt.Sprintf("/v2/instances/%s", id),
+		fmt.Sprintf("%s/%s", InstancePath, id),
 		req,
 		nil,
 	)
@@ -412,7 +417,7 @@ func (s *instanceService) Resize(ctx context.Context, id string, req InstanceRes
 		s.client.newRequest,
 		s.client.GetConfig(),
 		http.MethodPost,
-		fmt.Sprintf("/v2/instances/%s/resize", id),
+		fmt.Sprintf("%s/%s/resize", InstancePath, id),
 		req,
 		nil,
 	)
@@ -426,7 +431,7 @@ func (s *instanceService) Start(ctx context.Context, id string) (*InstanceDetail
 		s.client.newRequest,
 		s.client.GetConfig(),
 		http.MethodPost,
-		fmt.Sprintf("/v2/instances/%s/start", id),
+		fmt.Sprintf("%s/%s/start", InstancePath, id),
 		nil,
 		nil,
 	)
@@ -440,7 +445,7 @@ func (s *instanceService) Stop(ctx context.Context, id string) (*InstanceDetail,
 		s.client.newRequest,
 		s.client.GetConfig(),
 		http.MethodPost,
-		fmt.Sprintf("/v2/instances/%s/stop", id),
+		fmt.Sprintf("%s/%s/stop", InstancePath, id),
 		nil,
 		nil,
 	)
@@ -468,7 +473,7 @@ func (s *instanceService) ListSnapshots(ctx context.Context, instanceID string, 
 		s.client.newRequest,
 		s.client.GetConfig(),
 		http.MethodGet,
-		fmt.Sprintf("/v2/instances/%s/snapshots", instanceID),
+		fmt.Sprintf("%s/%s%s", InstancePath, instanceID, SnapshotPath),
 		nil,
 		query,
 	)
@@ -486,7 +491,7 @@ func (s *instanceService) CreateSnapshot(ctx context.Context, instanceID string,
 		s.client.newRequest,
 		s.client.GetConfig(),
 		http.MethodPost,
-		fmt.Sprintf("/v2/instances/%s/snapshots", instanceID),
+		fmt.Sprintf("%s/%s%s", InstancePath, instanceID, SnapshotPath),
 		req,
 		nil,
 	)
@@ -499,7 +504,7 @@ func (s *instanceService) GetSnapshot(ctx context.Context, instanceID, snapshotI
 		s.client.newRequest,
 		s.client.GetConfig(),
 		http.MethodGet,
-		fmt.Sprintf("/v2/instances/%s/snapshots/%s", instanceID, snapshotID),
+		fmt.Sprintf("%s/%s%s/%s", InstancePath, instanceID, SnapshotPath, snapshotID),
 		nil,
 		nil,
 	)
@@ -512,7 +517,7 @@ func (s *instanceService) UpdateSnapshot(ctx context.Context, instanceID, snapsh
 		s.client.newRequest,
 		s.client.GetConfig(),
 		http.MethodPatch,
-		fmt.Sprintf("/v2/instances/%s/snapshots/%s", instanceID, snapshotID),
+		fmt.Sprintf("%s/%s%s/%s", InstancePath, instanceID, SnapshotPath, snapshotID),
 		req,
 		nil,
 	)
@@ -525,7 +530,7 @@ func (s *instanceService) DeleteSnapshot(ctx context.Context, instanceID, snapsh
 		s.client.newRequest,
 		s.client.GetConfig(),
 		http.MethodDelete,
-		fmt.Sprintf("/v2/instances/%s/snapshots/%s", instanceID, snapshotID),
+		fmt.Sprintf("%s/%s%s/%s", InstancePath, instanceID, SnapshotPath, snapshotID),
 		nil,
 		nil,
 	)
@@ -538,7 +543,7 @@ func (s *instanceService) RestoreSnapshot(ctx context.Context, instanceID, snaps
 		s.client.newRequest,
 		s.client.GetConfig(),
 		http.MethodPost,
-		fmt.Sprintf("/v2/instances/%s/snapshots/%s/restore", instanceID, snapshotID),
+		fmt.Sprintf("%s/%s%s/%s/restore", InstancePath, instanceID, SnapshotPath, snapshotID),
 		req,
 		nil,
 	)
