@@ -282,7 +282,7 @@ func ExampleListParametersGroup() {
 	fmt.Printf("Found %d parameter groups:\n", len(paramGroups))
 	for _, pg := range paramGroups {
 		fmt.Printf("Parameter Group: %s (ID: %s)\n", pg.Name, pg.ID)
-		fmt.Printf("  Description: %s\n", pg.Description)
+		fmt.Printf("  Description: %s\n", *pg.Description)
 		fmt.Printf("  Type: %s\n", pg.Type)
 		fmt.Printf("  Engine ID: %s\n", pg.EngineID)
 	}
@@ -325,7 +325,7 @@ func ExampleGetParameterGroup() {
 	}
 
 	fmt.Printf("Parameter Group Details for %s (ID: %s):\n", paramGroup.Name, paramGroup.ID)
-	fmt.Printf("  Description: %s\n", paramGroup.Description)
+	fmt.Printf("  Description: %s\n", *paramGroup.Description)
 	fmt.Printf("  Type: %s\n", paramGroup.Type)
 	fmt.Printf("  Engine ID: %s\n", paramGroup.EngineID)
 }
@@ -352,7 +352,7 @@ func ExampleUpdateParameterGroup() {
 
 	fmt.Printf("Successfully updated parameter group %s\n", updatedParamGroup.ID)
 	fmt.Printf("  New Name: %s\n", updatedParamGroup.Name)
-	fmt.Printf("  New Description: %s\n", updatedParamGroup.Description)
+	fmt.Printf("  New Description: %s\n", *updatedParamGroup.Description)
 }
 
 func ExampleListParameters() {

@@ -18,6 +18,9 @@ const (
 	ParameterGroupTypeSystem ParameterGroupType = "SYSTEM"
 	// ParameterGroupTypeUser represents a user-defined parameter group
 	ParameterGroupTypeUser ParameterGroupType = "USER"
+
+	ErrorIDEmpty        = "ID cannot be empty"
+	PathParametersGroup = "/v2/parameter-groups"
 )
 
 type (
@@ -51,7 +54,7 @@ type (
 	ParameterGroupDetailResponse struct {
 		ID          string             `json:"id"`
 		Name        string             `json:"name"`
-		Description string             `json:"description"`
+		Description *string            `json:"description,omitempty"`
 		Type        ParameterGroupType `json:"type"`
 		EngineID    string             `json:"engine_id"`
 	}
@@ -108,7 +111,7 @@ func (s *parameterGroupService) List(ctx context.Context, opts ListParameterGrou
 		s.client.newRequest,
 		s.client.GetConfig(),
 		http.MethodGet,
-		"/v2/parameter-groups",
+		PathParametersGroup,
 		nil,
 		query,
 	)
@@ -126,7 +129,7 @@ func (s *parameterGroupService) Create(ctx context.Context, req ParameterGroupCr
 		s.client.newRequest,
 		s.client.GetConfig(),
 		http.MethodPost,
-		"/v2/parameter-groups",
+		PathParametersGroup,
 		req,
 		nil,
 	)
@@ -135,7 +138,7 @@ func (s *parameterGroupService) Create(ctx context.Context, req ParameterGroupCr
 // Get retrieves details of a specific parameter group by its ID.
 func (s *parameterGroupService) Get(ctx context.Context, ID string) (*ParameterGroupDetailResponse, error) {
 	if ID == "" {
-		return nil, fmt.Errorf("ID cannot be empty")
+		return nil, fmt.Errorf(ErrorIDEmpty)
 	}
 
 	return mgc_http.ExecuteSimpleRequestWithRespBody[ParameterGroupDetailResponse](
@@ -143,7 +146,7 @@ func (s *parameterGroupService) Get(ctx context.Context, ID string) (*ParameterG
 		s.client.newRequest,
 		s.client.GetConfig(),
 		http.MethodGet,
-		fmt.Sprintf("/v2/parameter-groups/%s", ID),
+		fmt.Sprintf(PathParametersGroup+"/%s", ID),
 		nil,
 		nil,
 	)
@@ -152,7 +155,7 @@ func (s *parameterGroupService) Get(ctx context.Context, ID string) (*ParameterG
 // Update updates the name or description of a parameter group.
 func (s *parameterGroupService) Update(ctx context.Context, ID string, req ParameterGroupUpdateRequest) (*ParameterGroupDetailResponse, error) {
 	if ID == "" {
-		return nil, fmt.Errorf("ID cannot be empty")
+		return nil, fmt.Errorf(ErrorIDEmpty)
 	}
 
 	return mgc_http.ExecuteSimpleRequestWithRespBody[ParameterGroupDetailResponse](
@@ -160,7 +163,7 @@ func (s *parameterGroupService) Update(ctx context.Context, ID string, req Param
 		s.client.newRequest,
 		s.client.GetConfig(),
 		http.MethodPatch,
-		fmt.Sprintf("/v2/parameter-groups/%s", ID),
+		fmt.Sprintf(PathParametersGroup+"/%s", ID),
 		req,
 		nil,
 	)
@@ -169,7 +172,7 @@ func (s *parameterGroupService) Update(ctx context.Context, ID string, req Param
 // Delete deletes a custom parameter group.
 func (s *parameterGroupService) Delete(ctx context.Context, ID string) error {
 	if ID == "" {
-		return fmt.Errorf("ID cannot be empty")
+		return fmt.Errorf(ErrorIDEmpty)
 	}
 
 	return mgc_http.ExecuteSimpleRequest(
@@ -177,7 +180,7 @@ func (s *parameterGroupService) Delete(ctx context.Context, ID string) error {
 		s.client.newRequest,
 		s.client.GetConfig(),
 		http.MethodDelete,
-		fmt.Sprintf("/v2/parameter-groups/%s", ID),
+		fmt.Sprintf(PathParametersGroup+"/%s", ID),
 		nil,
 		nil,
 	)
