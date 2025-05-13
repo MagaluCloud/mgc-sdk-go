@@ -20,6 +20,7 @@ func main() {
 	id := ExampleCreateInstance()
 	time.Sleep(5 * time.Second)
 	ExampleGetInstance(id)
+	ExampleInitLog(id)
 	ExampleRenameAndRetypeInstance(id)
 	ExampleDeleteInstance(id)
 }
@@ -214,7 +215,7 @@ func ExampleListMachineTypes() {
 	computeClient := compute.New(c)
 
 	// List machine types
-	machineTypes, err := computeClient.MachineTypes().List(context.Background(), compute.MachineTypeListOptions{})
+	machineTypes, err := computeClient.InstanceTypes().List(context.Background(), compute.InstanceTypeListOptions{})
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -256,4 +257,21 @@ func ExampleListImages() {
 		fmt.Printf("  End Life At: %s\n", *img.EndLifeAt)
 		fmt.Printf("  Minimum Requirements: %d VCPUs, %d RAM, %d Disk\n", img.MinimumRequirements.VCPU, img.MinimumRequirements.RAM, img.MinimumRequirements.Disk)
 	}
+}
+
+func ExampleInitLog(id string) {
+	apiToken := os.Getenv("MGC_API_TOKEN")
+	if apiToken == "" {
+		log.Fatal("MGC_API_TOKEN environment variable is not set")
+	}
+	c := client.NewMgcClient(apiToken)
+	computeClient := compute.New(c)
+	ctx := context.Background()
+
+	initLog, err := computeClient.Instances().InitLog(ctx, id, helpers.IntPtr(10))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println("Init Log: ", initLog)
 }

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"strconv"
 	"testing"
 	"time"
@@ -1177,6 +1178,93 @@ func TestInstanceService_GetFirstWindowsPassword(t *testing.T) {
 				if !got.Instance.CreatedAt.Equal(tt.want.Instance.CreatedAt) {
 					t.Errorf("GetFirstWindowsPassword() got CreatedAt = %v, want %v", got.Instance.CreatedAt, tt.want.Instance.CreatedAt)
 				}
+			}
+		})
+	}
+}
+
+func TestInstanceService_InitLog(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name       string
+		id         string
+		maxLines   *int
+		response   string
+		statusCode int
+		want       []string
+		wantErr    bool
+	}{
+		{
+			name:       "successful log retrieval",
+			id:         "inst1",
+			maxLines:   intPtr(10),
+			response:   `["log line 1", "log line 2", "log line 3"]`,
+			statusCode: http.StatusOK,
+			want:       []string{"log line 1", "log line 2", "log line 3"},
+			wantErr:    false,
+		},
+		{
+			name:       "empty instance id",
+			id:         "",
+			response:   `{"error": "id cannot be empty"}`,
+			statusCode: http.StatusBadRequest,
+			wantErr:    true,
+		},
+		{
+			name:       "instance not found",
+			id:         "nonexistent",
+			response:   `{"error": "instance not found"}`,
+			statusCode: http.StatusNotFound,
+			wantErr:    true,
+		},
+		{
+			name:       "server error",
+			id:         "inst1",
+			response:   `{"error": "internal server error"}`,
+			statusCode: http.StatusInternalServerError,
+			wantErr:    true,
+		},
+		{
+			name:       "malformed json",
+			id:         "inst1",
+			response:   `["log line 1", "log line 2"`,
+			statusCode: http.StatusOK,
+			wantErr:    true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				// Verifica se o endpoint está correto
+				expectedPath := fmt.Sprintf("/compute/v1/instances/%s/init-logs", tt.id)
+				if r.URL.Path != expectedPath {
+					t.Errorf("expected path %s, got %s", expectedPath, r.URL.Path)
+				}
+
+				// Verifica se o parâmetro max_lines está presente quando fornecido
+				if tt.maxLines != nil {
+					maxLines := r.URL.Query().Get("max_lines")
+					if maxLines != strconv.Itoa(*tt.maxLines) {
+						t.Errorf("expected max_lines %d, got %s", *tt.maxLines, maxLines)
+					}
+				}
+
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(tt.statusCode)
+				w.Write([]byte(tt.response))
+			}))
+			defer server.Close()
+
+			client := testClient(server.URL)
+			got, err := client.Instances().InitLog(context.Background(), tt.id, tt.maxLines)
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("InitLog() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !tt.wantErr && !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("InitLog() got = %v, want %v", got, tt.want)
 			}
 		})
 	}
