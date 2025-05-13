@@ -16,8 +16,9 @@ import (
 func main() {
 	ExampleListMachineTypes()
 	ExampleListImages()
-	ExampleListInstances()
-	id := ExampleCreateInstance()
+	id := "" // comment and uncomment to run the examples
+	// id := ExampleCreateInstance() // uncomment to create a new instance
+	// id := ExampleListInstances() // uncomment to list instances and get the id of the last instance
 	time.Sleep(5 * time.Second)
 	ExampleGetInstance(id)
 	ExampleInitLog(id)
@@ -52,7 +53,7 @@ func ExampleRenameAndRetypeInstance(id string) {
 	fmt.Println("Instance machine type changed successfully")
 }
 
-func ExampleListInstances() {
+func ExampleListInstances() string {
 	// Create a new client
 	apiToken := os.Getenv("MGC_API_TOKEN")
 	if apiToken == "" {
@@ -71,9 +72,10 @@ func ExampleListInstances() {
 	if err != nil {
 		log.Fatal(err)
 	}
-
+	result := ""
 	// Print instance details
 	for _, instance := range instances {
+		result = instance.ID
 		fmt.Printf("Instance: %s (ID: %s)\n", *instance.Name, instance.ID)
 		fmt.Printf("  Machine Type: %s\n", *instance.MachineType.Name)
 		fmt.Printf("  Image: %s\n", *instance.Image.Name)
@@ -82,9 +84,11 @@ func ExampleListInstances() {
 		fmt.Printf("  Created At: %s\n", instance.CreatedAt)
 		fmt.Printf("  Updated At: %s\n", instance.UpdatedAt)
 		if instance.Network != nil {
-			if instance.Network.Vpc.ID != nil {
-				fmt.Printf("  VPC ID: %s\n", *instance.Network.Vpc.ID)
-				fmt.Printf("  VPC Name: %s\n", *instance.Network.Vpc.Name)
+			if instance.Network.Vpc != nil {
+				if instance.Network.Vpc.ID != nil {
+					fmt.Printf("  VPC ID: %s\n", *instance.Network.Vpc.ID)
+					fmt.Printf("  VPC Name: %s\n", *instance.Network.Vpc.Name)
+				}
 			}
 			if instance.Network.Interfaces != nil {
 				for _, ni := range *instance.Network.Interfaces {
@@ -102,6 +106,7 @@ func ExampleListInstances() {
 			}
 		}
 	}
+	return result
 }
 
 func ExampleCreateInstance() string {
@@ -260,6 +265,7 @@ func ExampleListImages() {
 }
 
 func ExampleInitLog(id string) {
+	awaitRunningCompleted(id)
 	apiToken := os.Getenv("MGC_API_TOKEN")
 	if apiToken == "" {
 		log.Fatal("MGC_API_TOKEN environment variable is not set")
@@ -268,10 +274,54 @@ func ExampleInitLog(id string) {
 	computeClient := compute.New(c)
 	ctx := context.Background()
 
-	initLog, err := computeClient.Instances().InitLog(ctx, id, helpers.IntPtr(10))
+	initLog, err := computeClient.Instances().InitLog(ctx, id, helpers.IntPtr(50))
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	fmt.Println("Init Log: ", initLog)
+}
+
+func awaitRunningCompleted(id string) {
+	apiToken := os.Getenv("MGC_API_TOKEN")
+	if apiToken == "" {
+		log.Fatal("MGC_API_TOKEN environment variable is not set")
+	}
+	c := client.NewMgcClient(apiToken)
+	computeClient := compute.New(c)
+	ctx := context.Background()
+
+	instance, err := computeClient.Instances().Get(ctx, id, []string{})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	timeout := time.After(5 * time.Minute)
+
+	for instance.State != "running" {
+		select {
+		case <-timeout:
+			log.Fatal("Instance is not running after 5 minutes")
+		default:
+			time.Sleep(1 * time.Second)
+			instance, err = computeClient.Instances().Get(ctx, id, []string{})
+			if err != nil {
+				log.Fatal(err)
+			}
+		}
+	}
+
+	for instance.Status != "completed" {
+		select {
+		case <-timeout:
+			log.Fatal("Instance is not completed after 5 minutes")
+		default:
+			time.Sleep(1 * time.Second)
+			instance, err = computeClient.Instances().Get(ctx, id, []string{})
+			if err != nil {
+				log.Fatal(err)
+			}
+		}
+	}
+	fmt.Println("Instance is running")
 }

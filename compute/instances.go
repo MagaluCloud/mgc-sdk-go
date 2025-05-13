@@ -142,6 +142,10 @@ type (
 		Vpc        *IDOrName           `json:"vpc,omitempty"`
 		Interfaces *[]NetworkInterface `json:"interfaces,omitempty"`
 	}
+
+	InitLogResponse struct {
+		Logs []string `json:"logs"`
+	}
 )
 
 // InstanceService provides operations for managing virtual machine instances
@@ -192,7 +196,7 @@ type InstanceService interface {
 	DetachNetworkInterface(ctx context.Context, req NICRequest) error
 
 	// Retrieve instance init log output
-	InitLog(ctx context.Context, id string, maxLines *int) ([]string, error)
+	InitLog(ctx context.Context, id string, maxLines *int) (*InitLogResponse, error)
 }
 
 type instanceService struct {
@@ -422,7 +426,7 @@ func (s *instanceService) DetachNetworkInterface(ctx context.Context, req NICReq
 	)
 }
 
-func (s *instanceService) InitLog(ctx context.Context, id string, maxLines *int) ([]string, error) {
+func (s *instanceService) InitLog(ctx context.Context, id string, maxLines *int) (*InitLogResponse, error) {
 	if id == "" {
 		return nil, &client.ValidationError{Field: "id", Message: "cannot be empty"}
 	}
@@ -434,14 +438,14 @@ func (s *instanceService) InitLog(ctx context.Context, id string, maxLines *int)
 
 	q := req.URL.Query()
 	if maxLines != nil {
-		q.Add("max_lines", strconv.Itoa(*maxLines))
+		q.Add("max-lines-count", strconv.Itoa(*maxLines))
 	}
 	req.URL.RawQuery = q.Encode()
 
-	var response []string
+	var response InitLogResponse
 	resp, err := mgc_http.Do(s.client.GetConfig(), ctx, req, &response)
 	if err != nil {
 		return nil, err
 	}
-	return *resp, nil
+	return resp, nil
 }
