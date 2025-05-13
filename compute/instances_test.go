@@ -1191,17 +1191,19 @@ func TestInstanceService_InitLog(t *testing.T) {
 		maxLines   *int
 		response   string
 		statusCode int
-		want       []string
+		want       *InitLogResponse
 		wantErr    bool
 	}{
 		{
 			name:       "successful log retrieval",
 			id:         "inst1",
 			maxLines:   intPtr(10),
-			response:   `["log line 1", "log line 2", "log line 3"]`,
+			response:   `{"logs": ["log line 1", "log line 2", "log line 3"]}`,
 			statusCode: http.StatusOK,
-			want:       []string{"log line 1", "log line 2", "log line 3"},
-			wantErr:    false,
+			want: &InitLogResponse{
+				Logs: []string{"log line 1", "log line 2", "log line 3"},
+			},
+			wantErr: false,
 		},
 		{
 			name:       "empty instance id",
@@ -1227,7 +1229,7 @@ func TestInstanceService_InitLog(t *testing.T) {
 		{
 			name:       "malformed json",
 			id:         "inst1",
-			response:   `["log line 1", "log line 2"`,
+			response:   `{"logs": ["log line 1", "log line 2"`,
 			statusCode: http.StatusOK,
 			wantErr:    true,
 		},
@@ -1244,9 +1246,9 @@ func TestInstanceService_InitLog(t *testing.T) {
 
 				// Verifica se o parâmetro max_lines está presente quando fornecido
 				if tt.maxLines != nil {
-					maxLines := r.URL.Query().Get("max_lines")
+					maxLines := r.URL.Query().Get("max-lines-count")
 					if maxLines != strconv.Itoa(*tt.maxLines) {
-						t.Errorf("expected max_lines %d, got %s", *tt.maxLines, maxLines)
+						t.Errorf("expected max-lines-count %d, got %s", *tt.maxLines, maxLines)
 					}
 				}
 
