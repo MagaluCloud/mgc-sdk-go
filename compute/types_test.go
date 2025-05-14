@@ -10,7 +10,7 @@ import (
 func TestMachineTypeService_List(t *testing.T) {
 	tests := []struct {
 		name       string
-		opts       MachineTypeListOptions
+		opts       InstanceTypeListOptions
 		response   string
 		statusCode int
 		want       int
@@ -19,9 +19,9 @@ func TestMachineTypeService_List(t *testing.T) {
 	}{
 		{
 			name: "basic list",
-			opts: MachineTypeListOptions{},
+			opts: InstanceTypeListOptions{},
 			response: `{
-				"machine_types": [
+				"instance_types": [
 					{"id": "mt1", "name": "small", "vcpus": 2, "ram": 4096, "disk": 50},
 					{"id": "mt2", "name": "medium", "vcpus": 4, "ram": 8192, "disk": 100}
 				]
@@ -32,12 +32,12 @@ func TestMachineTypeService_List(t *testing.T) {
 		},
 		{
 			name: "with pagination",
-			opts: MachineTypeListOptions{
+			opts: InstanceTypeListOptions{
 				Limit:  intPtr(1),
 				Offset: intPtr(1),
 			},
 			response: `{
-				"machine_types": [
+				"instance_types": [
 					{"id": "mt2", "name": "medium", "vcpus": 4, "ram": 8192, "disk": 100}
 				]
 			}`,
@@ -55,11 +55,11 @@ func TestMachineTypeService_List(t *testing.T) {
 		},
 		{
 			name: "with sorting",
-			opts: MachineTypeListOptions{
+			opts: InstanceTypeListOptions{
 				Sort: strPtr("vcpus:asc"),
 			},
 			response: `{
-				"machine_types": [
+				"instance_types": [
 					{"id": "mt1", "name": "small", "vcpus": 2, "ram": 4096},
 					{"id": "mt2", "name": "medium", "vcpus": 4, "ram": 8192}
 				]
@@ -75,11 +75,11 @@ func TestMachineTypeService_List(t *testing.T) {
 		},
 		{
 			name: "with availability zone",
-			opts: MachineTypeListOptions{
+			opts: InstanceTypeListOptions{
 				AvailabilityZone: "zone1",
 			},
 			response: `{
-				"machine_types": [
+				"instance_types": [
 					{"id": "mt1", "name": "small", "vcpus": 2, "ram": 4096, "availability_zones": ["zone1"]}
 				]
 			}`,
@@ -94,28 +94,28 @@ func TestMachineTypeService_List(t *testing.T) {
 		},
 		{
 			name:       "server error",
-			opts:       MachineTypeListOptions{},
+			opts:       InstanceTypeListOptions{},
 			response:   `{"error": "internal server error"}`,
 			statusCode: http.StatusInternalServerError,
 			wantErr:    true,
 		},
 		{
 			name:       "empty response",
-			opts:       MachineTypeListOptions{},
+			opts:       InstanceTypeListOptions{},
 			response:   "",
 			statusCode: http.StatusOK,
 			wantErr:    true,
 		},
 		{
 			name:       "malformed json",
-			opts:       MachineTypeListOptions{},
-			response:   `{"machine_types": [{"id": "broken"}`,
+			opts:       InstanceTypeListOptions{},
+			response:   `{"instance_types": [{"id": "broken"}`,
 			statusCode: http.StatusOK,
 			wantErr:    true,
 		},
 		{
 			name: "invalid pagination values",
-			opts: MachineTypeListOptions{
+			opts: InstanceTypeListOptions{
 				Limit:  intPtr(-1),
 				Offset: intPtr(-1),
 			},
@@ -146,14 +146,14 @@ func TestMachineTypeService_List(t *testing.T) {
 			defer server.Close()
 
 			client := testClient(server.URL)
-			got, err := client.MachineTypes().List(context.Background(), tt.opts)
+			got, err := client.InstanceTypes().List(context.Background(), tt.opts)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("List() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !tt.wantErr && len(got) != tt.want {
-				t.Errorf("List() got %v machine types, want %v", len(got), tt.want)
+				t.Errorf("List() got %v instance types, want %v", len(got), tt.want)
 			}
 		})
 	}

@@ -9,8 +9,15 @@ import (
 	mgc_http "github.com/MagaluCloud/mgc-sdk-go/internal/http"
 )
 
-// MachineType represents a virtual machine instance type configuration
-type MachineType struct {
+type Meta struct {
+	Limit  int `json:"limit"`
+	Offset int `json:"offset"`
+	Count  int `json:"count"`
+	Total  int `json:"total"`
+}
+
+// InstanceType represents a virtual machine instance type configuration
+type InstanceType struct {
 	ID                string    `json:"id"`
 	Name              string    `json:"name"`
 	VCPUs             int       `json:"vcpus"`
@@ -18,22 +25,26 @@ type MachineType struct {
 	Disk              int       `json:"disk"`
 	GPU               *int      `json:"gpu,omitempty"`
 	Status            string    `json:"status"`
-	SKU               *string   `json:"sku,omitempty"`
 	AvailabilityZones *[]string `json:"availability_zones,omitempty"`
 }
 
-// MachineTypeService provides operations for querying available machine types
-type MachineTypeService interface {
-	// List returns all available machine types with optional filtering
-	List(ctx context.Context, opts MachineTypeListOptions) ([]MachineType, error)
+type InstanceTypeList struct {
+	InstanceTypes []InstanceType `json:"instance_types"`
+	Meta          Meta           `json:"meta"`
 }
 
-type machineTypeService struct {
+// InstanceTypeService provides operations for querying available machine types
+type InstanceTypeService interface {
+	// List returns all available machine types with optional filtering
+	List(ctx context.Context, opts InstanceTypeListOptions) ([]InstanceType, error)
+}
+
+type instanceTypeService struct {
 	client *VirtualMachineClient
 }
 
-// MachineTypeListOptions defines parameters for filtering and pagination of machine type lists
-type MachineTypeListOptions struct {
+// InstanceTypeListOptions defines parameters for filtering and pagination of machine type lists
+type InstanceTypeListOptions struct {
 	Limit            *int    `url:"_limit,omitempty"`
 	Offset           *int    `url:"_offset,omitempty"`
 	Sort             *string `url:"_sort,omitempty"`
@@ -41,8 +52,8 @@ type MachineTypeListOptions struct {
 }
 
 // List retrieves all available machine types
-func (s *machineTypeService) List(ctx context.Context, opts MachineTypeListOptions) ([]MachineType, error) {
-	req, err := s.client.newRequest(ctx, http.MethodGet, "/v1/machine-types", nil)
+func (s *instanceTypeService) List(ctx context.Context, opts InstanceTypeListOptions) ([]InstanceType, error) {
+	req, err := s.client.newRequest(ctx, http.MethodGet, "/v1/instance-types", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -62,9 +73,7 @@ func (s *machineTypeService) List(ctx context.Context, opts MachineTypeListOptio
 	}
 	req.URL.RawQuery = q.Encode()
 
-	var response struct {
-		MachineTypes []MachineType `json:"machine_types"`
-	}
+	var response InstanceTypeList
 	resp, err := mgc_http.Do(s.client.GetConfig(), ctx, req, &response)
 	if err != nil {
 		return nil, err
@@ -74,6 +83,6 @@ func (s *machineTypeService) List(ctx context.Context, opts MachineTypeListOptio
 		return nil, fmt.Errorf("empty response")
 	}
 
-	return resp.MachineTypes, nil
+	return response.InstanceTypes, nil
 
 }

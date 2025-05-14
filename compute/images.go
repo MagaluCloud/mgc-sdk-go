@@ -41,13 +41,14 @@ type (
 )
 
 const (
-	ImageStatusActive     ImageStatus = "active"
-	ImageStatusDeprecated ImageStatus = "deprecated"
-	ImageStatusDeleted    ImageStatus = "deleted"
-	ImageStatusPending    ImageStatus = "pending"
-	ImageStatusCreating   ImageStatus = "creating"
-	ImageStatusImporting  ImageStatus = "importing"
-	ImageStatusError      ImageStatus = "error"
+	ImageStatusActive        ImageStatus = "active"
+	ImageStatusDeprecated    ImageStatus = "deprecated"
+	ImageStatusDeleted       ImageStatus = "deleted"
+	ImageStatusPending       ImageStatus = "pending"
+	ImageStatusCreating      ImageStatus = "creating"
+	ImageStatusImporting     ImageStatus = "importing"
+	ImageStatusError         ImageStatus = "error"
+	ImageStatusDeletingError ImageStatus = "deleting_error"
 )
 
 // ImageService provides operations for managing virtual machine images

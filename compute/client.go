@@ -44,8 +44,8 @@ func (c *VirtualMachineClient) Images() ImageService {
 	return &imageService{client: c}
 }
 
-func (c *VirtualMachineClient) MachineTypes() MachineTypeService {
-	return &machineTypeService{client: c}
+func (c *VirtualMachineClient) InstanceTypes() InstanceTypeService {
+	return &instanceTypeService{client: c}
 }
 
 func (c *VirtualMachineClient) Snapshots() SnapshotService {
