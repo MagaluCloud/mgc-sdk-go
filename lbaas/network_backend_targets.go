@@ -25,3 +25,11 @@ type (
 		client *LbaasClient
 	}
 )
+
+func (s *networkBackendTargetService) Create(ctx context.Context, req CreateNetworkBackendTargetRequest) (string, error) {
+	panic("not implemented")
+}
+
+func (s *networkBackendTargetService) Delete(ctx context.Context, req DeleteNetworkBackendTargetRequest) error {
+	panic("not implemented")
+}
