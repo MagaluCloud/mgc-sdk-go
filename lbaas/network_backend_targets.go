@@ -27,9 +27,11 @@ type (
 )
 
 func (s *networkBackendTargetService) Create(ctx context.Context, req CreateNetworkBackendTargetRequest) (string, error) {
+	// POST /v0beta1/network-load-balancers/{load_balancer_id}/backends/{backend_id}/targets
 	panic("not implemented")
 }
 
 func (s *networkBackendTargetService) Delete(ctx context.Context, req DeleteNetworkBackendTargetRequest) error {
+	// DELETE /v0beta1/network-load-balancers/{load_balancer_id}/backends/{backend_id}/targets/{target_id}
 	panic("not implemented")
 }

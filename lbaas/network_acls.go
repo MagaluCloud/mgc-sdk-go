@@ -28,9 +28,11 @@ type (
 )
 
 func (s *networkACLService) Create(ctx context.Context, req CreateNetworkACLRequest) (string, error) {
+	// GET /v0beta1/network-load-balancers/{load_balancer_id}/acls
 	panic("not implemented")
 }
 
 func (s *networkACLService) Delete(ctx context.Context, req DeleteNetworkACLRequest) error {
+	// DELETE /v0beta1/network-load-balancers/{load_balancer_id}/acls/{acl_id}
 	panic("not implemented")
 }
