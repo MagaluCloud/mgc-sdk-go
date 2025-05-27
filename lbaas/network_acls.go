@@ -8,12 +8,12 @@ import (
 
 type (
 	CreateNetworkACLRequest struct {
-		Name           string `json:"name"`
-		Ethertype      string `json:"ethertype"` // ipv4, ipv6
-		LoadBalancerID string `json:"load_balancer_id"`
-		Action         string `json:"action"`   // ALLOW, DENY, DENY_UNSPECIFIED
-		Protocol       string `json:"protocol"` // tcp, tls
-		RemoteIPPrefix string `json:"remote_ip_prefix"`
+		Name           *string `json:"name,omitempty"`
+		Ethertype      string  `json:"ethertype"` // ipv4, ipv6
+		LoadBalancerID string  `json:"load_balancer_id"`
+		Action         string  `json:"action"`   // ALLOW, DENY, DENY_UNSPECIFIED
+		Protocol       string  `json:"protocol"` // tcp, tls
+		RemoteIPPrefix string  `json:"remote_ip_prefix"`
 	}
 
 	DeleteNetworkACLRequest struct {
