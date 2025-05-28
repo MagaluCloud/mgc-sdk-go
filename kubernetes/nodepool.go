@@ -62,6 +62,7 @@ type (
 		AutoScale        *AutoScale        `json:"auto_scale,omitempty"`
 		Status           Status            `json:"status"`
 		Flavor           string            `json:"flavor"`
+		MaxNodePools     *int              `json:"max_node_pools,omitempty"`
 	}
 
 	Addresses struct {
@@ -116,12 +117,13 @@ type (
 	}
 
 	CreateNodePoolRequest struct {
-		Name      string     `json:"name"`
-		Flavor    string     `json:"flavor"`
-		Replicas  int        `json:"replicas"`
-		Tags      *[]string  `json:"tags,omitempty"`
-		Taints    *[]Taint   `json:"taints,omitempty"`
-		AutoScale *AutoScale `json:"auto_scale,omitempty"`
+		Name         string     `json:"name"`
+		Flavor       string     `json:"flavor"`
+		Replicas     int        `json:"replicas"`
+		Tags         *[]string  `json:"tags,omitempty"`
+		Taints       *[]Taint   `json:"taints,omitempty"`
+		AutoScale    *AutoScale `json:"auto_scale,omitempty"`
+		MaxNodePools *int       `json:"max_node_pools,omitempty"`
 	}
 
 	PatchNodePoolRequest struct {
