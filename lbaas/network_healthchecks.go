@@ -1,19 +1,85 @@
 package lbaas
 
-import "context"
+import (
+	"context"
+	"strconv"
+
+	mgc_http "github.com/MagaluCloud/mgc-sdk-go/internal/http"
+)
 
 type (
-	CreateNetworkHealthCheckRequest struct{}
-	DeleteNetworkHealthCheckRequest struct{}
-	GetNetworkHealthCheckRequest    struct{}
-	ListNetworkHealthCheckRequest   struct{}
-	UpdateNetworkHealthCheckRequest struct{}
+	CreateNetworkHealthCheckRequest struct {
+		LoadBalancerID          string  `json:"-"`
+		Name                    string  `json:"name"`
+		Description             *string `json:"description,omitempty"`
+		Protocol                string  `json:"protocol"`
+		Path                    *string `json:"path,omitempty"`
+		Port                    int     `json:"port"`
+		HealthyStatusCode       *int    `json:"healthy_status_code,omitempty"`
+		IntervalSeconds         *int    `json:"interval_seconds,omitempty"`
+		TimeoutSeconds          *int    `json:"timeout_seconds,omitempty"`
+		InitialDelaySeconds     *int    `json:"initial_delay_seconds,omitempty"`
+		HealthyThresholdCount   *int    `json:"healthy_threshold_count,omitempty"`
+		UnhealthyThresholdCount *int    `json:"unhealthy_threshold_count,omitempty"`
+	}
+
+	DeleteNetworkHealthCheckRequest struct {
+		LoadBalancerID string `json:"-"`
+		HealthCheckID  string `json:"-"`
+	}
+
+	GetNetworkHealthCheckRequest struct {
+		LoadBalancerID string `json:"-"`
+		HealthCheckID  string `json:"-"`
+	}
+
+	ListNetworkHealthCheckRequest struct {
+		LoadBalancerID string  `json:"-"`
+		Offset         *int    `json:"-"`
+		Limit          *int    `json:"-"`
+		Sort           *string `json:"-"`
+	}
+
+	UpdateNetworkHealthCheckRequest struct {
+		LoadBalancerID          string  `json:"-"`
+		HealthCheckID           string  `json:"-"`
+		Protocol                string  `json:"protocol"`
+		Path                    *string `json:"path,omitempty"`
+		Port                    int     `json:"port"`
+		HealthyStatusCode       *int    `json:"healthy_status_code,omitempty"`
+		IntervalSeconds         *int    `json:"interval_seconds,omitempty"`
+		TimeoutSeconds          *int    `json:"timeout_seconds,omitempty"`
+		InitialDelaySeconds     *int    `json:"initial_delay_seconds,omitempty"`
+		HealthyThresholdCount   *int    `json:"healthy_threshold_count,omitempty"`
+		UnhealthyThresholdCount *int    `json:"unhealthy_threshold_count,omitempty"`
+	}
+
+	NetworkHealthCheckResponse struct {
+		ID                      string  `json:"id"`
+		Name                    string  `json:"name"`
+		Description             *string `json:"description,omitempty"`
+		Protocol                string  `json:"protocol"`
+		Path                    *string `json:"path,omitempty"`
+		Port                    int     `json:"port"`
+		HealthyStatusCode       int     `json:"healthy_status_code"`
+		IntervalSeconds         int     `json:"interval_seconds"`
+		TimeoutSeconds          int     `json:"timeout_seconds"`
+		InitialDelaySeconds     int     `json:"initial_delay_seconds"`
+		HealthyThresholdCount   int     `json:"healthy_threshold_count"`
+		UnhealthyThresholdCount int     `json:"unhealthy_threshold_count"`
+		CreatedAt               string  `json:"created_at"`
+		UpdatedAt               string  `json:"updated_at"`
+	}
+
+	NetworkPaginatedHealthCheckResponse struct {
+		Results []NetworkHealthCheckResponse `json:"results"`
+	}
 
 	NetworkHealthCheckService interface {
-		Create(ctx context.Context, req CreateNetworkHealthCheckRequest) (string, error)
+		Create(ctx context.Context, req CreateNetworkHealthCheckRequest) (*NetworkHealthCheckResponse, error)
 		Delete(ctx context.Context, req DeleteNetworkHealthCheckRequest) error
-		Get(ctx context.Context, req GetNetworkHealthCheckRequest) (*any, error)
-		List(ctx context.Context, req ListNetworkHealthCheckRequest) ([]any, error)
+		Get(ctx context.Context, req GetNetworkHealthCheckRequest) (*NetworkHealthCheckResponse, error)
+		List(ctx context.Context, req ListNetworkHealthCheckRequest) ([]NetworkHealthCheckResponse, error)
 		Update(ctx context.Context, req UpdateNetworkHealthCheckRequest) error
 	}
 
@@ -22,27 +88,87 @@ type (
 	}
 )
 
-func (s *networkHealthCheckService) Create(ctx context.Context, req CreateNetworkHealthCheckRequest) (string, error) {
-	// POST /v0beta1/network-load-balancers/{load_balancer_id}/health-checks
-	panic("not implemented")
+func (s *networkHealthCheckService) Create(ctx context.Context, req CreateNetworkHealthCheckRequest) (*NetworkHealthCheckResponse, error) {
+	path := "/v0beta1/network-load-balancers/" + req.LoadBalancerID + "/health-checks"
+
+	httpReq, err := s.client.newRequest(ctx, "POST", path, req)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp NetworkHealthCheckResponse
+	result, err := mgc_http.Do(s.client.GetConfig(), ctx, httpReq, &resp)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
 }
 
 func (s *networkHealthCheckService) Delete(ctx context.Context, req DeleteNetworkHealthCheckRequest) error {
-	// DELETE /v0beta1/network-load-balancers/{load_balancer_id}/health-checks/{health_check_id}
-	panic("not implemented")
+	path := "/v0beta1/network-load-balancers/" + req.LoadBalancerID + "/health-checks/" + req.HealthCheckID
+
+	httpReq, err := s.client.newRequest(ctx, "DELETE", path, nil)
+	if err != nil {
+		return err
+	}
+
+	_, err = mgc_http.Do[any](s.client.GetConfig(), ctx, httpReq, nil)
+	return err
 }
 
-func (s *networkHealthCheckService) Get(ctx context.Context, req GetNetworkHealthCheckRequest) (*any, error) {
-	// GET /v0beta1/network-load-balancers/{load_balancer_id}/health-checks/{health_check_id}
-	panic("not implemented")
+func (s *networkHealthCheckService) Get(ctx context.Context, req GetNetworkHealthCheckRequest) (*NetworkHealthCheckResponse, error) {
+	path := "/v0beta1/network-load-balancers/" + req.LoadBalancerID + "/health-checks/" + req.HealthCheckID
+
+	httpReq, err := s.client.newRequest(ctx, "GET", path, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp NetworkHealthCheckResponse
+	result, err := mgc_http.Do(s.client.GetConfig(), ctx, httpReq, &resp)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
 }
 
-func (s *networkHealthCheckService) List(ctx context.Context, req ListNetworkHealthCheckRequest) ([]any, error) {
-	// GET /v0beta1/network-load-balancers/{load_balancer_id}/health-checks
-	panic("not implemented")
+func (s *networkHealthCheckService) List(ctx context.Context, req ListNetworkHealthCheckRequest) ([]NetworkHealthCheckResponse, error) {
+	path := "/v0beta1/network-load-balancers/" + req.LoadBalancerID + "/health-checks"
+
+	httpReq, err := s.client.newRequest(ctx, "GET", path, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	// Adicionar query parameters se fornecidos
+	query := httpReq.URL.Query()
+	if req.Offset != nil {
+		query.Set("_offset", strconv.Itoa(*req.Offset))
+	}
+	if req.Limit != nil {
+		query.Set("_limit", strconv.Itoa(*req.Limit))
+	}
+	if req.Sort != nil {
+		query.Set("_sort", *req.Sort)
+	}
+	httpReq.URL.RawQuery = query.Encode()
+
+	var resp NetworkPaginatedHealthCheckResponse
+	result, err := mgc_http.Do(s.client.GetConfig(), ctx, httpReq, &resp)
+	if err != nil {
+		return nil, err
+	}
+	return result.Results, nil
 }
 
 func (s *networkHealthCheckService) Update(ctx context.Context, req UpdateNetworkHealthCheckRequest) error {
-	// PUT /v0beta1/network-load-balancers/{load_balancer_id}/health-checks/{health_check_id}
-	panic("not implemented")
+	path := "/v0beta1/network-load-balancers/" + req.LoadBalancerID + "/health-checks/" + req.HealthCheckID
+
+	httpReq, err := s.client.newRequest(ctx, "PUT", path, req)
+	if err != nil {
+		return err
+	}
+
+	_, err = mgc_http.Do[any](s.client.GetConfig(), ctx, httpReq, nil)
+	return err
 }
