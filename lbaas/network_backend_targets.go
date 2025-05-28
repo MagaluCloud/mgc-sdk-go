@@ -1,19 +1,23 @@
 package lbaas
 
-import "context"
+import (
+	"context"
+
+	mgc_http "github.com/MagaluCloud/mgc-sdk-go/internal/http"
+)
 
 type (
 	CreateNetworkBackendTargetRequest struct {
-		LoadBalancerID   string   `json:"load_balancer_id"`
-		NetworkBackendID string   `json:"network_backend_id"`
+		LoadBalancerID   string   `json:"-"`
+		NetworkBackendID string   `json:"-"`
 		TargetsID        []string `json:"targets_id"`
 		TargetsType      string   `json:"targets_type"`
 	}
 
 	DeleteNetworkBackendTargetRequest struct {
-		LoadBalancerID   string `json:"load_balancer_id"`
-		NetworkBackendID string `json:"network_backend_id"`
-		TargetID         string `json:"target_id"`
+		LoadBalancerID   string `json:"-"`
+		NetworkBackendID string `json:"-"`
+		TargetID         string `json:"-"`
 	}
 
 	NetworkBackendTargetService interface {
@@ -27,11 +31,31 @@ type (
 )
 
 func (s *networkBackendTargetService) Create(ctx context.Context, req CreateNetworkBackendTargetRequest) (string, error) {
-	// POST /v0beta1/network-load-balancers/{load_balancer_id}/backends/{backend_id}/targets
-	panic("not implemented")
+	path := "/v0beta1/network-load-balancers/" + req.LoadBalancerID + "/backends/" + req.NetworkBackendID + "/targets"
+
+	httpReq, err := s.client.newRequest(ctx, "POST", path, req)
+	if err != nil {
+		return "", err
+	}
+
+	var resp struct {
+		ID string `json:"id"`
+	}
+	result, err := mgc_http.Do(s.client.GetConfig(), ctx, httpReq, &resp)
+	if err != nil {
+		return "", err
+	}
+	return result.ID, nil
 }
 
 func (s *networkBackendTargetService) Delete(ctx context.Context, req DeleteNetworkBackendTargetRequest) error {
-	// DELETE /v0beta1/network-load-balancers/{load_balancer_id}/backends/{backend_id}/targets/{target_id}
-	panic("not implemented")
+	path := "/v0beta1/network-load-balancers/" + req.LoadBalancerID + "/backends/" + req.NetworkBackendID + "/targets/" + req.TargetID
+
+	httpReq, err := s.client.newRequest(ctx, "DELETE", path, nil)
+	if err != nil {
+		return err
+	}
+
+	_, err = mgc_http.Do[any](s.client.GetConfig(), ctx, httpReq, nil)
+	return err
 }
