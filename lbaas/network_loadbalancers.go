@@ -19,12 +19,12 @@ type (
 	}
 
 	NetworkBackendRequest struct {
-		HealthCheckName  *string                `json:"health_check_name,omitempty"`
-		Name             string                 `json:"name"`
-		Description      *string                `json:"description,omitempty"`
-		BalanceAlgorithm string                 `json:"balance_algorithm"`
-		TargetsType      string                 `json:"targets_type"`
-		Targets          *TargetsRawOrInstances `json:"targets,omitempty"`
+		HealthCheckName  *string                       `json:"health_check_name,omitempty"`
+		Name             string                        `json:"name"`
+		Description      *string                       `json:"description,omitempty"`
+		BalanceAlgorithm string                        `json:"balance_algorithm"`
+		TargetsType      string                        `json:"targets_type"`
+		Targets          *TargetsRawOrInstancesRequest `json:"targets,omitempty"`
 	}
 
 	NetworkHealthCheckRequest struct {
@@ -88,10 +88,10 @@ type (
 	}
 
 	NetworkBackendUpdateRequest struct {
-		ID            string      `json:"id"`
-		HealthCheckID *string     `json:"health_check_id,omitempty"`
-		TargetsType   string      `json:"targets_type"`
-		Targets       interface{} `json:"targets,omitempty"`
+		ID            string                              `json:"id"`
+		HealthCheckID *string                             `json:"health_check_id,omitempty"`
+		TargetsType   string                              `json:"targets_type"`
+		Targets       *TargetsRawOrInstancesUpdateRequest `json:"targets,omitempty"`
 	}
 
 	UpdateNetworkLoadBalancerRequest struct {

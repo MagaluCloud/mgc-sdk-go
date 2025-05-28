@@ -2,28 +2,9 @@ package lbaas
 
 import (
 	"context"
-	"encoding/json"
 
 	mgc_http "github.com/MagaluCloud/mgc-sdk-go/internal/http"
 )
-
-func (t *TargetsRawOrInstances) UnmarshalJSON(data []byte) error {
-	var targets any
-	if err := json.Unmarshal(data, &targets); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (t *TargetsRawOrInstances) MarshalJSON() ([]byte, error) {
-	if len(t.TargetsInstances) > 0 {
-		return json.Marshal(t.TargetsInstances)
-	}
-	if len(t.TargetsRaw) > 0 {
-		return json.Marshal(t.TargetsRaw)
-	}
-	return nil, nil
-}
 
 type (
 	NetworkBackendInstanceRequest struct {
@@ -36,19 +17,34 @@ type (
 		Port      int    `json:"port"`
 	}
 
-	TargetsRawOrInstances struct {
+	TargetsRawOrInstancesRequest struct {
 		TargetsInstances []NetworkBackendInstanceRequest  `json:"-"`
 		TargetsRaw       []NetworkBackendRawTargetRequest `json:"-"`
 	}
 
+	NetworkBackendInstanceUpdateRequest struct {
+		NicID string `json:"nic_id"`
+		Port  int    `json:"port"`
+	}
+
+	NetworkBackendRawTargetUpdateRequest struct {
+		IPAddress string `json:"ip_address"`
+		Port      int    `json:"port"`
+	}
+
+	TargetsRawOrInstancesUpdateRequest struct {
+		TargetsInstances []NetworkBackendInstanceUpdateRequest  `json:"-"`
+		TargetsRaw       []NetworkBackendRawTargetUpdateRequest `json:"-"`
+	}
+
 	CreateNetworkBackendRequest struct {
-		LoadBalancerID   string                 `json:"-"`
-		Name             string                 `json:"name"`
-		Description      *string                `json:"description,omitempty"`
-		BalanceAlgorithm string                 `json:"balance_algorithm"`
-		TargetsType      string                 `json:"targets_type"`
-		Targets          *TargetsRawOrInstances `json:"targets,omitempty"`
-		HealthCheckID    *string                `json:"health_check_id,omitempty"`
+		LoadBalancerID   string                        `json:"-"`
+		Name             string                        `json:"name"`
+		Description      *string                       `json:"description,omitempty"`
+		BalanceAlgorithm string                        `json:"balance_algorithm"`
+		TargetsType      string                        `json:"targets_type"`
+		Targets          *TargetsRawOrInstancesRequest `json:"targets,omitempty"`
+		HealthCheckID    *string                       `json:"health_check_id,omitempty"`
 	}
 
 	DeleteNetworkBackendRequest struct {
@@ -66,16 +62,16 @@ type (
 	}
 
 	UpdateNetworkBackendRequest struct {
-		LoadBalancerID   string                            `json:"-"`
-		BackendID        string                            `json:"-"`
-		Name             *string                           `json:"name,omitempty"`
-		Description      *string                           `json:"description,omitempty"`
-		BalanceAlgorithm *string                           `json:"balance_algorithm,omitempty"`
-		TargetsType      *string                           `json:"targets_type,omitempty"`
-		Targets          *interface{}                      `json:"targets,omitempty"`
-		TargetsInstances *[]NetworkBackendInstanceRequest  `json:"targets_instances,omitempty"`
-		TargetsRaw       *[]NetworkBackendRawTargetRequest `json:"targets_raw,omitempty"`
-		HealthCheckID    *string                           `json:"health_check_id,omitempty"`
+		LoadBalancerID   string                              `json:"-"`
+		BackendID        string                              `json:"-"`
+		Name             *string                             `json:"name,omitempty"`
+		Description      *string                             `json:"description,omitempty"`
+		BalanceAlgorithm *string                             `json:"balance_algorithm,omitempty"`
+		TargetsType      *string                             `json:"targets_type,omitempty"`
+		Targets          *TargetsRawOrInstancesUpdateRequest `json:"targets,omitempty"`
+		TargetsInstances *[]NetworkBackendInstanceRequest    `json:"targets_instances,omitempty"`
+		TargetsRaw       *[]NetworkBackendRawTargetRequest   `json:"targets_raw,omitempty"`
+		HealthCheckID    *string                             `json:"health_check_id,omitempty"`
 	}
 
 	NetworkBackendInstanceResponse struct {
