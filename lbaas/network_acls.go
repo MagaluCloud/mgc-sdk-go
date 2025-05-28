@@ -16,6 +16,15 @@ type (
 		RemoteIPPrefix string  `json:"remote_ip_prefix"`
 	}
 
+	GetNetworkACLRequest struct {
+		LoadBalancerID string `json:"-"`
+		NetworkACLID   string `json:"-"`
+	}
+
+	ListNetworkACLRequest struct {
+		LoadBalancerID string `json:"-"`
+	}
+
 	DeleteNetworkACLRequest struct {
 		LoadBalancerID string `json:"load_balancer_id"`
 		ID             string `json:"id"`
@@ -23,6 +32,8 @@ type (
 
 	NetworkACLService interface {
 		Create(ctx context.Context, req CreateNetworkACLRequest) (string, error)
+		Get(ctx context.Context, req GetNetworkACLRequest) (*NetworkAclResponse, error)
+		List(ctx context.Context, req ListNetworkACLRequest) ([]NetworkAclResponse, error)
 		Delete(ctx context.Context, req DeleteNetworkACLRequest) error
 	}
 
@@ -57,6 +68,38 @@ func (s *networkACLService) Create(ctx context.Context, req CreateNetworkACLRequ
 		return "", err
 	}
 	return result.ID, nil
+}
+
+func (s *networkACLService) Get(ctx context.Context, req GetNetworkACLRequest) (*NetworkAclResponse, error) {
+	// GET /v0beta1/network-load-balancers/{load_balancer_id}/acls/{acl_id}
+	path := "/v0beta1/network-load-balancers/" + req.LoadBalancerID + "/acls/" + req.NetworkACLID
+
+	httpReq, err := s.client.newRequest(ctx, "GET", path, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	result, err := mgc_http.Do(s.client.GetConfig(), ctx, httpReq, &NetworkAclResponse{})
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+func (s *networkACLService) List(ctx context.Context, req ListNetworkACLRequest) ([]NetworkAclResponse, error) {
+	// GET /v0beta1/network-load-balancers/{load_balancer_id}/acls
+	path := "/v0beta1/network-load-balancers/" + req.LoadBalancerID + "/acls"
+
+	httpReq, err := s.client.newRequest(ctx, "GET", path, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	result, err := mgc_http.Do(s.client.GetConfig(), ctx, httpReq, &[]NetworkAclResponse{})
+	if err != nil {
+		return nil, err
+	}
+	return *result, nil
 }
 
 func (s *networkACLService) Delete(ctx context.Context, req DeleteNetworkACLRequest) error {
