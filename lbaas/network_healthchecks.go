@@ -2,6 +2,7 @@ package lbaas
 
 import (
 	"context"
+	"net/http"
 	"strconv"
 
 	mgc_http "github.com/MagaluCloud/mgc-sdk-go/internal/http"
@@ -9,18 +10,18 @@ import (
 
 type (
 	CreateNetworkHealthCheckRequest struct {
-		LoadBalancerID          string  `json:"-"`
-		Name                    string  `json:"name"`
-		Description             *string `json:"description,omitempty"`
-		Protocol                string  `json:"protocol"`
-		Path                    *string `json:"path,omitempty"`
-		Port                    int     `json:"port"`
-		HealthyStatusCode       *int    `json:"healthy_status_code,omitempty"`
-		IntervalSeconds         *int    `json:"interval_seconds,omitempty"`
-		TimeoutSeconds          *int    `json:"timeout_seconds,omitempty"`
-		InitialDelaySeconds     *int    `json:"initial_delay_seconds,omitempty"`
-		HealthyThresholdCount   *int    `json:"healthy_threshold_count,omitempty"`
-		UnhealthyThresholdCount *int    `json:"unhealthy_threshold_count,omitempty"`
+		LoadBalancerID          string              `json:"-"`
+		Name                    string              `json:"name"`
+		Description             *string             `json:"description,omitempty"`
+		Protocol                HealthCheckProtocol `json:"protocol"`
+		Path                    *string             `json:"path,omitempty"`
+		Port                    int                 `json:"port"`
+		HealthyStatusCode       *int                `json:"healthy_status_code,omitempty"`
+		IntervalSeconds         *int                `json:"interval_seconds,omitempty"`
+		TimeoutSeconds          *int                `json:"timeout_seconds,omitempty"`
+		InitialDelaySeconds     *int                `json:"initial_delay_seconds,omitempty"`
+		HealthyThresholdCount   *int                `json:"healthy_threshold_count,omitempty"`
+		UnhealthyThresholdCount *int                `json:"unhealthy_threshold_count,omitempty"`
 	}
 
 	DeleteNetworkHealthCheckRequest struct {
@@ -41,34 +42,34 @@ type (
 	}
 
 	UpdateNetworkHealthCheckRequest struct {
-		LoadBalancerID          string  `json:"-"`
-		HealthCheckID           string  `json:"-"`
-		Protocol                string  `json:"protocol"`
-		Path                    *string `json:"path,omitempty"`
-		Port                    int     `json:"port"`
-		HealthyStatusCode       *int    `json:"healthy_status_code,omitempty"`
-		IntervalSeconds         *int    `json:"interval_seconds,omitempty"`
-		TimeoutSeconds          *int    `json:"timeout_seconds,omitempty"`
-		InitialDelaySeconds     *int    `json:"initial_delay_seconds,omitempty"`
-		HealthyThresholdCount   *int    `json:"healthy_threshold_count,omitempty"`
-		UnhealthyThresholdCount *int    `json:"unhealthy_threshold_count,omitempty"`
+		LoadBalancerID          string              `json:"-"`
+		HealthCheckID           string              `json:"-"`
+		Protocol                HealthCheckProtocol `json:"protocol"`
+		Path                    *string             `json:"path,omitempty"`
+		Port                    int                 `json:"port"`
+		HealthyStatusCode       *int                `json:"healthy_status_code,omitempty"`
+		IntervalSeconds         *int                `json:"interval_seconds,omitempty"`
+		TimeoutSeconds          *int                `json:"timeout_seconds,omitempty"`
+		InitialDelaySeconds     *int                `json:"initial_delay_seconds,omitempty"`
+		HealthyThresholdCount   *int                `json:"healthy_threshold_count,omitempty"`
+		UnhealthyThresholdCount *int                `json:"unhealthy_threshold_count,omitempty"`
 	}
 
 	NetworkHealthCheckResponse struct {
-		ID                      string  `json:"id"`
-		Name                    string  `json:"name"`
-		Description             *string `json:"description,omitempty"`
-		Protocol                string  `json:"protocol"`
-		Path                    *string `json:"path,omitempty"`
-		Port                    int     `json:"port"`
-		HealthyStatusCode       int     `json:"healthy_status_code"`
-		IntervalSeconds         int     `json:"interval_seconds"`
-		TimeoutSeconds          int     `json:"timeout_seconds"`
-		InitialDelaySeconds     int     `json:"initial_delay_seconds"`
-		HealthyThresholdCount   int     `json:"healthy_threshold_count"`
-		UnhealthyThresholdCount int     `json:"unhealthy_threshold_count"`
-		CreatedAt               string  `json:"created_at"`
-		UpdatedAt               string  `json:"updated_at"`
+		ID                      string              `json:"id"`
+		Name                    string              `json:"name"`
+		Description             *string             `json:"description,omitempty"`
+		Protocol                HealthCheckProtocol `json:"protocol"`
+		Path                    *string             `json:"path,omitempty"`
+		Port                    int                 `json:"port"`
+		HealthyStatusCode       int                 `json:"healthy_status_code"`
+		IntervalSeconds         int                 `json:"interval_seconds"`
+		TimeoutSeconds          int                 `json:"timeout_seconds"`
+		InitialDelaySeconds     int                 `json:"initial_delay_seconds"`
+		HealthyThresholdCount   int                 `json:"healthy_threshold_count"`
+		UnhealthyThresholdCount int                 `json:"unhealthy_threshold_count"`
+		CreatedAt               string              `json:"created_at"`
+		UpdatedAt               string              `json:"updated_at"`
 	}
 
 	NetworkPaginatedHealthCheckResponse struct {
@@ -91,7 +92,7 @@ type (
 func (s *networkHealthCheckService) Create(ctx context.Context, req CreateNetworkHealthCheckRequest) (*NetworkHealthCheckResponse, error) {
 	path := "/v0beta1/network-load-balancers/" + req.LoadBalancerID + "/health-checks"
 
-	httpReq, err := s.client.newRequest(ctx, "POST", path, req)
+	httpReq, err := s.client.newRequest(ctx, http.MethodPost, path, req)
 	if err != nil {
 		return nil, err
 	}
@@ -107,7 +108,7 @@ func (s *networkHealthCheckService) Create(ctx context.Context, req CreateNetwor
 func (s *networkHealthCheckService) Delete(ctx context.Context, req DeleteNetworkHealthCheckRequest) error {
 	path := "/v0beta1/network-load-balancers/" + req.LoadBalancerID + "/health-checks/" + req.HealthCheckID
 
-	httpReq, err := s.client.newRequest(ctx, "DELETE", path, nil)
+	httpReq, err := s.client.newRequest(ctx, http.MethodDelete, path, nil)
 	if err != nil {
 		return err
 	}
@@ -119,7 +120,7 @@ func (s *networkHealthCheckService) Delete(ctx context.Context, req DeleteNetwor
 func (s *networkHealthCheckService) Get(ctx context.Context, req GetNetworkHealthCheckRequest) (*NetworkHealthCheckResponse, error) {
 	path := "/v0beta1/network-load-balancers/" + req.LoadBalancerID + "/health-checks/" + req.HealthCheckID
 
-	httpReq, err := s.client.newRequest(ctx, "GET", path, nil)
+	httpReq, err := s.client.newRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -135,7 +136,7 @@ func (s *networkHealthCheckService) Get(ctx context.Context, req GetNetworkHealt
 func (s *networkHealthCheckService) List(ctx context.Context, req ListNetworkHealthCheckRequest) ([]NetworkHealthCheckResponse, error) {
 	path := "/v0beta1/network-load-balancers/" + req.LoadBalancerID + "/health-checks"
 
-	httpReq, err := s.client.newRequest(ctx, "GET", path, nil)
+	httpReq, err := s.client.newRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -164,7 +165,7 @@ func (s *networkHealthCheckService) List(ctx context.Context, req ListNetworkHea
 func (s *networkHealthCheckService) Update(ctx context.Context, req UpdateNetworkHealthCheckRequest) error {
 	path := "/v0beta1/network-load-balancers/" + req.LoadBalancerID + "/health-checks/" + req.HealthCheckID
 
-	httpReq, err := s.client.newRequest(ctx, "PUT", path, req)
+	httpReq, err := s.client.newRequest(ctx, http.MethodPut, path, req)
 	if err != nil {
 		return err
 	}

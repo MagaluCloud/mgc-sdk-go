@@ -2,6 +2,7 @@ package lbaas
 
 import (
 	"context"
+	"net/http"
 	"strconv"
 
 	mgc_http "github.com/MagaluCloud/mgc-sdk-go/internal/http"
@@ -10,35 +11,35 @@ import (
 type (
 	// Structs auxiliares para criação de Load Balancer
 	NetworkListenerRequest struct {
-		TLSCertificateName *string `json:"tls_certificate_name,omitempty"`
-		Name               string  `json:"name"`
-		Description        *string `json:"description,omitempty"`
-		BackendName        string  `json:"backend_name"`
-		Protocol           string  `json:"protocol"`
-		Port               int     `json:"port"`
+		TLSCertificateName *string          `json:"tls_certificate_name,omitempty"`
+		Name               string           `json:"name"`
+		Description        *string          `json:"description,omitempty"`
+		BackendName        string           `json:"backend_name"`
+		Protocol           ListenerProtocol `json:"protocol"`
+		Port               int              `json:"port"`
 	}
 
 	NetworkBackendRequest struct {
 		HealthCheckName  *string                       `json:"health_check_name,omitempty"`
 		Name             string                        `json:"name"`
 		Description      *string                       `json:"description,omitempty"`
-		BalanceAlgorithm string                        `json:"balance_algorithm"`
-		TargetsType      string                        `json:"targets_type"`
+		BalanceAlgorithm BackendBalanceAlgorithm       `json:"balance_algorithm"`
+		TargetsType      BackendType                   `json:"targets_type"`
 		Targets          *TargetsRawOrInstancesRequest `json:"targets,omitempty"`
 	}
 
 	NetworkHealthCheckRequest struct {
-		Name                    string  `json:"name"`
-		Description             *string `json:"description,omitempty"`
-		Protocol                string  `json:"protocol"`
-		Path                    *string `json:"path,omitempty"`
-		Port                    int     `json:"port"`
-		HealthyStatusCode       *int    `json:"healthy_status_code,omitempty"`
-		IntervalSeconds         *int    `json:"interval_seconds,omitempty"`
-		TimeoutSeconds          *int    `json:"timeout_seconds,omitempty"`
-		InitialDelaySeconds     *int    `json:"initial_delay_seconds,omitempty"`
-		HealthyThresholdCount   *int    `json:"healthy_threshold_count,omitempty"`
-		UnhealthyThresholdCount *int    `json:"unhealthy_threshold_count,omitempty"`
+		Name                    string              `json:"name"`
+		Description             *string             `json:"description,omitempty"`
+		Protocol                HealthCheckProtocol `json:"protocol"`
+		Path                    *string             `json:"path,omitempty"`
+		Port                    int                 `json:"port"`
+		HealthyStatusCode       *int                `json:"healthy_status_code,omitempty"`
+		IntervalSeconds         *int                `json:"interval_seconds,omitempty"`
+		TimeoutSeconds          *int                `json:"timeout_seconds,omitempty"`
+		InitialDelaySeconds     *int                `json:"initial_delay_seconds,omitempty"`
+		HealthyThresholdCount   *int                `json:"healthy_threshold_count,omitempty"`
+		UnhealthyThresholdCount *int                `json:"unhealthy_threshold_count,omitempty"`
 	}
 
 	NetworkTLSCertificateRequest struct {
@@ -49,18 +50,18 @@ type (
 	}
 
 	NetworkAclRequest struct {
-		Name           *string `json:"name,omitempty"`
-		Ethertype      string  `json:"ethertype"`
-		Protocol       string  `json:"protocol"`
-		RemoteIPPrefix string  `json:"remote_ip_prefix"`
-		Action         string  `json:"action"`
+		Name           *string       `json:"name,omitempty"`
+		Ethertype      AclEtherType  `json:"ethertype"`
+		Protocol       AclProtocol   `json:"protocol"`
+		RemoteIPPrefix string        `json:"remote_ip_prefix"`
+		Action         AclActionType `json:"action"`
 	}
 
 	CreateNetworkLoadBalancerRequest struct {
 		Name            string                         `json:"name"`
 		Description     *string                        `json:"description,omitempty"`
 		Type            *string                        `json:"type,omitempty"`
-		Visibility      string                         `json:"visibility"`
+		Visibility      LoadBalancerVisibility         `json:"visibility"`
 		Listeners       []NetworkListenerRequest       `json:"listeners"`
 		Backends        []NetworkBackendRequest        `json:"backends"`
 		HealthChecks    []NetworkHealthCheckRequest    `json:"health_checks,omitempty"`
@@ -90,7 +91,7 @@ type (
 	NetworkBackendUpdateRequest struct {
 		ID            string                              `json:"id"`
 		HealthCheckID *string                             `json:"health_check_id,omitempty"`
-		TargetsType   string                              `json:"targets_type"`
+		TargetsType   BackendType                         `json:"targets_type"`
 		Targets       *TargetsRawOrInstancesUpdateRequest `json:"targets,omitempty"`
 	}
 
@@ -105,16 +106,16 @@ type (
 	}
 
 	NetworkHealthCheckUpdateRequest struct {
-		ID                      string  `json:"id"`
-		Protocol                string  `json:"protocol"`
-		Path                    *string `json:"path,omitempty"`
-		Port                    int     `json:"port"`
-		HealthyStatusCode       *int    `json:"healthy_status_code,omitempty"`
-		IntervalSeconds         *int    `json:"interval_seconds,omitempty"`
-		TimeoutSeconds          *int    `json:"timeout_seconds,omitempty"`
-		InitialDelaySeconds     *int    `json:"initial_delay_seconds,omitempty"`
-		HealthyThresholdCount   *int    `json:"healthy_threshold_count,omitempty"`
-		UnhealthyThresholdCount *int    `json:"unhealthy_threshold_count,omitempty"`
+		ID                      string              `json:"id"`
+		Protocol                HealthCheckProtocol `json:"protocol"`
+		Path                    *string             `json:"path,omitempty"`
+		Port                    int                 `json:"port"`
+		HealthyStatusCode       *int                `json:"healthy_status_code,omitempty"`
+		IntervalSeconds         *int                `json:"interval_seconds,omitempty"`
+		TimeoutSeconds          *int                `json:"timeout_seconds,omitempty"`
+		InitialDelaySeconds     *int                `json:"initial_delay_seconds,omitempty"`
+		HealthyThresholdCount   *int                `json:"healthy_threshold_count,omitempty"`
+		UnhealthyThresholdCount *int                `json:"unhealthy_threshold_count,omitempty"`
 	}
 
 	NetworkTLSCertificateUpdateRequest struct {
@@ -131,12 +132,12 @@ type (
 	}
 
 	NetworkAclResponse struct {
-		ID             string  `json:"id"`
-		Name           *string `json:"name,omitempty"`
-		Ethertype      string  `json:"ethertype"`
-		Protocol       string  `json:"protocol"`
-		RemoteIPPrefix string  `json:"remote_ip_prefix"`
-		Action         string  `json:"action"`
+		ID             string       `json:"id"`
+		Name           *string      `json:"name,omitempty"`
+		Ethertype      AclEtherType `json:"ethertype"`
+		Protocol       AclProtocol  `json:"protocol"`
+		RemoteIPPrefix string       `json:"remote_ip_prefix"`
+		Action         string       `json:"action"`
 	}
 
 	NetworkLoadBalancerResponse struct {
@@ -145,7 +146,7 @@ type (
 		ProjectType         *string                         `json:"project_type,omitempty"`
 		Description         *string                         `json:"description,omitempty"`
 		Type                string                          `json:"type"`
-		Visibility          string                          `json:"visibility"`
+		Visibility          LoadBalancerVisibility          `json:"visibility"`
 		Status              string                          `json:"status"`
 		Listeners           []NetworkListenerResponse       `json:"listeners"`
 		Backends            []NetworkBackendResponse        `json:"backends"`
@@ -182,7 +183,7 @@ type (
 func (s *networkLoadBalancerService) Create(ctx context.Context, req CreateNetworkLoadBalancerRequest) (string, error) {
 	path := "/v0beta1/network-load-balancers"
 
-	httpReq, err := s.client.newRequest(ctx, "POST", path, req)
+	httpReq, err := s.client.newRequest(ctx, http.MethodPost, path, req)
 	if err != nil {
 		return "", err
 	}
@@ -200,7 +201,7 @@ func (s *networkLoadBalancerService) Create(ctx context.Context, req CreateNetwo
 func (s *networkLoadBalancerService) Delete(ctx context.Context, req DeleteNetworkLoadBalancerRequest) error {
 	path := "/v0beta1/network-load-balancers/" + req.LoadBalancerID
 
-	httpReq, err := s.client.newRequest(ctx, "DELETE", path, nil)
+	httpReq, err := s.client.newRequest(ctx, http.MethodDelete, path, nil)
 	if err != nil {
 		return err
 	}
@@ -219,7 +220,7 @@ func (s *networkLoadBalancerService) Delete(ctx context.Context, req DeleteNetwo
 func (s *networkLoadBalancerService) Get(ctx context.Context, req GetNetworkLoadBalancerRequest) (*NetworkLoadBalancerResponse, error) {
 	path := "/v0beta1/network-load-balancers/" + req.LoadBalancerID
 
-	httpReq, err := s.client.newRequest(ctx, "GET", path, nil)
+	httpReq, err := s.client.newRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -235,7 +236,7 @@ func (s *networkLoadBalancerService) Get(ctx context.Context, req GetNetworkLoad
 func (s *networkLoadBalancerService) List(ctx context.Context, req ListNetworkLoadBalancerRequest) ([]NetworkLoadBalancerResponse, error) {
 	path := "/v0beta1/network-load-balancers"
 
-	httpReq, err := s.client.newRequest(ctx, "GET", path, nil)
+	httpReq, err := s.client.newRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -264,7 +265,7 @@ func (s *networkLoadBalancerService) List(ctx context.Context, req ListNetworkLo
 func (s *networkLoadBalancerService) Update(ctx context.Context, req UpdateNetworkLoadBalancerRequest) error {
 	path := "/v0beta1/network-load-balancers/" + req.LoadBalancerID
 
-	httpReq, err := s.client.newRequest(ctx, "PUT", path, req)
+	httpReq, err := s.client.newRequest(ctx, http.MethodPut, path, req)
 	if err != nil {
 		return err
 	}

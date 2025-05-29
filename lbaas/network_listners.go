@@ -2,6 +2,7 @@ package lbaas
 
 import (
 	"context"
+	"net/http"
 	"strconv"
 
 	mgc_http "github.com/MagaluCloud/mgc-sdk-go/internal/http"
@@ -9,13 +10,13 @@ import (
 
 type (
 	CreateNetworkListenerRequest struct {
-		LoadBalancerID   string  `json:"-"`
-		BackendID        string  `json:"-"`
-		TLSCertificateID *string `json:"tls_certificate_id,omitempty"`
-		Name             string  `json:"name"`
-		Description      *string `json:"description,omitempty"`
-		Protocol         string  `json:"protocol"`
-		Port             int     `json:"port"`
+		LoadBalancerID   string           `json:"-"`
+		BackendID        string           `json:"-"`
+		TLSCertificateID *string          `json:"tls_certificate_id,omitempty"`
+		Name             string           `json:"name"`
+		Description      *string          `json:"description,omitempty"`
+		Protocol         ListenerProtocol `json:"protocol"`
+		Port             int              `json:"port"`
 	}
 
 	DeleteNetworkListenerRequest struct {
@@ -42,15 +43,15 @@ type (
 	}
 
 	NetworkListenerResponse struct {
-		ID               string  `json:"id"`
-		TLSCertificateID *string `json:"tls_certificate_id,omitempty"`
-		BackendID        string  `json:"backend_id"`
-		Name             string  `json:"name"`
-		Description      *string `json:"description,omitempty"`
-		Protocol         string  `json:"protocol"`
-		Port             int     `json:"port"`
-		CreatedAt        string  `json:"created_at"`
-		UpdatedAt        string  `json:"updated_at"`
+		ID               string           `json:"id"`
+		TLSCertificateID *string          `json:"tls_certificate_id,omitempty"`
+		BackendID        string           `json:"backend_id"`
+		Name             string           `json:"name"`
+		Description      *string          `json:"description,omitempty"`
+		Protocol         ListenerProtocol `json:"protocol"`
+		Port             int              `json:"port"`
+		CreatedAt        string           `json:"created_at"`
+		UpdatedAt        string           `json:"updated_at"`
 	}
 
 	NetworkPaginatedListenerResponse struct {
@@ -73,7 +74,7 @@ type (
 func (s *networkListenerService) Create(ctx context.Context, req CreateNetworkListenerRequest) (*NetworkListenerResponse, error) {
 	path := "/v0beta1/network-load-balancers/" + req.LoadBalancerID + "/listeners"
 
-	httpReq, err := s.client.newRequest(ctx, "POST", path, req)
+	httpReq, err := s.client.newRequest(ctx, http.MethodPost, path, req)
 	if err != nil {
 		return nil, err
 	}
@@ -94,7 +95,7 @@ func (s *networkListenerService) Create(ctx context.Context, req CreateNetworkLi
 func (s *networkListenerService) Delete(ctx context.Context, req DeleteNetworkListenerRequest) error {
 	path := "/v0beta1/network-load-balancers/" + req.LoadBalancerID + "/listeners/" + req.ListenerID
 
-	httpReq, err := s.client.newRequest(ctx, "DELETE", path, nil)
+	httpReq, err := s.client.newRequest(ctx, http.MethodDelete, path, nil)
 	if err != nil {
 		return err
 	}
@@ -106,7 +107,7 @@ func (s *networkListenerService) Delete(ctx context.Context, req DeleteNetworkLi
 func (s *networkListenerService) Get(ctx context.Context, req GetNetworkListenerRequest) (*NetworkListenerResponse, error) {
 	path := "/v0beta1/network-load-balancers/" + req.LoadBalancerID + "/listeners/" + req.ListenerID
 
-	httpReq, err := s.client.newRequest(ctx, "GET", path, nil)
+	httpReq, err := s.client.newRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -122,7 +123,7 @@ func (s *networkListenerService) Get(ctx context.Context, req GetNetworkListener
 func (s *networkListenerService) List(ctx context.Context, req ListNetworkListenerRequest) ([]NetworkListenerResponse, error) {
 	path := "/v0beta1/network-load-balancers/" + req.LoadBalancerID + "/listeners"
 
-	httpReq, err := s.client.newRequest(ctx, "GET", path, nil)
+	httpReq, err := s.client.newRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -151,7 +152,7 @@ func (s *networkListenerService) List(ctx context.Context, req ListNetworkListen
 func (s *networkListenerService) Update(ctx context.Context, req UpdateNetworkListenerRequest) error {
 	path := "/v0beta1/network-load-balancers/" + req.LoadBalancerID + "/listeners/" + req.ListenerID
 
-	httpReq, err := s.client.newRequest(ctx, "PUT", path, req)
+	httpReq, err := s.client.newRequest(ctx, http.MethodPut, path, req)
 	if err != nil {
 		return err
 	}

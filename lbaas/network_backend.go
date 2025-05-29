@@ -2,6 +2,7 @@ package lbaas
 
 import (
 	"context"
+	"net/http"
 
 	mgc_http "github.com/MagaluCloud/mgc-sdk-go/internal/http"
 )
@@ -41,8 +42,8 @@ type (
 		LoadBalancerID   string                        `json:"-"`
 		Name             string                        `json:"name"`
 		Description      *string                       `json:"description,omitempty"`
-		BalanceAlgorithm string                        `json:"balance_algorithm"`
-		TargetsType      string                        `json:"targets_type"`
+		BalanceAlgorithm BackendBalanceAlgorithm       `json:"balance_algorithm"`
+		TargetsType      BackendType                   `json:"targets_type"`
 		Targets          *TargetsRawOrInstancesRequest `json:"targets,omitempty"`
 		HealthCheckID    *string                       `json:"health_check_id,omitempty"`
 	}
@@ -66,8 +67,8 @@ type (
 		BackendID        string                              `json:"-"`
 		Name             *string                             `json:"name,omitempty"`
 		Description      *string                             `json:"description,omitempty"`
-		BalanceAlgorithm *string                             `json:"balance_algorithm,omitempty"`
-		TargetsType      *string                             `json:"targets_type,omitempty"`
+		BalanceAlgorithm *BackendBalanceAlgorithm            `json:"balance_algorithm,omitempty"`
+		TargetsType      *BackendType                        `json:"targets_type,omitempty"`
 		Targets          *TargetsRawOrInstancesUpdateRequest `json:"targets,omitempty"`
 		TargetsInstances *[]NetworkBackendInstanceRequest    `json:"targets_instances,omitempty"`
 		TargetsRaw       *[]NetworkBackendRawTargetRequest   `json:"targets_raw,omitempty"`
@@ -92,15 +93,15 @@ type (
 	}
 
 	NetworkBackendResponse struct {
-		ID               string      `json:"id"`
-		HealthCheckID    *string     `json:"health_check_id,omitempty"`
-		Name             string      `json:"name"`
-		Description      *string     `json:"description,omitempty"`
-		BalanceAlgorithm string      `json:"balance_algorithm"`
-		TargetsType      string      `json:"targets_type"`
-		Targets          interface{} `json:"targets"`
-		CreatedAt        string      `json:"created_at"`
-		UpdatedAt        string      `json:"updated_at"`
+		ID               string                  `json:"id"`
+		HealthCheckID    *string                 `json:"health_check_id,omitempty"`
+		Name             string                  `json:"name"`
+		Description      *string                 `json:"description,omitempty"`
+		BalanceAlgorithm BackendBalanceAlgorithm `json:"balance_algorithm"`
+		TargetsType      BackendType             `json:"targets_type"`
+		Targets          interface{}             `json:"targets"`
+		CreatedAt        string                  `json:"created_at"`
+		UpdatedAt        string                  `json:"updated_at"`
 	}
 
 	NetworkPaginatedBackendResponse struct {
@@ -128,7 +129,7 @@ func (s *networkBackendService) Targets() *networkBackendTargetService {
 func (s *networkBackendService) Create(ctx context.Context, req CreateNetworkBackendRequest) (string, error) {
 	path := "/v0beta1/network-load-balancers/" + req.LoadBalancerID + "/backends"
 
-	httpReq, err := s.client.newRequest(ctx, "POST", path, req)
+	httpReq, err := s.client.newRequest(ctx, http.MethodPost, path, req)
 	if err != nil {
 		return "", err
 	}
@@ -146,7 +147,7 @@ func (s *networkBackendService) Create(ctx context.Context, req CreateNetworkBac
 func (s *networkBackendService) Delete(ctx context.Context, req DeleteNetworkBackendRequest) error {
 	path := "/v0beta1/network-load-balancers/" + req.LoadBalancerID + "/backends/" + req.BackendID
 
-	httpReq, err := s.client.newRequest(ctx, "DELETE", path, nil)
+	httpReq, err := s.client.newRequest(ctx, http.MethodDelete, path, nil)
 	if err != nil {
 		return err
 	}
@@ -158,7 +159,7 @@ func (s *networkBackendService) Delete(ctx context.Context, req DeleteNetworkBac
 func (s *networkBackendService) Get(ctx context.Context, req GetNetworkBackendRequest) (*NetworkBackendResponse, error) {
 	path := "/v0beta1/network-load-balancers/" + req.LoadBalancerID + "/backends/" + req.BackendID
 
-	httpReq, err := s.client.newRequest(ctx, "GET", path, nil)
+	httpReq, err := s.client.newRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -174,7 +175,7 @@ func (s *networkBackendService) Get(ctx context.Context, req GetNetworkBackendRe
 func (s *networkBackendService) List(ctx context.Context, req ListNetworkBackendRequest) ([]NetworkBackendResponse, error) {
 	path := "/v0beta1/network-load-balancers/" + req.LoadBalancerID + "/backends"
 
-	httpReq, err := s.client.newRequest(ctx, "GET", path, nil)
+	httpReq, err := s.client.newRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -190,7 +191,7 @@ func (s *networkBackendService) List(ctx context.Context, req ListNetworkBackend
 func (s *networkBackendService) Update(ctx context.Context, req UpdateNetworkBackendRequest) error {
 	path := "/v0beta1/network-load-balancers/" + req.LoadBalancerID + "/backends/" + req.BackendID
 
-	httpReq, err := s.client.newRequest(ctx, "PUT", path, req)
+	httpReq, err := s.client.newRequest(ctx, http.MethodPut, path, req)
 	if err != nil {
 		return err
 	}

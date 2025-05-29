@@ -2,16 +2,17 @@ package lbaas
 
 import (
 	"context"
+	"net/http"
 
 	mgc_http "github.com/MagaluCloud/mgc-sdk-go/internal/http"
 )
 
 type (
 	CreateNetworkBackendTargetRequest struct {
-		LoadBalancerID   string   `json:"-"`
-		NetworkBackendID string   `json:"-"`
-		TargetsID        []string `json:"targets_id"`
-		TargetsType      string   `json:"targets_type"`
+		LoadBalancerID   string      `json:"-"`
+		NetworkBackendID string      `json:"-"`
+		TargetsID        []string    `json:"targets_id"`
+		TargetsType      BackendType `json:"targets_type"`
 	}
 
 	DeleteNetworkBackendTargetRequest struct {
@@ -33,7 +34,7 @@ type (
 func (s *networkBackendTargetService) Create(ctx context.Context, req CreateNetworkBackendTargetRequest) (string, error) {
 	path := "/v0beta1/network-load-balancers/" + req.LoadBalancerID + "/backends/" + req.NetworkBackendID + "/targets"
 
-	httpReq, err := s.client.newRequest(ctx, "POST", path, req)
+	httpReq, err := s.client.newRequest(ctx, http.MethodPost, path, req)
 	if err != nil {
 		return "", err
 	}
@@ -51,7 +52,7 @@ func (s *networkBackendTargetService) Create(ctx context.Context, req CreateNetw
 func (s *networkBackendTargetService) Delete(ctx context.Context, req DeleteNetworkBackendTargetRequest) error {
 	path := "/v0beta1/network-load-balancers/" + req.LoadBalancerID + "/backends/" + req.NetworkBackendID + "/targets/" + req.TargetID
 
-	httpReq, err := s.client.newRequest(ctx, "DELETE", path, nil)
+	httpReq, err := s.client.newRequest(ctx, http.MethodDelete, path, nil)
 	if err != nil {
 		return err
 	}

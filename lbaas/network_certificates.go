@@ -2,6 +2,9 @@ package lbaas
 
 import (
 	"context"
+	"encoding/base64"
+	"errors"
+	"net/http"
 	"strconv"
 
 	mgc_http "github.com/MagaluCloud/mgc-sdk-go/internal/http"
@@ -69,7 +72,15 @@ type (
 func (s *networkCertificateService) Create(ctx context.Context, req CreateNetworkCertificateRequest) (*NetworkTLSCertificateResponse, error) {
 	path := "/v0beta1/network-load-balancers/" + req.LoadBalancerID + "/tls-certificates"
 
-	httpReq, err := s.client.newRequest(ctx, "POST", path, req)
+	// validate if certificate and private key are base64 encoded
+	if _, err := base64.StdEncoding.DecodeString(req.Certificate); err != nil {
+		return nil, errors.New("certificate is not base64 encoded")
+	}
+	if _, err := base64.StdEncoding.DecodeString(req.PrivateKey); err != nil {
+		return nil, errors.New("private key is not base64 encoded")
+	}
+
+	httpReq, err := s.client.newRequest(ctx, http.MethodPost, path, req)
 	if err != nil {
 		return nil, err
 	}
@@ -85,7 +96,7 @@ func (s *networkCertificateService) Create(ctx context.Context, req CreateNetwor
 func (s *networkCertificateService) Delete(ctx context.Context, req DeleteNetworkCertificateRequest) error {
 	path := "/v0beta1/network-load-balancers/" + req.LoadBalancerID + "/tls-certificates/" + req.TLSCertificateID
 
-	httpReq, err := s.client.newRequest(ctx, "DELETE", path, nil)
+	httpReq, err := s.client.newRequest(ctx, http.MethodDelete, path, nil)
 	if err != nil {
 		return err
 	}
@@ -97,7 +108,7 @@ func (s *networkCertificateService) Delete(ctx context.Context, req DeleteNetwor
 func (s *networkCertificateService) Get(ctx context.Context, req GetNetworkCertificateRequest) (*NetworkTLSCertificateResponse, error) {
 	path := "/v0beta1/network-load-balancers/" + req.LoadBalancerID + "/tls-certificates/" + req.TLSCertificateID
 
-	httpReq, err := s.client.newRequest(ctx, "GET", path, nil)
+	httpReq, err := s.client.newRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -113,7 +124,7 @@ func (s *networkCertificateService) Get(ctx context.Context, req GetNetworkCerti
 func (s *networkCertificateService) List(ctx context.Context, req ListNetworkCertificateRequest) ([]NetworkTLSCertificateResponse, error) {
 	path := "/v0beta1/network-load-balancers/" + req.LoadBalancerID + "/tls-certificates"
 
-	httpReq, err := s.client.newRequest(ctx, "GET", path, nil)
+	httpReq, err := s.client.newRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -142,7 +153,7 @@ func (s *networkCertificateService) List(ctx context.Context, req ListNetworkCer
 func (s *networkCertificateService) Update(ctx context.Context, req UpdateNetworkCertificateRequest) error {
 	path := "/v0beta1/network-load-balancers/" + req.LoadBalancerID + "/tls-certificates/" + req.TLSCertificateID
 
-	httpReq, err := s.client.newRequest(ctx, "PUT", path, req)
+	httpReq, err := s.client.newRequest(ctx, http.MethodPut, path, req)
 	if err != nil {
 		return err
 	}

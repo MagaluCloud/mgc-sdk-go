@@ -2,18 +2,19 @@ package lbaas
 
 import (
 	"context"
+	"net/http"
 
 	mgc_http "github.com/MagaluCloud/mgc-sdk-go/internal/http"
 )
 
 type (
 	CreateNetworkACLRequest struct {
-		Name           *string `json:"name,omitempty"`
-		Ethertype      string  `json:"ethertype"` // ipv4, ipv6
-		LoadBalancerID string  `json:"load_balancer_id"`
-		Action         string  `json:"action"`   // ALLOW, DENY, DENY_UNSPECIFIED
-		Protocol       string  `json:"protocol"` // tcp, tls
-		RemoteIPPrefix string  `json:"remote_ip_prefix"`
+		Name           *string       `json:"name,omitempty"`
+		Ethertype      AclEtherType  `json:"ethertype"` // ipv4, ipv6
+		LoadBalancerID string        `json:"load_balancer_id"`
+		Action         AclActionType `json:"action"`   // ALLOW, DENY, DENY_UNSPECIFIED
+		Protocol       AclProtocol   `json:"protocol"` // tcp, tls
+		RemoteIPPrefix string        `json:"remote_ip_prefix"`
 	}
 
 	GetNetworkACLRequest struct {
@@ -32,8 +33,8 @@ type (
 
 	NetworkACLService interface {
 		Create(ctx context.Context, req CreateNetworkACLRequest) (string, error)
-		Get(ctx context.Context, req GetNetworkACLRequest) (*NetworkAclResponse, error)
-		List(ctx context.Context, req ListNetworkACLRequest) ([]NetworkAclResponse, error)
+		// Get(ctx context.Context, req GetNetworkACLRequest) (*NetworkAclResponse, error)
+		// List(ctx context.Context, req ListNetworkACLRequest) ([]NetworkAclResponse, error)
 		Delete(ctx context.Context, req DeleteNetworkACLRequest) error
 	}
 
@@ -54,7 +55,7 @@ func (s *networkACLService) Create(ctx context.Context, req CreateNetworkACLRequ
 		Action:         req.Action,
 	}
 
-	httpReq, err := s.client.newRequest(ctx, "POST", path, body)
+	httpReq, err := s.client.newRequest(ctx, http.MethodPost, path, body)
 	if err != nil {
 		return "", err
 	}
@@ -70,43 +71,43 @@ func (s *networkACLService) Create(ctx context.Context, req CreateNetworkACLRequ
 	return result.ID, nil
 }
 
-func (s *networkACLService) Get(ctx context.Context, req GetNetworkACLRequest) (*NetworkAclResponse, error) {
-	// GET /v0beta1/network-load-balancers/{load_balancer_id}/acls/{acl_id}
-	path := "/v0beta1/network-load-balancers/" + req.LoadBalancerID + "/acls/" + req.NetworkACLID
+// func (s *networkACLService) Get(ctx context.Context, req GetNetworkACLRequest) (*NetworkAclResponse, error) {
+// 	// GET /v0beta1/network-load-balancers/{load_balancer_id}/acls/{acl_id}
+// 	path := "/v0beta1/network-load-balancers/" + req.LoadBalancerID + "/acls/" + req.NetworkACLID
 
-	httpReq, err := s.client.newRequest(ctx, "GET", path, nil)
-	if err != nil {
-		return nil, err
-	}
+// 	httpReq, err := s.client.newRequest(ctx, http.MethodGet, path, nil)
+// 	if err != nil {
+// 		return nil, err
+// 	}
 
-	result, err := mgc_http.Do(s.client.GetConfig(), ctx, httpReq, &NetworkAclResponse{})
-	if err != nil {
-		return nil, err
-	}
-	return result, nil
-}
+// 	result, err := mgc_http.Do(s.client.GetConfig(), ctx, httpReq, &NetworkAclResponse{})
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	return result, nil
+// }
 
-func (s *networkACLService) List(ctx context.Context, req ListNetworkACLRequest) ([]NetworkAclResponse, error) {
-	// GET /v0beta1/network-load-balancers/{load_balancer_id}/acls
-	path := "/v0beta1/network-load-balancers/" + req.LoadBalancerID + "/acls"
+// func (s *networkACLService) List(ctx context.Context, req ListNetworkACLRequest) ([]NetworkAclResponse, error) {
+// 	// GET /v0beta1/network-load-balancers/{load_balancer_id}/acls
+// 	path := "/v0beta1/network-load-balancers/" + req.LoadBalancerID + "/acls"
 
-	httpReq, err := s.client.newRequest(ctx, "GET", path, nil)
-	if err != nil {
-		return nil, err
-	}
+// 	httpReq, err := s.client.newRequest(ctx, http.MethodGet, path, nil)
+// 	if err != nil {
+// 		return nil, err
+// 	}
 
-	result, err := mgc_http.Do(s.client.GetConfig(), ctx, httpReq, &[]NetworkAclResponse{})
-	if err != nil {
-		return nil, err
-	}
-	return *result, nil
-}
+// 	result, err := mgc_http.Do(s.client.GetConfig(), ctx, httpReq, &[]NetworkAclResponse{})
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	return *result, nil
+// }
 
 func (s *networkACLService) Delete(ctx context.Context, req DeleteNetworkACLRequest) error {
 	// DELETE /v0beta1/network-load-balancers/{load_balancer_id}/acls/{acl_id}
 	path := "/v0beta1/network-load-balancers/" + req.LoadBalancerID + "/acls/" + req.ID
 
-	httpReq, err := s.client.newRequest(ctx, "DELETE", path, nil)
+	httpReq, err := s.client.newRequest(ctx, http.MethodDelete, path, nil)
 	if err != nil {
 		return err
 	}
