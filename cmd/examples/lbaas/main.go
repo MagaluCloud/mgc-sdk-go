@@ -465,7 +465,7 @@ func ExampleManageHealthChecks(lbID string) {
 	if err != nil {
 		log.Printf("Erro ao criar health check: %v\n", err)
 	} else {
-		fmt.Printf("Health Check criado com sucesso! ID: %s\n", hcID)
+		fmt.Printf("Health Check criado com sucesso! ID: %s\n", hcID.ID)
 	}
 }
 
@@ -578,7 +578,7 @@ func ExampleManageCertificates(lbID string) {
 	if err != nil {
 		log.Printf("Erro ao criar certificado: %v\n", err)
 	} else {
-		fmt.Printf("Certificado criado com sucesso! ID: %s\n", certID)
+		fmt.Printf("Certificado criado com sucesso! ID: %s\n", certID.ID)
 
 		// Obter detalhes do certificado criado
 		getCertReq := lbaas.GetNetworkCertificateRequest{
