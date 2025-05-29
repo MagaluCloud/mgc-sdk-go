@@ -1,6 +1,21 @@
 package lbaas
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"strings"
+)
+
+func urlNetworkLoadBalancer(lbID *string, extraPath ...string) string {
+	result := "/v0beta1/network-load-balancers"
+	if lbID == nil || *lbID == "" {
+		return result
+	}
+	result += "/" + *lbID
+	if len(extraPath) > 0 {
+		result += "/" + strings.Join(extraPath, "/")
+	}
+	return result
+}
 
 func (t *TargetsRawOrInstancesRequest) UnmarshalJSON(data []byte) error {
 	var targets any

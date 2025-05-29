@@ -128,7 +128,7 @@ func (s *networkBackendService) Targets() *networkBackendTargetService {
 }
 
 func (s *networkBackendService) Create(ctx context.Context, req CreateNetworkBackendRequest) (string, error) {
-	path := "/v0beta1/network-load-balancers/" + req.LoadBalancerID + "/backends"
+	path := urlNetworkLoadBalancer(&req.LoadBalancerID, "backends")
 
 	httpReq, err := s.client.newRequest(ctx, http.MethodPost, path, req)
 	if err != nil {
@@ -146,7 +146,7 @@ func (s *networkBackendService) Create(ctx context.Context, req CreateNetworkBac
 }
 
 func (s *networkBackendService) Delete(ctx context.Context, req DeleteNetworkBackendRequest) error {
-	path := "/v0beta1/network-load-balancers/" + req.LoadBalancerID + "/backends/" + req.BackendID
+	path := urlNetworkLoadBalancer(&req.LoadBalancerID, "backends", req.BackendID)
 
 	httpReq, err := s.client.newRequest(ctx, http.MethodDelete, path, nil)
 	if err != nil {
@@ -158,7 +158,7 @@ func (s *networkBackendService) Delete(ctx context.Context, req DeleteNetworkBac
 }
 
 func (s *networkBackendService) Get(ctx context.Context, req GetNetworkBackendRequest) (*NetworkBackendResponse, error) {
-	path := "/v0beta1/network-load-balancers/" + req.LoadBalancerID + "/backends/" + req.BackendID
+	path := urlNetworkLoadBalancer(&req.LoadBalancerID, "backends", req.BackendID)
 
 	httpReq, err := s.client.newRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
@@ -174,7 +174,7 @@ func (s *networkBackendService) Get(ctx context.Context, req GetNetworkBackendRe
 }
 
 func (s *networkBackendService) List(ctx context.Context, req ListNetworkBackendRequest) ([]NetworkBackendResponse, error) {
-	path := "/v0beta1/network-load-balancers/" + req.LoadBalancerID + "/backends"
+	path := urlNetworkLoadBalancer(&req.LoadBalancerID, "backends")
 
 	httpReq, err := s.client.newRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
@@ -190,7 +190,7 @@ func (s *networkBackendService) List(ctx context.Context, req ListNetworkBackend
 }
 
 func (s *networkBackendService) Update(ctx context.Context, req UpdateNetworkBackendRequest) error {
-	path := "/v0beta1/network-load-balancers/" + req.LoadBalancerID + "/backends/" + req.BackendID
+	path := urlNetworkLoadBalancer(&req.LoadBalancerID, "backends", req.BackendID)
 
 	httpReq, err := s.client.newRequest(ctx, http.MethodPut, path, req)
 	if err != nil {

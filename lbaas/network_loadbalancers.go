@@ -181,7 +181,7 @@ type (
 )
 
 func (s *networkLoadBalancerService) Create(ctx context.Context, req CreateNetworkLoadBalancerRequest) (string, error) {
-	path := "/v0beta1/network-load-balancers"
+	path := urlNetworkLoadBalancer(nil)
 
 	httpReq, err := s.client.newRequest(ctx, http.MethodPost, path, req)
 	if err != nil {
@@ -199,7 +199,7 @@ func (s *networkLoadBalancerService) Create(ctx context.Context, req CreateNetwo
 }
 
 func (s *networkLoadBalancerService) Delete(ctx context.Context, req DeleteNetworkLoadBalancerRequest) error {
-	path := "/v0beta1/network-load-balancers/" + req.LoadBalancerID
+	path := urlNetworkLoadBalancer(&req.LoadBalancerID)
 
 	httpReq, err := s.client.newRequest(ctx, http.MethodDelete, path, nil)
 	if err != nil {
@@ -218,7 +218,7 @@ func (s *networkLoadBalancerService) Delete(ctx context.Context, req DeleteNetwo
 }
 
 func (s *networkLoadBalancerService) Get(ctx context.Context, req GetNetworkLoadBalancerRequest) (*NetworkLoadBalancerResponse, error) {
-	path := "/v0beta1/network-load-balancers/" + req.LoadBalancerID
+	path := urlNetworkLoadBalancer(&req.LoadBalancerID)
 
 	httpReq, err := s.client.newRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
@@ -234,7 +234,7 @@ func (s *networkLoadBalancerService) Get(ctx context.Context, req GetNetworkLoad
 }
 
 func (s *networkLoadBalancerService) List(ctx context.Context, req ListNetworkLoadBalancerRequest) ([]NetworkLoadBalancerResponse, error) {
-	path := "/v0beta1/network-load-balancers"
+	path := urlNetworkLoadBalancer(nil)
 
 	httpReq, err := s.client.newRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
@@ -263,7 +263,7 @@ func (s *networkLoadBalancerService) List(ctx context.Context, req ListNetworkLo
 }
 
 func (s *networkLoadBalancerService) Update(ctx context.Context, req UpdateNetworkLoadBalancerRequest) error {
-	path := "/v0beta1/network-load-balancers/" + req.LoadBalancerID
+	path := urlNetworkLoadBalancer(&req.LoadBalancerID)
 
 	httpReq, err := s.client.newRequest(ctx, http.MethodPut, path, req)
 	if err != nil {

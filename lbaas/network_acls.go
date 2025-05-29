@@ -44,9 +44,7 @@ type (
 )
 
 func (s *networkACLService) Create(ctx context.Context, req CreateNetworkACLRequest) (string, error) {
-	// POST /v0beta1/network-load-balancers/{load_balancer_id}/acls
-	path := "/v0beta1/network-load-balancers/" + req.LoadBalancerID + "/acls"
-
+	path := urlNetworkLoadBalancer(&req.LoadBalancerID, "acls")
 	body := CreateNetworkACLRequest{
 		Name:           req.Name,
 		Ethertype:      req.Ethertype,
@@ -104,8 +102,7 @@ func (s *networkACLService) Create(ctx context.Context, req CreateNetworkACLRequ
 // }
 
 func (s *networkACLService) Delete(ctx context.Context, req DeleteNetworkACLRequest) error {
-	// DELETE /v0beta1/network-load-balancers/{load_balancer_id}/acls/{acl_id}
-	path := "/v0beta1/network-load-balancers/" + req.LoadBalancerID + "/acls/" + req.ID
+	path := urlNetworkLoadBalancer(&req.LoadBalancerID, "acls", req.ID)
 
 	httpReq, err := s.client.newRequest(ctx, http.MethodDelete, path, nil)
 	if err != nil {
