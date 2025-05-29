@@ -43,6 +43,7 @@ func main() {
 		ExampleManageHealthChecks(lbID)
 		ExampleManageCertificates(lbID)
 		ExampleManageACLs(lbID)
+		ExampleGetLoadBalancer(lbID)
 
 		err := deleteWithRetry(lbID)
 		if err != nil {

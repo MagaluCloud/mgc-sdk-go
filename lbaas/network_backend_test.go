@@ -161,18 +161,34 @@ func TestNetworkBackendService_List(t *testing.T) {
 		{
 			name: "successful list with multiple backends",
 			lbID: "lb-123",
-			response: `[
-				{"id": "backend-1", "name": "test1", "balance_algorithm": "round_robin", "targets_type": "instance", "targets": []},
-				{"id": "backend-2", "name": "test2", "balance_algorithm": "least_connections", "targets_type": "raw", "targets": []}
-			]`,
+			response: `{
+				"meta": {
+					"current_page": 1,
+					"total_count": 2,
+					"total_pages": 1,
+					"total_results": 2
+				},
+				"results": [
+					{"id": "backend-1", "name": "test1", "balance_algorithm": "round_robin", "targets_type": "instance", "targets": []},
+					{"id": "backend-2", "name": "test2", "balance_algorithm": "least_connections", "targets_type": "raw", "targets": []}
+				]
+			}`,
 			statusCode: http.StatusOK,
 			want:       2,
 			wantErr:    false,
 		},
 		{
-			name:       "empty list",
-			lbID:       "lb-123",
-			response:   `[]`,
+			name: "empty list",
+			lbID: "lb-123",
+			response: `{
+				"meta": {
+					"current_page": 1,
+					"total_count": 0,
+					"total_pages": 0,
+					"total_results": 0
+				},
+				"results": []
+			}`,
 			statusCode: http.StatusOK,
 			want:       0,
 			wantErr:    false,

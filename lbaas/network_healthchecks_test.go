@@ -69,7 +69,7 @@ func TestNetworkHealthCheckService_Create(t *testing.T) {
 			defer server.Close()
 
 			client := testHealthCheckClient(server.URL)
-			id, err := client.Create(context.Background(), tt.request)
+			hc, err := client.Create(context.Background(), tt.request)
 
 			if tt.wantErr {
 				assertError(t, err)
@@ -77,7 +77,7 @@ func TestNetworkHealthCheckService_Create(t *testing.T) {
 			}
 
 			assertNoError(t, err)
-			assertEqual(t, tt.want, id)
+			assertEqual(t, tt.want, hc.ID)
 		})
 	}
 }
@@ -167,18 +167,34 @@ func TestNetworkHealthCheckService_List(t *testing.T) {
 		{
 			name: "successful list with multiple health checks",
 			lbID: "lb-123",
-			response: `[
-				{"id": "hc-1", "name": "test1", "protocol": "HTTP", "port": 80, "healthy_status_code": 200, "interval_seconds": 30, "timeout_seconds": 5, "initial_delay_seconds": 10, "healthy_threshold_count": 3, "unhealthy_threshold_count": 3},
-				{"id": "hc-2", "name": "test2", "protocol": "TCP", "port": 443, "interval_seconds": 30, "timeout_seconds": 5, "initial_delay_seconds": 10, "healthy_threshold_count": 3, "unhealthy_threshold_count": 3}
-			]`,
+			response: `{
+				"meta": {
+					"current_page": 1,
+					"total_count": 2,
+					"total_pages": 1,
+					"total_results": 2
+				},
+				"results": [
+					{"id": "hc-1", "name": "test1", "protocol": "HTTP", "port": 80, "healthy_status_code": 200, "interval_seconds": 30, "timeout_seconds": 5, "initial_delay_seconds": 10, "healthy_threshold_count": 3, "unhealthy_threshold_count": 3},
+					{"id": "hc-2", "name": "test2", "protocol": "TCP", "port": 443, "interval_seconds": 30, "timeout_seconds": 5, "initial_delay_seconds": 10, "healthy_threshold_count": 3, "unhealthy_threshold_count": 3}
+				]
+			}`,
 			statusCode: http.StatusOK,
 			want:       2,
 			wantErr:    false,
 		},
 		{
-			name:       "empty list",
-			lbID:       "lb-123",
-			response:   `[]`,
+			name: "empty list",
+			lbID: "lb-123",
+			response: `{
+				"meta": {
+					"current_page": 1,
+					"total_count": 0,
+					"total_pages": 0,
+					"total_results": 0
+				},
+				"results": []
+			}`,
 			statusCode: http.StatusOK,
 			want:       0,
 			wantErr:    false,

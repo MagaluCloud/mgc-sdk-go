@@ -55,6 +55,7 @@ type (
 	}
 
 	NetworkPaginatedListenerResponse struct {
+		Meta    interface{}               `json:"meta"`
 		Results []NetworkListenerResponse `json:"results"`
 	}
 

@@ -73,6 +73,7 @@ type (
 	}
 
 	NetworkPaginatedHealthCheckResponse struct {
+		Meta    interface{}                  `json:"meta"`
 		Results []NetworkHealthCheckResponse `json:"results"`
 	}
 

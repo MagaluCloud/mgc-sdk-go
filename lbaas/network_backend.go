@@ -105,6 +105,7 @@ type (
 	}
 
 	NetworkPaginatedBackendResponse struct {
+		Meta    interface{}              `json:"meta"`
 		Results []NetworkBackendResponse `json:"results"`
 	}
 

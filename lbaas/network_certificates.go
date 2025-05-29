@@ -53,6 +53,7 @@ type (
 	}
 
 	NetworkPaginatedTLSCertificateResponse struct {
+		Meta    interface{}                     `json:"meta"`
 		Results []NetworkTLSCertificateResponse `json:"results"`
 	}
 

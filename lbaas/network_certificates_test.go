@@ -2,6 +2,7 @@ package lbaas
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -20,6 +21,15 @@ func testCertificateClient(baseURL string) NetworkCertificateService {
 
 func TestNetworkCertificateService_Create(t *testing.T) {
 	t.Parallel()
+
+	// Certificado e chave privada em formato PEM
+	certPEM := "-----BEGIN CERTIFICATE-----\nMIIC...\n-----END CERTIFICATE-----"
+	keyPEM := "-----BEGIN PRIVATE KEY-----\nMIIE...\n-----END PRIVATE KEY-----"
+
+	// Codificar em base64 conforme esperado pela API
+	certBase64 := base64.StdEncoding.EncodeToString([]byte(certPEM))
+	keyBase64 := base64.StdEncoding.EncodeToString([]byte(keyPEM))
+
 	tests := []struct {
 		name       string
 		request    CreateNetworkCertificateRequest
@@ -33,8 +43,8 @@ func TestNetworkCertificateService_Create(t *testing.T) {
 			request: CreateNetworkCertificateRequest{
 				LoadBalancerID: "lb-123",
 				Name:           "test-cert",
-				Certificate:    "-----BEGIN CERTIFICATE-----\nMIIC...\n-----END CERTIFICATE-----",
-				PrivateKey:     "-----BEGIN PRIVATE KEY-----\nMIIE...\n-----END PRIVATE KEY-----",
+				Certificate:    certBase64,
+				PrivateKey:     keyBase64,
 			},
 			response:   `{"id": "cert-123"}`,
 			statusCode: http.StatusOK,
@@ -46,8 +56,8 @@ func TestNetworkCertificateService_Create(t *testing.T) {
 			request: CreateNetworkCertificateRequest{
 				LoadBalancerID: "lb-123",
 				Name:           "test-cert",
-				Certificate:    "-----BEGIN CERTIFICATE-----\nMIIC...\n-----END CERTIFICATE-----",
-				PrivateKey:     "-----BEGIN PRIVATE KEY-----\nMIIE...\n-----END PRIVATE KEY-----",
+				Certificate:    certBase64,
+				PrivateKey:     keyBase64,
 			},
 			response:   `{"error": "internal server error"}`,
 			statusCode: http.StatusInternalServerError,
@@ -69,7 +79,7 @@ func TestNetworkCertificateService_Create(t *testing.T) {
 			defer server.Close()
 
 			client := testCertificateClient(server.URL)
-			id, err := client.Create(context.Background(), tt.request)
+			cert, err := client.Create(context.Background(), tt.request)
 
 			if tt.wantErr {
 				assertError(t, err)
@@ -77,7 +87,7 @@ func TestNetworkCertificateService_Create(t *testing.T) {
 			}
 
 			assertNoError(t, err)
-			assertEqual(t, tt.want, id)
+			assertEqual(t, tt.want, cert.ID)
 		})
 	}
 }
@@ -161,18 +171,34 @@ func TestNetworkCertificateService_List(t *testing.T) {
 		{
 			name: "successful list with multiple certificates",
 			lbID: "lb-123",
-			response: `[
-				{"id": "cert-1", "name": "test1", "certificate": "-----BEGIN CERTIFICATE-----\nMIIC...\n-----END CERTIFICATE-----", "created_at": "2024-01-01T00:00:00Z", "updated_at": "2024-01-01T00:00:00Z"},
-				{"id": "cert-2", "name": "test2", "certificate": "-----BEGIN CERTIFICATE-----\nMIID...\n-----END CERTIFICATE-----", "created_at": "2024-01-01T00:00:00Z", "updated_at": "2024-01-01T00:00:00Z"}
-			]`,
+			response: `{
+				"meta": {
+					"current_page": 1,
+					"total_count": 2,
+					"total_pages": 1,
+					"total_results": 2
+				},
+				"results": [
+					{"id": "cert-1", "name": "test1", "certificate": "-----BEGIN CERTIFICATE-----\nMIIC...\n-----END CERTIFICATE-----", "created_at": "2024-01-01T00:00:00Z", "updated_at": "2024-01-01T00:00:00Z"},
+					{"id": "cert-2", "name": "test2", "certificate": "-----BEGIN CERTIFICATE-----\nMIID...\n-----END CERTIFICATE-----", "created_at": "2024-01-01T00:00:00Z", "updated_at": "2024-01-01T00:00:00Z"}
+				]
+			}`,
 			statusCode: http.StatusOK,
 			want:       2,
 			wantErr:    false,
 		},
 		{
-			name:       "empty list",
-			lbID:       "lb-123",
-			response:   `[]`,
+			name: "empty list",
+			lbID: "lb-123",
+			response: `{
+				"meta": {
+					"current_page": 1,
+					"total_count": 0,
+					"total_pages": 0,
+					"total_results": 0
+				},
+				"results": []
+			}`,
 			statusCode: http.StatusOK,
 			want:       0,
 			wantErr:    false,

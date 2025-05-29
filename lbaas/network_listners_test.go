@@ -62,8 +62,10 @@ func TestNetworkListenerService_Create(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				assertEqual(t, fmt.Sprintf("/load-balancer/v0beta1/network-load-balancers/%s/backends/%s/listeners", tt.request.LoadBalancerID, tt.request.BackendID), r.URL.Path)
+				assertEqual(t, fmt.Sprintf("/load-balancer/v0beta1/network-load-balancers/%s/listeners", tt.request.LoadBalancerID), r.URL.Path)
 				assertEqual(t, http.MethodPost, r.Method)
+				backendID := r.URL.Query().Get("backend_id")
+				assertEqual(t, tt.request.BackendID, backendID)
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(tt.statusCode)
 				w.Write([]byte(tt.response))
@@ -71,7 +73,7 @@ func TestNetworkListenerService_Create(t *testing.T) {
 			defer server.Close()
 
 			client := testListenerClient(server.URL)
-			id, err := client.Create(context.Background(), tt.request)
+			listener, err := client.Create(context.Background(), tt.request)
 
 			if tt.wantErr {
 				assertError(t, err)
@@ -79,7 +81,7 @@ func TestNetworkListenerService_Create(t *testing.T) {
 			}
 
 			assertNoError(t, err)
-			assertEqual(t, tt.want, id)
+			assertEqual(t, tt.want, listener.ID)
 		})
 	}
 }
@@ -164,18 +166,34 @@ func TestNetworkListenerService_List(t *testing.T) {
 		{
 			name: "successful list with multiple listeners",
 			lbID: "lb-123",
-			response: `[
-				{"id": "listener-1", "name": "test1", "protocol": "HTTP", "port": 80, "backend_id": "backend-1"},
-				{"id": "listener-2", "name": "test2", "protocol": "HTTPS", "port": 443, "backend_id": "backend-2", "tls_certificate_id": "cert-1"}
-			]`,
+			response: `{
+				"meta": {
+					"current_page": 1,
+					"total_count": 2,
+					"total_pages": 1,
+					"total_results": 2
+				},
+				"results": [
+					{"id": "listener-1", "name": "test1", "protocol": "HTTP", "port": 80, "backend_id": "backend-1"},
+					{"id": "listener-2", "name": "test2", "protocol": "HTTPS", "port": 443, "backend_id": "backend-2", "tls_certificate_id": "cert-1"}
+				]
+			}`,
 			statusCode: http.StatusOK,
 			want:       2,
 			wantErr:    false,
 		},
 		{
-			name:       "empty list",
-			lbID:       "lb-123",
-			response:   `[]`,
+			name: "empty list",
+			lbID: "lb-123",
+			response: `{
+				"meta": {
+					"current_page": 1,
+					"total_count": 0,
+					"total_pages": 0,
+					"total_results": 0
+				},
+				"results": []
+			}`,
 			statusCode: http.StatusOK,
 			want:       0,
 			wantErr:    false,
