@@ -7,6 +7,8 @@ import (
 	mgc_http "github.com/MagaluCloud/mgc-sdk-go/internal/http"
 )
 
+const targets = "targets"
+
 type (
 	CreateNetworkBackendTargetRequest struct {
 		LoadBalancerID   string      `json:"-"`
@@ -32,7 +34,7 @@ type (
 )
 
 func (s *networkBackendTargetService) Create(ctx context.Context, req CreateNetworkBackendTargetRequest) (string, error) {
-	path := urlNetworkLoadBalancer(&req.LoadBalancerID, "backends", req.NetworkBackendID, "targets")
+	path := urlNetworkLoadBalancer(&req.LoadBalancerID, backends, req.NetworkBackendID, targets)
 
 	httpReq, err := s.client.newRequest(ctx, http.MethodPost, path, req)
 	if err != nil {
@@ -50,7 +52,7 @@ func (s *networkBackendTargetService) Create(ctx context.Context, req CreateNetw
 }
 
 func (s *networkBackendTargetService) Delete(ctx context.Context, req DeleteNetworkBackendTargetRequest) error {
-	path := urlNetworkLoadBalancer(&req.LoadBalancerID, "backends", req.NetworkBackendID, "targets", req.TargetID)
+	path := urlNetworkLoadBalancer(&req.LoadBalancerID, backends, req.NetworkBackendID, targets, req.TargetID)
 
 	httpReq, err := s.client.newRequest(ctx, http.MethodDelete, path, nil)
 	if err != nil {

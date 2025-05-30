@@ -8,6 +8,8 @@ import (
 	mgc_http "github.com/MagaluCloud/mgc-sdk-go/internal/http"
 )
 
+const listeners = "listeners"
+
 type (
 	CreateNetworkListenerRequest struct {
 		LoadBalancerID   string           `json:"-"`
@@ -73,7 +75,7 @@ type (
 )
 
 func (s *networkListenerService) Create(ctx context.Context, req CreateNetworkListenerRequest) (*NetworkListenerResponse, error) {
-	path := urlNetworkLoadBalancer(&req.LoadBalancerID, "listeners")
+	path := urlNetworkLoadBalancer(&req.LoadBalancerID, listeners)
 
 	httpReq, err := s.client.newRequest(ctx, http.MethodPost, path, req)
 	if err != nil {
@@ -94,7 +96,7 @@ func (s *networkListenerService) Create(ctx context.Context, req CreateNetworkLi
 }
 
 func (s *networkListenerService) Delete(ctx context.Context, req DeleteNetworkListenerRequest) error {
-	path := urlNetworkLoadBalancer(&req.LoadBalancerID, "listeners", req.ListenerID)
+	path := urlNetworkLoadBalancer(&req.LoadBalancerID, listeners, req.ListenerID)
 
 	httpReq, err := s.client.newRequest(ctx, http.MethodDelete, path, nil)
 	if err != nil {
@@ -106,7 +108,7 @@ func (s *networkListenerService) Delete(ctx context.Context, req DeleteNetworkLi
 }
 
 func (s *networkListenerService) Get(ctx context.Context, req GetNetworkListenerRequest) (*NetworkListenerResponse, error) {
-	path := urlNetworkLoadBalancer(&req.LoadBalancerID, "listeners", req.ListenerID)
+	path := urlNetworkLoadBalancer(&req.LoadBalancerID, listeners, req.ListenerID)
 
 	httpReq, err := s.client.newRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
@@ -122,7 +124,7 @@ func (s *networkListenerService) Get(ctx context.Context, req GetNetworkListener
 }
 
 func (s *networkListenerService) List(ctx context.Context, req ListNetworkListenerRequest) ([]NetworkListenerResponse, error) {
-	path := urlNetworkLoadBalancer(&req.LoadBalancerID, "listeners")
+	path := urlNetworkLoadBalancer(&req.LoadBalancerID, listeners)
 
 	httpReq, err := s.client.newRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
@@ -151,7 +153,7 @@ func (s *networkListenerService) List(ctx context.Context, req ListNetworkListen
 }
 
 func (s *networkListenerService) Update(ctx context.Context, req UpdateNetworkListenerRequest) error {
-	path := urlNetworkLoadBalancer(&req.LoadBalancerID, "listeners", req.ListenerID)
+	path := urlNetworkLoadBalancer(&req.LoadBalancerID, listeners, req.ListenerID)
 
 	httpReq, err := s.client.newRequest(ctx, http.MethodPut, path, req)
 	if err != nil {

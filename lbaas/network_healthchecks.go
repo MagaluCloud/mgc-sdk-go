@@ -8,6 +8,8 @@ import (
 	mgc_http "github.com/MagaluCloud/mgc-sdk-go/internal/http"
 )
 
+const health_checks = "health-checks"
+
 type (
 	CreateNetworkHealthCheckRequest struct {
 		LoadBalancerID          string              `json:"-"`
@@ -91,7 +93,7 @@ type (
 )
 
 func (s *networkHealthCheckService) Create(ctx context.Context, req CreateNetworkHealthCheckRequest) (*NetworkHealthCheckResponse, error) {
-	path := urlNetworkLoadBalancer(&req.LoadBalancerID, "health-checks")
+	path := urlNetworkLoadBalancer(&req.LoadBalancerID, health_checks)
 
 	httpReq, err := s.client.newRequest(ctx, http.MethodPost, path, req)
 	if err != nil {
@@ -107,7 +109,7 @@ func (s *networkHealthCheckService) Create(ctx context.Context, req CreateNetwor
 }
 
 func (s *networkHealthCheckService) Delete(ctx context.Context, req DeleteNetworkHealthCheckRequest) error {
-	path := urlNetworkLoadBalancer(&req.LoadBalancerID, "health-checks", req.HealthCheckID)
+	path := urlNetworkLoadBalancer(&req.LoadBalancerID, health_checks, req.HealthCheckID)
 
 	httpReq, err := s.client.newRequest(ctx, http.MethodDelete, path, nil)
 	if err != nil {
@@ -119,7 +121,7 @@ func (s *networkHealthCheckService) Delete(ctx context.Context, req DeleteNetwor
 }
 
 func (s *networkHealthCheckService) Get(ctx context.Context, req GetNetworkHealthCheckRequest) (*NetworkHealthCheckResponse, error) {
-	path := urlNetworkLoadBalancer(&req.LoadBalancerID, "health-checks", req.HealthCheckID)
+	path := urlNetworkLoadBalancer(&req.LoadBalancerID, health_checks, req.HealthCheckID)
 
 	httpReq, err := s.client.newRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
@@ -135,7 +137,7 @@ func (s *networkHealthCheckService) Get(ctx context.Context, req GetNetworkHealt
 }
 
 func (s *networkHealthCheckService) List(ctx context.Context, req ListNetworkHealthCheckRequest) ([]NetworkHealthCheckResponse, error) {
-	path := urlNetworkLoadBalancer(&req.LoadBalancerID, "health-checks")
+	path := urlNetworkLoadBalancer(&req.LoadBalancerID, health_checks)
 
 	httpReq, err := s.client.newRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
@@ -164,7 +166,7 @@ func (s *networkHealthCheckService) List(ctx context.Context, req ListNetworkHea
 }
 
 func (s *networkHealthCheckService) Update(ctx context.Context, req UpdateNetworkHealthCheckRequest) error {
-	path := urlNetworkLoadBalancer(&req.LoadBalancerID, "health-checks", req.HealthCheckID)
+	path := urlNetworkLoadBalancer(&req.LoadBalancerID, health_checks, req.HealthCheckID)
 
 	httpReq, err := s.client.newRequest(ctx, http.MethodPut, path, req)
 	if err != nil {

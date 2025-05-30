@@ -7,6 +7,8 @@ import (
 	mgc_http "github.com/MagaluCloud/mgc-sdk-go/internal/http"
 )
 
+const acls = "acls"
+
 type (
 	CreateNetworkACLRequest struct {
 		Name           *string       `json:"name,omitempty"`
@@ -44,7 +46,7 @@ type (
 )
 
 func (s *networkACLService) Create(ctx context.Context, req CreateNetworkACLRequest) (string, error) {
-	path := urlNetworkLoadBalancer(&req.LoadBalancerID, "acls")
+	path := urlNetworkLoadBalancer(&req.LoadBalancerID, acls)
 	body := CreateNetworkACLRequest{
 		Name:           req.Name,
 		Ethertype:      req.Ethertype,
@@ -102,7 +104,7 @@ func (s *networkACLService) Create(ctx context.Context, req CreateNetworkACLRequ
 // }
 
 func (s *networkACLService) Delete(ctx context.Context, req DeleteNetworkACLRequest) error {
-	path := urlNetworkLoadBalancer(&req.LoadBalancerID, "acls", req.ID)
+	path := urlNetworkLoadBalancer(&req.LoadBalancerID, acls, req.ID)
 
 	httpReq, err := s.client.newRequest(ctx, http.MethodDelete, path, nil)
 	if err != nil {

@@ -10,6 +10,8 @@ import (
 	mgc_http "github.com/MagaluCloud/mgc-sdk-go/internal/http"
 )
 
+const tls_certificates = "tls-certificates"
+
 type (
 	CreateNetworkCertificateRequest struct {
 		LoadBalancerID string  `json:"-"`
@@ -71,7 +73,7 @@ type (
 )
 
 func (s *networkCertificateService) Create(ctx context.Context, req CreateNetworkCertificateRequest) (*NetworkTLSCertificateResponse, error) {
-	path := urlNetworkLoadBalancer(&req.LoadBalancerID, "tls-certificates")
+	path := urlNetworkLoadBalancer(&req.LoadBalancerID, tls_certificates)
 
 	// validate if certificate and private key are base64 encoded
 	if _, err := base64.StdEncoding.DecodeString(req.Certificate); err != nil {
@@ -95,7 +97,7 @@ func (s *networkCertificateService) Create(ctx context.Context, req CreateNetwor
 }
 
 func (s *networkCertificateService) Delete(ctx context.Context, req DeleteNetworkCertificateRequest) error {
-	path := urlNetworkLoadBalancer(&req.LoadBalancerID, "tls-certificates", req.TLSCertificateID)
+	path := urlNetworkLoadBalancer(&req.LoadBalancerID, tls_certificates, req.TLSCertificateID)
 
 	httpReq, err := s.client.newRequest(ctx, http.MethodDelete, path, nil)
 	if err != nil {
@@ -107,7 +109,7 @@ func (s *networkCertificateService) Delete(ctx context.Context, req DeleteNetwor
 }
 
 func (s *networkCertificateService) Get(ctx context.Context, req GetNetworkCertificateRequest) (*NetworkTLSCertificateResponse, error) {
-	path := urlNetworkLoadBalancer(&req.LoadBalancerID, "tls-certificates", req.TLSCertificateID)
+	path := urlNetworkLoadBalancer(&req.LoadBalancerID, tls_certificates, req.TLSCertificateID)
 
 	httpReq, err := s.client.newRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
@@ -123,7 +125,7 @@ func (s *networkCertificateService) Get(ctx context.Context, req GetNetworkCerti
 }
 
 func (s *networkCertificateService) List(ctx context.Context, req ListNetworkCertificateRequest) ([]NetworkTLSCertificateResponse, error) {
-	path := urlNetworkLoadBalancer(&req.LoadBalancerID, "tls-certificates")
+	path := urlNetworkLoadBalancer(&req.LoadBalancerID, tls_certificates)
 
 	httpReq, err := s.client.newRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
@@ -152,7 +154,7 @@ func (s *networkCertificateService) List(ctx context.Context, req ListNetworkCer
 }
 
 func (s *networkCertificateService) Update(ctx context.Context, req UpdateNetworkCertificateRequest) error {
-	path := urlNetworkLoadBalancer(&req.LoadBalancerID, "tls-certificates", req.TLSCertificateID)
+	path := urlNetworkLoadBalancer(&req.LoadBalancerID, tls_certificates, req.TLSCertificateID)
 
 	httpReq, err := s.client.newRequest(ctx, http.MethodPut, path, req)
 	if err != nil {
