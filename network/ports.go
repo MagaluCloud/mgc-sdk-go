@@ -37,6 +37,12 @@ type (
 		CreatedAt             *utils.LocalDateTimeWithoutZone `json:"created_at,omitempty"`
 		Updated               *utils.LocalDateTimeWithoutZone `json:"updated,omitempty"`
 	}
+
+	// PortUpdateRequest represents the fields available for update in a port resource
+	PortUpdateRequest struct {
+		// Allows spoofed packets to enter a port
+		IsSpoofingGuard *bool `json:"is_spoofing_guard,omitempty"`
+	}
 )
 
 // PortService provides operations for managing network ports
@@ -49,6 +55,9 @@ type PortService interface {
 
 	// Delete removes a port by its ID
 	Delete(ctx context.Context, id string) error
+
+	// Patch updates a port
+	Update(ctx context.Context, id string, req PortUpdateRequest) error
 
 	// AttachSecurityGroup associates a security group with a specific port
 	AttachSecurityGroup(ctx context.Context, portID string, securityGroupID string) error
@@ -100,6 +109,19 @@ func (s *portService) Delete(ctx context.Context, id string) error {
 		http.MethodDelete,
 		fmt.Sprintf("/v0/ports/%s", id),
 		nil,
+		nil,
+	)
+}
+
+// Update patches a port by its ID considering the desired fields
+func (s *portService) Update(ctx context.Context, id string, req PortUpdateRequest) error {
+	return mgc_http.ExecuteSimpleRequest(
+		ctx,
+		s.client.newRequest,
+		s.client.GetConfig(),
+		http.MethodPatch,
+		fmt.Sprintf("/v0/ports/%s", id),
+		req,
 		nil,
 	)
 }

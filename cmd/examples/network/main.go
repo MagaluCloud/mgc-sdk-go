@@ -683,6 +683,8 @@ func demoPortOperations(networkClient *network.NetworkClient) {
 	listPorts(networkClient, vpcID)
 
 	deletePort(networkClient, portID)
+
+	updatePort(networkClient, portID)
 }
 
 func createPort(networkClient *network.NetworkClient, vpcID, name string, hasPIP bool) string {
@@ -873,4 +875,19 @@ func deleteNATGateway(networkClient *network.NetworkClient, natGatewayID string)
 	}
 
 	fmt.Printf("NAT Gateway %s deleted successfully\n", natGatewayID)
+}
+
+func updatePort(networkClient *network.NetworkClient, portID string) {
+	ctx, cancel := getContext()
+	defer cancel()
+
+	portUpdateRequest := &network.PortUpdateRequest{
+		IsSpoofingGuard: helpers.BoolPtr(false),
+	}
+
+	if err := networkClient.Ports().Update(ctx, portID, *portUpdateRequest); err != nil {
+		log.Fatalf("Failed to update port: %v", err)
+	}
+
+	fmt.Printf("Port %s updated successfully\n", portID)
 }

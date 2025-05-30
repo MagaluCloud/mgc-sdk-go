@@ -2,6 +2,7 @@ package network
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -375,6 +376,63 @@ func TestPortService_DetachSecurityGroup(t *testing.T) {
 
 			client := testClient(server.URL)
 			err := client.DetachSecurityGroup(context.Background(), tt.portID, tt.securityGroupID)
+
+			if tt.wantErr {
+				assertError(t, err)
+				return
+			}
+
+			assertNoError(t, err)
+		})
+	}
+}
+
+func TestPortService_Update(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name       string
+		portID     string
+		request    PortUpdateRequest
+		statusCode int
+		wantErr    bool
+	}{
+		{
+			name:       "successful update",
+			portID:     "port1",
+			request:    PortUpdateRequest{IsSpoofingGuard: helpers.BoolPtr(false)},
+			statusCode: http.StatusNoContent,
+		},
+		{
+			name:       "update failed - port not found",
+			portID:     "port2",
+			request:    PortUpdateRequest{IsSpoofingGuard: helpers.BoolPtr(true)},
+			statusCode: http.StatusNotFound,
+			wantErr:    true,
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				assertEqual(t, fmt.Sprintf("/network/v0/ports/%s", tt.portID), r.URL.Path)
+				assertEqual(t, http.MethodPatch, r.Method)
+				w.WriteHeader(tt.statusCode)
+
+				if !tt.wantErr {
+					var req PortUpdateRequest
+					err := json.NewDecoder(r.Body).Decode(&req)
+					assertNoError(t, err)
+
+					assertEqual(t, *tt.request.IsSpoofingGuard, *req.IsSpoofingGuard)
+
+				}
+			}))
+			defer server.Close()
+
+			client := testClient(server.URL)
+			err := client.Update(context.Background(), tt.portID, tt.request)
 
 			if tt.wantErr {
 				assertError(t, err)
