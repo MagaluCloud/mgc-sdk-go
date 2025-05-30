@@ -268,3 +268,48 @@ func TestNetworkACLService_Delete(t *testing.T) {
 		})
 	}
 }
+
+func TestNetworkACLService_Create_NewRequestError(t *testing.T) {
+	t.Parallel()
+
+	// Usar um contexto cancelado para forçar erro no newRequest
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel() // Cancela imediatamente
+
+	client := testACLClient("http://dummy-url")
+
+	req := CreateNetworkACLRequest{
+		LoadBalancerID: "lb-123",
+		Ethertype:      "IPv4",
+		Protocol:       "TCP",
+		RemoteIPPrefix: "192.168.1.0/24",
+		Action:         "allow",
+	}
+
+	_, err := client.Create(ctx, req)
+
+	if err == nil {
+		t.Error("expected error due to canceled context, got nil")
+	}
+}
+
+func TestNetworkACLService_Delete_NewRequestError(t *testing.T) {
+	t.Parallel()
+
+	// Usar um contexto cancelado para forçar erro no newRequest
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel() // Cancela imediatamente
+
+	client := testACLClient("http://dummy-url")
+
+	req := DeleteNetworkACLRequest{
+		LoadBalancerID: "lb-123",
+		ID:             "acl-123",
+	}
+
+	err := client.Delete(ctx, req)
+
+	if err == nil {
+		t.Error("expected error due to canceled context, got nil")
+	}
+}

@@ -456,6 +456,16 @@ func TestNetworkLoadBalancerService_Delete(t *testing.T) {
 			wantErr:    false,
 		},
 		{
+			name: "deletion without deleting public IP",
+			lbID: "lb-123",
+			request: DeleteNetworkLoadBalancerRequest{
+				LoadBalancerID: "lb-123",
+				DeletePublicIP: boolPtr(false),
+			},
+			statusCode: http.StatusOK,
+			wantErr:    false,
+		},
+		{
 			name: "non-existent load balancer",
 			lbID: "invalid",
 			request: DeleteNetworkLoadBalancerRequest{
@@ -512,7 +522,11 @@ func TestNetworkLoadBalancerService_Delete(t *testing.T) {
 
 				// Check query parameter if DeletePublicIP is set
 				if tt.request.DeletePublicIP != nil {
-					assertEqual(t, "true", r.URL.Query().Get("delete_public_ip"))
+					expected := "false"
+					if *tt.request.DeletePublicIP {
+						expected = "true"
+					}
+					assertEqual(t, expected, r.URL.Query().Get("delete_public_ip"))
 				}
 
 				w.WriteHeader(tt.statusCode)

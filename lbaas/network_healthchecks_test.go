@@ -440,3 +440,26 @@ func TestNetworkHealthCheckService_Delete(t *testing.T) {
 		})
 	}
 }
+
+func TestNetworkHealthCheckService_Create_NewRequestError(t *testing.T) {
+	t.Parallel()
+
+	// Usar um contexto cancelado para forçar erro no newRequest
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel() // Cancela imediatamente
+
+	client := testHealthCheckClient("http://dummy-url")
+
+	req := CreateNetworkHealthCheckRequest{
+		LoadBalancerID: "lb-123",
+		Name:           "test-hc",
+		Protocol:       "HTTP",
+		Port:           80,
+	}
+
+	_, err := client.Create(ctx, req)
+
+	if err == nil {
+		t.Error("expected error due to canceled context, got nil")
+	}
+}

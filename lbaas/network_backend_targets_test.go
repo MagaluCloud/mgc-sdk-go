@@ -137,3 +137,26 @@ func TestNetworkBackendTargetService_Delete(t *testing.T) {
 		})
 	}
 }
+
+func TestNetworkBackendTargetService_Create_NewRequestError(t *testing.T) {
+	t.Parallel()
+
+	// Usar um contexto cancelado para forçar erro no newRequest
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel() // Cancela imediatamente
+
+	client := testBackendTargetClient("http://dummy-url")
+
+	req := CreateNetworkBackendTargetRequest{
+		LoadBalancerID:   "lb-123",
+		NetworkBackendID: "backend-123",
+		TargetsID:        []string{"target-1", "target-2"},
+		TargetsType:      "instance",
+	}
+
+	_, err := client.Create(ctx, req)
+
+	if err == nil {
+		t.Error("expected error due to canceled context, got nil")
+	}
+}

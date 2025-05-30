@@ -438,3 +438,27 @@ func TestNetworkListenerService_Delete(t *testing.T) {
 		})
 	}
 }
+
+func TestNetworkListenerService_Create_NewRequestError(t *testing.T) {
+	t.Parallel()
+
+	// Usar um contexto cancelado para forçar erro no newRequest
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel() // Cancela imediatamente
+
+	client := testListenerClient("http://dummy-url")
+
+	req := CreateNetworkListenerRequest{
+		LoadBalancerID: "lb-123",
+		BackendID:      "backend-123",
+		Name:           "test-listener",
+		Protocol:       "HTTP",
+		Port:           80,
+	}
+
+	_, err := client.Create(ctx, req)
+
+	if err == nil {
+		t.Error("expected error due to canceled context, got nil")
+	}
+}

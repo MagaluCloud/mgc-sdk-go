@@ -37,6 +37,7 @@ func TestNetworkCertificateService_Create(t *testing.T) {
 		statusCode int
 		want       string
 		wantErr    bool
+		errorMsg   string
 	}{
 		{
 			name: "successful creation",
@@ -50,6 +51,28 @@ func TestNetworkCertificateService_Create(t *testing.T) {
 			statusCode: http.StatusOK,
 			want:       "cert-123",
 			wantErr:    false,
+		},
+		{
+			name: "invalid certificate - not base64 encoded",
+			request: CreateNetworkCertificateRequest{
+				LoadBalancerID: "lb-123",
+				Name:           "test-cert",
+				Certificate:    "invalid-base64@#$%",
+				PrivateKey:     keyBase64,
+			},
+			wantErr:  true,
+			errorMsg: "certificate is not base64 encoded",
+		},
+		{
+			name: "invalid private key - not base64 encoded",
+			request: CreateNetworkCertificateRequest{
+				LoadBalancerID: "lb-123",
+				Name:           "test-cert",
+				Certificate:    certBase64,
+				PrivateKey:     "invalid-base64@#$%",
+			},
+			wantErr:  true,
+			errorMsg: "private key is not base64 encoded",
 		},
 		{
 			name: "server error",
@@ -68,7 +91,7 @@ func TestNetworkCertificateService_Create(t *testing.T) {
 			request: CreateNetworkCertificateRequest{
 				LoadBalancerID: "lb-123",
 				Name:           "test-cert",
-				Certificate:    "invalid-cert",
+				Certificate:    certBase64,
 				PrivateKey:     keyBase64,
 			},
 			response:   `{"error": "invalid certificate format"}`,
@@ -129,6 +152,19 @@ func TestNetworkCertificateService_Create(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
+
+			// Casos que testam validação de base64 não precisam de servidor HTTP
+			if tt.errorMsg != "" {
+				client := testCertificateClient("http://dummy-url")
+				_, err := client.Create(context.Background(), tt.request)
+
+				assertError(t, err)
+				if err.Error() != tt.errorMsg {
+					t.Errorf("expected error message %q, got %q", tt.errorMsg, err.Error())
+				}
+				return
+			}
+
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				assertEqual(t, fmt.Sprintf("/load-balancer/v0beta1/network-load-balancers/%s/tls-certificates", tt.request.LoadBalancerID), r.URL.Path)
 				assertEqual(t, http.MethodPost, r.Method)
@@ -410,5 +446,35 @@ func TestNetworkCertificateService_Delete(t *testing.T) {
 
 			assertNoError(t, err)
 		})
+	}
+}
+
+func TestNetworkCertificateService_Create_NewRequestError(t *testing.T) {
+	t.Parallel()
+
+	// Criar um cliente com URL base inválida para forçar erro no newRequest
+	httpClient := &http.Client{}
+	core := client.NewMgcClient("test-api",
+		client.WithBaseURL(client.MgcUrl("://invalid-url")), // URL malformada
+		client.WithHTTPClient(httpClient))
+
+	certificateService := New(core).NetworkCertificates()
+
+	certPEM := "-----BEGIN CERTIFICATE-----\nMIIC...\n-----END CERTIFICATE-----"
+	keyPEM := "-----BEGIN PRIVATE KEY-----\nMIIE...\n-----END PRIVATE KEY-----"
+	certBase64 := base64.StdEncoding.EncodeToString([]byte(certPEM))
+	keyBase64 := base64.StdEncoding.EncodeToString([]byte(keyPEM))
+
+	req := CreateNetworkCertificateRequest{
+		LoadBalancerID: "lb-123",
+		Name:           "test-cert",
+		Certificate:    certBase64,
+		PrivateKey:     keyBase64,
+	}
+
+	_, err := certificateService.Create(context.Background(), req)
+
+	if err == nil {
+		t.Error("expected error due to invalid URL, got nil")
 	}
 }

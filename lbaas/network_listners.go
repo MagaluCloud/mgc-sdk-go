@@ -123,21 +123,6 @@ func (s *networkListenerService) Get(ctx context.Context, req GetNetworkListener
 	return result, nil
 }
 
-type QueryParam struct {
-	Name  string
-	Value string
-}
-
-func prepareQueryParams(httpReq *http.Request, req ...QueryParam) (string, error) {
-	query := httpReq.URL.Query()
-
-	for _, r := range req {
-		query.Set(r.Name, r.Value)
-	}
-
-	return query.Encode(), nil
-}
-
 func (s *networkListenerService) List(ctx context.Context, req ListNetworkListenerRequest) ([]NetworkListenerResponse, error) {
 	path := urlNetworkLoadBalancer(&req.LoadBalancerID, listeners)
 
