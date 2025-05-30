@@ -3,8 +3,8 @@ package lbaas
 import (
 	"context"
 	"net/http"
-	"strconv"
 
+	"github.com/MagaluCloud/mgc-sdk-go/helpers"
 	mgc_http "github.com/MagaluCloud/mgc-sdk-go/internal/http"
 )
 
@@ -123,6 +123,21 @@ func (s *networkListenerService) Get(ctx context.Context, req GetNetworkListener
 	return result, nil
 }
 
+type QueryParam struct {
+	Name  string
+	Value string
+}
+
+func prepareQueryParams(httpReq *http.Request, req ...QueryParam) (string, error) {
+	query := httpReq.URL.Query()
+
+	for _, r := range req {
+		query.Set(r.Name, r.Value)
+	}
+
+	return query.Encode(), nil
+}
+
 func (s *networkListenerService) List(ctx context.Context, req ListNetworkListenerRequest) ([]NetworkListenerResponse, error) {
 	path := urlNetworkLoadBalancer(&req.LoadBalancerID, listeners)
 
@@ -131,17 +146,10 @@ func (s *networkListenerService) List(ctx context.Context, req ListNetworkListen
 		return nil, err
 	}
 
-	// Adicionar query parameters se fornecidos
-	query := httpReq.URL.Query()
-	if req.Offset != nil {
-		query.Set("_offset", strconv.Itoa(*req.Offset))
-	}
-	if req.Limit != nil {
-		query.Set("_limit", strconv.Itoa(*req.Limit))
-	}
-	if req.Sort != nil {
-		query.Set("_sort", *req.Sort)
-	}
+	query := helpers.NewQueryParams(httpReq)
+	query.AddReflect("_offset", req.Offset)
+	query.AddReflect("_limit", req.Limit)
+	query.Add("_sort", req.Sort)
 	httpReq.URL.RawQuery = query.Encode()
 
 	var resp NetworkPaginatedListenerResponse

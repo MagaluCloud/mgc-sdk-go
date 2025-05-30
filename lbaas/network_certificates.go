@@ -5,8 +5,8 @@ import (
 	"encoding/base64"
 	"errors"
 	"net/http"
-	"strconv"
 
+	"github.com/MagaluCloud/mgc-sdk-go/helpers"
 	mgc_http "github.com/MagaluCloud/mgc-sdk-go/internal/http"
 )
 
@@ -131,18 +131,10 @@ func (s *networkCertificateService) List(ctx context.Context, req ListNetworkCer
 	if err != nil {
 		return nil, err
 	}
-
-	// Adicionar query parameters se fornecidos
-	query := httpReq.URL.Query()
-	if req.Offset != nil {
-		query.Set("_offset", strconv.Itoa(*req.Offset))
-	}
-	if req.Limit != nil {
-		query.Set("_limit", strconv.Itoa(*req.Limit))
-	}
-	if req.Sort != nil {
-		query.Set("_sort", *req.Sort)
-	}
+	query := helpers.NewQueryParams(httpReq)
+	query.AddReflect("_offset", req.Offset)
+	query.AddReflect("_limit", req.Limit)
+	query.Add("_sort", req.Sort)
 	httpReq.URL.RawQuery = query.Encode()
 
 	var resp NetworkPaginatedTLSCertificateResponse
