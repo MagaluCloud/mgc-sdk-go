@@ -63,6 +63,66 @@ func TestNetworkCertificateService_Create(t *testing.T) {
 			statusCode: http.StatusInternalServerError,
 			wantErr:    true,
 		},
+		{
+			name: "bad request - invalid certificate",
+			request: CreateNetworkCertificateRequest{
+				LoadBalancerID: "lb-123",
+				Name:           "test-cert",
+				Certificate:    "invalid-cert",
+				PrivateKey:     keyBase64,
+			},
+			response:   `{"error": "invalid certificate format"}`,
+			statusCode: http.StatusBadRequest,
+			wantErr:    true,
+		},
+		{
+			name: "unauthorized access",
+			request: CreateNetworkCertificateRequest{
+				LoadBalancerID: "lb-123",
+				Name:           "test-cert",
+				Certificate:    certBase64,
+				PrivateKey:     keyBase64,
+			},
+			response:   `{"error": "unauthorized"}`,
+			statusCode: http.StatusUnauthorized,
+			wantErr:    true,
+		},
+		{
+			name: "forbidden access",
+			request: CreateNetworkCertificateRequest{
+				LoadBalancerID: "lb-123",
+				Name:           "test-cert",
+				Certificate:    certBase64,
+				PrivateKey:     keyBase64,
+			},
+			response:   `{"error": "forbidden"}`,
+			statusCode: http.StatusForbidden,
+			wantErr:    true,
+		},
+		{
+			name: "load balancer not found",
+			request: CreateNetworkCertificateRequest{
+				LoadBalancerID: "invalid-lb",
+				Name:           "test-cert",
+				Certificate:    certBase64,
+				PrivateKey:     keyBase64,
+			},
+			response:   `{"error": "load balancer not found"}`,
+			statusCode: http.StatusNotFound,
+			wantErr:    true,
+		},
+		{
+			name: "conflict - certificate already exists",
+			request: CreateNetworkCertificateRequest{
+				LoadBalancerID: "lb-123",
+				Name:           "existing-cert",
+				Certificate:    certBase64,
+				PrivateKey:     keyBase64,
+			},
+			response:   `{"error": "certificate with this name already exists"}`,
+			statusCode: http.StatusConflict,
+			wantErr:    true,
+		},
 	}
 
 	for _, tt := range tests {

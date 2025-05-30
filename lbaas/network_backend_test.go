@@ -53,6 +53,66 @@ func TestNetworkBackendService_Create(t *testing.T) {
 			statusCode: http.StatusInternalServerError,
 			wantErr:    true,
 		},
+		{
+			name: "bad request - invalid balance algorithm",
+			request: CreateNetworkBackendRequest{
+				LoadBalancerID:   "lb-123",
+				Name:             "test-backend",
+				BalanceAlgorithm: "invalid_algorithm",
+				TargetsType:      "instance",
+			},
+			response:   `{"error": "invalid balance algorithm"}`,
+			statusCode: http.StatusBadRequest,
+			wantErr:    true,
+		},
+		{
+			name: "unauthorized access",
+			request: CreateNetworkBackendRequest{
+				LoadBalancerID:   "lb-123",
+				Name:             "test-backend",
+				BalanceAlgorithm: "round_robin",
+				TargetsType:      "instance",
+			},
+			response:   `{"error": "unauthorized"}`,
+			statusCode: http.StatusUnauthorized,
+			wantErr:    true,
+		},
+		{
+			name: "forbidden access",
+			request: CreateNetworkBackendRequest{
+				LoadBalancerID:   "lb-123",
+				Name:             "test-backend",
+				BalanceAlgorithm: "round_robin",
+				TargetsType:      "instance",
+			},
+			response:   `{"error": "forbidden"}`,
+			statusCode: http.StatusForbidden,
+			wantErr:    true,
+		},
+		{
+			name: "load balancer not found",
+			request: CreateNetworkBackendRequest{
+				LoadBalancerID:   "invalid-lb",
+				Name:             "test-backend",
+				BalanceAlgorithm: "round_robin",
+				TargetsType:      "instance",
+			},
+			response:   `{"error": "load balancer not found"}`,
+			statusCode: http.StatusNotFound,
+			wantErr:    true,
+		},
+		{
+			name: "conflict - backend already exists",
+			request: CreateNetworkBackendRequest{
+				LoadBalancerID:   "lb-123",
+				Name:             "existing-backend",
+				BalanceAlgorithm: "round_robin",
+				TargetsType:      "instance",
+			},
+			response:   `{"error": "backend with this name already exists"}`,
+			statusCode: http.StatusConflict,
+			wantErr:    true,
+		},
 	}
 
 	for _, tt := range tests {

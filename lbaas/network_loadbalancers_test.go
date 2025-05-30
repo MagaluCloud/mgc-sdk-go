@@ -65,6 +65,58 @@ func TestNetworkLoadBalancerService_Create(t *testing.T) {
 			wantErr:    false,
 		},
 		{
+			name: "bad request - invalid request data",
+			request: CreateNetworkLoadBalancerRequest{
+				Name:       "",
+				Visibility: "invalid",
+				VPCID:      "",
+				Listeners:  []NetworkListenerRequest{},
+				Backends:   []NetworkBackendRequest{},
+			},
+			response:   `{"error": "invalid request: name is required"}`,
+			statusCode: http.StatusBadRequest,
+			wantErr:    true,
+		},
+		{
+			name: "unauthorized - invalid credentials",
+			request: CreateNetworkLoadBalancerRequest{
+				Name:       "test-lb",
+				Visibility: "external",
+				VPCID:      "vpc-123",
+				Listeners:  []NetworkListenerRequest{},
+				Backends:   []NetworkBackendRequest{},
+			},
+			response:   `{"error": "unauthorized access"}`,
+			statusCode: http.StatusUnauthorized,
+			wantErr:    true,
+		},
+		{
+			name: "forbidden - insufficient permissions",
+			request: CreateNetworkLoadBalancerRequest{
+				Name:       "test-lb",
+				Visibility: "external",
+				VPCID:      "vpc-123",
+				Listeners:  []NetworkListenerRequest{},
+				Backends:   []NetworkBackendRequest{},
+			},
+			response:   `{"error": "forbidden: insufficient permissions"}`,
+			statusCode: http.StatusForbidden,
+			wantErr:    true,
+		},
+		{
+			name: "conflict - resource already exists",
+			request: CreateNetworkLoadBalancerRequest{
+				Name:       "existing-lb",
+				Visibility: "external",
+				VPCID:      "vpc-123",
+				Listeners:  []NetworkListenerRequest{},
+				Backends:   []NetworkBackendRequest{},
+			},
+			response:   `{"error": "load balancer with name 'existing-lb' already exists"}`,
+			statusCode: http.StatusConflict,
+			wantErr:    true,
+		},
+		{
 			name: "server error",
 			request: CreateNetworkLoadBalancerRequest{
 				Name:       "test-lb",
@@ -144,6 +196,27 @@ func TestNetworkLoadBalancerService_Get(t *testing.T) {
 			statusCode: http.StatusNotFound,
 			wantErr:    true,
 		},
+		{
+			name:       "unauthorized access",
+			lbID:       "lb-123",
+			response:   `{"error": "unauthorized"}`,
+			statusCode: http.StatusUnauthorized,
+			wantErr:    true,
+		},
+		{
+			name:       "forbidden access",
+			lbID:       "lb-123",
+			response:   `{"error": "forbidden"}`,
+			statusCode: http.StatusForbidden,
+			wantErr:    true,
+		},
+		{
+			name:       "server error",
+			lbID:       "lb-123",
+			response:   `{"error": "internal server error"}`,
+			statusCode: http.StatusInternalServerError,
+			wantErr:    true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -201,6 +274,18 @@ func TestNetworkLoadBalancerService_List(t *testing.T) {
 			statusCode: http.StatusOK,
 			want:       0,
 			wantErr:    false,
+		},
+		{
+			name:       "unauthorized access",
+			response:   `{"error": "unauthorized"}`,
+			statusCode: http.StatusUnauthorized,
+			wantErr:    true,
+		},
+		{
+			name:       "forbidden access",
+			response:   `{"error": "forbidden"}`,
+			statusCode: http.StatusForbidden,
+			wantErr:    true,
 		},
 		{
 			name:       "server error",
@@ -266,6 +351,56 @@ func TestNetworkLoadBalancerService_Update(t *testing.T) {
 			statusCode: http.StatusNotFound,
 			wantErr:    true,
 		},
+		{
+			name: "bad request - invalid data",
+			lbID: "lb-123",
+			request: UpdateNetworkLoadBalancerRequest{
+				LoadBalancerID: "lb-123",
+				Name:           stringPtr(""),
+			},
+			statusCode: http.StatusBadRequest,
+			wantErr:    true,
+		},
+		{
+			name: "unauthorized access",
+			lbID: "lb-123",
+			request: UpdateNetworkLoadBalancerRequest{
+				LoadBalancerID: "lb-123",
+				Name:           stringPtr("updated-lb"),
+			},
+			statusCode: http.StatusUnauthorized,
+			wantErr:    true,
+		},
+		{
+			name: "forbidden access",
+			lbID: "lb-123",
+			request: UpdateNetworkLoadBalancerRequest{
+				LoadBalancerID: "lb-123",
+				Name:           stringPtr("updated-lb"),
+			},
+			statusCode: http.StatusForbidden,
+			wantErr:    true,
+		},
+		{
+			name: "conflict - name already exists",
+			lbID: "lb-123",
+			request: UpdateNetworkLoadBalancerRequest{
+				LoadBalancerID: "lb-123",
+				Name:           stringPtr("existing-name"),
+			},
+			statusCode: http.StatusConflict,
+			wantErr:    true,
+		},
+		{
+			name: "server error",
+			lbID: "lb-123",
+			request: UpdateNetworkLoadBalancerRequest{
+				LoadBalancerID: "lb-123",
+				Name:           stringPtr("updated-lb"),
+			},
+			statusCode: http.StatusInternalServerError,
+			wantErr:    true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -327,6 +462,42 @@ func TestNetworkLoadBalancerService_Delete(t *testing.T) {
 				LoadBalancerID: "invalid",
 			},
 			statusCode: http.StatusNotFound,
+			wantErr:    true,
+		},
+		{
+			name: "unauthorized access",
+			lbID: "lb-123",
+			request: DeleteNetworkLoadBalancerRequest{
+				LoadBalancerID: "lb-123",
+			},
+			statusCode: http.StatusUnauthorized,
+			wantErr:    true,
+		},
+		{
+			name: "forbidden access",
+			lbID: "lb-123",
+			request: DeleteNetworkLoadBalancerRequest{
+				LoadBalancerID: "lb-123",
+			},
+			statusCode: http.StatusForbidden,
+			wantErr:    true,
+		},
+		{
+			name: "conflict - resource in use",
+			lbID: "lb-123",
+			request: DeleteNetworkLoadBalancerRequest{
+				LoadBalancerID: "lb-123",
+			},
+			statusCode: http.StatusConflict,
+			wantErr:    true,
+		},
+		{
+			name: "server error",
+			lbID: "lb-123",
+			request: DeleteNetworkLoadBalancerRequest{
+				LoadBalancerID: "lb-123",
+			},
+			statusCode: http.StatusInternalServerError,
 			wantErr:    true,
 		},
 	}
