@@ -79,6 +79,7 @@ func ExampleListInstanceTypes() {
 		fmt.Printf("  VCPU: %s\n", instanceType.VCPU)
 		fmt.Printf("  RAM: %s\n", instanceType.RAM)
 		fmt.Printf("  Family: %s (%s)\n", instanceType.FamilyDescription, instanceType.FamilySlug)
+		fmt.Printf("  Compatible Product: %s\n", instanceType.CompatibleProduct)
 	}
 }
 
