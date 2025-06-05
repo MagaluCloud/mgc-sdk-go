@@ -399,13 +399,13 @@ func TestPortService_Update(t *testing.T) {
 		{
 			name:       "successful update",
 			portID:     "port1",
-			request:    PortUpdateRequest{IsSpoofingGuard: helpers.BoolPtr(false)},
+			request:    PortUpdateRequest{IPSpoofingGuard: helpers.BoolPtr(false)},
 			statusCode: http.StatusNoContent,
 		},
 		{
 			name:       "update failed - port not found",
 			portID:     "port2",
-			request:    PortUpdateRequest{IsSpoofingGuard: helpers.BoolPtr(true)},
+			request:    PortUpdateRequest{IPSpoofingGuard: helpers.BoolPtr(true)},
 			statusCode: http.StatusNotFound,
 			wantErr:    true,
 		},
@@ -425,7 +425,7 @@ func TestPortService_Update(t *testing.T) {
 					err := json.NewDecoder(r.Body).Decode(&req)
 					assertNoError(t, err)
 
-					assertEqual(t, *tt.request.IsSpoofingGuard, *req.IsSpoofingGuard)
+					assertEqual(t, *tt.request.IPSpoofingGuard, *req.IPSpoofingGuard)
 
 				}
 			}))

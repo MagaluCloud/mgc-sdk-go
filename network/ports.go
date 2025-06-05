@@ -41,7 +41,7 @@ type (
 	// PortUpdateRequest represents the fields available for update in a port resource
 	PortUpdateRequest struct {
 		// Allows spoofed packets to enter a port
-		IsSpoofingGuard *bool `json:"is_spoofing_guard,omitempty"`
+		IPSpoofingGuard *bool `json:"ip_spoofing_guard,omitempty"`
 	}
 )
 

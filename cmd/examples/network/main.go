@@ -882,7 +882,7 @@ func updatePort(networkClient *network.NetworkClient, portID string) {
 	defer cancel()
 
 	portUpdateRequest := &network.PortUpdateRequest{
-		IsSpoofingGuard: helpers.BoolPtr(false),
+		IPSpoofingGuard: helpers.BoolPtr(false),
 	}
 
 	if err := networkClient.Ports().Update(ctx, portID, *portUpdateRequest); err != nil {
