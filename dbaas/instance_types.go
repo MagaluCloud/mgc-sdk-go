@@ -25,6 +25,7 @@ type (
 		FamilyDescription string `json:"family_description"`
 		FamilySlug        string `json:"family_slug"`
 		Size              string `json:"size"`
+		CompatibleProduct string `json:"compatible_product"`
 	}
 )
 
