@@ -16,8 +16,8 @@ test-race:
 
 # Run all tests with coverage and race detection
 test-all:
-	go test -v -race -coverprofile=coverage.txt -covermode=atomic ./...
-	go tool cover -func=coverage.txt
+	@go install gotest.tools/gotestsum@latest
+	go run gotest.tools/gotestsum@latest -- -covermode=atomic -coverprofile=cover.out ./... 
 
 go-fmt:
 	gofmt -s -l -w .
