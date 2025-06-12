@@ -25,9 +25,7 @@ type (
 		FamilyDescription string `json:"family_description"`
 		FamilySlug        string `json:"family_slug"`
 		Size              string `json:"size"`
-		SKUSource         string `json:"sku_source"`
-		SKUReplica        string `json:"sku_replica"`
-		Status            string `json:"status,omitempty"`
+		CompatibleProduct string `json:"compatible_product"`
 	}
 )
 
@@ -69,7 +67,7 @@ func (s *instanceTypeService) List(ctx context.Context, opts ListInstanceTypeOpt
 		s.client.newRequest,
 		s.client.GetConfig(),
 		http.MethodGet,
-		"/v1/instance-types",
+		"/v2/instance-types",
 		nil,
 		query,
 	)
@@ -86,7 +84,7 @@ func (s *instanceTypeService) Get(ctx context.Context, id string) (*InstanceType
 		s.client.newRequest,
 		s.client.GetConfig(),
 		http.MethodGet,
-		fmt.Sprintf("/v1/instance-types/%s", id),
+		fmt.Sprintf("/v2/instance-types/%s", id),
 		nil,
 		nil,
 	)

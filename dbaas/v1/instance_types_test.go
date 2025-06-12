@@ -68,7 +68,7 @@ func TestInstanceTypeService_List(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				assertEqual(t, "/database/v2/instance-types", r.URL.Path)
+				assertEqual(t, "/database/v1/instance-types", r.URL.Path)
 				query := r.URL.Query()
 
 				if tt.opts.Limit != nil {
@@ -136,7 +136,7 @@ func TestInstanceTypeService_Get(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				assertEqual(t, fmt.Sprintf("/database/v2/instance-types/%s", tt.id), r.URL.Path)
+				assertEqual(t, fmt.Sprintf("/database/v1/instance-types/%s", tt.id), r.URL.Path)
 				assertEqual(t, http.MethodGet, r.Method)
 
 				w.Header().Set("Content-Type", "application/json")

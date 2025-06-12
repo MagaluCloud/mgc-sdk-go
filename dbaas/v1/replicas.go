@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
-	"time"
 
 	mgc_http "github.com/MagaluCloud/mgc-sdk-go/internal/http"
 )
@@ -46,36 +45,21 @@ type (
 		SourceID *string
 	}
 
-	ReplicaDetailResponse struct {
-		ID                     string                   `json:"id"`
-		SourceID               string                   `json:"source_id"`
-		Name                   string                   `json:"name"`
-		EngineID               string                   `json:"engine_id"`
-		InstanceTypeID         string                   `json:"instance_type_id"`
-		Volume                 Volume                   `json:"volume"`
-		Addresses              []ReplicaAddressResponse `json:"addresses"`
-		Status                 InstanceStatus           `json:"status"`
-		Generation             string                   `json:"generation"`
-		CreatedAt              time.Time                `json:"created_at"`
-		UpdatedAt              *time.Time               `json:"updated_at,omitempty"`
-		StartedAt              *string                  `json:"started_at,omitempty"`
-		FinishedAt             *string                  `json:"finished_at,omitempty"`
-		MaintenanceScheduledAt *string                  `json:"maintenance_scheduled_at,omitempty"`
-	}
-
 	ReplicasResponse struct {
 		Meta    MetaResponse            `json:"meta"`
 		Results []ReplicaDetailResponse `json:"results"`
 	}
 
 	ReplicaCreateRequest struct {
-		SourceID       string  `json:"source_id"`
-		Name           string  `json:"name"`
-		InstanceTypeID *string `json:"instance_type_id,omitempty"`
+		SourceID       string `json:"source_id"`
+		Name           string `json:"name"`
+		FlavorID       string `json:"flavor_id,omitempty"`
+		InstanceTypeID string `json:"instance_type_id,omitempty"`
 	}
 
 	ReplicaResizeRequest struct {
 		InstanceTypeID string `json:"instance_type_id,omitempty"`
+		FlavorID       string `json:"flavor_id,omitempty"`
 	}
 
 	ReplicaResponse struct {
@@ -107,7 +91,7 @@ func (s *replicaService) List(ctx context.Context, opts ListReplicaOptions) ([]R
 		s.client.newRequest,
 		s.client.GetConfig(),
 		http.MethodGet,
-		"/v2/replicas",
+		"/v1/replicas",
 		nil,
 		query,
 	)
@@ -125,7 +109,7 @@ func (s *replicaService) Get(ctx context.Context, id string) (*ReplicaDetailResp
 		s.client.newRequest,
 		s.client.GetConfig(),
 		http.MethodGet,
-		fmt.Sprintf("/v2/replicas/%s", id),
+		fmt.Sprintf("/v1/replicas/%s", id),
 		nil,
 		nil,
 	)
@@ -138,7 +122,7 @@ func (s *replicaService) Create(ctx context.Context, req ReplicaCreateRequest) (
 		s.client.newRequest,
 		s.client.GetConfig(),
 		http.MethodPost,
-		"/v2/replicas",
+		"/v1/replicas",
 		req,
 		nil,
 	)
@@ -151,7 +135,7 @@ func (s *replicaService) Delete(ctx context.Context, id string) error {
 		s.client.newRequest,
 		s.client.GetConfig(),
 		http.MethodDelete,
-		fmt.Sprintf("/v2/replicas/%s", id),
+		fmt.Sprintf("/v1/replicas/%s", id),
 		nil,
 		nil,
 	)
@@ -164,7 +148,7 @@ func (s *replicaService) Resize(ctx context.Context, id string, req ReplicaResiz
 		s.client.newRequest,
 		s.client.GetConfig(),
 		http.MethodPost,
-		fmt.Sprintf("/v2/replicas/%s/resize", id),
+		fmt.Sprintf("/v1/replicas/%s/resize", id),
 		req,
 		nil,
 	)
@@ -177,7 +161,7 @@ func (s *replicaService) Start(ctx context.Context, id string) (*ReplicaDetailRe
 		s.client.newRequest,
 		s.client.GetConfig(),
 		http.MethodPost,
-		fmt.Sprintf("/v2/replicas/%s/start", id),
+		fmt.Sprintf("/v1/replicas/%s/start", id),
 		nil,
 		nil,
 	)
@@ -190,7 +174,7 @@ func (s *replicaService) Stop(ctx context.Context, id string) (*ReplicaDetailRes
 		s.client.newRequest,
 		s.client.GetConfig(),
 		http.MethodPost,
-		fmt.Sprintf("/v2/replicas/%s/stop", id),
+		fmt.Sprintf("/v1/replicas/%s/stop", id),
 		nil,
 		nil,
 	)

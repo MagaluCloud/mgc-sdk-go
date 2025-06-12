@@ -7,24 +7,18 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
-	"time"
 
 	mgc_http "github.com/MagaluCloud/mgc-sdk-go/internal/http"
 )
 
-const (
-	InstancePath   = "/v2/instances"
-	InstancePathID = InstancePath + "/%s"
-	SnapshotPath   = InstancePathID + "/snapshots"
-	SnapshotPathID = SnapshotPath + "/%s"
-)
-
 type (
-	InstanceStatus string
-	AddressAccess  string
-	AddressType    string
-	SnapshotType   string
-	SnapshotStatus string
+	InstanceStatus     string
+	InstanceGeneration string
+	VolumeType         string
+	AddressAccess      string
+	AddressType        string
+	SnapshotType       string
+	SnapshotStatus     string
 )
 
 const (
@@ -44,6 +38,12 @@ const (
 	InstanceStatusErrorDeleting    InstanceStatus = "ERROR_DELETING"
 	InstanceStatusMaintenance      InstanceStatus = "MAINTENANCE"
 	InstanceStatusMaintenanceError InstanceStatus = "MAINTENANCE_ERROR"
+)
+
+const (
+	VolumeTypeCloudNVME15K VolumeType = "CLOUD_NVME_15K"
+	VolumeTypeCloudNVME    VolumeType = "CLOUD_NVME"
+	VolumeTypeCloudHDD     VolumeType = "CLOUD_HDD"
 )
 
 const (
@@ -73,8 +73,8 @@ const (
 
 type (
 	Volume struct {
-		Size int    `json:"size"`
-		Type string `json:"type"`
+		Size int        `json:"size"`
+		Type VolumeType `json:"type"`
 	}
 
 	Address struct {
@@ -94,36 +94,55 @@ type (
 	}
 
 	InstanceVolumeRequest struct {
-		Size int    `json:"size"`
-		Type string `json:"type,omitempty"`
+		Size int        `json:"size"`
+		Type VolumeType `json:"type,omitempty"`
 	}
 
 	InstanceVolumeResizeRequest struct {
-		Size int    `json:"size"`
-		Type string `json:"type,omitempty"`
+		Size int        `json:"size"`
+		Type VolumeType `json:"type,omitempty"`
 	}
 
 	InstanceCreateRequest struct {
-		Name                string                `json:"name"`
-		EngineID            *string               `json:"engine_id,omitempty"`
-		InstanceTypeID      *string               `json:"instance_type_id,omitempty"`
-		User                string                `json:"user"`
-		Password            string                `json:"password"`
-		Volume              InstanceVolumeRequest `json:"volume"`
-		ParameterGroupID    *string               `json:"parameter_group_id,omitempty"`
-		AvailabilityZone    *string               `json:"availability_zone,omitempty"`
-		BackupStartAt       *string               `json:"backup_start_at,omitempty"`
-		BackupRetentionDays *int                  `json:"backup_retention_days,omitempty"`
+		Name                string                       `json:"name"`
+		EngineID            *string                      `json:"engine_id,omitempty"`
+		InstanceTypeID      *string                      `json:"instance_type_id,omitempty"`
+		User                string                       `json:"user"`
+		Password            string                       `json:"password"`
+		Volume              InstanceVolumeRequest        `json:"volume"`
+		Parameters          *[]InstanceParametersRequest `json:"parameters,omitempty"`
+		BackupRetentionDays *int                         `json:"backup_retention_days,omitempty"`
+		BackupStartAt       *string                      `json:"backup_start_at,omitempty"`
 	}
 
 	InstanceResizeRequest struct {
 		InstanceTypeID *string                      `json:"instance_type_id,omitempty"`
+		FlavorID       string                       `json:"flavor_id,omitempty"`
 		Volume         *InstanceVolumeResizeRequest `json:"volume,omitempty"`
 	}
 
 	DatabaseInstanceUpdateRequest struct {
-		BackupRetentionDays *int    `json:"backup_retention_days,omitempty"`
-		BackupStartAt       *string `json:"backup_start_at,omitempty"`
+		Status              *InstanceStatusUpdate `json:"status,omitempty"`
+		BackupRetentionDays *int                  `json:"backup_retention_days,omitempty"`
+		BackupStartAt       *string               `json:"backup_start_at,omitempty"`
+	}
+
+	ReplicaDetailResponse struct {
+		ID                     string                       `json:"id"`
+		SourceID               string                       `json:"source_id"`
+		Name                   string                       `json:"name"`
+		EngineID               string                       `json:"engine_id"`
+		InstanceTypeID         string                       `json:"instance_type_id"`
+		Volume                 Volume                       `json:"volume"`
+		Addresses              []ReplicaAddressResponse     `json:"addresses"`
+		Status                 InstanceStatus               `json:"status"`
+		Generation             InstanceGeneration           `json:"generation"`
+		Parameters             []InstanceParametersResponse `json:"parameters"`
+		CreatedAt              string                       `json:"created_at"`
+		UpdatedAt              *string                      `json:"updated_at,omitempty"`
+		StartedAt              *string                      `json:"started_at,omitempty"`
+		FinishedAt             *string                      `json:"finished_at,omitempty"`
+		MaintenanceScheduledAt *string                      `json:"maintenance_scheduled_at,omitempty"`
 	}
 
 	ReplicaAddressResponse struct {
@@ -138,18 +157,17 @@ type (
 	}
 
 	SnapshotDetailResponse struct {
-		ID               string                         `json:"id"`
-		Instance         SnapshotInstanceDetailResponse `json:"instance"`
-		Name             string                         `json:"name"`
-		Description      string                         `json:"description"`
-		Type             SnapshotType                   `json:"type"`
-		Status           SnapshotStatus                 `json:"status"`
-		AllocatedSize    int                            `json:"allocated_size"`
-		CreatedAt        time.Time                      `json:"created_at"`
-		StartedAt        *string                        `json:"started_at,omitempty"`
-		AvailabilityZone string                         `json:"availability_zone"`
-		FinishedAt       *string                        `json:"finished_at,omitempty"`
-		UpdatedAt        *time.Time                     `json:"updated_at,omitempty"`
+		ID            string                         `json:"id"`
+		Instance      SnapshotInstanceDetailResponse `json:"instance"`
+		Name          string                         `json:"name"`
+		Description   string                         `json:"description"`
+		Type          SnapshotType                   `json:"type"`
+		Status        SnapshotStatus                 `json:"status"`
+		AllocatedSize int                            `json:"allocated_size"`
+		CreatedAt     string                         `json:"created_at"`
+		StartedAt     *string                        `json:"started_at,omitempty"`
+		FinishedAt    *string                        `json:"finished_at,omitempty"`
+		UpdatedAt     *string                        `json:"updated_at,omitempty"`
 	}
 
 	SnapshotInstanceDetailResponse struct {
@@ -158,13 +176,13 @@ type (
 	}
 
 	SnapshotCreateRequest struct {
-		Name        string  `json:"name"`
-		Description *string `json:"description,omitempty"`
+		Name        string `json:"name"`
+		Description string `json:"description,omitempty"`
 	}
 
 	SnapshotUpdateRequest struct {
-		Name        string  `json:"name,omitempty"`
-		Description *string `json:"description,omitempty"`
+		Name        string `json:"name,omitempty"`
+		Description string `json:"description,omitempty"`
 	}
 
 	SnapshotResponse struct {
@@ -175,8 +193,8 @@ type (
 		Name                string                 `json:"name"`
 		InstanceTypeID      string                 `json:"instance_type_id"`
 		Volume              *InstanceVolumeRequest `json:"volume,omitempty"`
-		BackupRetentionDays *int                   `json:"backup_retention_days,omitempty"`
-		BackupStartAt       *string                `json:"backup_start_at,omitempty"`
+		BackupRetentionDays int                    `json:"backup_retention_days,omitempty"`
+		BackupStartAt       string                 `json:"backup_start_at,omitempty"`
 	}
 
 	ListSnapshotOptions struct {
@@ -185,6 +203,21 @@ type (
 		Type   *SnapshotType   `json:"type,omitempty"`
 		Status *SnapshotStatus `json:"status,omitempty"`
 	}
+)
+
+const (
+	InstanceGenerationG0B  InstanceGeneration = "G0B"
+	InstanceGenerationG1B  InstanceGeneration = "G1B"
+	InstanceGenerationG2B  InstanceGeneration = "G2B"
+	InstanceGenerationG3B  InstanceGeneration = "G3B"
+	InstanceGenerationG4B  InstanceGeneration = "G4B"
+	InstanceGenerationG5B  InstanceGeneration = "G5B"
+	InstanceGenerationG6B  InstanceGeneration = "G6B"
+	InstanceGenerationG7B  InstanceGeneration = "G7B"
+	InstanceGenerationG8B  InstanceGeneration = "G8B"
+	InstanceGenerationG9B  InstanceGeneration = "G9B"
+	InstanceGenerationG10B InstanceGeneration = "G10B"
+	InstanceGenerationG1   InstanceGeneration = "G1"
 )
 
 type InstanceStatusUpdate string
@@ -240,7 +273,7 @@ type (
 		DeleteSnapshot(ctx context.Context, instanceID, snapshotID string) error
 
 		// RestoreSnapshot creates a new instance from a snapshot.
-		RestoreSnapshot(ctx context.Context, instanceID, snapshotID string, req RestoreSnapshotRequest) (*InstanceResponse, error)
+		RestoreSnapshot(ctx context.Context, snapshotID string, req RestoreSnapshotRequest) (*InstanceResponse, error)
 	}
 
 	instanceService struct {
@@ -274,27 +307,25 @@ type (
 	}
 
 	InstanceDetail struct {
-		ID                     string                  `json:"id"`
-		Name                   string                  `json:"name"`
-		EngineID               string                  `json:"engine_id"`
-		DatastoreID            string                  `json:"datastore_id"`
-		FlavorID               string                  `json:"flavor_id"`
-		InstanceTypeID         string                  `json:"instance_type_id"`
-		Volume                 Volume                  `json:"volume"`
-		Addresses              []Address               `json:"addresses"`
-		Status                 InstanceStatus          `json:"status"`
-		Generation             string                  `json:"generation"`
-		ApplyParametersPending bool                    `json:"apply_parameters_pending"`
-		ParameterGroupID       string                  `json:"parameter_group_id"`
-		AvailabilityZone       string                  `json:"availability_zone"`
-		BackupRetentionDays    int                     `json:"backup_retention_days"`
-		BackupStartAt          string                  `json:"backup_start_at"`
-		CreatedAt              string                  `json:"created_at"`
-		UpdatedAt              *string                 `json:"updated_at,omitempty"`
-		StartedAt              *string                 `json:"started_at,omitempty"`
-		FinishedAt             *string                 `json:"finished_at,omitempty"`
-		MaintenanceScheduledAt *string                 `json:"maintenance_scheduled_at,omitempty"`
-		Replicas               []ReplicaDetailResponse `json:"replicas,omitempty"`
+		ID                     string                       `json:"id"`
+		Name                   string                       `json:"name"`
+		EngineID               string                       `json:"engine_id"`
+		DatastoreID            string                       `json:"datastore_id"`
+		FlavorID               string                       `json:"flavor_id"`
+		InstanceTypeID         string                       `json:"instance_type_id"`
+		Volume                 Volume                       `json:"volume"`
+		Addresses              []Address                    `json:"addresses"`
+		Status                 InstanceStatus               `json:"status"`
+		Generation             InstanceGeneration           `json:"generation"`
+		Parameters             []InstanceParametersResponse `json:"parameters"`
+		BackupRetentionDays    int                          `json:"backup_retention_days"`
+		BackupStartAt          string                       `json:"backup_start_at"`
+		CreatedAt              string                       `json:"created_at"`
+		UpdatedAt              *string                      `json:"updated_at,omitempty"`
+		StartedAt              *string                      `json:"started_at,omitempty"`
+		FinishedAt             *string                      `json:"finished_at,omitempty"`
+		MaintenanceScheduledAt *string                      `json:"maintenance_scheduled_at,omitempty"`
+		Replicas               []ReplicaDetailResponse      `json:"replicas,omitempty"`
 	}
 )
 
@@ -339,7 +370,7 @@ func (s *instanceService) List(ctx context.Context, opts ListInstanceOptions) ([
 		s.client.newRequest,
 		s.client.GetConfig(),
 		http.MethodGet,
-		InstancePath,
+		"/v1/instances",
 		nil,
 		query,
 	)
@@ -363,7 +394,7 @@ func (s *instanceService) Get(ctx context.Context, id string, opts GetInstanceOp
 		s.client.newRequest,
 		s.client.GetConfig(),
 		http.MethodGet,
-		fmt.Sprintf(InstancePathID, id),
+		fmt.Sprintf("/v1/instances/%s", id),
 		nil,
 		query,
 	)
@@ -377,7 +408,7 @@ func (s *instanceService) Create(ctx context.Context, req InstanceCreateRequest)
 		s.client.newRequest,
 		s.client.GetConfig(),
 		http.MethodPost,
-		InstancePath,
+		"/v1/instances",
 		req,
 		nil,
 	)
@@ -391,7 +422,7 @@ func (s *instanceService) Delete(ctx context.Context, id string) error {
 		s.client.newRequest,
 		s.client.GetConfig(),
 		http.MethodDelete,
-		fmt.Sprintf(InstancePathID, id),
+		fmt.Sprintf("/v1/instances/%s", id),
 		nil,
 		nil,
 	)
@@ -405,7 +436,7 @@ func (s *instanceService) Update(ctx context.Context, id string, req DatabaseIns
 		s.client.newRequest,
 		s.client.GetConfig(),
 		http.MethodPatch,
-		fmt.Sprintf(InstancePathID, id),
+		fmt.Sprintf("/v1/instances/%s", id),
 		req,
 		nil,
 	)
@@ -419,7 +450,7 @@ func (s *instanceService) Resize(ctx context.Context, id string, req InstanceRes
 		s.client.newRequest,
 		s.client.GetConfig(),
 		http.MethodPost,
-		fmt.Sprintf(InstancePathID+"/resize", id),
+		fmt.Sprintf("/v1/instances/%s/resize", id),
 		req,
 		nil,
 	)
@@ -433,7 +464,7 @@ func (s *instanceService) Start(ctx context.Context, id string) (*InstanceDetail
 		s.client.newRequest,
 		s.client.GetConfig(),
 		http.MethodPost,
-		fmt.Sprintf(InstancePathID+"/start", id),
+		fmt.Sprintf("/v1/instances/%s/start", id),
 		nil,
 		nil,
 	)
@@ -447,7 +478,7 @@ func (s *instanceService) Stop(ctx context.Context, id string) (*InstanceDetail,
 		s.client.newRequest,
 		s.client.GetConfig(),
 		http.MethodPost,
-		fmt.Sprintf(InstancePathID+"/stop", id),
+		fmt.Sprintf("/v1/instances/%s/stop", id),
 		nil,
 		nil,
 	)
@@ -475,7 +506,7 @@ func (s *instanceService) ListSnapshots(ctx context.Context, instanceID string, 
 		s.client.newRequest,
 		s.client.GetConfig(),
 		http.MethodGet,
-		fmt.Sprintf(SnapshotPath, instanceID),
+		fmt.Sprintf("/v1/instances/%s/snapshots", instanceID),
 		nil,
 		query,
 	)
@@ -493,7 +524,7 @@ func (s *instanceService) CreateSnapshot(ctx context.Context, instanceID string,
 		s.client.newRequest,
 		s.client.GetConfig(),
 		http.MethodPost,
-		fmt.Sprintf(SnapshotPath, instanceID),
+		fmt.Sprintf("/v1/instances/%s/snapshots", instanceID),
 		req,
 		nil,
 	)
@@ -506,7 +537,7 @@ func (s *instanceService) GetSnapshot(ctx context.Context, instanceID, snapshotI
 		s.client.newRequest,
 		s.client.GetConfig(),
 		http.MethodGet,
-		fmt.Sprintf(SnapshotPathID, instanceID, snapshotID),
+		fmt.Sprintf("/v1/instances/%s/snapshots/%s", instanceID, snapshotID),
 		nil,
 		nil,
 	)
@@ -519,7 +550,7 @@ func (s *instanceService) UpdateSnapshot(ctx context.Context, instanceID, snapsh
 		s.client.newRequest,
 		s.client.GetConfig(),
 		http.MethodPatch,
-		fmt.Sprintf(SnapshotPathID, instanceID, snapshotID),
+		fmt.Sprintf("/v1/instances/%s/snapshots/%s", instanceID, snapshotID),
 		req,
 		nil,
 	)
@@ -532,20 +563,20 @@ func (s *instanceService) DeleteSnapshot(ctx context.Context, instanceID, snapsh
 		s.client.newRequest,
 		s.client.GetConfig(),
 		http.MethodDelete,
-		fmt.Sprintf(SnapshotPathID, instanceID, snapshotID),
+		fmt.Sprintf("/v1/instances/%s/snapshots/%s", instanceID, snapshotID),
 		nil,
 		nil,
 	)
 }
 
 // RestoreSnapshot creates a new instance from a snapshot.
-func (s *instanceService) RestoreSnapshot(ctx context.Context, instanceID, snapshotID string, req RestoreSnapshotRequest) (*InstanceResponse, error) {
+func (s *instanceService) RestoreSnapshot(ctx context.Context, snapshotID string, req RestoreSnapshotRequest) (*InstanceResponse, error) {
 	return mgc_http.ExecuteSimpleRequestWithRespBody[InstanceResponse](
 		ctx,
 		s.client.newRequest,
 		s.client.GetConfig(),
 		http.MethodPost,
-		fmt.Sprintf(SnapshotPathID+"/restore", instanceID, snapshotID),
+		fmt.Sprintf("/v1/snapshots/%s/restores", snapshotID),
 		req,
 		nil,
 	)

@@ -14,7 +14,7 @@ import (
 )
 
 // Helper functions
-func assertEqual(t *testing.T, expected, actual any, msgAndArgs ...any) {
+func assertEqual(t *testing.T, expected, actual interface{}, msgAndArgs ...interface{}) {
 	t.Helper()
 	if expected != actual {
 		t.Errorf("Expected %v but got %v. %v", expected, actual, msgAndArgs)
@@ -103,7 +103,7 @@ func TestReplicaService_List(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				assertEqual(t, "/database/v2/replicas", r.URL.Path)
+				assertEqual(t, "/database/v1/replicas", r.URL.Path)
 
 				query := r.URL.Query()
 				if tt.opts.Limit != nil {
@@ -169,7 +169,7 @@ func TestReplicaService_Get(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				assertEqual(t, fmt.Sprintf("/database/v2/replicas/%s", tt.id), r.URL.Path)
+				assertEqual(t, fmt.Sprintf("/database/v1/replicas/%s", tt.id), r.URL.Path)
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(tt.statusCode)
 				w.Write([]byte(tt.response))
@@ -224,7 +224,7 @@ func TestReplicaService_Create(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				assertEqual(t, "/database/v2/replicas", r.URL.Path)
+				assertEqual(t, "/database/v1/replicas", r.URL.Path)
 
 				var req ReplicaCreateRequest
 				json.NewDecoder(r.Body).Decode(&req)
@@ -277,7 +277,7 @@ func TestReplicaService_Delete(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				assertEqual(t, fmt.Sprintf("/database/v2/replicas/%s", tt.id), r.URL.Path)
+				assertEqual(t, fmt.Sprintf("/database/v1/replicas/%s", tt.id), r.URL.Path)
 				w.WriteHeader(tt.statusCode)
 				w.Write([]byte(tt.response))
 			}))
@@ -324,7 +324,7 @@ func TestReplicaService_Resize(t *testing.T) {
 			name: "invalid resize",
 			id:   "rep1",
 			request: ReplicaResizeRequest{
-				InstanceTypeID: "invalid-flavor",
+				FlavorID: "invalid-flavor",
 			},
 			response:   `{"error": "invalid flavor"}`,
 			statusCode: http.StatusBadRequest,
@@ -335,11 +335,12 @@ func TestReplicaService_Resize(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				assertEqual(t, fmt.Sprintf("/database/v2/replicas/%s/resize", tt.id), r.URL.Path)
+				assertEqual(t, fmt.Sprintf("/database/v1/replicas/%s/resize", tt.id), r.URL.Path)
 
 				var req ReplicaResizeRequest
 				json.NewDecoder(r.Body).Decode(&req)
 				assertEqual(t, tt.request.InstanceTypeID, req.InstanceTypeID)
+				assertEqual(t, tt.request.FlavorID, req.FlavorID)
 
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(tt.statusCode)
@@ -412,9 +413,9 @@ func TestReplicaService_StartStop(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				var expectedPath string
 				if tt.method == "Start" {
-					expectedPath = fmt.Sprintf("/database/v2/replicas/%s/start", tt.id)
+					expectedPath = fmt.Sprintf("/database/v1/replicas/%s/start", tt.id)
 				} else {
-					expectedPath = fmt.Sprintf("/database/v2/replicas/%s/stop", tt.id)
+					expectedPath = fmt.Sprintf("/database/v1/replicas/%s/stop", tt.id)
 				}
 				assertEqual(t, expectedPath, r.URL.Path)
 
