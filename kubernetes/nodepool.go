@@ -48,21 +48,22 @@ type (
 	}
 
 	NodePool struct {
-		ID               string            `json:"id"`
-		Name             string            `json:"name"`
-		InstanceTemplate InstanceTemplate  `json:"instance_template"`
-		Replicas         int               `json:"replicas"`
-		Zone             *[]string         `json:"zone,omitempty"`
-		Tags             *[]string         `json:"tags"`
-		Labels           map[string]string `json:"labels,omitempty"`
-		Taints           *[]Taint          `json:"taints,omitempty"`
-		SecurityGroups   *[]string         `json:"security_groups,omitempty"`
-		CreatedAt        *time.Time        `json:"created_at"`
-		UpdatedAt        *time.Time        `json:"updated_at,omitempty"`
-		AutoScale        *AutoScale        `json:"auto_scale,omitempty"`
-		Status           Status            `json:"status"`
-		Flavor           string            `json:"flavor"`
-		MaxNodePools     *int              `json:"max_node_pools,omitempty"`
+		ID                string            `json:"id"`
+		Name              string            `json:"name"`
+		InstanceTemplate  InstanceTemplate  `json:"instance_template"`
+		Replicas          int               `json:"replicas"`
+		Zone              *[]string         `json:"zone,omitempty"`
+		Tags              *[]string         `json:"tags"`
+		Labels            map[string]string `json:"labels,omitempty"`
+		Taints            *[]Taint          `json:"taints,omitempty"`
+		SecurityGroups    *[]string         `json:"security_groups,omitempty"`
+		CreatedAt         *time.Time        `json:"created_at"`
+		UpdatedAt         *time.Time        `json:"updated_at,omitempty"`
+		AutoScale         *AutoScale        `json:"auto_scale,omitempty"`
+		Status            Status            `json:"status"`
+		Flavor            string            `json:"flavor"`
+		MaxPodsPerNode    *int              `json:"max_pods_per_node,omitempty"`
+		AvailabilityZones *[]string         `json:"availability_zones,omitempty"`
 	}
 
 	Addresses struct {
@@ -117,13 +118,14 @@ type (
 	}
 
 	CreateNodePoolRequest struct {
-		Name         string     `json:"name"`
-		Flavor       string     `json:"flavor"`
-		Replicas     int        `json:"replicas"`
-		Tags         *[]string  `json:"tags,omitempty"`
-		Taints       *[]Taint   `json:"taints,omitempty"`
-		AutoScale    *AutoScale `json:"auto_scale,omitempty"`
-		MaxNodePools *int       `json:"max_node_pools,omitempty"`
+		Name              string     `json:"name"`
+		Flavor            string     `json:"flavor"`
+		Replicas          int        `json:"replicas"`
+		Tags              *[]string  `json:"tags,omitempty"`
+		Taints            *[]Taint   `json:"taints,omitempty"`
+		AutoScale         *AutoScale `json:"auto_scale,omitempty"`
+		MaxPodsPerNode    *int       `json:"max_pods_per_node,omitempty"`
+		AvailabilityZones *[]string  `json:"availability_zones,omitempty"`
 	}
 
 	PatchNodePoolRequest struct {

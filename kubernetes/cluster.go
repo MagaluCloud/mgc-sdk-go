@@ -73,20 +73,22 @@ type (
 	}
 
 	Cluster struct {
-		Name          string         `json:"name"`
-		ID            string         `json:"id"`
-		Status        *MessageState  `json:"status"`
-		Version       string         `json:"version"`
-		Description   *string        `json:"description,omitempty"`
-		Region        *string        `json:"region,omitempty"`
-		CreatedAt     *time.Time     `json:"created_at"`
-		UpdatedAt     *time.Time     `json:"updated_at,omitempty"`
-		Network       *Network       `json:"network,omitempty"`
-		ControlPlane  *NodePool      `json:"controlplane,omitempty"`
-		KubeApiServer *KubeApiServer `json:"kube_api_server,omitempty"`
-		NodePools     *[]NodePool    `json:"node_pools,omitempty"`
-		Addons        *Addons        `json:"addons,omitempty"`
-		AllowedCIDRs  *[]string      `json:"allowed_cidrs,omitempty"`
+		Name             string         `json:"name"`
+		ID               string         `json:"id"`
+		Status           *MessageState  `json:"status"`
+		Version          string         `json:"version"`
+		Description      *string        `json:"description,omitempty"`
+		Region           *string        `json:"region,omitempty"`
+		CreatedAt        *time.Time     `json:"created_at"`
+		UpdatedAt        *time.Time     `json:"updated_at,omitempty"`
+		Network          *Network       `json:"network,omitempty"`
+		ControlPlane     *NodePool      `json:"controlplane,omitempty"`
+		KubeApiServer    *KubeApiServer `json:"kube_api_server,omitempty"`
+		NodePools        *[]NodePool    `json:"node_pools,omitempty"`
+		Addons           *Addons        `json:"addons,omitempty"`
+		AllowedCIDRs     *[]string      `json:"allowed_cidrs,omitempty"`
+		ServicesIpV4CIDR *string        `json:"services_ipv4_cidr,omitempty"`
+		ClusterIPv4CIDR  *string        `json:"cluster_ipv4_cidr,omitempty"`
 	}
 
 	Controlplane struct {
@@ -119,6 +121,8 @@ type (
 		EnabledServerGroup *bool                    `json:"enabled_server_group,omitempty"`
 		NodePools          *[]CreateNodePoolRequest `json:"node_pools,omitempty"`
 		AllowedCIDRs       *[]string                `json:"allowed_cidrs,omitempty"`
+		ServicesIpV4CIDR   *string                  `json:"services_ipv4_cidr,omitempty"`
+		ClusterIPv4CIDR    *string                  `json:"cluster_ipv4_cidr,omitempty"`
 	}
 
 	AllowedCIDRsUpdateRequest struct {
