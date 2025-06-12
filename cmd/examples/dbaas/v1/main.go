@@ -7,7 +7,7 @@ import (
 	"os"
 
 	"github.com/MagaluCloud/mgc-sdk-go/client"
-	"github.com/MagaluCloud/mgc-sdk-go/dbaas"
+	"github.com/MagaluCloud/mgc-sdk-go/dbaas/v1"
 	"github.com/MagaluCloud/mgc-sdk-go/helpers"
 )
 
