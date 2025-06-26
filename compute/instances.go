@@ -83,7 +83,7 @@ type (
 	}
 
 	CreateParametersNetworkInterface struct {
-		Interface      IDOrName                                              `json:"interface"`
+		Interface      *IDOrName                                             `json:"interface,omitempty"`
 		SecurityGroups *[]CreateParametersNetworkInterfaceSecurityGroupsItem `json:"security_groups,omitempty"`
 	}
 
