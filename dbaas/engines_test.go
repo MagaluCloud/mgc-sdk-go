@@ -34,7 +34,7 @@ func TestEngineService_List(t *testing.T) {
 			response: `{
 				"meta": {"total": 2},
 				"results": [
-					{"id": "postgres-13", "name": "PostgreSQL", "version": "13", "status": "ACTIVE"},
+					{"id": "postgres-16", "name": "PostgreSQL", "version": "16", "status": "PREVIEW"},
 					{"id": "mysql-8", "name": "MySQL", "version": "8.0", "status": "ACTIVE"}
 				]
 			}`,
@@ -47,11 +47,11 @@ func TestEngineService_List(t *testing.T) {
 			opts: ListEngineOptions{
 				Limit:  helpers.IntPtr(10),
 				Offset: helpers.IntPtr(5),
-				Status: helpers.StrPtr("ACTIVE"),
+				Status: helpers.StrPtr("PREVIEW"),
 			},
 			response: `{
 				"meta": {"total": 1},
-				"results": [{"id": "postgres-13", "status": "ACTIVE"}]
+				"results": [{"id": "postgres-16", "status": "PREVIEW"}]
 			}`,
 			statusCode: http.StatusOK,
 			wantCount:  1,
@@ -111,16 +111,16 @@ func TestEngineService_Get(t *testing.T) {
 		wantErr    bool
 	}{
 		{
-			name: "existing engine",
-			id:   "postgres-13",
+			name: "preview engine",
+			id:   "postgres-16",
 			response: `{
-				"id": "postgres-13",
+				"id": "postgres-16",
 				"name": "PostgreSQL",
-				"version": "13",
-				"status": "ACTIVE"
+				"version": "16",
+				"status": "PREVIEW"
 			}`,
 			statusCode: http.StatusOK,
-			wantID:     "postgres-13",
+			wantID:     "postgres-16",
 			wantErr:    false,
 		},
 		{

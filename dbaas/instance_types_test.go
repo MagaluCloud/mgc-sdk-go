@@ -32,26 +32,31 @@ func TestInstanceTypeService_List(t *testing.T) {
 		{
 			name: "basic list",
 			response: `{
-				"meta": {"total": 2},
+				"meta": {"total": 6},
 				"results": [
-					{"id": "type1", "name": "small", "vcpu": "1", "ram": "2GB"},
-					{"id": "type2", "name": "medium", "vcpu": "2", "ram": "4GB"}
+					{"id": "type1_mysql8", "name": "small", "vcpu": "1", "ram": "2GB", "status": "ACTIVE", "engine_id": "mysql8_id"},
+					{"id": "type2_mysql8", "name": "medium", "vcpu": "2", "ram": "4GB", "status": "ACTIVE", "engine_id": "mysql8_id"},
+					{"id": "type3_mysql8", "name": "medium", "vcpu": "2", "ram": "4GB", "status": "DEPRECATED", "engine_id": "mysql8_id"},
+					{"id": "type1_mysql84", "name": "small", "vcpu": "1", "ram": "2GB", "status": "ACTIVE", "engine_id": "mysql84_id"},
+					{"id": "type2_mysql84", "name": "medium", "vcpu": "2", "ram": "4GB", "status": "ACTIVE", "engine_id": "mysql84_id"},
+					{"id": "type1_postgres16", "name": "small", "vcpu": "1", "ram": "2GB", "status": "ACTIVE", "engine_id": "postgresql16_id"}
 				]
 			}`,
 			statusCode: http.StatusOK,
-			wantCount:  2,
+			wantCount:  6,
 			wantErr:    false,
 		},
 		{
 			name: "with filters and pagination",
 			opts: ListInstanceTypeOptions{
-				Limit:  helpers.IntPtr(10),
-				Offset: helpers.IntPtr(5),
-				Status: helpers.StrPtr("ACTIVE"),
+				Limit:    helpers.IntPtr(10),
+				Offset:   helpers.IntPtr(5),
+				Status:   helpers.StrPtr("ACTIVE"),
+				EngineID: helpers.StrPtr("mysql8_id"),
 			},
 			response: `{
 				"meta": {"total": 1},
-				"results": [{"id": "type1", "status": "ACTIVE"}]
+				"results": [{"id": "type1_mysql8", "status": "ACTIVE", "engine_id": "mysql8_id"}]
 			}`,
 			statusCode: http.StatusOK,
 			wantCount:  1,
@@ -79,6 +84,9 @@ func TestInstanceTypeService_List(t *testing.T) {
 				}
 				if tt.opts.Status != nil {
 					assertEqual(t, string(*tt.opts.Status), query.Get("status"))
+				}
+				if tt.opts.EngineID != nil {
+					assertEqual(t, string(*tt.opts.EngineID), query.Get("engine_id"))
 				}
 
 				w.Header().Set("Content-Type", "application/json")
@@ -118,7 +126,8 @@ func TestInstanceTypeService_Get(t *testing.T) {
 				"name": "small",
 				"vcpu": "1",
 				"ram": "2GB",
-				"status": "ACTIVE"
+				"status": "ACTIVE",
+				"engine_id": "mysql-8_id"
 			}`,
 			statusCode: http.StatusOK,
 			wantID:     "type1",
