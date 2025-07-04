@@ -287,6 +287,7 @@ func TestInstanceService_Delete(t *testing.T) {
 
 			if tt.wantErr {
 				assertError(t, err)
+				assertEqual(t, true, strings.Contains(err.Error(), strconv.Itoa(tt.statusCode)))
 				return
 			}
 
