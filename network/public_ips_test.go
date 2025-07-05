@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -67,6 +69,7 @@ func TestPublicIPService_List(t *testing.T) {
 
 			if tt.wantErr {
 				assertError(t, err)
+				assertEqual(t, true, strings.Contains(err.Error(), strconv.Itoa(tt.statusCode)))
 				return
 			}
 
@@ -144,6 +147,7 @@ func TestPublicIPService_Get(t *testing.T) {
 
 			if tt.wantErr {
 				assertError(t, err)
+				assertEqual(t, true, strings.Contains(err.Error(), strconv.Itoa(tt.statusCode)))
 				return
 			}
 
@@ -210,6 +214,7 @@ func TestPublicIPService_Delete(t *testing.T) {
 
 			if tt.wantErr {
 				assertError(t, err)
+				assertEqual(t, true, strings.Contains(err.Error(), strconv.Itoa(tt.statusCode)))
 				return
 			}
 
@@ -313,6 +318,7 @@ func TestPublicIPService_AttachDetach(t *testing.T) {
 
 			if tt.wantErr {
 				assertError(t, err)
+				assertEqual(t, true, strings.Contains(err.Error(), strconv.Itoa(tt.statusCode)))
 				return
 			}
 

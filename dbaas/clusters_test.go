@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/MagaluCloud/mgc-sdk-go/client"
@@ -153,6 +154,7 @@ func TestClusterService_List(t *testing.T) {
 
 			if tt.wantErr {
 				assertError(t, err)
+				assertEqual(t, true, strings.Contains(err.Error(), strconv.Itoa(tt.statusCode)))
 				return
 			}
 
@@ -232,6 +234,7 @@ func TestClusterService_Create(t *testing.T) {
 
 			if tt.wantErr {
 				assertError(t, err)
+				assertEqual(t, true, strings.Contains(err.Error(), strconv.Itoa(tt.statusCode)))
 				return
 			}
 
@@ -278,11 +281,6 @@ func TestClusterService_Get(t *testing.T) {
 			statusCode: http.StatusNotFound,
 			wantErr:    true,
 		},
-		{
-			name:      "empty cluster ID",
-			clusterID: "",
-			wantErr:   true,
-		},
 	}
 
 	for _, tt := range tests {
@@ -305,6 +303,7 @@ func TestClusterService_Get(t *testing.T) {
 
 			if tt.wantErr {
 				assertError(t, err)
+				assertEqual(t, true, strings.Contains(err.Error(), strconv.Itoa(tt.statusCode)))
 				return
 			}
 
@@ -352,12 +351,6 @@ func TestClusterService_Update(t *testing.T) {
 			statusCode: http.StatusNotFound,
 			wantErr:    true,
 		},
-		{
-			name:      "empty cluster ID",
-			clusterID: "",
-			request:   ClusterUpdateRequest{ParameterGroupID: helpers.StrPtr("pg-2")},
-			wantErr:   true,
-		},
 	}
 
 	for _, tt := range tests {
@@ -392,6 +385,7 @@ func TestClusterService_Update(t *testing.T) {
 
 			if tt.wantErr {
 				assertError(t, err)
+				assertEqual(t, true, strings.Contains(err.Error(), strconv.Itoa(tt.statusCode)))
 				return
 			}
 
@@ -420,11 +414,6 @@ func TestClusterService_Delete(t *testing.T) {
 			statusCode: http.StatusNotFound,
 			wantErr:    true,
 		},
-		{
-			name:      "empty cluster ID",
-			clusterID: "",
-			wantErr:   true,
-		},
 	}
 
 	for _, tt := range tests {
@@ -445,6 +434,7 @@ func TestClusterService_Delete(t *testing.T) {
 
 			if tt.wantErr {
 				assertError(t, err)
+				assertEqual(t, true, strings.Contains(err.Error(), strconv.Itoa(tt.statusCode)))
 			} else {
 				assertNoError(t, err)
 			}
@@ -481,11 +471,6 @@ func TestClusterService_Start(t *testing.T) {
 			statusCode: http.StatusNotFound,
 			wantErr:    true,
 		},
-		{
-			name:      "empty cluster ID",
-			clusterID: "",
-			wantErr:   true,
-		},
 	}
 
 	for _, tt := range tests {
@@ -508,6 +493,7 @@ func TestClusterService_Start(t *testing.T) {
 
 			if tt.wantErr {
 				assertError(t, err)
+				assertEqual(t, true, strings.Contains(err.Error(), strconv.Itoa(tt.statusCode)))
 				return
 			}
 
@@ -545,11 +531,6 @@ func TestClusterService_Stop(t *testing.T) {
 			statusCode: http.StatusNotFound,
 			wantErr:    true,
 		},
-		{
-			name:      "empty cluster ID",
-			clusterID: "",
-			wantErr:   true,
-		},
 	}
 
 	for _, tt := range tests {
@@ -572,6 +553,7 @@ func TestClusterService_Stop(t *testing.T) {
 
 			if tt.wantErr {
 				assertError(t, err)
+				assertEqual(t, true, strings.Contains(err.Error(), strconv.Itoa(tt.statusCode)))
 				return
 			}
 

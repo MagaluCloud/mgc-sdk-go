@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/MagaluCloud/mgc-sdk-go/client"
@@ -133,6 +135,7 @@ func TestNetworkHealthCheckService_Create(t *testing.T) {
 
 			if tt.wantErr {
 				assertError(t, err)
+				assertEqual(t, true, strings.Contains(err.Error(), strconv.Itoa(tt.statusCode)))
 				return
 			}
 
@@ -236,6 +239,7 @@ func TestNetworkHealthCheckService_Get(t *testing.T) {
 
 			if tt.wantErr {
 				assertError(t, err)
+				assertEqual(t, true, strings.Contains(err.Error(), strconv.Itoa(tt.statusCode)))
 				return
 			}
 
@@ -320,6 +324,7 @@ func TestNetworkHealthCheckService_List(t *testing.T) {
 
 			if tt.wantErr {
 				assertError(t, err)
+				assertEqual(t, true, strings.Contains(err.Error(), strconv.Itoa(tt.statusCode)))
 				return
 			}
 
@@ -381,6 +386,7 @@ func TestNetworkHealthCheckService_Update(t *testing.T) {
 
 			if tt.wantErr {
 				assertError(t, err)
+				assertEqual(t, true, strings.Contains(err.Error(), strconv.Itoa(tt.statusCode)))
 				return
 			}
 
@@ -433,6 +439,7 @@ func TestNetworkHealthCheckService_Delete(t *testing.T) {
 
 			if tt.wantErr {
 				assertError(t, err)
+				assertEqual(t, true, strings.Contains(err.Error(), strconv.Itoa(tt.statusCode)))
 				return
 			}
 

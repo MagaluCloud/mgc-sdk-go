@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -72,6 +74,7 @@ func TestRuleService_List(t *testing.T) {
 
 			if tt.wantErr {
 				assertError(t, err)
+				assertEqual(t, true, strings.Contains(err.Error(), strconv.Itoa(tt.statusCode)))
 				return
 			}
 
@@ -151,6 +154,7 @@ func TestRuleService_Get(t *testing.T) {
 
 			if tt.wantErr {
 				assertError(t, err)
+				assertEqual(t, true, strings.Contains(err.Error(), strconv.Itoa(tt.statusCode)))
 				return
 			}
 
@@ -237,6 +241,7 @@ func TestRuleService_Create(t *testing.T) {
 
 			if tt.wantErr {
 				assertError(t, err)
+				assertEqual(t, true, strings.Contains(err.Error(), strconv.Itoa(tt.statusCode)))
 				return
 			}
 
@@ -293,6 +298,7 @@ func TestRuleService_Delete(t *testing.T) {
 
 			if tt.wantErr {
 				assertError(t, err)
+				assertEqual(t, true, strings.Contains(err.Error(), strconv.Itoa(tt.statusCode)))
 				return
 			}
 
