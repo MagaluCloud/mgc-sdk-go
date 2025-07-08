@@ -36,6 +36,14 @@ type (
 		IPAddress             *[]IpAddress                    `json:"ip_address"`
 		CreatedAt             *utils.LocalDateTimeWithoutZone `json:"created_at,omitempty"`
 		Updated               *utils.LocalDateTimeWithoutZone `json:"updated,omitempty"`
+		Network               *PortNetworkResponse            `json:"network,omitempty"`
+	}
+
+	// PortNetworkResponse represents the AvailabilityZone associated with a port
+	PortNetworkResponse struct {
+		AvailabilityZone *string `json:"availability_zone,omitempty"`
+		ID               *string `json:"id,omitempty"`
+		Zone             *string `json:"zone,omitempty"`
 	}
 
 	// PortUpdateRequest represents the fields available for update in a port resource
