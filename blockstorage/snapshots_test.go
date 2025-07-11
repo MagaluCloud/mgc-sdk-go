@@ -97,6 +97,7 @@ func TestSnapshotService_List(t *testing.T) {
 				if err == nil {
 					t.Fatal("expected error, got nil")
 				}
+				assertEqual(t, true, strings.Contains(err.Error(), strconv.Itoa(tt.statusCode)))
 				return
 			}
 
@@ -168,6 +169,7 @@ func TestSnapshotService_Create(t *testing.T) {
 				if err == nil {
 					t.Fatal("expected error, got nil")
 				}
+				assertEqual(t, true, strings.Contains(err.Error(), strconv.Itoa(tt.statusCode)))
 				return
 			}
 
@@ -244,6 +246,7 @@ func TestSnapshotService_Get(t *testing.T) {
 				if err == nil {
 					t.Fatal("expected error, got nil")
 				}
+				assertEqual(t, true, strings.Contains(err.Error(), strconv.Itoa(tt.statusCode)))
 				return
 			}
 
@@ -296,6 +299,7 @@ func TestSnapshotService_Delete(t *testing.T) {
 				if err == nil {
 					t.Fatal("expected error, got nil")
 				}
+				assertEqual(t, true, strings.Contains(err.Error(), strconv.Itoa(tt.statusCode)))
 				return
 			}
 
@@ -360,6 +364,7 @@ func TestSnapshotService_Rename(t *testing.T) {
 				if err == nil {
 					t.Fatal("expected error, got nil")
 				}
+				assertEqual(t, true, strings.Contains(err.Error(), strconv.Itoa(tt.statusCode)))
 				return
 			}
 
