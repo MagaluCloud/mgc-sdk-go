@@ -12,22 +12,35 @@ import (
 type (
 	// PublicIPResponse represents a public IP resource response
 	PublicIPResponse struct {
-		ID          *string                         `json:"id,omitempty"`
-		ExternalID  *string                         `json:"external_id,omitempty"`
-		VPCID       *string                         `json:"vpc_id,omitempty"`
-		TenantID    *string                         `json:"tenant_id,omitempty"`
-		ProjectType *string                         `json:"project_type,omitempty"`
-		Description *string                         `json:"description,omitempty"`
-		PublicIP    *string                         `json:"public_ip,omitempty"`
-		PortID      *string                         `json:"port_id,omitempty"`
-		CreatedAt   *utils.LocalDateTimeWithoutZone `json:"created_at,omitempty"`
-		Updated     *utils.LocalDateTimeWithoutZone `json:"updated,omitempty"`
-		Status      *string                         `json:"status,omitempty"`
-		Error       *string                         `json:"error,omitempty"`
+		// ID is the unique identifier of the public IP
+		ID *string `json:"id,omitempty"`
+		// ExternalID is the external identifier (optional)
+		ExternalID *string `json:"external_id,omitempty"`
+		// VPCID is the VPC identifier (optional)
+		VPCID *string `json:"vpc_id,omitempty"`
+		// TenantID is the tenant identifier (optional)
+		TenantID *string `json:"tenant_id,omitempty"`
+		// ProjectType is the project type (optional)
+		ProjectType *string `json:"project_type,omitempty"`
+		// Description is the description of the public IP (optional)
+		Description *string `json:"description,omitempty"`
+		// PublicIP is the public IP address (optional)
+		PublicIP *string `json:"public_ip,omitempty"`
+		// PortID is the associated port identifier (optional)
+		PortID *string `json:"port_id,omitempty"`
+		// CreatedAt is the creation timestamp (optional)
+		CreatedAt *utils.LocalDateTimeWithoutZone `json:"created_at,omitempty"`
+		// Updated is the last update timestamp (optional)
+		Updated *utils.LocalDateTimeWithoutZone `json:"updated,omitempty"`
+		// Status is the current status of the public IP (optional)
+		Status *string `json:"status,omitempty"`
+		// Error contains error information if any (optional)
+		Error *string `json:"error,omitempty"`
 	}
 
 	// PublicIPListResponse represents a list of public IPs response
 	PublicIPListResponse struct {
+		// PublicIPs contains the list of public IP resources
 		PublicIPs []PublicIPResponse `json:"public_ips"`
 	}
 )
@@ -50,6 +63,7 @@ type PublicIPService interface {
 	DetachFromPort(ctx context.Context, publicIPID string, portID string) error
 }
 
+// publicIPService implements the PublicIPService interface
 type publicIPService struct {
 	client *NetworkClient
 }

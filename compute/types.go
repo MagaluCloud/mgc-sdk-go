@@ -1,3 +1,5 @@
+// Package compute provides functionality to interact with the MagaluCloud compute service.
+// This package allows managing virtual machine instances, images, instance types, and snapshots.
 package compute
 
 import (
@@ -9,49 +11,94 @@ import (
 	mgc_http "github.com/MagaluCloud/mgc-sdk-go/internal/http"
 )
 
+// Meta contains pagination metadata for API responses.
+// This structure provides information about the current page and total results.
 type Meta struct {
-	Limit  int `json:"limit"`
+	// Limit is the maximum number of results per page
+	Limit int `json:"limit"`
+	// Offset is the number of results skipped
 	Offset int `json:"offset"`
-	Count  int `json:"count"`
-	Total  int `json:"total"`
+	// Count is the number of results in the current page
+	Count int `json:"count"`
+	// Total is the total number of available results
+	Total int `json:"total"`
 }
 
-// InstanceType represents a virtual machine instance type configuration
+// InstanceType represents a virtual machine instance type configuration.
+// Each instance type defines the hardware specifications for virtual machines.
 type InstanceType struct {
-	ID                string    `json:"id"`
-	Name              string    `json:"name"`
-	VCPUs             int       `json:"vcpus"`
-	RAM               int       `json:"ram"`
-	Disk              int       `json:"disk"`
-	GPU               *int      `json:"gpu,omitempty"`
-	Status            string    `json:"status"`
+	// ID is the unique identifier of the instance type
+	ID string `json:"id"`
+	// Name is the display name of the instance type
+	Name string `json:"name"`
+	// VCPUs is the number of virtual CPUs
+	VCPUs int `json:"vcpus"`
+	// RAM is the amount of RAM in MB
+	RAM int `json:"ram"`
+	// Disk is the disk size in GB
+	Disk int `json:"disk"`
+	// GPU is the number of GPUs (optional)
+	GPU *int `json:"gpu,omitempty"`
+	// Status indicates the current status of the instance type
+	Status string `json:"status"`
+	// AvailabilityZones lists the availability zones where this instance type is available
 	AvailabilityZones *[]string `json:"availability_zones,omitempty"`
 }
 
+// InstanceTypeList represents the response from listing instance types.
+// This structure encapsulates the API response format for instance types.
 type InstanceTypeList struct {
+	// InstanceTypes contains the list of available instance types
 	InstanceTypes []InstanceType `json:"instance_types"`
-	Meta          Meta           `json:"meta"`
+	// Meta contains pagination information
+	Meta Meta `json:"meta"`
 }
 
-// InstanceTypeService provides operations for querying available machine types
+// InstanceTypeService provides operations for querying available machine types.
+// This interface allows listing instance types with optional filtering.
 type InstanceTypeService interface {
-	// List returns all available machine types with optional filtering
+	// List returns all available machine types with optional filtering.
+	//
+	// Parameters:
+	//   - ctx: Request context
+	//   - opts: Options to filter and paginate the instance types
+	//
+	// Returns:
+	//   - []InstanceType: List of available instance types
+	//   - error: Error if there's a failure in the request
 	List(ctx context.Context, opts InstanceTypeListOptions) ([]InstanceType, error)
 }
 
+// instanceTypeService implements the InstanceTypeService interface.
+// This is an internal implementation that should not be used directly.
 type instanceTypeService struct {
 	client *VirtualMachineClient
 }
 
-// InstanceTypeListOptions defines parameters for filtering and pagination of machine type lists
+// InstanceTypeListOptions defines parameters for filtering and pagination of machine type lists.
+// All fields are optional and allow controlling the listing behavior.
 type InstanceTypeListOptions struct {
-	Limit            *int    `url:"_limit,omitempty"`
-	Offset           *int    `url:"_offset,omitempty"`
-	Sort             *string `url:"_sort,omitempty"`
-	AvailabilityZone string  `url:"availability-zone,omitempty"`
+	// Limit defines the maximum number of results to be returned
+	Limit *int `url:"_limit,omitempty"`
+	// Offset defines the number of results to be skipped (for pagination)
+	Offset *int `url:"_offset,omitempty"`
+	// Sort specifies the sorting criteria
+	Sort *string `url:"_sort,omitempty"`
+	// AvailabilityZone filters instance types by availability zone
+	AvailabilityZone string `url:"availability-zone,omitempty"`
 }
 
-// List retrieves all available machine types
+// List retrieves all available machine types.
+// This method makes an HTTP request to get the list of instance types
+// and applies the filters specified in the options.
+//
+// Parameters:
+//   - ctx: Request context
+//   - opts: Options to filter and paginate the instance types
+//
+// Returns:
+//   - []InstanceType: List of available instance types
+//   - error: Error if there's a failure in the request
 func (s *instanceTypeService) List(ctx context.Context, opts InstanceTypeListOptions) ([]InstanceType, error) {
 	req, err := s.client.newRequest(ctx, http.MethodGet, "/v1/instance-types", nil)
 	if err != nil {

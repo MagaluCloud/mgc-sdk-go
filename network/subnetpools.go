@@ -12,7 +12,7 @@ import (
 )
 
 type (
-	// ListOptions represents parameters for filtering and pagination
+	// ListSubnetPoolsOptions represents parameters for filtering and pagination
 	ListSubnetPoolsOptions struct {
 		// Limit specifies the maximum number of items to return
 		Limit *int
@@ -24,72 +24,113 @@ type (
 
 	// ListSubnetPoolsResponse represents a list of subnet pools response
 	ListSubnetPoolsResponse struct {
-		Meta    MetaModel            `json:"meta"`
+		// Meta contains pagination metadata
+		Meta MetaModel `json:"meta"`
+		// Results contains the list of subnet pool resources
 		Results []SubnetPoolResponse `json:"results"`
 	}
 
+	// MetaModel represents pagination metadata
 	MetaModel struct {
-		Page  PageModel `json:"page"`
+		// Page contains page information
+		Page PageModel `json:"page"`
+		// Links contains navigation links
 		Links LinkModel `json:"links"`
 	}
 
+	// PageModel represents page information
 	PageModel struct {
-		Limit  *int `json:"limit,omitempty"`
+		// Limit is the maximum number of items per page (optional)
+		Limit *int `json:"limit,omitempty"`
+		// Offset is the number of items skipped (optional)
 		Offset *int `json:"offset,omitempty"`
-		Count  int  `json:"count"`
-		Total  int  `json:"total"`
+		// Count is the number of items in the current page
+		Count int `json:"count"`
+		// Total is the total number of items
+		Total int `json:"total"`
 	}
 
+	// LinkModel represents navigation links
 	LinkModel struct {
+		// Previous is the link to the previous page (optional)
 		Previous *string `json:"previous"`
-		Next     *string `json:"next"`
-		Self     string  `json:"self"`
+		// Next is the link to the next page (optional)
+		Next *string `json:"next"`
+		// Self is the link to the current page
+		Self string `json:"self"`
 	}
 
 	// SubnetPoolResponse represents a subnet pool resource response
 	SubnetPoolResponse struct {
-		CIDR        *string `json:"cidr,omitempty"`
-		ID          string  `json:"id"`
-		Name        string  `json:"name"`
-		TenantID    string  `json:"tenant_id"`
+		// CIDR is the CIDR block of the subnet pool (optional)
+		CIDR *string `json:"cidr,omitempty"`
+		// ID is the unique identifier of the subnet pool
+		ID string `json:"id"`
+		// Name is the name of the subnet pool
+		Name string `json:"name"`
+		// TenantID is the tenant identifier
+		TenantID string `json:"tenant_id"`
+		// Description is the description of the subnet pool (optional)
 		Description *string `json:"description,omitempty"`
-		IsDefault   bool    `json:"is_default"`
+		// IsDefault indicates if this is the default subnet pool
+		IsDefault bool `json:"is_default"`
 	}
 
+	// SubnetPoolDetailsResponse represents detailed subnet pool information
 	SubnetPoolDetailsResponse struct {
-		CIDR        *string                        `json:"cidr,omitempty"`
-		ID          string                         `json:"id"`
-		CreatedAt   utils.LocalDateTimeWithoutZone `json:"created_at"`
-		TenantID    string                         `json:"tenant_id"`
-		IPVersion   int                            `json:"ip_version"`
-		IsDefault   bool                           `json:"is_default"`
-		Name        string                         `json:"name"`
-		Description string                         `json:"description"`
+		// CIDR is the CIDR block of the subnet pool (optional)
+		CIDR *string `json:"cidr,omitempty"`
+		// ID is the unique identifier of the subnet pool
+		ID string `json:"id"`
+		// CreatedAt is the creation timestamp
+		CreatedAt utils.LocalDateTimeWithoutZone `json:"created_at"`
+		// TenantID is the tenant identifier
+		TenantID string `json:"tenant_id"`
+		// IPVersion is the IP version (4 for IPv4, 6 for IPv6)
+		IPVersion int `json:"ip_version"`
+		// IsDefault indicates if this is the default subnet pool
+		IsDefault bool `json:"is_default"`
+		// Name is the name of the subnet pool
+		Name string `json:"name"`
+		// Description is the description of the subnet pool
+		Description string `json:"description"`
 	}
 
 	// CreateSubnetPoolRequest represents parameters for creating a new subnet pool
 	CreateSubnetPoolRequest struct {
-		CIDR        *string `json:"cidr,omitempty"`
-		Name        string  `json:"name"`
-		Description string  `json:"description"`
-		Type        *string `json:"type,omitempty"`
-	}
-
-	BookCIDRRequest struct {
+		// CIDR is the CIDR block for the subnet pool (optional)
 		CIDR *string `json:"cidr,omitempty"`
-		Mask *int    `json:"mask,omitempty"`
+		// Name is the name of the subnet pool
+		Name string `json:"name"`
+		// Description is the description of the subnet pool
+		Description string `json:"description"`
+		// Type is the type of the subnet pool (optional)
+		Type *string `json:"type,omitempty"`
 	}
 
+	// BookCIDRRequest represents parameters for booking a CIDR range
+	BookCIDRRequest struct {
+		// CIDR is the CIDR block to book (optional)
+		CIDR *string `json:"cidr,omitempty"`
+		// Mask is the subnet mask (optional)
+		Mask *int `json:"mask,omitempty"`
+	}
+
+	// BookCIDRResponse represents the response after booking a CIDR range
 	BookCIDRResponse struct {
+		// CIDR is the booked CIDR block
 		CIDR string `json:"cidr"`
 	}
 
+	// UnbookCIDRRequest represents parameters for unbooking a CIDR range
 	UnbookCIDRRequest struct {
+		// CIDR is the CIDR block to unbook
 		CIDR string `json:"cidr"`
 	}
 
 	// CreateSubnetPoolResponse represents the response after creating a subnet pool
 	CreateSubnetPoolResponse struct {
+		// ID is the unique identifier of the created subnet pool
 		ID string `json:"id"`
 	}
 )
@@ -115,6 +156,7 @@ type SubnetPoolService interface {
 	UnbookCIDR(ctx context.Context, id string, req UnbookCIDRRequest) error
 }
 
+// subnetPoolService implements the SubnetPoolService interface
 type subnetPoolService struct {
 	client *NetworkClient
 }
@@ -190,6 +232,7 @@ func (s *subnetPoolService) Delete(ctx context.Context, id string) error {
 	)
 }
 
+// BookCIDR books a CIDR range from a subnet pool
 func (s *subnetPoolService) BookCIDR(ctx context.Context, id string, req BookCIDRRequest) (*BookCIDRResponse, error) {
 	return mgc_http.ExecuteSimpleRequestWithRespBody[BookCIDRResponse](
 		ctx,
@@ -202,6 +245,7 @@ func (s *subnetPoolService) BookCIDR(ctx context.Context, id string, req BookCID
 	)
 }
 
+// UnbookCIDR releases a CIDR range from a subnet pool
 func (s *subnetPoolService) UnbookCIDR(ctx context.Context, id string, req UnbookCIDRRequest) error {
 	return mgc_http.ExecuteSimpleRequest(
 		ctx,

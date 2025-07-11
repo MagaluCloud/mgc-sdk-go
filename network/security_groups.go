@@ -14,41 +14,60 @@ import (
 type (
 	// SecurityGroupListResponse represents a list of security groups response
 	SecurityGroupListResponse struct {
+		// SecurityGroups contains the list of security group resources
 		SecurityGroups []SecurityGroupResponse `json:"security_groups"`
 	}
 
 	// SecurityGroupResponse represents a security group resource
 	SecurityGroupResponse struct {
-		ID          *string                         `json:"id,omitempty"`
-		VPCID       *string                         `json:"vpc_id,omitempty"`
-		Name        *string                         `json:"name,omitempty"`
-		Description *string                         `json:"description,omitempty"`
-		CreatedAt   *utils.LocalDateTimeWithoutZone `json:"created_at,omitempty"`
-		Updated     *utils.LocalDateTimeWithoutZone `json:"updated,omitempty"`
-		Status      string                          `json:"status"`
-		Error       *string                         `json:"error,omitempty"`
-		TenantID    *string                         `json:"tenant_id,omitempty"`
-		ProjectType *string                         `json:"project_type,omitempty"`
-		IsDefault   *bool                           `json:"is_default,omitempty"`
-		Ports       *[]string                       `json:"ports,omitempty"`
+		// ID is the unique identifier of the security group
+		ID *string `json:"id,omitempty"`
+		// VPCID is the VPC identifier (optional)
+		VPCID *string `json:"vpc_id,omitempty"`
+		// Name is the name of the security group (optional)
+		Name *string `json:"name,omitempty"`
+		// Description is the description of the security group (optional)
+		Description *string `json:"description,omitempty"`
+		// CreatedAt is the creation timestamp (optional)
+		CreatedAt *utils.LocalDateTimeWithoutZone `json:"created_at,omitempty"`
+		// Updated is the last update timestamp (optional)
+		Updated *utils.LocalDateTimeWithoutZone `json:"updated,omitempty"`
+		// Status is the current status of the security group
+		Status string `json:"status"`
+		// Error contains error information if any (optional)
+		Error *string `json:"error,omitempty"`
+		// TenantID is the tenant identifier (optional)
+		TenantID *string `json:"tenant_id,omitempty"`
+		// ProjectType is the project type (optional)
+		ProjectType *string `json:"project_type,omitempty"`
+		// IsDefault indicates if this is the default security group (optional)
+		IsDefault *bool `json:"is_default,omitempty"`
+		// Ports contains the list of port IDs (optional)
+		Ports *[]string `json:"ports,omitempty"`
 	}
 
 	// SecurityGroupDetailResponse represents detailed information about a security group
 	SecurityGroupDetailResponse struct {
 		SecurityGroupResponse
-		ExternalID *string         `json:"external_id,omitempty"`
-		Rules      *[]RuleResponse `json:"rules"`
+		// ExternalID is the external identifier (optional)
+		ExternalID *string `json:"external_id,omitempty"`
+		// Rules contains the security group rules (optional)
+		Rules *[]RuleResponse `json:"rules"`
 	}
 
 	// SecurityGroupCreateRequest represents the parameters for creating a new security group
 	SecurityGroupCreateRequest struct {
-		Name             string  `json:"name"`
-		Description      *string `json:"description,omitempty"`
-		SkipDefaultRules *bool   `json:"skip_default_rules,omitempty"`
+		// Name is the name of the security group
+		Name string `json:"name"`
+		// Description is the description of the security group (optional)
+		Description *string `json:"description,omitempty"`
+		// SkipDefaultRules indicates whether to skip default rules creation (optional)
+		SkipDefaultRules *bool `json:"skip_default_rules,omitempty"`
 	}
 
 	// SecurityGroupCreateResponse represents the response after creating a security group
 	SecurityGroupCreateResponse struct {
+		// ID is the unique identifier of the created security group
 		ID string `json:"id"`
 	}
 )
@@ -68,6 +87,7 @@ type SecurityGroupService interface {
 	Delete(ctx context.Context, id string) error
 }
 
+// securityGroupService implements the SecurityGroupService interface
 type securityGroupService struct {
 	client *NetworkClient
 }

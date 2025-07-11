@@ -10,29 +10,43 @@ import (
 const targets = "targets"
 
 type (
+	// CreateNetworkBackendTargetRequest represents the request payload for creating backend targets
 	CreateNetworkBackendTargetRequest struct {
-		LoadBalancerID   string      `json:"-"`
-		NetworkBackendID string      `json:"-"`
-		TargetsID        []string    `json:"targets_id"`
-		TargetsType      BackendType `json:"targets_type"`
-	}
-
-	DeleteNetworkBackendTargetRequest struct {
-		LoadBalancerID   string `json:"-"`
+		// LoadBalancerID is the ID of the load balancer
+		LoadBalancerID string `json:"-"`
+		// NetworkBackendID is the ID of the network backend
 		NetworkBackendID string `json:"-"`
-		TargetID         string `json:"-"`
+		// TargetsID contains the IDs of the targets to add
+		TargetsID []string `json:"targets_id"`
+		// TargetsType is the type of backend targets
+		TargetsType BackendType `json:"targets_type"`
 	}
 
+	// DeleteNetworkBackendTargetRequest represents the request payload for deleting a backend target
+	DeleteNetworkBackendTargetRequest struct {
+		// LoadBalancerID is the ID of the load balancer
+		LoadBalancerID string `json:"-"`
+		// NetworkBackendID is the ID of the network backend
+		NetworkBackendID string `json:"-"`
+		// TargetID is the ID of the target to delete
+		TargetID string `json:"-"`
+	}
+
+	// NetworkBackendTargetService provides methods for managing backend targets
 	NetworkBackendTargetService interface {
+		// Create adds new targets to a backend
 		Create(ctx context.Context, req CreateNetworkBackendTargetRequest) (string, error)
+		// Delete removes a target from a backend
 		Delete(ctx context.Context, req DeleteNetworkBackendTargetRequest) error
 	}
 
+	// networkBackendTargetService implements the NetworkBackendTargetService interface
 	networkBackendTargetService struct {
 		client *LbaasClient
 	}
 )
 
+// Create adds new targets to a backend
 func (s *networkBackendTargetService) Create(ctx context.Context, req CreateNetworkBackendTargetRequest) (string, error) {
 	path := urlNetworkLoadBalancer(&req.LoadBalancerID, backends, req.NetworkBackendID, targets)
 
@@ -51,6 +65,7 @@ func (s *networkBackendTargetService) Create(ctx context.Context, req CreateNetw
 	return result.ID, nil
 }
 
+// Delete removes a target from a backend
 func (s *networkBackendTargetService) Delete(ctx context.Context, req DeleteNetworkBackendTargetRequest) error {
 	path := urlNetworkLoadBalancer(&req.LoadBalancerID, backends, req.NetworkBackendID, targets, req.TargetID)
 

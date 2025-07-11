@@ -24,3 +24,19 @@ go-fmt:
 
 go-vet:
 	go vet ./...
+
+# Generate documentation from Go code
+docs:
+	@echo "Generating documentation from Go code..."
+	@chmod +x scripts/generate-docs.sh
+	@./scripts/generate-docs.sh
+
+# Generate documentation using Python script
+docs-python:
+	@echo "Generating documentation using Python script..."
+	@python3 scripts/generate_docs.py . --html
+
+# Generate documentation and build HTML
+docs-html:
+	@echo "Generating documentation and building HTML..."
+	@cd docs && make html

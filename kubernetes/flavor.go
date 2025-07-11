@@ -12,32 +12,47 @@ import (
 )
 
 type (
+	// FlavorService provides methods for managing Kubernetes flavors
 	FlavorService interface {
+		// List returns available flavors for node pools and control planes
 		List(ctx context.Context, opts ListOptions) (*FlavorsAvailable, error)
 	}
 
+	// FlavorList represents the response when listing flavors
 	FlavorList struct {
+		// Results is the list of available flavors
 		Results []FlavorsAvailable `json:"results"`
 	}
 
+	// FlavorsAvailable represents available flavors for different components
 	FlavorsAvailable struct {
-		NodePool     []Flavor `json:"nodepool"`
+		// NodePool contains flavors available for node pools
+		NodePool []Flavor `json:"nodepool"`
+		// ControlPlane contains flavors available for control planes
 		ControlPlane []Flavor `json:"controlplane"`
 	}
 
+	// Flavor represents a Kubernetes flavor (instance type)
 	Flavor struct {
+		// Name is the display name of the flavor
 		Name string `json:"name"`
-		ID   string `json:"id"`
-		VCPU int    `json:"vcpu"`
-		RAM  int    `json:"ram"`
-		Size int    `json:"size"`
+		// ID is the unique identifier of the flavor
+		ID string `json:"id"`
+		// VCPU is the number of virtual CPUs
+		VCPU int `json:"vcpu"`
+		// RAM is the amount of RAM in MB
+		RAM int `json:"ram"`
+		// Size is the size category of the flavor
+		Size int `json:"size"`
 	}
 
+	// flavorService implements the FlavorService interface
 	flavorService struct {
 		client *KubernetesClient
 	}
 )
 
+// List returns available flavors for node pools and control planes
 func (s *flavorService) List(ctx context.Context, opts ListOptions) (*FlavorsAvailable, error) {
 	query := url.Values{}
 	if opts.Limit != nil {

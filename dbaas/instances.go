@@ -13,188 +13,308 @@ import (
 )
 
 const (
-	InstancePath   = "/v2/instances"
+	// InstancePath is the base path for instance operations
+	InstancePath = "/v2/instances"
+	// InstancePathID is the path template for instance operations with ID
 	InstancePathID = InstancePath + "/%s"
-	SnapshotPath   = InstancePathID + "/snapshots"
+	// SnapshotPath is the path template for snapshot operations
+	SnapshotPath = InstancePathID + "/snapshots"
+	// SnapshotPathID is the path template for snapshot operations with ID
 	SnapshotPathID = SnapshotPath + "/%s"
 )
 
 type (
+	// InstanceStatus represents the possible states of a database instance
 	InstanceStatus string
-	AddressAccess  string
-	AddressType    string
-	SnapshotType   string
+	// AddressAccess represents the access type for network addresses
+	AddressAccess string
+	// AddressType represents the type of network address
+	AddressType string
+	// SnapshotType represents the type of snapshot
+	SnapshotType string
+	// SnapshotStatus represents the possible states of a snapshot
 	SnapshotStatus string
 )
 
 const (
-	InstanceStatusCreating         InstanceStatus = "CREATING"
-	InstanceStatusError            InstanceStatus = "ERROR"
-	InstanceStatusStopped          InstanceStatus = "STOPPED"
-	InstanceStatusReboot           InstanceStatus = "REBOOT"
-	InstanceStatusPending          InstanceStatus = "PENDING"
-	InstanceStatusResizing         InstanceStatus = "RESIZING"
-	InstanceStatusDeleted          InstanceStatus = "DELETED"
-	InstanceStatusActive           InstanceStatus = "ACTIVE"
-	InstanceStatusStarting         InstanceStatus = "STARTING"
-	InstanceStatusStopping         InstanceStatus = "STOPPING"
-	InstanceStatusBackingUp        InstanceStatus = "BACKING_UP"
-	InstanceStatusDeleting         InstanceStatus = "DELETING"
-	InstanceStatusRestoring        InstanceStatus = "RESTORING"
-	InstanceStatusErrorDeleting    InstanceStatus = "ERROR_DELETING"
-	InstanceStatusMaintenance      InstanceStatus = "MAINTENANCE"
+	// InstanceStatusCreating indicates the instance is being created
+	InstanceStatusCreating InstanceStatus = "CREATING"
+	// InstanceStatusError indicates the instance is in an error state
+	InstanceStatusError InstanceStatus = "ERROR"
+	// InstanceStatusStopped indicates the instance is stopped
+	InstanceStatusStopped InstanceStatus = "STOPPED"
+	// InstanceStatusReboot indicates the instance is rebooting
+	InstanceStatusReboot InstanceStatus = "REBOOT"
+	// InstanceStatusPending indicates the instance is waiting to be processed
+	InstanceStatusPending InstanceStatus = "PENDING"
+	// InstanceStatusResizing indicates the instance is being resized
+	InstanceStatusResizing InstanceStatus = "RESIZING"
+	// InstanceStatusDeleted indicates the instance has been deleted
+	InstanceStatusDeleted InstanceStatus = "DELETED"
+	// InstanceStatusActive indicates the instance is running normally
+	InstanceStatusActive InstanceStatus = "ACTIVE"
+	// InstanceStatusStarting indicates the instance is starting up
+	InstanceStatusStarting InstanceStatus = "STARTING"
+	// InstanceStatusStopping indicates the instance is shutting down
+	InstanceStatusStopping InstanceStatus = "STOPPING"
+	// InstanceStatusBackingUp indicates the instance is performing a backup
+	InstanceStatusBackingUp InstanceStatus = "BACKING_UP"
+	// InstanceStatusDeleting indicates the instance is being deleted
+	InstanceStatusDeleting InstanceStatus = "DELETING"
+	// InstanceStatusRestoring indicates the instance is being restored
+	InstanceStatusRestoring InstanceStatus = "RESTORING"
+	// InstanceStatusErrorDeleting indicates an error occurred during deletion
+	InstanceStatusErrorDeleting InstanceStatus = "ERROR_DELETING"
+	// InstanceStatusMaintenance indicates the instance is under maintenance
+	InstanceStatusMaintenance InstanceStatus = "MAINTENANCE"
+	// InstanceStatusMaintenanceError indicates an error occurred during maintenance
 	InstanceStatusMaintenanceError InstanceStatus = "MAINTENANCE_ERROR"
 )
 
 const (
+	// AddressAccessPrivate indicates private network access
 	AddressAccessPrivate AddressAccess = "PRIVATE"
-	AddressAccessPublic  AddressAccess = "PUBLIC"
+	// AddressAccessPublic indicates public network access
+	AddressAccessPublic AddressAccess = "PUBLIC"
 )
 
 const (
+	// AddressTypeIPv4 indicates IPv4 address type
 	AddressTypeIPv4 AddressType = "IPv4"
+	// AddressTypeIPv6 indicates IPv6 address type
 	AddressTypeIPv6 AddressType = "IPv6"
 )
 
 const (
-	SnapshotTypeOnDemand  SnapshotType = "ON_DEMAND"
+	// SnapshotTypeOnDemand indicates a manually created snapshot
+	SnapshotTypeOnDemand SnapshotType = "ON_DEMAND"
+	// SnapshotTypeAutomated indicates an automatically created snapshot
 	SnapshotTypeAutomated SnapshotType = "AUTOMATED"
 )
 
 const (
-	SnapshotStatusPending   SnapshotStatus = "PENDING"
-	SnapshotStatusCreating  SnapshotStatus = "CREATING"
+	// SnapshotStatusPending indicates the snapshot is waiting to be processed
+	SnapshotStatusPending SnapshotStatus = "PENDING"
+	// SnapshotStatusCreating indicates the snapshot is being created
+	SnapshotStatusCreating SnapshotStatus = "CREATING"
+	// SnapshotStatusAvailable indicates the snapshot is available for use
 	SnapshotStatusAvailable SnapshotStatus = "AVAILABLE"
+	// SnapshotStatusRestoring indicates the snapshot is being restored
 	SnapshotStatusRestoring SnapshotStatus = "RESTORING"
-	SnapshotStatusError     SnapshotStatus = "ERROR"
-	SnapshotStatusDeleting  SnapshotStatus = "DELETING"
-	SnapshotStatusDeleted   SnapshotStatus = "DELETED"
+	// SnapshotStatusError indicates the snapshot is in an error state
+	SnapshotStatusError SnapshotStatus = "ERROR"
+	// SnapshotStatusDeleting indicates the snapshot is being deleted
+	SnapshotStatusDeleting SnapshotStatus = "DELETING"
+	// SnapshotStatusDeleted indicates the snapshot has been deleted
+	SnapshotStatusDeleted SnapshotStatus = "DELETED"
 )
 
 type (
+	// Volume represents volume information for an instance
 	Volume struct {
-		Size int    `json:"size"`
+		// Size is the volume size in GB
+		Size int `json:"size"`
+		// Type is the volume type
 		Type string `json:"type"`
 	}
 
+	// Address represents a network address for an instance
 	Address struct {
-		Access  AddressAccess `json:"access"`
-		Type    *AddressType  `json:"type,omitempty"`
-		Address *string       `json:"address,omitempty"`
+		// Access indicates the access type (PRIVATE or PUBLIC)
+		Access AddressAccess `json:"access"`
+		// Type indicates the address type (IPv4 or IPv6)
+		Type *AddressType `json:"type,omitempty"`
+		// Address is the IP address
+		Address *string `json:"address,omitempty"`
 	}
 
+	// InstanceParametersResponse represents a parameter response
 	InstanceParametersResponse struct {
-		Name  string `json:"name"`
+		// Name is the parameter name
+		Name string `json:"name"`
+		// Value is the parameter value
 		Value string `json:"value"`
 	}
 
+	// InstanceParametersRequest represents a parameter request
 	InstanceParametersRequest struct {
-		Name  string `json:"name"`
+		// Name is the parameter name
+		Name string `json:"name"`
+		// Value is the parameter value
 		Value string `json:"value"`
 	}
 
+	// InstanceVolumeRequest represents volume configuration for instance creation
 	InstanceVolumeRequest struct {
-		Size int    `json:"size"`
+		// Size is the volume size in GB
+		Size int `json:"size"`
+		// Type is the volume type (optional)
 		Type string `json:"type,omitempty"`
 	}
 
+	// InstanceVolumeResizeRequest represents volume configuration for instance resizing
 	InstanceVolumeResizeRequest struct {
-		Size int    `json:"size"`
+		// Size is the new volume size in GB
+		Size int `json:"size"`
+		// Type is the volume type (optional)
 		Type string `json:"type,omitempty"`
 	}
 
+	// InstanceCreateRequest represents the request payload for creating an instance
 	InstanceCreateRequest struct {
-		Name                string                `json:"name"`
-		EngineID            *string               `json:"engine_id,omitempty"`
-		InstanceTypeID      *string               `json:"instance_type_id,omitempty"`
-		User                string                `json:"user"`
-		Password            string                `json:"password"`
-		Volume              InstanceVolumeRequest `json:"volume"`
-		ParameterGroupID    *string               `json:"parameter_group_id,omitempty"`
-		AvailabilityZone    *string               `json:"availability_zone,omitempty"`
-		BackupStartAt       *string               `json:"backup_start_at,omitempty"`
-		BackupRetentionDays *int                  `json:"backup_retention_days,omitempty"`
+		// Name is the name of the instance
+		Name string `json:"name"`
+		// EngineID is the ID of the database engine (optional)
+		EngineID *string `json:"engine_id,omitempty"`
+		// InstanceTypeID is the ID of the instance type (optional)
+		InstanceTypeID *string `json:"instance_type_id,omitempty"`
+		// User is the database user
+		User string `json:"user"`
+		// Password is the database password
+		Password string `json:"password"`
+		// Volume contains volume configuration
+		Volume InstanceVolumeRequest `json:"volume"`
+		// ParameterGroupID is the ID of the parameter group (optional)
+		ParameterGroupID *string `json:"parameter_group_id,omitempty"`
+		// AvailabilityZone is the availability zone (optional)
+		AvailabilityZone *string `json:"availability_zone,omitempty"`
+		// BackupStartAt is the backup start time (optional)
+		BackupStartAt *string `json:"backup_start_at,omitempty"`
+		// BackupRetentionDays is the number of days to retain backups (optional)
+		BackupRetentionDays *int `json:"backup_retention_days,omitempty"`
 	}
 
+	// InstanceResizeRequest represents the request payload for resizing an instance
 	InstanceResizeRequest struct {
-		InstanceTypeID *string                      `json:"instance_type_id,omitempty"`
-		Volume         *InstanceVolumeResizeRequest `json:"volume,omitempty"`
+		// InstanceTypeID is the new instance type ID (optional)
+		InstanceTypeID *string `json:"instance_type_id,omitempty"`
+		// Volume contains new volume configuration (optional)
+		Volume *InstanceVolumeResizeRequest `json:"volume,omitempty"`
 	}
 
+	// DatabaseInstanceUpdateRequest represents the request payload for updating an instance
 	DatabaseInstanceUpdateRequest struct {
-		BackupRetentionDays *int    `json:"backup_retention_days,omitempty"`
-		BackupStartAt       *string `json:"backup_start_at,omitempty"`
+		// BackupRetentionDays is the new backup retention days (optional)
+		BackupRetentionDays *int `json:"backup_retention_days,omitempty"`
+		// BackupStartAt is the new backup start time (optional)
+		BackupStartAt *string `json:"backup_start_at,omitempty"`
 	}
 
+	// ReplicaAddressResponse represents a replica address
 	ReplicaAddressResponse struct {
-		Access  AddressAccess `json:"access"`
-		Type    *AddressType  `json:"type,omitempty"`
-		Address *string       `json:"address,omitempty"`
+		// Access indicates the access type (PRIVATE or PUBLIC)
+		Access AddressAccess `json:"access"`
+		// Type indicates the address type (IPv4 or IPv6)
+		Type *AddressType `json:"type,omitempty"`
+		// Address is the IP address
+		Address *string `json:"address,omitempty"`
 	}
 
+	// SnapshotsResponse represents the response when listing snapshots
 	SnapshotsResponse struct {
-		Meta    MetaResponse             `json:"meta"`
+		// Meta contains pagination and filter information
+		Meta MetaResponse `json:"meta"`
+		// Results is the list of snapshots
 		Results []SnapshotDetailResponse `json:"results"`
 	}
 
+	// SnapshotDetailResponse represents detailed information about a snapshot
 	SnapshotDetailResponse struct {
-		ID               string                         `json:"id"`
-		Instance         SnapshotInstanceDetailResponse `json:"instance"`
-		Name             string                         `json:"name"`
-		Description      string                         `json:"description"`
-		Type             SnapshotType                   `json:"type"`
-		Status           SnapshotStatus                 `json:"status"`
-		AllocatedSize    int                            `json:"allocated_size"`
-		CreatedAt        time.Time                      `json:"created_at"`
-		StartedAt        *string                        `json:"started_at,omitempty"`
-		AvailabilityZone string                         `json:"availability_zone"`
-		FinishedAt       *string                        `json:"finished_at,omitempty"`
-		UpdatedAt        *time.Time                     `json:"updated_at,omitempty"`
+		// ID is the unique identifier of the snapshot
+		ID string `json:"id"`
+		// Instance contains information about the source instance
+		Instance SnapshotInstanceDetailResponse `json:"instance"`
+		// Name is the name of the snapshot
+		Name string `json:"name"`
+		// Description is the description of the snapshot
+		Description string `json:"description"`
+		// Type is the type of snapshot
+		Type SnapshotType `json:"type"`
+		// Status is the current status of the snapshot
+		Status SnapshotStatus `json:"status"`
+		// AllocatedSize is the allocated size in bytes
+		AllocatedSize int `json:"allocated_size"`
+		// CreatedAt is the timestamp when the snapshot was created
+		CreatedAt time.Time `json:"created_at"`
+		// StartedAt is the timestamp when the snapshot creation started
+		StartedAt *string `json:"started_at,omitempty"`
+		// AvailabilityZone is the availability zone of the snapshot
+		AvailabilityZone string `json:"availability_zone"`
+		// FinishedAt is the timestamp when the snapshot creation finished
+		FinishedAt *string `json:"finished_at,omitempty"`
+		// UpdatedAt is the timestamp when the snapshot was last updated
+		UpdatedAt *time.Time `json:"updated_at,omitempty"`
 	}
 
+	// SnapshotInstanceDetailResponse represents instance information in a snapshot
 	SnapshotInstanceDetailResponse struct {
-		ID   string `json:"id"`
+		// ID is the ID of the source instance
+		ID string `json:"id"`
+		// Name is the name of the source instance
 		Name string `json:"name"`
 	}
 
+	// SnapshotCreateRequest represents the request payload for creating a snapshot
 	SnapshotCreateRequest struct {
-		Name        string  `json:"name"`
+		// Name is the name of the snapshot
+		Name string `json:"name"`
+		// Description is the description of the snapshot (optional)
 		Description *string `json:"description,omitempty"`
 	}
 
+	// SnapshotUpdateRequest represents the request payload for updating a snapshot
 	SnapshotUpdateRequest struct {
-		Name        string  `json:"name,omitempty"`
+		// Name is the new name of the snapshot (optional)
+		Name string `json:"name,omitempty"`
+		// Description is the new description of the snapshot (optional)
 		Description *string `json:"description,omitempty"`
 	}
 
+	// SnapshotResponse represents the response when creating a snapshot
 	SnapshotResponse struct {
+		// ID is the unique identifier of the created snapshot
 		ID string `json:"id"`
 	}
 
+	// RestoreSnapshotRequest represents the request payload for restoring from a snapshot
 	RestoreSnapshotRequest struct {
-		Name                string                 `json:"name"`
-		InstanceTypeID      string                 `json:"instance_type_id"`
-		Volume              *InstanceVolumeRequest `json:"volume,omitempty"`
-		BackupRetentionDays *int                   `json:"backup_retention_days,omitempty"`
-		BackupStartAt       *string                `json:"backup_start_at,omitempty"`
+		// Name is the name of the new instance
+		Name string `json:"name"`
+		// InstanceTypeID is the ID of the instance type for the new instance
+		InstanceTypeID string `json:"instance_type_id"`
+		// Volume contains volume configuration for the new instance (optional)
+		Volume *InstanceVolumeRequest `json:"volume,omitempty"`
+		// BackupRetentionDays is the number of days to retain backups (optional)
+		BackupRetentionDays *int `json:"backup_retention_days,omitempty"`
+		// BackupStartAt is the backup start time (optional)
+		BackupStartAt *string `json:"backup_start_at,omitempty"`
 	}
 
+	// ListSnapshotOptions provides options for listing snapshots
 	ListSnapshotOptions struct {
-		Offset *int            `json:"offset,omitempty"`
-		Limit  *int            `json:"limit,omitempty"`
-		Type   *SnapshotType   `json:"type,omitempty"`
+		// Offset is the number of snapshots to skip
+		Offset *int `json:"offset,omitempty"`
+		// Limit is the maximum number of snapshots to return
+		Limit *int `json:"limit,omitempty"`
+		// Type filters snapshots by type
+		Type *SnapshotType `json:"type,omitempty"`
+		// Status filters snapshots by status
 		Status *SnapshotStatus `json:"status,omitempty"`
 	}
 )
 
+// InstanceStatusUpdate represents the status update for an instance
 type InstanceStatusUpdate string
 
 const (
-	InstanceStatusUpdateActive  InstanceStatusUpdate = "ACTIVE"
+	// InstanceStatusUpdateActive indicates the instance should be started
+	InstanceStatusUpdateActive InstanceStatusUpdate = "ACTIVE"
+	// InstanceStatusUpdateStopped indicates the instance should be stopped
 	InstanceStatusUpdateStopped InstanceStatusUpdate = "STOPPED"
 )
 
 type (
+	// InstanceService provides methods for managing database instances
 	InstanceService interface {
 		// List returns a list of database instances for a x-tenant-id.
 		// It supports pagination and filtering by status, engine_id, and volume size.
@@ -243,58 +363,99 @@ type (
 		RestoreSnapshot(ctx context.Context, instanceID, snapshotID string, req RestoreSnapshotRequest) (*InstanceResponse, error)
 	}
 
+	// instanceService implements the InstanceService interface
 	instanceService struct {
 		client *DBaaSClient
 	}
 
+	// ListInstanceOptions provides options for listing instances
 	ListInstanceOptions struct {
-		Offset         *int
-		Limit          *int
-		Status         *InstanceStatus
-		EngineID       *string
-		VolumeSize     *int
-		VolumeSizeGt   *int
-		VolumeSizeGte  *int
-		VolumeSizeLt   *int
-		VolumeSizeLte  *int
+		// Offset is the number of instances to skip
+		Offset *int
+		// Limit is the maximum number of instances to return
+		Limit *int
+		// Status filters instances by status
+		Status *InstanceStatus
+		// EngineID filters instances by database engine
+		EngineID *string
+		// VolumeSize filters instances by exact volume size
+		VolumeSize *int
+		// VolumeSizeGt filters instances by volume size greater than
+		VolumeSizeGt *int
+		// VolumeSizeGte filters instances by volume size greater than or equal
+		VolumeSizeGte *int
+		// VolumeSizeLt filters instances by volume size less than
+		VolumeSizeLt *int
+		// VolumeSizeLte filters instances by volume size less than or equal
+		VolumeSizeLte *int
+		// ExpandedFields contains fields to expand in the response
 		ExpandedFields []string
 	}
 
+	// GetInstanceOptions provides options for getting instance details
 	GetInstanceOptions struct {
+		// ExpandedFields contains fields to expand in the response
 		ExpandedFields []string
 	}
 
+	// InstancesResponse represents the response when listing instances
 	InstancesResponse struct {
-		Meta    MetaResponse     `json:"meta"`
+		// Meta contains pagination and filter information
+		Meta MetaResponse `json:"meta"`
+		// Results is the list of instances
 		Results []InstanceDetail `json:"results"`
 	}
 
+	// InstanceResponse represents the response when creating an instance
 	InstanceResponse struct {
+		// ID is the unique identifier of the created instance
 		ID string `json:"id"`
 	}
 
+	// InstanceDetail represents detailed information about an instance
 	InstanceDetail struct {
-		ID                     string                  `json:"id"`
-		Name                   string                  `json:"name"`
-		EngineID               string                  `json:"engine_id"`
-		DatastoreID            string                  `json:"datastore_id"`
-		FlavorID               string                  `json:"flavor_id"`
-		InstanceTypeID         string                  `json:"instance_type_id"`
-		Volume                 Volume                  `json:"volume"`
-		Addresses              []Address               `json:"addresses"`
-		Status                 InstanceStatus          `json:"status"`
-		Generation             string                  `json:"generation"`
-		ApplyParametersPending bool                    `json:"apply_parameters_pending"`
-		ParameterGroupID       string                  `json:"parameter_group_id"`
-		AvailabilityZone       string                  `json:"availability_zone"`
-		BackupRetentionDays    int                     `json:"backup_retention_days"`
-		BackupStartAt          string                  `json:"backup_start_at"`
-		CreatedAt              string                  `json:"created_at"`
-		UpdatedAt              *string                 `json:"updated_at,omitempty"`
-		StartedAt              *string                 `json:"started_at,omitempty"`
-		FinishedAt             *string                 `json:"finished_at,omitempty"`
-		MaintenanceScheduledAt *string                 `json:"maintenance_scheduled_at,omitempty"`
-		Replicas               []ReplicaDetailResponse `json:"replicas,omitempty"`
+		// ID is the unique identifier of the instance
+		ID string `json:"id"`
+		// Name is the name of the instance
+		Name string `json:"name"`
+		// EngineID is the ID of the database engine
+		EngineID string `json:"engine_id"`
+		// DatastoreID is the ID of the datastore
+		DatastoreID string `json:"datastore_id"`
+		// FlavorID is the ID of the flavor
+		FlavorID string `json:"flavor_id"`
+		// InstanceTypeID is the ID of the instance type
+		InstanceTypeID string `json:"instance_type_id"`
+		// Volume contains volume information
+		Volume Volume `json:"volume"`
+		// Addresses contains network addresses
+		Addresses []Address `json:"addresses"`
+		// Status is the current status of the instance
+		Status InstanceStatus `json:"status"`
+		// Generation is the generation identifier
+		Generation string `json:"generation"`
+		// ApplyParametersPending indicates if parameter changes are pending
+		ApplyParametersPending bool `json:"apply_parameters_pending"`
+		// ParameterGroupID is the ID of the parameter group
+		ParameterGroupID string `json:"parameter_group_id"`
+		// AvailabilityZone is the availability zone
+		AvailabilityZone string `json:"availability_zone"`
+		// BackupRetentionDays is the number of days to retain backups
+		BackupRetentionDays int `json:"backup_retention_days"`
+		// BackupStartAt is the backup start time
+		BackupStartAt string `json:"backup_start_at"`
+		// CreatedAt is the timestamp when the instance was created
+		CreatedAt string `json:"created_at"`
+		// UpdatedAt is the timestamp when the instance was last updated
+		UpdatedAt *string `json:"updated_at,omitempty"`
+		// StartedAt is the timestamp when the instance was started
+		StartedAt *string `json:"started_at,omitempty"`
+		// FinishedAt is the timestamp when the instance operation finished
+		FinishedAt *string `json:"finished_at,omitempty"`
+		// MaintenanceScheduledAt is the scheduled maintenance timestamp
+		MaintenanceScheduledAt *string `json:"maintenance_scheduled_at,omitempty"`
+		// Replicas contains information about associated replicas
+		Replicas []ReplicaDetailResponse `json:"replicas,omitempty"`
 	}
 )
 

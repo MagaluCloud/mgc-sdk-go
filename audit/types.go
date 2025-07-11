@@ -9,24 +9,57 @@ import (
 	mgc_http "github.com/MagaluCloud/mgc-sdk-go/internal/http"
 )
 
+// EventType represents an audit event type.
+// Contains information about the category or classification of an event.
 type EventType struct {
+	// Type is the unique identifier of the event type
 	Type string `json:"type"`
 }
 
+// ListEventTypesParams defines parameters for listing event types.
+// All fields are optional and allow filtering the results.
 type ListEventTypesParams struct {
-	Limit    *int    `url:"_limit,omitempty"`
-	Offset   *int    `url:"_offset,omitempty"`
+	// Limit defines the maximum number of results to be returned
+	Limit *int `url:"_limit,omitempty"`
+	// Offset defines the number of results to be skipped (for pagination)
+	Offset *int `url:"_offset,omitempty"`
+	// TenantID filters results by tenant ID
 	TenantID *string `url:"X-Tenant-ID,omitempty"`
 }
 
+// EventTypeService defines the interface for audit event type operations.
+// This interface allows listing available event types.
 type EventTypeService interface {
+	// List returns a list of audit event types.
+	// Results can be filtered using the provided parameters.
+	//
+	// Parameters:
+	//   - ctx: Request context
+	//   - params: Optional parameters to filter and paginate results
+	//
+	// Returns:
+	//   - []EventType: List of event types
+	//   - error: Error if there's a failure in the request
 	List(ctx context.Context, params *ListEventTypesParams) ([]EventType, error)
 }
 
+// eventTypeService implements the EventTypeService interface.
+// This is an internal implementation that should not be used directly.
 type eventTypeService struct {
 	client *AuditClient
 }
 
+// List implements the List method of the EventTypeService interface.
+// This method makes an HTTP request to get the list of event types
+// and applies the filters specified in the parameters.
+//
+// Parameters:
+//   - ctx: Request context
+//   - params: Optional parameters to filter and paginate results
+//
+// Returns:
+//   - []EventType: List of event types
+//   - error: Error if there's a failure in the request
 func (s *eventTypeService) List(ctx context.Context, params *ListEventTypesParams) ([]EventType, error) {
 	query := make(url.Values)
 

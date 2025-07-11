@@ -1,0 +1,97 @@
+name: Generate and Publish Documentation
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - '**.go'
+      - 'docs/**'
+      - 'scripts/**'
+      - '.github/workflows/docs.yml'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - '**.go'
+      - 'docs/**'
+      - 'scripts/**'
+      - '.github/workflows/docs.yml'
+  release:
+    types: [released]
+
+jobs:
+  generate-docs:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.21'
+        
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        
+    - name: Install Sphinx dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install sphinx sphinx-rtd-theme
+        
+    - name: Generate documentation
+      run: |
+        chmod +x scripts/generate-docs.sh
+        ./scripts/generate-docs.sh
+        
+    - name: Build HTML documentation
+      run: |
+        cd docs
+        make html
+        
+    - name: Upload documentation artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: documentation-html
+        path: docs/_build/html/
+        retention-days: 30
+        
+    - name: Check for documentation changes
+      id: check-changes
+      run: |
+        if git diff --quiet HEAD~1 HEAD -- docs/; then
+          echo "has_changes=false" >> $GITHUB_OUTPUT
+        else
+          echo "has_changes=true" >> $GITHUB_OUTPUT
+        fi
+        
+  publish-docs:
+    needs: generate-docs
+    runs-on: ubuntu-latest
+    if: github.event_name == 'release' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Download documentation artifacts
+      uses: actions/download-artifact@v3
+      with:
+        name: documentation-html
+        path: docs/_build/html/
+        
+    - name: Deploy to GitHub Pages
+      uses: peaceiris/actions-gh-pages@v3
+      if: github.ref == 'refs/heads/main'
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./docs/_build/html
+        force_orphan: true
+        
+    - name: Deploy to ReadTheDocs (if configured)
+      if: github.event_name == 'release'
+      run: |
+        echo "Documentation ready for ReadTheDocs deployment"
+        # Add ReadTheDocs deployment logic here if needed 

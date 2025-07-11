@@ -11,34 +11,51 @@ import (
 )
 
 type (
+	// RepositoriesService provides methods for managing repositories within container registries
 	RepositoriesService interface {
+		// List retrieves a list of repositories within a registry with optional filtering and pagination
 		List(ctx context.Context, registryID string, opts ListOptions) (*RepositoriesResponse, error)
+		// Get retrieves a specific repository within a registry
 		Get(ctx context.Context, registryID, repositoryName string) (*RepositoryResponse, error)
+		// Delete removes a repository within a registry
 		Delete(ctx context.Context, registryID, repositoryName string) error
 	}
 
+	// RepositoryResponse represents a repository within a container registry
 	RepositoryResponse struct {
+		// RegistryName is the name of the parent registry
 		RegistryName string `json:"registry_name"`
-		Name         string `json:"name"`
-		ImageCount   int    `json:"image_count"`
-		CreatedAt    string `json:"created_at"`
-		UpdatedAt    string `json:"updated_at"`
+		// Name is the name of the repository
+		Name string `json:"name"`
+		// ImageCount is the number of images in the repository
+		ImageCount int `json:"image_count"`
+		// CreatedAt is the timestamp when the repository was created
+		CreatedAt string `json:"created_at"`
+		// UpdatedAt is the timestamp when the repository was last updated
+		UpdatedAt string `json:"updated_at"`
 	}
 
+	// AmountRepositoryResponse represents the total count of repositories
 	AmountRepositoryResponse struct {
+		// Total is the total number of repositories
 		Total int `json:"total"`
 	}
 
+	// RepositoriesResponse represents the response when listing repositories
 	RepositoriesResponse struct {
-		Goal    AmountRepositoryResponse `json:"goal"`
-		Results []RepositoryResponse     `json:"results"`
+		// Goal contains the total count information
+		Goal AmountRepositoryResponse `json:"goal"`
+		// Results is the list of repositories
+		Results []RepositoryResponse `json:"results"`
 	}
 
+	// repositoriesService implements the RepositoriesService interface
 	repositoriesService struct {
 		client *ContainerRegistryClient
 	}
 )
 
+// List retrieves a list of repositories within a registry with optional filtering and pagination
 func (c *repositoriesService) List(ctx context.Context, registryID string, opts ListOptions) (*RepositoriesResponse, error) {
 	path := fmt.Sprintf("/v0/registries/%s/repositories", registryID)
 
@@ -61,6 +78,7 @@ func (c *repositoriesService) List(ctx context.Context, registryID string, opts 
 	return res, nil
 }
 
+// Get retrieves a specific repository within a registry
 func (c *repositoriesService) Get(ctx context.Context, registryID, repositoryName string) (*RepositoryResponse, error) {
 	path := fmt.Sprintf("/v0/registries/%s/repositories/%s", registryID, repositoryName)
 
@@ -71,6 +89,7 @@ func (c *repositoriesService) Get(ctx context.Context, registryID, repositoryNam
 	return res, nil
 }
 
+// Delete removes a repository within a registry
 func (c *repositoriesService) Delete(ctx context.Context, registryID, repositoryName string) error {
 	path := fmt.Sprintf("/v0/registries/%s/repositories/%s", registryID, repositoryName)
 

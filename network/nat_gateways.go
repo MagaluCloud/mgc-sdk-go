@@ -14,69 +14,105 @@ import (
 type (
 	// NatGatewayResponse represents a NAT Gateway resource
 	NatGatewayResponse struct {
-		ID           *string                         `json:"id,omitempty"`
-		Name         *string                         `json:"name,omitempty"`
-		Description  *string                         `json:"description,omitempty"`
-		VPCID        *string                         `json:"vpc_id,omitempty"`
-		Zone         *string                         `json:"zone,omitempty"`
-		NatGatewayIP *string                         `json:"nat_gateway_ip,omitempty"`
-		CreatedAt    *utils.LocalDateTimeWithoutZone `json:"created_at,omitempty"`
-		Updated      *utils.LocalDateTimeWithoutZone `json:"updated,omitempty"`
-		Status       string                          `json:"status"`
+		// ID is the unique identifier of the NAT Gateway
+		ID *string `json:"id,omitempty"`
+		// Name is the name of the NAT Gateway (optional)
+		Name *string `json:"name,omitempty"`
+		// Description is the description of the NAT Gateway (optional)
+		Description *string `json:"description,omitempty"`
+		// VPCID is the VPC identifier (optional)
+		VPCID *string `json:"vpc_id,omitempty"`
+		// Zone is the availability zone (optional)
+		Zone *string `json:"zone,omitempty"`
+		// NatGatewayIP is the IP address of the NAT Gateway (optional)
+		NatGatewayIP *string `json:"nat_gateway_ip,omitempty"`
+		// CreatedAt is the creation timestamp (optional)
+		CreatedAt *utils.LocalDateTimeWithoutZone `json:"created_at,omitempty"`
+		// Updated is the last update timestamp (optional)
+		Updated *utils.LocalDateTimeWithoutZone `json:"updated,omitempty"`
+		// Status is the current status of the NAT Gateway
+		Status string `json:"status"`
 	}
 
 	// Meta represents pagination metadata
 	Meta struct {
-		Page  MetaPageInfo `json:"page"`
-		Links MetaLinks    `json:"links"`
+		// Page contains page information
+		Page MetaPageInfo `json:"page"`
+		// Links contains navigation links
+		Links MetaLinks `json:"links"`
 	}
 
 	// MetaPageInfo represents pagination information
 	MetaPageInfo struct {
-		Limit           int `json:"limit"`
-		Offset          int `json:"offset"`
-		Count           int `json:"count"`
-		Total           int `json:"total"`
+		// Limit is the maximum number of items per page
+		Limit int `json:"limit"`
+		// Offset is the number of items skipped
+		Offset int `json:"offset"`
+		// Count is the number of items in the current page
+		Count int `json:"count"`
+		// Total is the total number of items
+		Total int `json:"total"`
+		// MaxItemsPerPage is the maximum number of items allowed per page
 		MaxItemsPerPage int `json:"max_items_per_page"`
 	}
 
 	// MetaLinks represents navigation links
 	MetaLinks struct {
+		// Previous is the link to the previous page (optional)
 		Previous *string `json:"previous,omitempty"`
-		Next     *string `json:"next,omitempty"`
-		Self     string  `json:"self"`
+		// Next is the link to the next page (optional)
+		Next *string `json:"next,omitempty"`
+		// Self is the link to the current page
+		Self string `json:"self"`
 	}
 
 	// NatGatewayListResponse represents a NAT Gateway listing response
 	NatGatewayListResponse struct {
-		Meta   Meta                 `json:"meta"`
+		// Meta contains pagination metadata
+		Meta Meta `json:"meta"`
+		// Result contains the list of NAT Gateway resources
 		Result []NatGatewayResponse `json:"result"`
 	}
 
 	// NatGatewayDetailsResponse represents detailed information about a NAT Gateway
 	NatGatewayDetailsResponse struct {
-		ID           *string                         `json:"id,omitempty"`
-		Name         *string                         `json:"name,omitempty"`
-		Description  *string                         `json:"description,omitempty"`
-		VPCID        *string                         `json:"vpc_id,omitempty"`
-		Zone         *string                         `json:"zone,omitempty"`
-		NatGatewayIP *string                         `json:"nat_gateway_ip,omitempty"`
-		CreatedAt    *utils.LocalDateTimeWithoutZone `json:"created_at,omitempty"`
-		Updated      *utils.LocalDateTimeWithoutZone `json:"updated,omitempty"`
-		Status       string                          `json:"status"`
+		// ID is the unique identifier of the NAT Gateway
+		ID *string `json:"id,omitempty"`
+		// Name is the name of the NAT Gateway (optional)
+		Name *string `json:"name,omitempty"`
+		// Description is the description of the NAT Gateway (optional)
+		Description *string `json:"description,omitempty"`
+		// VPCID is the VPC identifier (optional)
+		VPCID *string `json:"vpc_id,omitempty"`
+		// Zone is the availability zone (optional)
+		Zone *string `json:"zone,omitempty"`
+		// NatGatewayIP is the IP address of the NAT Gateway (optional)
+		NatGatewayIP *string `json:"nat_gateway_ip,omitempty"`
+		// CreatedAt is the creation timestamp (optional)
+		CreatedAt *utils.LocalDateTimeWithoutZone `json:"created_at,omitempty"`
+		// Updated is the last update timestamp (optional)
+		Updated *utils.LocalDateTimeWithoutZone `json:"updated,omitempty"`
+		// Status is the current status of the NAT Gateway
+		Status string `json:"status"`
 	}
 
 	// CreateNatGatewayRequest represents the parameters for creating a new NAT Gateway
 	CreateNatGatewayRequest struct {
-		Name        string  `json:"name"`
+		// Name is the name of the NAT Gateway
+		Name string `json:"name"`
+		// Description is the description of the NAT Gateway (optional)
 		Description *string `json:"description,omitempty"`
-		Zone        string  `json:"zone"`
-		VPCID       string  `json:"vpc_id"`
+		// Zone is the availability zone
+		Zone string `json:"zone"`
+		// VPCID is the VPC identifier
+		VPCID string `json:"vpc_id"`
 	}
 
 	// NatGatewayCreateResponse represents the response after creating a NAT Gateway
 	NatGatewayCreateResponse struct {
-		ID     string `json:"id"`
+		// ID is the unique identifier of the created NAT Gateway
+		ID string `json:"id"`
+		// Status is the status of the created NAT Gateway
 		Status string `json:"status"`
 	}
 )
@@ -93,6 +129,7 @@ type NatGatewayService interface {
 	List(ctx context.Context, vpcID string, opts ListOptions) ([]NatGatewayResponse, error)
 }
 
+// natGatewayService implements the NatGatewayService interface
 type natGatewayService struct {
 	client *NetworkClient
 }

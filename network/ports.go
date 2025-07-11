@@ -12,43 +12,63 @@ import (
 type (
 	// PublicIpResponsePort represents a public IP associated with a port
 	PublicIpResponsePort struct {
+		// PublicIPID is the unique identifier of the public IP
 		PublicIPID *string `json:"public_ip_id,omitempty"`
-		PublicIP   *string `json:"public_ip,omitempty"`
+		// PublicIP is the public IP address
+		PublicIP *string `json:"public_ip,omitempty"`
 	}
 
 	// IpAddress represents an IP address configuration for a port
 	IpAddress struct {
-		IPAddress string  `json:"ip_address"`
-		SubnetID  string  `json:"subnet_id"`
+		// IPAddress is the IP address
+		IPAddress string `json:"ip_address"`
+		// SubnetID is the subnet identifier
+		SubnetID string `json:"subnet_id"`
+		// Ethertype is the ethernet type (optional)
 		Ethertype *string `json:"ethertype,omitempty"`
 	}
 
 	// PortResponse represents a network port resource
 	PortResponse struct {
-		ID                    *string                         `json:"id,omitempty"`
-		Name                  *string                         `json:"name,omitempty"`
-		Description           *string                         `json:"description,omitempty"`
-		IsAdminStateUp        *bool                           `json:"is_admin_state_up,omitempty"`
-		VPCID                 *string                         `json:"vpc_id,omitempty"`
-		IsPortSecurityEnabled *bool                           `json:"is_port_security_enabled,omitempty"`
-		SecurityGroups        *[]string                       `json:"security_groups"`
-		PublicIP              *[]PublicIpResponsePort         `json:"public_ip"`
-		IPAddress             *[]IpAddress                    `json:"ip_address"`
-		CreatedAt             *utils.LocalDateTimeWithoutZone `json:"created_at,omitempty"`
-		Updated               *utils.LocalDateTimeWithoutZone `json:"updated,omitempty"`
-		Network               *PortNetworkResponse            `json:"network,omitempty"`
+		// ID is the unique identifier of the port
+		ID *string `json:"id,omitempty"`
+		// Name is the name of the port (optional)
+		Name *string `json:"name,omitempty"`
+		// Description is the description of the port (optional)
+		Description *string `json:"description,omitempty"`
+		// IsAdminStateUp indicates if the port is administratively up (optional)
+		IsAdminStateUp *bool `json:"is_admin_state_up,omitempty"`
+		// VPCID is the VPC identifier (optional)
+		VPCID *string `json:"vpc_id,omitempty"`
+		// IsPortSecurityEnabled indicates if port security is enabled (optional)
+		IsPortSecurityEnabled *bool `json:"is_port_security_enabled,omitempty"`
+		// SecurityGroups contains the list of security group IDs (optional)
+		SecurityGroups *[]string `json:"security_groups"`
+		// PublicIP contains the public IP configurations (optional)
+		PublicIP *[]PublicIpResponsePort `json:"public_ip"`
+		// IPAddress contains the IP address configurations (optional)
+		IPAddress *[]IpAddress `json:"ip_address"`
+		// CreatedAt is the creation timestamp (optional)
+		CreatedAt *utils.LocalDateTimeWithoutZone `json:"created_at,omitempty"`
+		// Updated is the last update timestamp (optional)
+		Updated *utils.LocalDateTimeWithoutZone `json:"updated,omitempty"`
+		// Network contains the network information (optional)
+		Network *PortNetworkResponse `json:"network,omitempty"`
 	}
 
 	// PortNetworkResponse represents the AvailabilityZone associated with a port
 	PortNetworkResponse struct {
+		// AvailabilityZone is the availability zone (optional)
 		AvailabilityZone *string `json:"availability_zone,omitempty"`
-		ID               *string `json:"id,omitempty"`
-		Zone             *string `json:"zone,omitempty"`
+		// ID is the network identifier (optional)
+		ID *string `json:"id,omitempty"`
+		// Zone is the zone identifier (optional)
+		Zone *string `json:"zone,omitempty"`
 	}
 
 	// PortUpdateRequest represents the fields available for update in a port resource
 	PortUpdateRequest struct {
-		// Allows spoofed packets to enter a port
+		// IPSpoofingGuard allows spoofed packets to enter a port (optional)
 		IPSpoofingGuard *bool `json:"ip_spoofing_guard,omitempty"`
 	}
 )
@@ -64,7 +84,7 @@ type PortService interface {
 	// Delete removes a port by its ID
 	Delete(ctx context.Context, id string) error
 
-	// Patch updates a port
+	// Update updates a port
 	Update(ctx context.Context, id string, req PortUpdateRequest) error
 
 	// AttachSecurityGroup associates a security group with a specific port
@@ -74,6 +94,7 @@ type PortService interface {
 	DetachSecurityGroup(ctx context.Context, portID string, securityGroupID string) error
 }
 
+// portService implements the PortService interface
 type portService struct {
 	client *NetworkClient
 }
