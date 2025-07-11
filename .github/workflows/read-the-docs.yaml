@@ -1,0 +1,13 @@
+name: Read the Docs
+
+on:
+  release:
+    types: [released]
+  workflow_dispatch:
+
+jobs:
+  snap-publish:
+    runs-on: ubuntu-latest
+
+    steps:
+     
