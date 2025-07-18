@@ -129,6 +129,9 @@ type clusterService struct {
 	client *DBaaSClient
 }
 
+const v2ClustersPath = "/v2/clusters"
+const errIDCannotBeEmpty = "ID cannot be empty"
+
 // List implements the ClusterService interface
 func (s *clusterService) List(ctx context.Context, opts ListClustersOptions) ([]ClusterDetailResponse, error) {
 	query := make(url.Values)
@@ -169,7 +172,7 @@ func (s *clusterService) List(ctx context.Context, opts ListClustersOptions) ([]
 		s.client.newRequest,
 		s.client.GetConfig(),
 		http.MethodGet,
-		"/v2/clusters",
+		v2ClustersPath,
 		nil,
 		query,
 	)
@@ -187,7 +190,7 @@ func (s *clusterService) Create(ctx context.Context, req ClusterCreateRequest) (
 		s.client.newRequest,
 		s.client.GetConfig(),
 		http.MethodPost,
-		"/v2/clusters",
+		v2ClustersPath,
 		req,
 		nil,
 	)
@@ -196,7 +199,7 @@ func (s *clusterService) Create(ctx context.Context, req ClusterCreateRequest) (
 // Get implements the ClusterService interface
 func (s *clusterService) Get(ctx context.Context, ID string) (*ClusterDetailResponse, error) {
 	if ID == "" {
-		return nil, fmt.Errorf("ID cannot be empty")
+		return nil, fmt.Errorf(errIDCannotBeEmpty)
 	}
 
 	return mgc_http.ExecuteSimpleRequestWithRespBody[ClusterDetailResponse](
@@ -204,7 +207,7 @@ func (s *clusterService) Get(ctx context.Context, ID string) (*ClusterDetailResp
 		s.client.newRequest,
 		s.client.GetConfig(),
 		http.MethodGet,
-		fmt.Sprintf("/v2/clusters/%s", ID),
+		fmt.Sprintf("%s/%s", v2ClustersPath, ID),
 		nil,
 		nil,
 	)
@@ -213,7 +216,7 @@ func (s *clusterService) Get(ctx context.Context, ID string) (*ClusterDetailResp
 // Update implements the ClusterService interface
 func (s *clusterService) Update(ctx context.Context, ID string, req ClusterUpdateRequest) (*ClusterDetailResponse, error) {
 	if ID == "" {
-		return nil, fmt.Errorf("ID cannot be empty")
+		return nil, fmt.Errorf(errIDCannotBeEmpty)
 	}
 
 	return mgc_http.ExecuteSimpleRequestWithRespBody[ClusterDetailResponse](
@@ -221,7 +224,7 @@ func (s *clusterService) Update(ctx context.Context, ID string, req ClusterUpdat
 		s.client.newRequest,
 		s.client.GetConfig(),
 		http.MethodPatch,
-		fmt.Sprintf("/v2/clusters/%s", ID),
+		fmt.Sprintf("%s/%s", v2ClustersPath, ID),
 		req,
 		nil,
 	)
@@ -230,7 +233,7 @@ func (s *clusterService) Update(ctx context.Context, ID string, req ClusterUpdat
 // Delete implements the ClusterService interface
 func (s *clusterService) Delete(ctx context.Context, ID string) error {
 	if ID == "" {
-		return fmt.Errorf("ID cannot be empty")
+		return fmt.Errorf(errIDCannotBeEmpty)
 	}
 
 	return mgc_http.ExecuteSimpleRequest(
@@ -238,7 +241,7 @@ func (s *clusterService) Delete(ctx context.Context, ID string) error {
 		s.client.newRequest,
 		s.client.GetConfig(),
 		http.MethodDelete,
-		fmt.Sprintf("/v2/clusters/%s", ID),
+		fmt.Sprintf("%s/%s", v2ClustersPath, ID),
 		nil,
 		nil,
 	)
@@ -247,7 +250,7 @@ func (s *clusterService) Delete(ctx context.Context, ID string) error {
 // Start implements the ClusterService interface
 func (s *clusterService) Start(ctx context.Context, ID string) (*ClusterDetailResponse, error) {
 	if ID == "" {
-		return nil, fmt.Errorf("ID cannot be empty")
+		return nil, fmt.Errorf(errIDCannotBeEmpty)
 	}
 
 	return mgc_http.ExecuteSimpleRequestWithRespBody[ClusterDetailResponse](
@@ -255,7 +258,7 @@ func (s *clusterService) Start(ctx context.Context, ID string) (*ClusterDetailRe
 		s.client.newRequest,
 		s.client.GetConfig(),
 		http.MethodPost,
-		fmt.Sprintf("/v2/clusters/%s/start", ID),
+		fmt.Sprintf("%s/%s/start", v2ClustersPath, ID),
 		nil,
 		nil,
 	)
@@ -264,7 +267,7 @@ func (s *clusterService) Start(ctx context.Context, ID string) (*ClusterDetailRe
 // Stop implements the ClusterService interface
 func (s *clusterService) Stop(ctx context.Context, ID string) (*ClusterDetailResponse, error) {
 	if ID == "" {
-		return nil, fmt.Errorf("ID cannot be empty")
+		return nil, fmt.Errorf(errIDCannotBeEmpty)
 	}
 
 	return mgc_http.ExecuteSimpleRequestWithRespBody[ClusterDetailResponse](
@@ -272,7 +275,7 @@ func (s *clusterService) Stop(ctx context.Context, ID string) (*ClusterDetailRes
 		s.client.newRequest,
 		s.client.GetConfig(),
 		http.MethodPost,
-		fmt.Sprintf("/v2/clusters/%s/stop", ID),
+		fmt.Sprintf("%s/%s/stop", v2ClustersPath, ID),
 		nil,
 		nil,
 	)
