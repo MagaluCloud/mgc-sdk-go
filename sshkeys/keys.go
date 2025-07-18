@@ -11,10 +11,12 @@ import (
 )
 
 type (
+	// ListSSHKeysResponse represents a list of SSH keys response
 	ListSSHKeysResponse struct {
 		Results []SSHKey `json:"results"`
 	}
 
+	// SSHKey represents an SSH key resource
 	SSHKey struct {
 		ID      string `json:"id"`
 		Name    string `json:"name"`
@@ -22,6 +24,7 @@ type (
 		KeyType string `json:"key_type"`
 	}
 
+	// CreateSSHKeyRequest represents the parameters for creating a new SSH key
 	CreateSSHKeyRequest struct {
 		Name string `json:"name"`
 		Key  string `json:"key"`
@@ -29,12 +32,9 @@ type (
 
 	// ListOptions defines parameters for filtering and paginating SSH key lists
 	ListOptions struct {
-		// Limit specifies the maximum number of items to return
-		Limit *int
-		// Offset specifies the number of items to skip
+		Limit  *int
 		Offset *int
-		// Sort defines the sort order for the results
-		Sort *string
+		Sort   *string
 	}
 )
 
@@ -42,28 +42,18 @@ type (
 // All operations in this service are performed against the global endpoint,
 // as SSH keys are not region-specific resources.
 type KeyService interface {
-	// List returns all SSH keys for the tenant.
-	// Use ListOptions to control pagination and sorting of the results.
 	List(ctx context.Context, opts ListOptions) ([]SSHKey, error)
-
-	// Create registers a new SSH key globally.
-	// The key will be available across all regions.
 	Create(ctx context.Context, req CreateSSHKeyRequest) (*SSHKey, error)
-
-	// Get retrieves a specific SSH key by ID.
-	// Since keys are global, the same key ID will return the same key
-	// regardless of the region.
 	Get(ctx context.Context, keyID string) (*SSHKey, error)
-
-	// Delete removes an SSH key globally.
-	// Once deleted, the key will be unavailable across all regions.
 	Delete(ctx context.Context, keyID string) (*SSHKey, error)
 }
 
+// keyService implements the KeyService interface
 type keyService struct {
 	client *SSHKeyClient
 }
 
+// List returns all SSH keys for the tenant
 func (s *keyService) List(ctx context.Context, opts ListOptions) ([]SSHKey, error) {
 	query := make(url.Values)
 
@@ -92,6 +82,7 @@ func (s *keyService) List(ctx context.Context, opts ListOptions) ([]SSHKey, erro
 	return result.Results, nil
 }
 
+// Create registers a new SSH key globally
 func (s *keyService) Create(ctx context.Context, req CreateSSHKeyRequest) (*SSHKey, error) {
 	return mgc_http.ExecuteSimpleRequestWithRespBody[SSHKey](
 		ctx,
@@ -104,6 +95,7 @@ func (s *keyService) Create(ctx context.Context, req CreateSSHKeyRequest) (*SSHK
 	)
 }
 
+// Get retrieves a specific SSH key by ID
 func (s *keyService) Get(ctx context.Context, keyID string) (*SSHKey, error) {
 	return mgc_http.ExecuteSimpleRequestWithRespBody[SSHKey](
 		ctx,
@@ -116,6 +108,7 @@ func (s *keyService) Get(ctx context.Context, keyID string) (*SSHKey, error) {
 	)
 }
 
+// Delete removes an SSH key globally
 func (s *keyService) Delete(ctx context.Context, keyID string) (*SSHKey, error) {
 	return mgc_http.ExecuteSimpleRequestWithRespBody[SSHKey](
 		ctx,

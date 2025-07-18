@@ -12,6 +12,8 @@ import (
 	"github.com/MagaluCloud/mgc-sdk-go/internal/utils"
 )
 
+// Event represents an audit event.
+// Contains detailed information about an action or operation performed in the system.
 type Event struct {
 	ID          string                         `json:"id"`
 	Source      string                         `json:"source"`
@@ -27,6 +29,8 @@ type Event struct {
 	Data        json.RawMessage                `json:"data"`
 }
 
+// ListEventsParams defines parameters for listing audit events.
+// All fields are optional and allow filtering results in different ways.
 type ListEventsParams struct {
 	Limit       *int              `url:"_limit,omitempty"`
 	Offset      *int              `url:"_offset,omitempty"`
@@ -40,6 +44,8 @@ type ListEventsParams struct {
 	Data        map[string]string `url:"data,omitempty"`
 }
 
+// PaginatedMeta contains metadata about the paginated response.
+// Provides information about pagination and result counting.
 type PaginatedMeta struct {
 	Limit  int `json:"limit,omitempty"`
 	Offset int `json:"offset,omitempty"`
@@ -47,19 +53,28 @@ type PaginatedMeta struct {
 	Total  int `json:"total"`
 }
 
+// PaginatedResponse represents a generic paginated response.
+// Used to encapsulate paginated results of different types.
 type PaginatedResponse[T any] struct {
 	Meta    PaginatedMeta `json:"meta"`
 	Results []T           `json:"results"`
 }
 
+// EventService defines the interface for audit event operations.
+// This interface allows listing events with different filters and pagination options.
 type EventService interface {
 	List(ctx context.Context, params *ListEventsParams) ([]Event, error)
 }
 
+// eventService implements the EventService interface.
+// This is an internal implementation that should not be used directly.
 type eventService struct {
 	client *AuditClient
 }
 
+// List implements the List method of the EventService interface.
+// This method makes an HTTP request to get the list of audit events
+// and applies the filters specified in the parameters.
 func (s *eventService) List(ctx context.Context, params *ListEventsParams) ([]Event, error) {
 	query := make(url.Values)
 

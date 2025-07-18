@@ -83,16 +83,13 @@ type (
 
 // NatGatewayService provides operations for managing NAT Gateways
 type NatGatewayService interface {
-	// Create creates a new NAT Gateway with the provided configuration
 	Create(ctx context.Context, req CreateNatGatewayRequest) (string, error)
-	// Delete removes a NAT Gateway by its ID
 	Delete(ctx context.Context, id string) error
-	// Get retrieves details of a specific NAT Gateway by its ID
 	Get(ctx context.Context, id string) (*NatGatewayDetailsResponse, error)
-	// List retrieves all NAT Gateways for a specific VPC
 	List(ctx context.Context, vpcID string, opts ListOptions) ([]NatGatewayResponse, error)
 }
 
+// natGatewayService implements the NatGatewayService interface
 type natGatewayService struct {
 	client *NetworkClient
 }

@@ -48,32 +48,21 @@ type (
 
 	// PortUpdateRequest represents the fields available for update in a port resource
 	PortUpdateRequest struct {
-		// Allows spoofed packets to enter a port
 		IPSpoofingGuard *bool `json:"ip_spoofing_guard,omitempty"`
 	}
 )
 
 // PortService provides operations for managing network ports
 type PortService interface {
-	// List retrieves all ports for the current tenant
 	List(ctx context.Context) ([]PortResponse, error)
-
-	// Get retrieves details of a specific port by its ID
 	Get(ctx context.Context, id string) (*PortResponse, error)
-
-	// Delete removes a port by its ID
 	Delete(ctx context.Context, id string) error
-
-	// Patch updates a port
 	Update(ctx context.Context, id string, req PortUpdateRequest) error
-
-	// AttachSecurityGroup associates a security group with a specific port
 	AttachSecurityGroup(ctx context.Context, portID string, securityGroupID string) error
-
-	// DetachSecurityGroup removes the association between a security group and a port
 	DetachSecurityGroup(ctx context.Context, portID string, securityGroupID string) error
 }
 
+// portService implements the PortService interface
 type portService struct {
 	client *NetworkClient
 }

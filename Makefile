@@ -24,3 +24,7 @@ go-fmt:
 
 go-vet:
 	go vet ./...
+
+readthedocs:
+	cd docs && rm -rf output && rm -rf source 
+	python3 docs/main_generator.py

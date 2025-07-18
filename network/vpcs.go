@@ -58,12 +58,9 @@ type (
 
 	// ListOptions represents parameters for filtering and pagination
 	ListOptions struct {
-		// Limit specifies the maximum number of items to return
-		Limit *int
-		// Offset specifies the number of items to skip
+		Limit  *int
 		Offset *int
-		// Sort specifies the field and direction for sorting results
-		Sort *string
+		Sort   *string
 	}
 
 	// CreateVPCResponse represents the response after creating a VPC
@@ -72,6 +69,7 @@ type (
 		Status string `json:"status"`
 	}
 
+	// PortCreateRequest represents the parameters for creating a port
 	PortCreateRequest struct {
 		Name           string    `json:"name"`
 		HasPIP         *bool     `json:"has_pip,omitempty"`
@@ -80,32 +78,39 @@ type (
 		SecurityGroups *[]string `json:"security_groups_id,omitempty"`
 	}
 
+	// PortCreateOptions represents additional options for port creation
 	PortCreateOptions struct {
 		Zone *string `json:"zone,omitempty"`
 	}
 
+	// PublicIPCreateRequest represents the parameters for creating a public IP
 	PublicIPCreateRequest struct {
 		Description *string `json:"description,omitempty"`
 	}
 
+	// PublicIPCreateResponse represents the response after creating a public IP
 	PublicIPCreateResponse struct {
 		ID string `json:"id"`
 	}
 
+	// PortCreateResponse represents the response after creating a port
 	PortCreateResponse struct {
 		ID string `json:"id"`
 	}
 
+	// PublicIPsList represents a list of public IPs
 	PublicIPsList struct {
 		PublicIPs []PublicIPDb `json:"public_ips"`
 	}
 
+	// IPAddress represents an IP address configuration
 	IPAddress struct {
 		IPAddress string  `json:"ip_address"`
 		SubnetID  string  `json:"subnet_id"`
 		EtherType *string `json:"ethertype,omitempty"`
 	}
 
+	// PublicIPDb represents a public IP resource
 	PublicIPDb struct {
 		ID          *string                         `json:"id,omitempty"`
 		ExternalID  *string                         `json:"external_id,omitempty"`
@@ -121,6 +126,7 @@ type (
 		Error       *string                         `json:"error,omitempty"`
 	}
 
+	// PortListResponse represents a port list response
 	PortListResponse struct {
 		CreatedAt             *string         `json:"created_at,omitempty"`
 		Description           *string         `json:"description,omitempty"`
@@ -135,22 +141,26 @@ type (
 		VPCID                 *string         `json:"vpc_id,omitempty"`
 	}
 
+	// PortIPAddress represents an IP address configuration for a port
 	PortIPAddress struct {
 		Ethertype *string `json:"ethertype,omitempty"`
 		IPAddress string  `json:"ip_address"`
 		SubnetID  string  `json:"subnet_id"`
 	}
 
+	// PortPublicIP represents a public IP configuration for a port
 	PortPublicIP struct {
 		PublicIP   *string `json:"public_ip,omitempty"`
 		PublicIPID *string `json:"public_ip_id,omitempty"`
 	}
 
+	// PortsList represents a list of ports
 	PortsList struct {
 		Ports           *[]PortResponse      `json:"ports,omitempty"`
 		PortsSimplified []PortSimpleResponse `json:"ports_simplified"`
 	}
 
+	// PortSimpleResponse represents a simplified port response
 	PortSimpleResponse struct {
 		ID        *string         `json:"id,omitempty"`
 		IPAddress []PortIPAddress `json:"ip_address,omitempty"`
@@ -182,45 +192,25 @@ const (
 
 // VPCService provides operations for managing VPCs
 type VPCService interface {
-	// List returns a slice of VPCs based on the provided listing options
 	List(ctx context.Context) ([]VPC, error)
-
-	// Get retrieves detailed information about a specific VPC
 	Get(ctx context.Context, id string) (*VPC, error)
-
-	// Create provisions a new VPC
 	Create(ctx context.Context, req CreateVPCRequest) (string, error)
-
-	// Delete removes a VPC
 	Delete(ctx context.Context, id string) error
-
-	// Rename updates the display name of an existing VPC
 	Rename(ctx context.Context, id string, newName string) error
-
-	// ListPorts returns all ports for a VPC
 	ListPorts(ctx context.Context, vpcID string, detailed bool, opts ListOptions) (*PortsList, error)
-
-	// CreatePort creates a new port in a VPC
 	CreatePort(ctx context.Context, vpcID string, req PortCreateRequest, opts PortCreateOptions) (string, error)
-
-	// ListPublicIPs returns all public IPs for a VPC
 	ListPublicIPs(ctx context.Context, vpcID string) ([]PublicIPDb, error)
-
-	// CreatePublicIP creates a new public IP in a VPC
 	CreatePublicIP(ctx context.Context, vpcID string, req PublicIPCreateRequest) (string, error)
-
-	// ListSubnets returns all subnets in a VPC
 	ListSubnets(ctx context.Context, vpcID string) ([]SubnetResponse, error)
-
-	// CreateSubnet creates a new subnet in a VPC
 	CreateSubnet(ctx context.Context, vpcID string, req SubnetCreateRequest, opts SubnetCreateOptions) (string, error)
 }
 
+// vpcService implements the VPCService interface
 type vpcService struct {
 	client *NetworkClient
 }
 
-// List retrieves a list of VPCs based on the provided options
+// List returns a slice of VPCs based on the provided listing options
 func (s *vpcService) List(ctx context.Context) ([]VPC, error) {
 	result, err := mgc_http.ExecuteSimpleRequestWithRespBody[ListVPCsResponse](
 		ctx,
@@ -251,7 +241,7 @@ func (s *vpcService) Get(ctx context.Context, id string) (*VPC, error) {
 	)
 }
 
-// Create provisions a new VPC with the given configuration
+// Create provisions a new VPC
 func (s *vpcService) Create(ctx context.Context, req CreateVPCRequest) (string, error) {
 	result, err := mgc_http.ExecuteSimpleRequestWithRespBody[CreateVPCResponse](
 		ctx,
@@ -268,7 +258,7 @@ func (s *vpcService) Create(ctx context.Context, req CreateVPCRequest) (string, 
 	return result.ID, nil
 }
 
-// Delete removes the specified VPC and all its resources
+// Delete removes a VPC
 func (s *vpcService) Delete(ctx context.Context, id string) error {
 	return mgc_http.ExecuteSimpleRequest(
 		ctx,
@@ -281,7 +271,7 @@ func (s *vpcService) Delete(ctx context.Context, id string) error {
 	)
 }
 
-// Rename updates the name of an existing VPC
+// Rename updates the display name of an existing VPC
 func (s *vpcService) Rename(ctx context.Context, id string, newName string) error {
 	return mgc_http.ExecuteSimpleRequest(
 		ctx,
@@ -294,7 +284,7 @@ func (s *vpcService) Rename(ctx context.Context, id string, newName string) erro
 	)
 }
 
-// ListPorts returns all network ports associated with a VPC
+// ListPorts returns all ports for a VPC
 func (s *vpcService) ListPorts(ctx context.Context, vpcID string, detailed bool, opts ListOptions) (*PortsList, error) {
 	query := makeListOptionsQuery(opts)
 	query.Set("detailed", strconv.FormatBool(detailed))
@@ -316,7 +306,7 @@ func (s *vpcService) ListPorts(ctx context.Context, vpcID string, detailed bool,
 	return result, nil
 }
 
-// CreatePort creates a new network port in the specified VPC
+// CreatePort creates a new port in a VPC
 func (s *vpcService) CreatePort(ctx context.Context, vpcID string, req PortCreateRequest, opts PortCreateOptions) (string, error) {
 	nreq, err := s.client.newRequest(ctx, http.MethodPost, fmt.Sprintf("/v0/vpcs/%s/ports", vpcID), req)
 	if err != nil {
@@ -335,7 +325,7 @@ func (s *vpcService) CreatePort(ctx context.Context, vpcID string, req PortCreat
 	return result.ID, nil
 }
 
-// ListPublicIPs returns all public IPs allocated to the specified VPC
+// ListPublicIPs returns all public IPs for a VPC
 func (s *vpcService) ListPublicIPs(ctx context.Context, vpcID string) ([]PublicIPDb, error) {
 	result, err := mgc_http.ExecuteSimpleRequestWithRespBody[PublicIPsList](
 		ctx,
@@ -352,7 +342,7 @@ func (s *vpcService) ListPublicIPs(ctx context.Context, vpcID string) ([]PublicI
 	return result.PublicIPs, nil
 }
 
-// CreatePublicIP allocates a new public IP address in the specified VPC
+// CreatePublicIP creates a new public IP in a VPC
 func (s *vpcService) CreatePublicIP(ctx context.Context, vpcID string, req PublicIPCreateRequest) (string, error) {
 	result, err := mgc_http.ExecuteSimpleRequestWithRespBody[PublicIPCreateResponse](
 		ctx,
@@ -369,7 +359,7 @@ func (s *vpcService) CreatePublicIP(ctx context.Context, vpcID string, req Publi
 	return result.ID, nil
 }
 
-// ListSubnets returns all subnets in the specified VPC
+// ListSubnets returns all subnets in a VPC
 func (s *vpcService) ListSubnets(ctx context.Context, vpcID string) ([]SubnetResponse, error) {
 	result, err := mgc_http.ExecuteSimpleRequestWithRespBody[ListSubnetsResponse](
 		ctx,
@@ -386,7 +376,7 @@ func (s *vpcService) ListSubnets(ctx context.Context, vpcID string) ([]SubnetRes
 	return result.Subnets, nil
 }
 
-// CreateSubnet creates a new subnet in the specified VPC
+// CreateSubnet creates a new subnet in a VPC
 func (s *vpcService) CreateSubnet(ctx context.Context, vpcID string, req SubnetCreateRequest, opts SubnetCreateOptions) (string, error) {
 	nreq, err := s.client.newRequest(ctx, http.MethodPost, fmt.Sprintf("/v0/vpcs/%s/subnets", vpcID), req)
 	if err != nil {
@@ -404,7 +394,7 @@ func (s *vpcService) CreateSubnet(ctx context.Context, vpcID string, req SubnetC
 	return result.ID, nil
 }
 
-// makeListOptionsQuery creates URL query parameters from ListOptions
+// makeListOptionsQuery converts ListOptions to URL query parameters
 func makeListOptionsQuery(opts ListOptions) url.Values {
 	query := make(url.Values)
 	if opts.Limit != nil {

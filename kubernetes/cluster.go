@@ -19,6 +19,7 @@ const (
 )
 
 type (
+	// ClusterService provides methods for managing Kubernetes clusters
 	ClusterService interface {
 		List(ctx context.Context, opts ListOptions) ([]ClusterList, error)
 		Create(ctx context.Context, req ClusterRequest) (*CreateClusterResponse, error)
@@ -28,6 +29,7 @@ type (
 		GetKubeConfig(ctx context.Context, clusterID string) (*KubeConfig, error)
 	}
 
+	// Network represents network configuration for a cluster
 	Network struct {
 		UUID     string  `json:"uuid"`
 		CIDR     string  `json:"cidr"`
@@ -35,12 +37,14 @@ type (
 		SubnetID string  `json:"subnet_id"`
 	}
 
+	// Addons represents cluster addons configuration
 	Addons struct {
 		Loadbalance *string `json:"loadbalance,omitempty"`
 		Volume      *string `json:"volume,omitempty"`
 		Secrets     *string `json:"secrets,omitempty"`
 	}
 
+	// KubeApiServer represents Kubernetes API server configuration
 	KubeApiServer struct {
 		DisableApiServerFip *bool   `json:"disable_api_server_fip,omitempty"`
 		FixedIp             *string `json:"fixed_ip,omitempty"`
@@ -48,15 +52,18 @@ type (
 		Port                *int    `json:"port,omitempty"`
 	}
 
+	// AutoScaleResponse represents autoscaling configuration
 	AutoScaleResponse struct {
 		MinReplicas *int `json:"min_replicas,omitempty"`
 		MaxReplicas *int `json:"max_replicas,omitempty"`
 	}
 
+	// ClusterListResponse represents the response when listing clusters
 	ClusterListResponse struct {
 		Results []ClusterList `json:"results"`
 	}
 
+	// ClusterList represents a cluster in the list view
 	ClusterList struct {
 		Description   *string        `json:"description,omitempty"`
 		ID            string         `json:"id"`
@@ -67,11 +74,13 @@ type (
 		Version       *string        `json:"version,omitempty"`
 	}
 
+	// MessageState represents a status message
 	MessageState struct {
 		State   string `json:"state"`
 		Message string `json:"message"`
 	}
 
+	// Cluster represents detailed information about a Kubernetes cluster
 	Cluster struct {
 		Name             string         `json:"name"`
 		ID               string         `json:"id"`
@@ -91,6 +100,7 @@ type (
 		ClusterIPv4CIDR  *string        `json:"cluster_ipv4_cidr,omitempty"`
 	}
 
+	// Controlplane represents control plane configuration
 	Controlplane struct {
 		AutoScale        AutoScale        `json:"auto_scale"`
 		CreatedAt        *string          `json:"created_at,omitempty"`
@@ -107,6 +117,7 @@ type (
 		Zone             *[]string        `json:"zone"`
 	}
 
+	// CreateClusterResponse represents the response when creating a cluster
 	CreateClusterResponse struct {
 		ID           string       `json:"id"`
 		Name         string       `json:"name"`
@@ -114,6 +125,7 @@ type (
 		AllowedCidrs *[]string    `json:"allowed_cidrs,omitempty"`
 	}
 
+	// ClusterRequest represents the request payload for creating a cluster
 	ClusterRequest struct {
 		Name               string                   `json:"name"`
 		Version            *string                  `json:"version,omitempty"`
@@ -125,15 +137,18 @@ type (
 		ClusterIPv4CIDR    *string                  `json:"cluster_ipv4_cidr,omitempty"`
 	}
 
+	// AllowedCIDRsUpdateRequest represents the request payload for updating allowed CIDRs
 	AllowedCIDRsUpdateRequest struct {
 		AllowedCIDRs []string `json:"allowed_cidrs"`
 	}
 
+	// Status represents a status with messages
 	Status struct {
 		State    string   `json:"state"`
 		Messages []string `json:"messages,omitempty"`
 	}
 
+	// KubeConfig represents a Kubernetes configuration file
 	KubeConfig struct {
 		APIVersion string `yaml:"apiVersion"`
 		Clusters   []struct {
@@ -162,11 +177,13 @@ type (
 		} `yaml:"users"`
 	}
 
+	// clusterService implements the ClusterService interface
 	clusterService struct {
 		client *KubernetesClient
 	}
 )
 
+// List returns a list of Kubernetes clusters with optional filtering and pagination
 func (s *clusterService) List(ctx context.Context, opts ListOptions) ([]ClusterList, error) {
 	query := url.Values{}
 	if opts.Limit != nil {
@@ -190,6 +207,7 @@ func (s *clusterService) List(ctx context.Context, opts ListOptions) ([]ClusterL
 	return resp.Results, nil
 }
 
+// Create creates a new Kubernetes cluster
 func (s *clusterService) Create(ctx context.Context, req ClusterRequest) (*CreateClusterResponse, error) {
 	response, err := mgc_http.ExecuteSimpleRequestWithRespBody[CreateClusterResponse](ctx, s.client.newRequest, s.client.GetConfig(), http.MethodPost, "/v0/clusters", req, nil)
 	if err != nil {
@@ -199,53 +217,38 @@ func (s *clusterService) Create(ctx context.Context, req ClusterRequest) (*Creat
 	return response, nil
 }
 
+// Get retrieves detailed information about a specific cluster
 func (s *clusterService) Get(ctx context.Context, clusterID string) (*Cluster, error) {
 	if clusterID == "" {
 		return nil, &client.ValidationError{Field: "clusterID", Message: utils.CannotBeEmpty}
 	}
-	getClusterURL := fmt.Sprintf(clusterUrlWithID, clusterID)
 
-	cluster, err := mgc_http.ExecuteSimpleRequestWithRespBody[Cluster](ctx, s.client.newRequest, s.client.GetConfig(), http.MethodGet, getClusterURL, nil, nil)
-	if err != nil {
-		return nil, err
-	}
-	return cluster, nil
+	return mgc_http.ExecuteSimpleRequestWithRespBody[Cluster](ctx, s.client.newRequest, s.client.GetConfig(), http.MethodGet, fmt.Sprintf(clusterUrlWithID, clusterID), nil, nil)
 }
 
+// Delete removes a Kubernetes cluster
 func (s *clusterService) Delete(ctx context.Context, clusterID string) error {
 	if clusterID == "" {
 		return &client.ValidationError{Field: "clusterID", Message: utils.CannotBeEmpty}
 	}
 
-	err := mgc_http.ExecuteSimpleRequest(ctx, s.client.newRequest, s.client.GetConfig(), http.MethodDelete, fmt.Sprintf(clusterUrlWithID, clusterID), nil, nil)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return mgc_http.ExecuteSimpleRequest(ctx, s.client.newRequest, s.client.GetConfig(), http.MethodDelete, fmt.Sprintf(clusterUrlWithID, clusterID), nil, nil)
 }
 
+// Update updates the allowed CIDRs for a cluster
 func (s *clusterService) Update(ctx context.Context, clusterID string, req AllowedCIDRsUpdateRequest) (*Cluster, error) {
 	if clusterID == "" {
 		return nil, &client.ValidationError{Field: "clusterID", Message: utils.CannotBeEmpty}
 	}
 
-	resp, err := mgc_http.ExecuteSimpleRequestWithRespBody[Cluster](ctx, s.client.newRequest, s.client.GetConfig(), http.MethodPatch, fmt.Sprintf(clusterUrlWithID, clusterID), req, nil)
-	if err != nil {
-		return nil, err
-	}
-	return resp, nil
+	return mgc_http.ExecuteSimpleRequestWithRespBody[Cluster](ctx, s.client.newRequest, s.client.GetConfig(), http.MethodPatch, fmt.Sprintf(clusterUrlWithID, clusterID), req, nil)
 }
 
+// GetKubeConfig retrieves the kubeconfig for a cluster
 func (s *clusterService) GetKubeConfig(ctx context.Context, clusterID string) (*KubeConfig, error) {
 	if clusterID == "" {
 		return nil, &client.ValidationError{Field: "clusterID", Message: utils.CannotBeEmpty}
 	}
 
-	kubeConfig, err := mgc_http.ExecuteSimpleRequestWithRespBody[KubeConfig](ctx, s.client.newRequest, s.client.GetConfig(), http.MethodGet, fmt.Sprintf("/v0/clusters/%s/kubeconfig", clusterID), nil, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return kubeConfig, nil
+	return mgc_http.ExecuteSimpleRequestWithRespBody[KubeConfig](ctx, s.client.newRequest, s.client.GetConfig(), http.MethodGet, fmt.Sprintf(clusterUrlWithID+"/kubeconfig", clusterID), nil, nil)
 }

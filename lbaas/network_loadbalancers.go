@@ -10,7 +10,7 @@ import (
 )
 
 type (
-	// Structs auxiliares para criação de Load Balancer
+	// NetworkListenerRequest represents a listener configuration for load balancer creation
 	NetworkListenerRequest struct {
 		TLSCertificateName *string          `json:"tls_certificate_name,omitempty"`
 		Name               string           `json:"name"`
@@ -20,6 +20,7 @@ type (
 		Port               int              `json:"port"`
 	}
 
+	// NetworkBackendRequest represents a backend configuration for load balancer creation
 	NetworkBackendRequest struct {
 		HealthCheckName  *string                       `json:"health_check_name,omitempty"`
 		Name             string                        `json:"name"`
@@ -29,6 +30,7 @@ type (
 		Targets          *TargetsRawOrInstancesRequest `json:"targets,omitempty"`
 	}
 
+	// NetworkHealthCheckRequest represents a health check configuration for load balancer creation
 	NetworkHealthCheckRequest struct {
 		Name                    string              `json:"name"`
 		Description             *string             `json:"description,omitempty"`
@@ -43,6 +45,7 @@ type (
 		UnhealthyThresholdCount *int                `json:"unhealthy_threshold_count,omitempty"`
 	}
 
+	// NetworkTLSCertificateRequest represents a TLS certificate configuration for load balancer creation
 	NetworkTLSCertificateRequest struct {
 		Name        string  `json:"name"`
 		Description *string `json:"description,omitempty"`
@@ -50,6 +53,7 @@ type (
 		PrivateKey  string  `json:"private_key"`
 	}
 
+	// NetworkAclRequest represents an ACL rule configuration for load balancer creation
 	NetworkAclRequest struct {
 		Name           *string       `json:"name,omitempty"`
 		Ethertype      AclEtherType  `json:"ethertype"`
@@ -58,6 +62,7 @@ type (
 		Action         AclActionType `json:"action"`
 	}
 
+	// CreateNetworkLoadBalancerRequest represents the request payload for creating a load balancer
 	CreateNetworkLoadBalancerRequest struct {
 		Name            string                         `json:"name"`
 		Description     *string                        `json:"description,omitempty"`
@@ -74,21 +79,25 @@ type (
 		PanicThreshold  *int                           `json:"panic_threshold,omitempty"`
 	}
 
+	// DeleteNetworkLoadBalancerRequest represents the request payload for deleting a load balancer
 	DeleteNetworkLoadBalancerRequest struct {
 		LoadBalancerID string `json:"-"`
 		DeletePublicIP *bool  `json:"-"`
 	}
 
+	// GetNetworkLoadBalancerRequest represents the request payload for getting a load balancer
 	GetNetworkLoadBalancerRequest struct {
 		LoadBalancerID string `json:"-"`
 	}
 
+	// ListNetworkLoadBalancerRequest represents the request payload for listing load balancers
 	ListNetworkLoadBalancerRequest struct {
 		Offset *int    `json:"-"`
 		Limit  *int    `json:"-"`
 		Sort   *string `json:"-"`
 	}
 
+	// NetworkBackendUpdateRequest represents a backend update configuration
 	NetworkBackendUpdateRequest struct {
 		ID            string                              `json:"id"`
 		HealthCheckID *string                             `json:"health_check_id,omitempty"`
@@ -96,6 +105,7 @@ type (
 		Targets       *TargetsRawOrInstancesUpdateRequest `json:"targets,omitempty"`
 	}
 
+	// UpdateNetworkLoadBalancerRequest represents the request payload for updating a load balancer
 	UpdateNetworkLoadBalancerRequest struct {
 		LoadBalancerID  string                               `json:"-"`
 		Name            *string                              `json:"name,omitempty"`
@@ -106,6 +116,7 @@ type (
 		PanicThreshold  *int                                 `json:"panic_threshold,omitempty"`
 	}
 
+	// NetworkHealthCheckUpdateRequest represents a health check update configuration
 	NetworkHealthCheckUpdateRequest struct {
 		ID                      string              `json:"id"`
 		Protocol                HealthCheckProtocol `json:"protocol"`
@@ -119,19 +130,21 @@ type (
 		UnhealthyThresholdCount *int                `json:"unhealthy_threshold_count,omitempty"`
 	}
 
+	// NetworkTLSCertificateUpdateRequest represents a TLS certificate update configuration
 	NetworkTLSCertificateUpdateRequest struct {
 		ID          string `json:"id"`
 		Certificate string `json:"certificate"`
 		PrivateKey  string `json:"private_key"`
 	}
 
-	// Response structs
+	// NetworkPublicIPResponse represents a public IP response
 	NetworkPublicIPResponse struct {
 		ID         string  `json:"id"`
 		IPAddress  *string `json:"ip_address,omitempty"`
 		ExternalID string  `json:"external_id"`
 	}
 
+	// NetworkAclResponse represents an ACL rule response
 	NetworkAclResponse struct {
 		ID             string       `json:"id"`
 		Name           *string      `json:"name,omitempty"`
@@ -141,6 +154,7 @@ type (
 		Action         string       `json:"action"`
 	}
 
+	// NetworkLoadBalancerResponse represents a load balancer response
 	NetworkLoadBalancerResponse struct {
 		ID                  string                          `json:"id"`
 		Name                string                          `json:"name"`
@@ -164,10 +178,12 @@ type (
 		LastOperationStatus *string                         `json:"last_operation_status,omitempty"`
 	}
 
+	// NetworkLBPaginatedResponse represents a paginated load balancer response
 	NetworkLBPaginatedResponse struct {
 		Results []NetworkLoadBalancerResponse `json:"results"`
 	}
 
+	// NetworkLoadBalancerService provides methods for managing network load balancers
 	NetworkLoadBalancerService interface {
 		Create(ctx context.Context, req CreateNetworkLoadBalancerRequest) (string, error)
 		Delete(ctx context.Context, req DeleteNetworkLoadBalancerRequest) error
@@ -176,11 +192,13 @@ type (
 		Update(ctx context.Context, req UpdateNetworkLoadBalancerRequest) error
 	}
 
+	// networkLoadBalancerService implements the NetworkLoadBalancerService interface
 	networkLoadBalancerService struct {
 		client *LbaasClient
 	}
 )
 
+// Create creates a new network load balancer
 func (s *networkLoadBalancerService) Create(ctx context.Context, req CreateNetworkLoadBalancerRequest) (string, error) {
 	path := urlNetworkLoadBalancer(nil)
 
@@ -199,6 +217,7 @@ func (s *networkLoadBalancerService) Create(ctx context.Context, req CreateNetwo
 	return result.ID, nil
 }
 
+// Delete removes a network load balancer
 func (s *networkLoadBalancerService) Delete(ctx context.Context, req DeleteNetworkLoadBalancerRequest) error {
 	path := urlNetworkLoadBalancer(&req.LoadBalancerID)
 
@@ -207,8 +226,7 @@ func (s *networkLoadBalancerService) Delete(ctx context.Context, req DeleteNetwo
 		return err
 	}
 
-	// Adicionar query parameter delete_public_ip se fornecido
-	if req.DeletePublicIP != nil {
+	if req.DeletePublicIP != nil && *req.DeletePublicIP {
 		query := httpReq.URL.Query()
 		query.Set("delete_public_ip", strconv.FormatBool(*req.DeletePublicIP))
 		httpReq.URL.RawQuery = query.Encode()
@@ -218,6 +236,7 @@ func (s *networkLoadBalancerService) Delete(ctx context.Context, req DeleteNetwo
 	return err
 }
 
+// Get retrieves detailed information about a specific load balancer
 func (s *networkLoadBalancerService) Get(ctx context.Context, req GetNetworkLoadBalancerRequest) (*NetworkLoadBalancerResponse, error) {
 	path := urlNetworkLoadBalancer(&req.LoadBalancerID)
 
@@ -234,6 +253,7 @@ func (s *networkLoadBalancerService) Get(ctx context.Context, req GetNetworkLoad
 	return result, nil
 }
 
+// List returns a list of network load balancers with optional filtering and pagination
 func (s *networkLoadBalancerService) List(ctx context.Context, req ListNetworkLoadBalancerRequest) ([]NetworkLoadBalancerResponse, error) {
 	path := urlNetworkLoadBalancer(nil)
 
@@ -256,6 +276,7 @@ func (s *networkLoadBalancerService) List(ctx context.Context, req ListNetworkLo
 	return result.Results, nil
 }
 
+// Update updates a network load balancer's properties
 func (s *networkLoadBalancerService) Update(ctx context.Context, req UpdateNetworkLoadBalancerRequest) error {
 	path := urlNetworkLoadBalancer(&req.LoadBalancerID)
 

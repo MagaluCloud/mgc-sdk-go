@@ -20,6 +20,7 @@ const (
 )
 
 type (
+	// ListOptions provides options for listing resources
 	ListOptions struct {
 		Limit  *int
 		Offset *int
@@ -27,6 +28,7 @@ type (
 		Expand []string
 	}
 
+	// NodePoolService provides methods for managing Kubernetes node pools
 	NodePoolService interface {
 		Nodes(ctx context.Context, clusterID, nodePoolID string) ([]Node, error)
 		List(ctx context.Context, clusterID string, opts ListOptions) ([]NodePool, error)
@@ -36,10 +38,12 @@ type (
 		Delete(ctx context.Context, clusterID, nodePoolID string) error
 	}
 
+	// NodePoolList represents the response when listing node pools
 	NodePoolList struct {
 		Results []NodePool `json:"results"`
 	}
 
+	// InstanceTemplate represents the template for node instances
 	InstanceTemplate struct {
 		Flavor    Flavor `json:"flavor"`
 		NodeImage string `json:"node_image"`
@@ -47,6 +51,7 @@ type (
 		DiskType  string `json:"disk_type"`
 	}
 
+	// NodePool represents a Kubernetes node pool
 	NodePool struct {
 		ID                string            `json:"id"`
 		Name              string            `json:"name"`
@@ -66,11 +71,13 @@ type (
 		AvailabilityZones *[]string         `json:"availability_zones,omitempty"`
 	}
 
+	// Addresses represents network addresses
 	Addresses struct {
 		Address string `json:"address"`
 		Type    string `json:"type"`
 	}
 
+	// Allocatable represents allocatable resources
 	Allocatable struct {
 		CPU              string `json:"cpu"`
 		EphemeralStorage string `json:"ephemeral_storage"`
@@ -79,6 +86,8 @@ type (
 		Memory           string `json:"memory"`
 		Pods             string `json:"pods"`
 	}
+
+	// Capacity represents total capacity
 	Capacity struct {
 		CPU              string `json:"cpu"`
 		EphemeralStorage string `json:"ephemeral_storage"`
@@ -87,6 +96,8 @@ type (
 		Memory           string `json:"memory"`
 		Pods             string `json:"pods"`
 	}
+
+	// Infrastructure represents node infrastructure information
 	Infrastructure struct {
 		Allocatable             Allocatable `json:"allocatable"`
 		Architecture            string      `json:"architecture"`
@@ -99,6 +110,7 @@ type (
 		OsImage                 string      `json:"osImage"`
 	}
 
+	// Node represents a Kubernetes node
 	Node struct {
 		Addresses      []Addresses       `json:"addresses"`
 		Annotations    map[string]string `json:"annotations"`
@@ -117,6 +129,7 @@ type (
 		Zone           *string           `json:"zone,omitempty"`
 	}
 
+	// CreateNodePoolRequest represents the request payload for creating a node pool
 	CreateNodePoolRequest struct {
 		Name              string     `json:"name"`
 		Flavor            string     `json:"flavor"`
@@ -128,34 +141,39 @@ type (
 		AvailabilityZones *[]string  `json:"availability_zones,omitempty"`
 	}
 
+	// PatchNodePoolRequest represents the request payload for updating a node pool
 	PatchNodePoolRequest struct {
 		Replicas  *int       `json:"replicas,omitempty"`
 		AutoScale *AutoScale `json:"auto_scale,omitempty"`
 	}
 
+	// Taint represents a node taint
 	Taint struct {
 		Key    string `json:"key"`
 		Value  string `json:"value"`
 		Effect string `json:"effect"`
 	}
 
+	// AutoScale represents autoscaling configuration
 	AutoScale struct {
 		MinReplicas *int `json:"min_replicas"`
 		MaxReplicas *int `json:"max_replicas"`
 	}
 
+	// nodePoolService implements the NodePoolService interface
 	nodePoolService struct {
 		client *KubernetesClient
 	}
 )
 
+// Nodes returns a list of nodes in a specific node pool
 func (s *nodePoolService) Nodes(ctx context.Context, clusterID, nodePoolID string) ([]Node, error) {
 	if clusterID == "" {
-		return nil, &client.ValidationError{Field: "clusterID", Message: utils.CannotBeEmpty}
+		return nil, &client.ValidationError{Field: clusterIdField, Message: utils.CannotBeEmpty}
 	}
 
 	if nodePoolID == "" {
-		return nil, &client.ValidationError{Field: "nodePoolID", Message: utils.CannotBeEmpty}
+		return nil, &client.ValidationError{Field: nodePoolIdField, Message: utils.CannotBeEmpty}
 	}
 
 	type NodeList struct {
@@ -173,9 +191,10 @@ func (s *nodePoolService) Nodes(ctx context.Context, clusterID, nodePoolID strin
 	return resp.Results, nil
 }
 
+// List returns a list of node pools in a cluster with optional filtering and pagination
 func (s *nodePoolService) List(ctx context.Context, clusterID string, opts ListOptions) ([]NodePool, error) {
 	if clusterID == "" {
-		return nil, &client.ValidationError{Field: "clusterID", Message: utils.CannotBeEmpty}
+		return nil, &client.ValidationError{Field: clusterIdField, Message: utils.CannotBeEmpty}
 	}
 
 	query := url.Values{}
@@ -198,37 +217,33 @@ func (s *nodePoolService) List(ctx context.Context, clusterID string, opts ListO
 	return resp.Results, nil
 }
 
+// Create creates a new node pool in a cluster
 func (s *nodePoolService) Create(ctx context.Context, clusterID string, req CreateNodePoolRequest) (*NodePool, error) {
 	if clusterID == "" {
 		return nil, &client.ValidationError{Field: clusterIdField, Message: utils.CannotBeEmpty}
 	}
 
-	resp, err := mgc_http.ExecuteSimpleRequestWithRespBody[NodePool](ctx, s.client.newRequest, s.client.GetConfig(), http.MethodPost,
+	return mgc_http.ExecuteSimpleRequestWithRespBody[NodePool](ctx, s.client.newRequest,
+		s.client.GetConfig(), http.MethodPost,
 		fmt.Sprintf("/v0/clusters/%s/node_pools", clusterID), req, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return resp, nil
 }
 
+// Get retrieves detailed information about a specific node pool
 func (s *nodePoolService) Get(ctx context.Context, clusterID, nodePoolID string) (*NodePool, error) {
-	if nodePoolID == "" {
-		return nil, &client.ValidationError{Field: nodePoolIdField, Message: utils.CannotBeEmpty}
-	}
-
 	if clusterID == "" {
 		return nil, &client.ValidationError{Field: clusterIdField, Message: utils.CannotBeEmpty}
 	}
 
-	resp, err := mgc_http.ExecuteSimpleRequestWithRespBody[NodePool](ctx, s.client.newRequest, s.client.GetConfig(), http.MethodGet,
-		fmt.Sprintf(clusterNodepoolURL, clusterID, nodePoolID), nil, nil)
-	if err != nil {
-		return nil, err
+	if nodePoolID == "" {
+		return nil, &client.ValidationError{Field: nodePoolIdField, Message: utils.CannotBeEmpty}
 	}
-	return resp, nil
+
+	return mgc_http.ExecuteSimpleRequestWithRespBody[NodePool](ctx, s.client.newRequest,
+		s.client.GetConfig(), http.MethodGet,
+		fmt.Sprintf(clusterNodepoolURL, clusterID, nodePoolID), nil, nil)
 }
 
+// Update updates a node pool's properties
 func (s *nodePoolService) Update(ctx context.Context, clusterID, nodePoolID string, req PatchNodePoolRequest) (*NodePool, error) {
 	if clusterID == "" {
 		return nil, &client.ValidationError{Field: clusterIdField, Message: utils.CannotBeEmpty}
@@ -238,14 +253,12 @@ func (s *nodePoolService) Update(ctx context.Context, clusterID, nodePoolID stri
 		return nil, &client.ValidationError{Field: nodePoolIdField, Message: utils.CannotBeEmpty}
 	}
 
-	resp, err := mgc_http.ExecuteSimpleRequestWithRespBody[NodePool](ctx, s.client.newRequest, s.client.GetConfig(), http.MethodPatch,
+	return mgc_http.ExecuteSimpleRequestWithRespBody[NodePool](ctx, s.client.newRequest,
+		s.client.GetConfig(), http.MethodPatch,
 		fmt.Sprintf(clusterNodepoolURL, clusterID, nodePoolID), req, nil)
-	if err != nil {
-		return nil, err
-	}
-	return resp, nil
 }
 
+// Delete removes a node pool from a cluster
 func (s *nodePoolService) Delete(ctx context.Context, clusterID, nodePoolID string) error {
 	if clusterID == "" {
 		return &client.ValidationError{Field: clusterIdField, Message: utils.CannotBeEmpty}
@@ -255,11 +268,7 @@ func (s *nodePoolService) Delete(ctx context.Context, clusterID, nodePoolID stri
 		return &client.ValidationError{Field: nodePoolIdField, Message: utils.CannotBeEmpty}
 	}
 
-	err := mgc_http.ExecuteSimpleRequest(ctx, s.client.newRequest, s.client.GetConfig(), http.MethodDelete,
+	return mgc_http.ExecuteSimpleRequest(ctx, s.client.newRequest,
+		s.client.GetConfig(), http.MethodDelete,
 		fmt.Sprintf(clusterNodepoolURL, clusterID, nodePoolID), nil, nil)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }

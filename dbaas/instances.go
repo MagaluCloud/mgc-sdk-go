@@ -72,37 +72,44 @@ const (
 )
 
 type (
+	// Volume represents volume information for an instance
 	Volume struct {
 		Size int    `json:"size"`
 		Type string `json:"type"`
 	}
 
+	// Address represents a network address for an instance
 	Address struct {
 		Access  AddressAccess `json:"access"`
 		Type    *AddressType  `json:"type,omitempty"`
 		Address *string       `json:"address,omitempty"`
 	}
 
+	// InstanceParametersResponse represents a parameter response
 	InstanceParametersResponse struct {
 		Name  string `json:"name"`
 		Value string `json:"value"`
 	}
 
+	// InstanceParametersRequest represents a parameter request
 	InstanceParametersRequest struct {
 		Name  string `json:"name"`
 		Value string `json:"value"`
 	}
 
+	// InstanceVolumeRequest represents volume configuration for instance creation
 	InstanceVolumeRequest struct {
 		Size int    `json:"size"`
 		Type string `json:"type,omitempty"`
 	}
 
+	// InstanceVolumeResizeRequest represents volume configuration for instance resizing
 	InstanceVolumeResizeRequest struct {
 		Size int    `json:"size"`
 		Type string `json:"type,omitempty"`
 	}
 
+	// InstanceCreateRequest represents the request payload for creating an instance
 	InstanceCreateRequest struct {
 		Name                string                `json:"name"`
 		EngineID            *string               `json:"engine_id,omitempty"`
@@ -116,27 +123,32 @@ type (
 		BackupRetentionDays *int                  `json:"backup_retention_days,omitempty"`
 	}
 
+	// InstanceResizeRequest represents the request payload for resizing an instance
 	InstanceResizeRequest struct {
 		InstanceTypeID *string                      `json:"instance_type_id,omitempty"`
 		Volume         *InstanceVolumeResizeRequest `json:"volume,omitempty"`
 	}
 
+	// DatabaseInstanceUpdateRequest represents the request payload for updating an instance
 	DatabaseInstanceUpdateRequest struct {
 		BackupRetentionDays *int    `json:"backup_retention_days,omitempty"`
 		BackupStartAt       *string `json:"backup_start_at,omitempty"`
 	}
 
+	// ReplicaAddressResponse represents a replica address
 	ReplicaAddressResponse struct {
 		Access  AddressAccess `json:"access"`
 		Type    *AddressType  `json:"type,omitempty"`
 		Address *string       `json:"address,omitempty"`
 	}
 
+	// SnapshotsResponse represents the response when listing snapshots
 	SnapshotsResponse struct {
 		Meta    MetaResponse             `json:"meta"`
 		Results []SnapshotDetailResponse `json:"results"`
 	}
 
+	// SnapshotDetailResponse represents detailed information about a snapshot
 	SnapshotDetailResponse struct {
 		ID               string                         `json:"id"`
 		Instance         SnapshotInstanceDetailResponse `json:"instance"`
@@ -152,25 +164,30 @@ type (
 		UpdatedAt        *time.Time                     `json:"updated_at,omitempty"`
 	}
 
+	// SnapshotInstanceDetailResponse represents instance information in a snapshot
 	SnapshotInstanceDetailResponse struct {
 		ID   string `json:"id"`
 		Name string `json:"name"`
 	}
 
+	// SnapshotCreateRequest represents the request payload for creating a snapshot
 	SnapshotCreateRequest struct {
 		Name        string  `json:"name"`
 		Description *string `json:"description,omitempty"`
 	}
 
+	// SnapshotUpdateRequest represents the request payload for updating a snapshot
 	SnapshotUpdateRequest struct {
 		Name        string  `json:"name,omitempty"`
 		Description *string `json:"description,omitempty"`
 	}
 
+	// SnapshotResponse represents the response when creating a snapshot
 	SnapshotResponse struct {
 		ID string `json:"id"`
 	}
 
+	// RestoreSnapshotRequest represents the request payload for restoring from a snapshot
 	RestoreSnapshotRequest struct {
 		Name                string                 `json:"name"`
 		InstanceTypeID      string                 `json:"instance_type_id"`
@@ -179,6 +196,7 @@ type (
 		BackupStartAt       *string                `json:"backup_start_at,omitempty"`
 	}
 
+	// ListSnapshotOptions provides options for listing snapshots
 	ListSnapshotOptions struct {
 		Offset *int            `json:"offset,omitempty"`
 		Limit  *int            `json:"limit,omitempty"`
@@ -187,6 +205,7 @@ type (
 	}
 )
 
+// InstanceStatusUpdate represents the status update for an instance
 type InstanceStatusUpdate string
 
 const (
@@ -195,58 +214,30 @@ const (
 )
 
 type (
+	// InstanceService provides methods for managing database instances
 	InstanceService interface {
-		// List returns a list of database instances for a x-tenant-id.
-		// It supports pagination and filtering by status, engine_id, and volume size.
 		List(ctx context.Context, opts ListInstanceOptions) ([]InstanceDetail, error)
-
-		// Get returns a database instance detail by its ID.
-		// Supports expanding additional fields through the options parameter.
 		Get(ctx context.Context, id string, opts GetInstanceOptions) (*InstanceDetail, error)
-
-		// Create creates a new database instance asynchronously for a tenant.
-		// Returns the ID of the created instance.
 		Create(ctx context.Context, req InstanceCreateRequest) (*InstanceResponse, error)
-
-		// Delete deletes a database instance asynchronously.
 		Delete(ctx context.Context, id string) error
-
-		// Update updates a database instance's properties.
-		// Supports updating status, backup retention days, and backup start time.
 		Update(ctx context.Context, id string, req DatabaseInstanceUpdateRequest) (*InstanceDetail, error)
-
-		// Resize changes the instance type and/or volume size of a database instance.
 		Resize(ctx context.Context, id string, req InstanceResizeRequest) (*InstanceDetail, error)
-
-		// Start initiates a stopped database instance.
 		Start(ctx context.Context, id string) (*InstanceDetail, error)
-
-		// Stop stops a running database instance.
 		Stop(ctx context.Context, id string) (*InstanceDetail, error)
-
-		// ListSnapshots returns a list of snapshots for a specific instance.
 		ListSnapshots(ctx context.Context, instanceID string, opts ListSnapshotOptions) ([]SnapshotDetailResponse, error)
-
-		// CreateSnapshot creates a new snapshot for the specified instance.
 		CreateSnapshot(ctx context.Context, instanceID string, req SnapshotCreateRequest) (*SnapshotResponse, error)
-
-		// GetSnapshot retrieves details of a specific snapshot.
 		GetSnapshot(ctx context.Context, instanceID, snapshotID string) (*SnapshotDetailResponse, error)
-
-		// UpdateSnapshot updates the properties of an existing snapshot.
 		UpdateSnapshot(ctx context.Context, instanceID, snapshotID string, req SnapshotUpdateRequest) (*SnapshotDetailResponse, error)
-
-		// DeleteSnapshot deletes a snapshot.
 		DeleteSnapshot(ctx context.Context, instanceID, snapshotID string) error
-
-		// RestoreSnapshot creates a new instance from a snapshot.
 		RestoreSnapshot(ctx context.Context, instanceID, snapshotID string, req RestoreSnapshotRequest) (*InstanceResponse, error)
 	}
 
+	// instanceService implements the InstanceService interface
 	instanceService struct {
 		client *DBaaSClient
 	}
 
+	// ListInstanceOptions provides options for listing instances
 	ListInstanceOptions struct {
 		Offset         *int
 		Limit          *int
@@ -260,19 +251,23 @@ type (
 		ExpandedFields []string
 	}
 
+	// GetInstanceOptions provides options for getting instance details
 	GetInstanceOptions struct {
 		ExpandedFields []string
 	}
 
+	// InstancesResponse represents the response when listing instances
 	InstancesResponse struct {
 		Meta    MetaResponse     `json:"meta"`
 		Results []InstanceDetail `json:"results"`
 	}
 
+	// InstanceResponse represents the response when creating an instance
 	InstanceResponse struct {
 		ID string `json:"id"`
 	}
 
+	// InstanceDetail represents detailed information about an instance
 	InstanceDetail struct {
 		ID                     string                  `json:"id"`
 		Name                   string                  `json:"name"`
