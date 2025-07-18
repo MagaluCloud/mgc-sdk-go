@@ -11,12 +11,14 @@ import (
 )
 
 type (
+	// RepositoriesService provides methods for managing repositories within container registries
 	RepositoriesService interface {
 		List(ctx context.Context, registryID string, opts ListOptions) (*RepositoriesResponse, error)
 		Get(ctx context.Context, registryID, repositoryName string) (*RepositoryResponse, error)
 		Delete(ctx context.Context, registryID, repositoryName string) error
 	}
 
+	// RepositoryResponse represents a repository within a container registry
 	RepositoryResponse struct {
 		RegistryName string `json:"registry_name"`
 		Name         string `json:"name"`
@@ -25,20 +27,24 @@ type (
 		UpdatedAt    string `json:"updated_at"`
 	}
 
+	// AmountRepositoryResponse represents the total count of repositories
 	AmountRepositoryResponse struct {
 		Total int `json:"total"`
 	}
 
+	// RepositoriesResponse represents the response when listing repositories
 	RepositoriesResponse struct {
 		Goal    AmountRepositoryResponse `json:"goal"`
 		Results []RepositoryResponse     `json:"results"`
 	}
 
+	// repositoriesService implements the RepositoriesService interface
 	repositoriesService struct {
 		client *ContainerRegistryClient
 	}
 )
 
+// List retrieves a list of repositories within a registry with optional filtering and pagination
 func (c *repositoriesService) List(ctx context.Context, registryID string, opts ListOptions) (*RepositoriesResponse, error) {
 	path := fmt.Sprintf("/v0/registries/%s/repositories", registryID)
 
@@ -61,6 +67,7 @@ func (c *repositoriesService) List(ctx context.Context, registryID string, opts 
 	return res, nil
 }
 
+// Get retrieves a specific repository within a registry
 func (c *repositoriesService) Get(ctx context.Context, registryID, repositoryName string) (*RepositoryResponse, error) {
 	path := fmt.Sprintf("/v0/registries/%s/repositories/%s", registryID, repositoryName)
 
@@ -71,6 +78,7 @@ func (c *repositoriesService) Get(ctx context.Context, registryID, repositoryNam
 	return res, nil
 }
 
+// Delete removes a repository within a registry
 func (c *repositoriesService) Delete(ctx context.Context, registryID, repositoryName string) error {
 	path := fmt.Sprintf("/v0/registries/%s/repositories/%s", registryID, repositoryName)
 

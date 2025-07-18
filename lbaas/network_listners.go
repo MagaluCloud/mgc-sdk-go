@@ -11,6 +11,7 @@ import (
 const listeners = "listeners"
 
 type (
+	// CreateNetworkListenerRequest represents the request payload for creating a network listener
 	CreateNetworkListenerRequest struct {
 		LoadBalancerID   string           `json:"-"`
 		BackendID        string           `json:"-"`
@@ -21,16 +22,19 @@ type (
 		Port             int              `json:"port"`
 	}
 
+	// DeleteNetworkListenerRequest represents the request payload for deleting a network listener
 	DeleteNetworkListenerRequest struct {
 		LoadBalancerID string `json:"-"`
 		ListenerID     string `json:"-"`
 	}
 
+	// GetNetworkListenerRequest represents the request payload for getting a network listener
 	GetNetworkListenerRequest struct {
 		LoadBalancerID string `json:"-"`
 		ListenerID     string `json:"-"`
 	}
 
+	// ListNetworkListenerRequest represents the request payload for listing network listeners
 	ListNetworkListenerRequest struct {
 		LoadBalancerID string  `json:"-"`
 		Offset         *int    `json:"-"`
@@ -38,12 +42,14 @@ type (
 		Sort           *string `json:"-"`
 	}
 
+	// UpdateNetworkListenerRequest represents the request payload for updating a network listener
 	UpdateNetworkListenerRequest struct {
 		LoadBalancerID   string  `json:"-"`
 		ListenerID       string  `json:"-"`
 		TLSCertificateID *string `json:"tls_certificate_id,omitempty"`
 	}
 
+	// NetworkListenerResponse represents a network listener response
 	NetworkListenerResponse struct {
 		ID               string           `json:"id"`
 		TLSCertificateID *string          `json:"tls_certificate_id,omitempty"`
@@ -56,11 +62,13 @@ type (
 		UpdatedAt        string           `json:"updated_at"`
 	}
 
+	// NetworkPaginatedListenerResponse represents a paginated listener response
 	NetworkPaginatedListenerResponse struct {
 		Meta    interface{}               `json:"meta"`
 		Results []NetworkListenerResponse `json:"results"`
 	}
 
+	// NetworkListenerService provides methods for managing network listeners
 	NetworkListenerService interface {
 		Create(ctx context.Context, req CreateNetworkListenerRequest) (*NetworkListenerResponse, error)
 		Delete(ctx context.Context, req DeleteNetworkListenerRequest) error
@@ -69,11 +77,13 @@ type (
 		Update(ctx context.Context, req UpdateNetworkListenerRequest) error
 	}
 
+	// networkListenerService implements the NetworkListenerService interface
 	networkListenerService struct {
 		client *LbaasClient
 	}
 )
 
+// Create creates a new network listener
 func (s *networkListenerService) Create(ctx context.Context, req CreateNetworkListenerRequest) (*NetworkListenerResponse, error) {
 	path := urlNetworkLoadBalancer(&req.LoadBalancerID, listeners)
 
@@ -82,7 +92,7 @@ func (s *networkListenerService) Create(ctx context.Context, req CreateNetworkLi
 		return nil, err
 	}
 
-	// Adicionar backend_id como query parameter obrigatório
+	// Add backend_id as required query parameter
 	query := httpReq.URL.Query()
 	query.Set("backend_id", req.BackendID)
 	httpReq.URL.RawQuery = query.Encode()
@@ -95,6 +105,7 @@ func (s *networkListenerService) Create(ctx context.Context, req CreateNetworkLi
 	return result, nil
 }
 
+// Delete removes a network listener
 func (s *networkListenerService) Delete(ctx context.Context, req DeleteNetworkListenerRequest) error {
 	path := urlNetworkLoadBalancer(&req.LoadBalancerID, listeners, req.ListenerID)
 
@@ -107,6 +118,7 @@ func (s *networkListenerService) Delete(ctx context.Context, req DeleteNetworkLi
 	return err
 }
 
+// Get retrieves detailed information about a specific listener
 func (s *networkListenerService) Get(ctx context.Context, req GetNetworkListenerRequest) (*NetworkListenerResponse, error) {
 	path := urlNetworkLoadBalancer(&req.LoadBalancerID, listeners, req.ListenerID)
 
@@ -123,6 +135,7 @@ func (s *networkListenerService) Get(ctx context.Context, req GetNetworkListener
 	return result, nil
 }
 
+// List returns a list of network listeners with optional filtering and pagination
 func (s *networkListenerService) List(ctx context.Context, req ListNetworkListenerRequest) ([]NetworkListenerResponse, error) {
 	path := urlNetworkLoadBalancer(&req.LoadBalancerID, listeners)
 
@@ -145,6 +158,7 @@ func (s *networkListenerService) List(ctx context.Context, req ListNetworkListen
 	return result.Results, nil
 }
 
+// Update updates a network listener's properties
 func (s *networkListenerService) Update(ctx context.Context, req UpdateNetworkListenerRequest) error {
 	path := urlNetworkLoadBalancer(&req.LoadBalancerID, listeners, req.ListenerID)
 

@@ -29,6 +29,7 @@ const (
 )
 
 type (
+	// ListClustersOptions provides options for listing clusters
 	ListClustersOptions struct {
 		Offset           *int
 		Limit            *int
@@ -42,15 +43,18 @@ type (
 		ParameterGroupID *string
 	}
 
+	// ClustersResponse represents the response when listing clusters
 	ClustersResponse struct {
 		Results []ClusterDetailResponse `json:"results"`
 	}
 
+	// ClusterVolumeRequest represents volume configuration for cluster creation
 	ClusterVolumeRequest struct {
 		Size int     `json:"size"`
 		Type *string `json:"type,omitempty"`
 	}
 
+	// ClusterCreateRequest represents the request payload for creating a cluster
 	ClusterCreateRequest struct {
 		Name                string               `json:"name"`
 		EngineID            string               `json:"engine_id"`
@@ -63,15 +67,18 @@ type (
 		BackupStartAt       *string              `json:"backup_start_at,omitempty"`
 	}
 
+	// ClusterResponse represents the response when creating a cluster
 	ClusterResponse struct {
 		ID string `json:"id"`
 	}
 
+	// ClusterVolumeResponse represents volume information for a cluster
 	ClusterVolumeResponse struct {
 		Size int    `json:"size"`
 		Type string `json:"type"`
 	}
 
+	// LoadBalancerAddress represents a load balancer address
 	LoadBalancerAddress struct {
 		Access  AddressAccess `json:"access"`
 		Type    AddressType   `json:"type,omitempty"`
@@ -79,6 +86,7 @@ type (
 		Port    string        `json:"port,omitempty"`
 	}
 
+	// ClusterDetailResponse represents detailed information about a cluster
 	ClusterDetailResponse struct {
 		ID                     string                `json:"id"`
 		Name                   string                `json:"name"`
@@ -97,6 +105,7 @@ type (
 		FinishedAt             *string               `json:"finished_at,omitempty"`
 	}
 
+	// ClusterUpdateRequest represents the request payload for updating a cluster
 	ClusterUpdateRequest struct {
 		ParameterGroupID    *string `json:"parameter_group_id,omitempty"`
 		BackupRetentionDays *int    `json:"backup_retention_days,omitempty"`
@@ -104,32 +113,24 @@ type (
 	}
 )
 
+// ClusterService provides methods for managing database clusters
 type ClusterService interface {
-	// List retrieves a list of database clusters for the tenant
 	List(ctx context.Context, opts ListClustersOptions) ([]ClusterDetailResponse, error)
-
-	// Create creates a new database high availability cluster asynchronously
 	Create(ctx context.Context, req ClusterCreateRequest) (*ClusterResponse, error)
-
-	// Get retrieves details of a specific cluster by its ID
 	Get(ctx context.Context, ID string) (*ClusterDetailResponse, error)
-
-	// Update updates properties of a database cluster
 	Update(ctx context.Context, ID string, req ClusterUpdateRequest) (*ClusterDetailResponse, error)
-
-	// Delete deletes a database cluster asynchronously
 	Delete(ctx context.Context, ID string) error
-
-	// Start starts a database cluster
 	Start(ctx context.Context, ID string) (*ClusterDetailResponse, error)
-
-	// Stop stops a database cluster
 	Stop(ctx context.Context, ID string) (*ClusterDetailResponse, error)
 }
 
+// clusterService implements the ClusterService interface
 type clusterService struct {
 	client *DBaaSClient
 }
+
+const v2ClustersPath = "/v2/clusters"
+const errIDCannotBeEmpty = "ID cannot be empty"
 
 // List implements the ClusterService interface
 func (s *clusterService) List(ctx context.Context, opts ListClustersOptions) ([]ClusterDetailResponse, error) {
@@ -171,7 +172,7 @@ func (s *clusterService) List(ctx context.Context, opts ListClustersOptions) ([]
 		s.client.newRequest,
 		s.client.GetConfig(),
 		http.MethodGet,
-		"/v2/clusters",
+		v2ClustersPath,
 		nil,
 		query,
 	)
@@ -189,7 +190,7 @@ func (s *clusterService) Create(ctx context.Context, req ClusterCreateRequest) (
 		s.client.newRequest,
 		s.client.GetConfig(),
 		http.MethodPost,
-		"/v2/clusters",
+		v2ClustersPath,
 		req,
 		nil,
 	)
@@ -198,16 +199,15 @@ func (s *clusterService) Create(ctx context.Context, req ClusterCreateRequest) (
 // Get implements the ClusterService interface
 func (s *clusterService) Get(ctx context.Context, ID string) (*ClusterDetailResponse, error) {
 	if ID == "" {
-		return nil, fmt.Errorf("ID cannot be empty")
+		return nil, fmt.Errorf(errIDCannotBeEmpty)
 	}
-	path := fmt.Sprintf("/v2/clusters/%s", ID)
 
 	return mgc_http.ExecuteSimpleRequestWithRespBody[ClusterDetailResponse](
 		ctx,
 		s.client.newRequest,
 		s.client.GetConfig(),
 		http.MethodGet,
-		path,
+		fmt.Sprintf("%s/%s", v2ClustersPath, ID),
 		nil,
 		nil,
 	)
@@ -216,16 +216,15 @@ func (s *clusterService) Get(ctx context.Context, ID string) (*ClusterDetailResp
 // Update implements the ClusterService interface
 func (s *clusterService) Update(ctx context.Context, ID string, req ClusterUpdateRequest) (*ClusterDetailResponse, error) {
 	if ID == "" {
-		return nil, fmt.Errorf("ID cannot be empty")
+		return nil, fmt.Errorf(errIDCannotBeEmpty)
 	}
-	path := fmt.Sprintf("/v2/clusters/%s", ID)
 
 	return mgc_http.ExecuteSimpleRequestWithRespBody[ClusterDetailResponse](
 		ctx,
 		s.client.newRequest,
 		s.client.GetConfig(),
 		http.MethodPatch,
-		path,
+		fmt.Sprintf("%s/%s", v2ClustersPath, ID),
 		req,
 		nil,
 	)
@@ -234,16 +233,15 @@ func (s *clusterService) Update(ctx context.Context, ID string, req ClusterUpdat
 // Delete implements the ClusterService interface
 func (s *clusterService) Delete(ctx context.Context, ID string) error {
 	if ID == "" {
-		return fmt.Errorf("ID cannot be empty")
+		return fmt.Errorf(errIDCannotBeEmpty)
 	}
-	path := fmt.Sprintf("/v2/clusters/%s", ID)
 
 	return mgc_http.ExecuteSimpleRequest(
 		ctx,
 		s.client.newRequest,
 		s.client.GetConfig(),
 		http.MethodDelete,
-		path,
+		fmt.Sprintf("%s/%s", v2ClustersPath, ID),
 		nil,
 		nil,
 	)
@@ -252,16 +250,15 @@ func (s *clusterService) Delete(ctx context.Context, ID string) error {
 // Start implements the ClusterService interface
 func (s *clusterService) Start(ctx context.Context, ID string) (*ClusterDetailResponse, error) {
 	if ID == "" {
-		return nil, fmt.Errorf("ID cannot be empty")
+		return nil, fmt.Errorf(errIDCannotBeEmpty)
 	}
-	path := fmt.Sprintf("/v2/clusters/%s/start", ID)
 
 	return mgc_http.ExecuteSimpleRequestWithRespBody[ClusterDetailResponse](
 		ctx,
 		s.client.newRequest,
 		s.client.GetConfig(),
 		http.MethodPost,
-		path,
+		fmt.Sprintf("%s/%s/start", v2ClustersPath, ID),
 		nil,
 		nil,
 	)
@@ -270,16 +267,15 @@ func (s *clusterService) Start(ctx context.Context, ID string) (*ClusterDetailRe
 // Stop implements the ClusterService interface
 func (s *clusterService) Stop(ctx context.Context, ID string) (*ClusterDetailResponse, error) {
 	if ID == "" {
-		return nil, fmt.Errorf("ID cannot be empty")
+		return nil, fmt.Errorf(errIDCannotBeEmpty)
 	}
-	path := fmt.Sprintf("/v2/clusters/%s/stop", ID)
 
 	return mgc_http.ExecuteSimpleRequestWithRespBody[ClusterDetailResponse](
 		ctx,
 		s.client.newRequest,
 		s.client.GetConfig(),
 		http.MethodPost,
-		path,
+		fmt.Sprintf("%s/%s/stop", v2ClustersPath, ID),
 		nil,
 		nil,
 	)

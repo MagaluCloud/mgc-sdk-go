@@ -11,11 +11,13 @@ import (
 )
 
 type (
+	// ListInstanceTypesResponse represents the response when listing instance types
 	ListInstanceTypesResponse struct {
 		Meta    MetaResponse   `json:"meta"`
 		Results []InstanceType `json:"results"`
 	}
 
+	// InstanceType represents a database instance type
 	InstanceType struct {
 		ID                string `json:"id"`
 		Name              string `json:"name"`
@@ -30,18 +32,18 @@ type (
 )
 
 type (
+	// InstanceTypeService provides methods for managing database instance types
 	InstanceTypeService interface {
-		// List returns all available instance types
 		List(ctx context.Context, opts ListInstanceTypeOptions) ([]InstanceType, error)
-
-		// Get retrieves detailed information about a specific instance type
 		Get(ctx context.Context, id string) (*InstanceType, error)
 	}
 
+	// instanceTypeService implements the InstanceTypeService interface
 	instanceTypeService struct {
 		client *DBaaSClient
 	}
 
+	// ListInstanceTypeOptions provides options for listing instance types
 	ListInstanceTypeOptions struct {
 		Offset   *int    `json:"offset,omitempty"`
 		Limit    *int    `json:"limit,omitempty"`
@@ -50,6 +52,7 @@ type (
 	}
 )
 
+// List returns all available instance types
 func (s *instanceTypeService) List(ctx context.Context, opts ListInstanceTypeOptions) ([]InstanceType, error) {
 	query := make(url.Values)
 
@@ -82,6 +85,7 @@ func (s *instanceTypeService) List(ctx context.Context, opts ListInstanceTypeOpt
 	return result.Results, nil
 }
 
+// Get retrieves detailed information about a specific instance type
 func (s *instanceTypeService) Get(ctx context.Context, id string) (*InstanceType, error) {
 	return mgc_http.ExecuteSimpleRequestWithRespBody[InstanceType](
 		ctx,

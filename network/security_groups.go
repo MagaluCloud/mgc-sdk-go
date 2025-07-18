@@ -55,19 +55,13 @@ type (
 
 // SecurityGroupService provides operations for managing security groups
 type SecurityGroupService interface {
-	// List retrieves all security groups for the current tenant
 	List(ctx context.Context) ([]SecurityGroupResponse, error)
-
-	// Get retrieves details of a specific security group by its ID
 	Get(ctx context.Context, id string) (*SecurityGroupDetailResponse, error)
-
-	// Create creates a new security group with the provided configuration
 	Create(ctx context.Context, req SecurityGroupCreateRequest) (string, error)
-
-	// Delete removes a security group by its ID
 	Delete(ctx context.Context, id string) error
 }
 
+// securityGroupService implements the SecurityGroupService interface
 type securityGroupService struct {
 	client *NetworkClient
 }

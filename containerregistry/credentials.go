@@ -8,15 +8,18 @@ import (
 )
 
 type (
+	// CredentialsService provides methods for managing container registry credentials
 	CredentialsService interface {
 		Get(ctx context.Context) (*CredentialsResponse, error)
 		ResetPassword(ctx context.Context) (*CredentialsResponse, error)
 	}
 
+	// credentialsService implements the CredentialsService interface
 	credentialsService struct {
 		client *ContainerRegistryClient
 	}
 
+	// CredentialsResponse represents the response containing registry credentials
 	CredentialsResponse struct {
 		Username string `json:"username"`
 		Password string `json:"password"`
@@ -24,6 +27,7 @@ type (
 	}
 )
 
+// Get retrieves the current container registry credentials
 func (c *credentialsService) Get(ctx context.Context) (*CredentialsResponse, error) {
 	path := "/v0/credentials"
 
@@ -34,6 +38,7 @@ func (c *credentialsService) Get(ctx context.Context) (*CredentialsResponse, err
 	return res, nil
 }
 
+// ResetPassword resets the password for the container registry credentials
 func (c *credentialsService) ResetPassword(ctx context.Context) (*CredentialsResponse, error) {
 	path := "/v0/credentials/password"
 

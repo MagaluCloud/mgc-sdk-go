@@ -11,6 +11,7 @@ import (
 const health_checks = "health-checks"
 
 type (
+	// CreateNetworkHealthCheckRequest represents the request payload for creating a network health check
 	CreateNetworkHealthCheckRequest struct {
 		LoadBalancerID          string              `json:"-"`
 		Name                    string              `json:"name"`
@@ -26,16 +27,19 @@ type (
 		UnhealthyThresholdCount *int                `json:"unhealthy_threshold_count,omitempty"`
 	}
 
+	// DeleteNetworkHealthCheckRequest represents the request payload for deleting a network health check
 	DeleteNetworkHealthCheckRequest struct {
 		LoadBalancerID string `json:"-"`
 		HealthCheckID  string `json:"-"`
 	}
 
+	// GetNetworkHealthCheckRequest represents the request payload for getting a network health check
 	GetNetworkHealthCheckRequest struct {
 		LoadBalancerID string `json:"-"`
 		HealthCheckID  string `json:"-"`
 	}
 
+	// ListNetworkHealthCheckRequest represents the request payload for listing network health checks
 	ListNetworkHealthCheckRequest struct {
 		LoadBalancerID string  `json:"-"`
 		Offset         *int    `json:"-"`
@@ -43,6 +47,7 @@ type (
 		Sort           *string `json:"-"`
 	}
 
+	// UpdateNetworkHealthCheckRequest represents the request payload for updating a network health check
 	UpdateNetworkHealthCheckRequest struct {
 		LoadBalancerID          string              `json:"-"`
 		HealthCheckID           string              `json:"-"`
@@ -57,6 +62,7 @@ type (
 		UnhealthyThresholdCount *int                `json:"unhealthy_threshold_count,omitempty"`
 	}
 
+	// NetworkHealthCheckResponse represents a network health check response
 	NetworkHealthCheckResponse struct {
 		ID                      string              `json:"id"`
 		Name                    string              `json:"name"`
@@ -74,11 +80,13 @@ type (
 		UpdatedAt               string              `json:"updated_at"`
 	}
 
+	// NetworkPaginatedHealthCheckResponse represents a paginated health check response
 	NetworkPaginatedHealthCheckResponse struct {
 		Meta    interface{}                  `json:"meta"`
 		Results []NetworkHealthCheckResponse `json:"results"`
 	}
 
+	// NetworkHealthCheckService provides methods for managing network health checks
 	NetworkHealthCheckService interface {
 		Create(ctx context.Context, req CreateNetworkHealthCheckRequest) (*NetworkHealthCheckResponse, error)
 		Delete(ctx context.Context, req DeleteNetworkHealthCheckRequest) error
@@ -87,11 +95,13 @@ type (
 		Update(ctx context.Context, req UpdateNetworkHealthCheckRequest) error
 	}
 
+	// networkHealthCheckService implements the NetworkHealthCheckService interface
 	networkHealthCheckService struct {
 		client *LbaasClient
 	}
 )
 
+// Create creates a new network health check
 func (s *networkHealthCheckService) Create(ctx context.Context, req CreateNetworkHealthCheckRequest) (*NetworkHealthCheckResponse, error) {
 	path := urlNetworkLoadBalancer(&req.LoadBalancerID, health_checks)
 
@@ -108,6 +118,7 @@ func (s *networkHealthCheckService) Create(ctx context.Context, req CreateNetwor
 	return result, nil
 }
 
+// Delete removes a network health check
 func (s *networkHealthCheckService) Delete(ctx context.Context, req DeleteNetworkHealthCheckRequest) error {
 	path := urlNetworkLoadBalancer(&req.LoadBalancerID, health_checks, req.HealthCheckID)
 
@@ -120,6 +131,7 @@ func (s *networkHealthCheckService) Delete(ctx context.Context, req DeleteNetwor
 	return err
 }
 
+// Get retrieves detailed information about a specific health check
 func (s *networkHealthCheckService) Get(ctx context.Context, req GetNetworkHealthCheckRequest) (*NetworkHealthCheckResponse, error) {
 	path := urlNetworkLoadBalancer(&req.LoadBalancerID, health_checks, req.HealthCheckID)
 
@@ -136,6 +148,7 @@ func (s *networkHealthCheckService) Get(ctx context.Context, req GetNetworkHealt
 	return result, nil
 }
 
+// List returns a list of network health checks with optional filtering and pagination
 func (s *networkHealthCheckService) List(ctx context.Context, req ListNetworkHealthCheckRequest) ([]NetworkHealthCheckResponse, error) {
 	path := urlNetworkLoadBalancer(&req.LoadBalancerID, health_checks)
 
@@ -158,6 +171,7 @@ func (s *networkHealthCheckService) List(ctx context.Context, req ListNetworkHea
 	return result.Results, nil
 }
 
+// Update updates a network health check's properties
 func (s *networkHealthCheckService) Update(ctx context.Context, req UpdateNetworkHealthCheckRequest) error {
 	path := urlNetworkLoadBalancer(&req.LoadBalancerID, health_checks, req.HealthCheckID)
 

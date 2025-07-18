@@ -29,6 +29,7 @@ type (
 		Updated      *utils.LocalDateTimeWithoutZone `json:"updated,omitempty"`
 	}
 
+	// SubnetResponseDetail represents a detailed subnet response
 	SubnetResponseDetail struct {
 		SubnetResponse
 		GatewayIP      string        `json:"gateway_ip"`
@@ -36,6 +37,7 @@ type (
 		DHCPPools      []DHCPPoolStr `json:"dhcp_pools"`
 	}
 
+	// DHCPPoolStr represents a DHCP pool configuration
 	DHCPPoolStr struct {
 		Start string `json:"start"`
 		End   string `json:"end"`
@@ -51,10 +53,12 @@ type (
 		SubnetPoolID   *string   `json:"subnetpool_id,omitempty"`
 	}
 
+	// SubnetCreateOptions represents additional options for subnet creation
 	SubnetCreateOptions struct {
 		Zone *string `json:"zone,omitempty"`
 	}
 
+	// SubnetPatchRequest represents parameters for updating a subnet
 	SubnetPatchRequest struct {
 		DNSNameservers *[]string `json:"dns_nameservers,omitempty"`
 	}
@@ -64,6 +68,7 @@ type (
 		ID string `json:"id"`
 	}
 
+	// SubnetResponseId represents a subnet ID response
 	SubnetResponseId struct {
 		ID string `json:"id"`
 	}
@@ -71,20 +76,17 @@ type (
 
 // SubnetService provides operations for managing subnets
 type SubnetService interface {
-	// Get retrieves details about a specific subnet
 	Get(ctx context.Context, id string) (*SubnetResponseDetail, error)
-
-	// Delete removes a subnet
 	Delete(ctx context.Context, id string) error
-
-	// Update modifies subnet properties
 	Update(ctx context.Context, id string, req SubnetPatchRequest) (*SubnetResponseId, error)
 }
 
+// subnetService implements the SubnetService interface
 type subnetService struct {
 	client *NetworkClient
 }
 
+// Get retrieves details about a specific subnet
 func (s *subnetService) Get(ctx context.Context, id string) (*SubnetResponseDetail, error) {
 	return mgc_http.ExecuteSimpleRequestWithRespBody[SubnetResponseDetail](
 		ctx,
@@ -97,6 +99,7 @@ func (s *subnetService) Get(ctx context.Context, id string) (*SubnetResponseDeta
 	)
 }
 
+// Delete removes a subnet
 func (s *subnetService) Delete(ctx context.Context, id string) error {
 	return mgc_http.ExecuteSimpleRequest(
 		ctx,
@@ -109,6 +112,7 @@ func (s *subnetService) Delete(ctx context.Context, id string) error {
 	)
 }
 
+// Update modifies subnet properties
 func (s *subnetService) Update(ctx context.Context, id string, req SubnetPatchRequest) (*SubnetResponseId, error) {
 	return mgc_http.ExecuteSimpleRequestWithRespBody[SubnetResponseId](
 		ctx,

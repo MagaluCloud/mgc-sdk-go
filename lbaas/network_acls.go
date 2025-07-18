@@ -10,39 +10,46 @@ import (
 const acls = "acls"
 
 type (
+	// CreateNetworkACLRequest represents the request payload for creating a network ACL rule
 	CreateNetworkACLRequest struct {
 		Name           *string       `json:"name,omitempty"`
-		Ethertype      AclEtherType  `json:"ethertype"` // ipv4, ipv6
+		Ethertype      AclEtherType  `json:"ethertype"`
 		LoadBalancerID string        `json:"load_balancer_id"`
-		Action         AclActionType `json:"action"`   // ALLOW, DENY, DENY_UNSPECIFIED
-		Protocol       AclProtocol   `json:"protocol"` // tcp, tls
+		Action         AclActionType `json:"action"`
+		Protocol       AclProtocol   `json:"protocol"`
 		RemoteIPPrefix string        `json:"remote_ip_prefix"`
 	}
 
+	// GetNetworkACLRequest represents the request payload for getting a network ACL rule
 	GetNetworkACLRequest struct {
 		LoadBalancerID string `json:"-"`
 		NetworkACLID   string `json:"-"`
 	}
 
+	// ListNetworkACLRequest represents the request payload for listing network ACL rules
 	ListNetworkACLRequest struct {
 		LoadBalancerID string `json:"-"`
 	}
 
+	// DeleteNetworkACLRequest represents the request payload for deleting a network ACL rule
 	DeleteNetworkACLRequest struct {
 		LoadBalancerID string `json:"load_balancer_id"`
 		ID             string `json:"id"`
 	}
 
+	// NetworkACLService provides methods for managing network ACL rules
 	NetworkACLService interface {
 		Create(ctx context.Context, req CreateNetworkACLRequest) (string, error)
 		Delete(ctx context.Context, req DeleteNetworkACLRequest) error
 	}
 
+	// networkACLService implements the NetworkACLService interface
 	networkACLService struct {
 		client *LbaasClient
 	}
 )
 
+// Create creates a new network ACL rule
 func (s *networkACLService) Create(ctx context.Context, req CreateNetworkACLRequest) (string, error) {
 	path := urlNetworkLoadBalancer(&req.LoadBalancerID, acls)
 	body := CreateNetworkACLRequest{
@@ -69,6 +76,7 @@ func (s *networkACLService) Create(ctx context.Context, req CreateNetworkACLRequ
 	return result.ID, nil
 }
 
+// Delete removes a network ACL rule
 func (s *networkACLService) Delete(ctx context.Context, req DeleteNetworkACLRequest) error {
 	path := urlNetworkLoadBalancer(&req.LoadBalancerID, acls, req.ID)
 

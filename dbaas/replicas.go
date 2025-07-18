@@ -12,40 +12,30 @@ import (
 )
 
 type (
+	// ReplicaService provides methods for managing database replicas
 	ReplicaService interface {
-		// List returns a list of database replicas.
-		// Supports filtering by source_id and pagination.
 		List(ctx context.Context, opts ListReplicaOptions) ([]ReplicaDetailResponse, error)
-
-		// Get returns details of a specific replica by its ID.
 		Get(ctx context.Context, id string) (*ReplicaDetailResponse, error)
-
-		// Create creates a new replica for an instance asynchronously.
 		Create(ctx context.Context, req ReplicaCreateRequest) (*ReplicaResponse, error)
-
-		// Delete deletes a replica instance asynchronously.
 		Delete(ctx context.Context, id string) error
-
-		// Resize changes the instance type of a replica.
 		Resize(ctx context.Context, id string, req ReplicaResizeRequest) (*ReplicaDetailResponse, error)
-
-		// Start initiates a stopped replica instance.
 		Start(ctx context.Context, id string) (*ReplicaDetailResponse, error)
-
-		// Stop stops a running replica instance.
 		Stop(ctx context.Context, id string) (*ReplicaDetailResponse, error)
 	}
 
+	// replicaService implements the ReplicaService interface
 	replicaService struct {
 		client *DBaaSClient
 	}
 
+	// ListReplicaOptions provides options for listing replicas
 	ListReplicaOptions struct {
 		Offset   *int
 		Limit    *int
 		SourceID *string
 	}
 
+	// ReplicaDetailResponse represents detailed information about a replica
 	ReplicaDetailResponse struct {
 		ID                     string                   `json:"id"`
 		SourceID               string                   `json:"source_id"`
@@ -63,21 +53,25 @@ type (
 		MaintenanceScheduledAt *string                  `json:"maintenance_scheduled_at,omitempty"`
 	}
 
+	// ReplicasResponse represents the response when listing replicas
 	ReplicasResponse struct {
 		Meta    MetaResponse            `json:"meta"`
 		Results []ReplicaDetailResponse `json:"results"`
 	}
 
+	// ReplicaCreateRequest represents the request payload for creating a replica
 	ReplicaCreateRequest struct {
 		SourceID       string  `json:"source_id"`
 		Name           string  `json:"name"`
 		InstanceTypeID *string `json:"instance_type_id,omitempty"`
 	}
 
+	// ReplicaResizeRequest represents the request payload for resizing a replica
 	ReplicaResizeRequest struct {
 		InstanceTypeID string `json:"instance_type_id,omitempty"`
 	}
 
+	// ReplicaResponse represents the response when creating a replica
 	ReplicaResponse struct {
 		ID string `json:"id"`
 	}

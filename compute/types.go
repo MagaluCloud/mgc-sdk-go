@@ -9,6 +9,8 @@ import (
 	mgc_http "github.com/MagaluCloud/mgc-sdk-go/internal/http"
 )
 
+// Meta contains pagination metadata for API responses.
+// This structure provides information about the current page and total results.
 type Meta struct {
 	Limit  int `json:"limit"`
 	Offset int `json:"offset"`
@@ -16,7 +18,8 @@ type Meta struct {
 	Total  int `json:"total"`
 }
 
-// InstanceType represents a virtual machine instance type configuration
+// InstanceType represents a virtual machine instance type configuration.
+// Each instance type defines the hardware specifications for virtual machines.
 type InstanceType struct {
 	ID                string    `json:"id"`
 	Name              string    `json:"name"`
@@ -28,22 +31,27 @@ type InstanceType struct {
 	AvailabilityZones *[]string `json:"availability_zones,omitempty"`
 }
 
+// InstanceTypeList represents the response from listing instance types.
+// This structure encapsulates the API response format for instance types.
 type InstanceTypeList struct {
 	InstanceTypes []InstanceType `json:"instance_types"`
 	Meta          Meta           `json:"meta"`
 }
 
-// InstanceTypeService provides operations for querying available machine types
+// InstanceTypeService provides operations for querying available machine types.
+// This interface allows listing instance types with optional filtering.
 type InstanceTypeService interface {
-	// List returns all available machine types with optional filtering
 	List(ctx context.Context, opts InstanceTypeListOptions) ([]InstanceType, error)
 }
 
+// instanceTypeService implements the InstanceTypeService interface.
+// This is an internal implementation that should not be used directly.
 type instanceTypeService struct {
 	client *VirtualMachineClient
 }
 
-// InstanceTypeListOptions defines parameters for filtering and pagination of machine type lists
+// InstanceTypeListOptions defines parameters for filtering and pagination of machine type lists.
+// All fields are optional and allow controlling the listing behavior.
 type InstanceTypeListOptions struct {
 	Limit            *int    `url:"_limit,omitempty"`
 	Offset           *int    `url:"_offset,omitempty"`
@@ -51,7 +59,9 @@ type InstanceTypeListOptions struct {
 	AvailabilityZone string  `url:"availability-zone,omitempty"`
 }
 
-// List retrieves all available machine types
+// List retrieves all available machine types.
+// This method makes an HTTP request to get the list of instance types
+// and applies the filters specified in the options.
 func (s *instanceTypeService) List(ctx context.Context, opts InstanceTypeListOptions) ([]InstanceType, error) {
 	req, err := s.client.newRequest(ctx, http.MethodGet, "/v1/instance-types", nil)
 	if err != nil {

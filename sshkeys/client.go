@@ -12,9 +12,11 @@ import (
 )
 
 const (
+	// DefaultBasePath is the default API base path for SSH key operations
 	DefaultBasePath = "/profile"
 )
 
+// SSHKeyClient represents a client for interacting with the SSH keys service
 type SSHKeyClient struct {
 	*client.CoreClient
 }
@@ -55,10 +57,12 @@ func New(core *client.CoreClient, opts ...ClientOption) *SSHKeyClient {
 	return sshClient
 }
 
+// newRequest creates a new HTTP request with the SSH keys API base path
 func (c *SSHKeyClient) newRequest(ctx context.Context, method, path string, body any) (*http.Request, error) {
 	return mgc_http.NewRequest(c.GetConfig(), ctx, method, DefaultBasePath+path, &body)
 }
 
+// Keys returns a service for managing SSH key resources
 func (c *SSHKeyClient) Keys() KeyService {
 	return &keyService{client: c}
 }

@@ -17,6 +17,7 @@ For more information about Magalu Cloud, visit:
 
 - Website: [https://magalu.cloud/](https://magalu.cloud/)
 - Documentation: [https://docs.magalu.cloud/](https://docs.magalu.cloud/)
+- GitHub: [https://github.com/MagaluCloud/mgc-sdk-go](https://github.com/MagaluCloud/mgc-sdk-go)
 
 ## Installation
 

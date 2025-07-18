@@ -34,22 +34,14 @@ type (
 
 // PublicIPService provides operations for managing Public IPs
 type PublicIPService interface {
-	// List retrieves all public IPs for the current tenant
 	List(ctx context.Context) ([]PublicIPResponse, error)
-
-	// Get retrieves details of a specific public IP by its ID
 	Get(ctx context.Context, id string) (*PublicIPResponse, error)
-
-	// Delete removes a public IP by its ID
 	Delete(ctx context.Context, id string) error
-
-	// AttachToPort associates a public IP with a specific port
 	AttachToPort(ctx context.Context, publicIPID string, portID string) error
-
-	// DetachFromPort removes the association between a public IP and a port
 	DetachFromPort(ctx context.Context, publicIPID string, portID string) error
 }
 
+// publicIPService implements the PublicIPService interface
 type publicIPService struct {
 	client *NetworkClient
 }

@@ -12,6 +12,7 @@ import (
 )
 
 type (
+	// RegistriesService provides methods for managing container registries
 	RegistriesService interface {
 		Create(ctx context.Context, request *RegistryRequest) (*RegistryResponse, error)
 		List(ctx context.Context, opts ListOptions) (*ListRegistriesResponse, error)
@@ -19,10 +20,12 @@ type (
 		Delete(ctx context.Context, registryID string) error
 	}
 
+	// RegistryRequest represents the request payload for creating a registry
 	RegistryRequest struct {
 		Name string `json:"name"`
 	}
 
+	// RegistryResponse represents a container registry
 	RegistryResponse struct {
 		ID        string `json:"id"`
 		Name      string `json:"name"`
@@ -31,6 +34,7 @@ type (
 		UpdatedAt string `json:"updated_at"`
 	}
 
+	// ListOptions provides options for listing registries
 	ListOptions struct {
 		Limit  *int
 		Offset *int
@@ -38,15 +42,18 @@ type (
 		Expand []string
 	}
 
+	// ListRegistriesResponse represents the response when listing registries
 	ListRegistriesResponse struct {
 		Registries []RegistryResponse `json:"results"`
 	}
 
+	// registriesService implements the RegistriesService interface
 	registriesService struct {
 		client *ContainerRegistryClient
 	}
 )
 
+// Create creates a new container registry
 func (c *registriesService) Create(ctx context.Context, request *RegistryRequest) (*RegistryResponse, error) {
 	path := "/v0/registries"
 
@@ -58,6 +65,7 @@ func (c *registriesService) Create(ctx context.Context, request *RegistryRequest
 	return res, nil
 }
 
+// List retrieves a list of container registries with optional filtering and pagination
 func (c *registriesService) List(ctx context.Context, opts ListOptions) (*ListRegistriesResponse, error) {
 	path := "/v0/registries"
 	query := make(url.Values)
@@ -83,6 +91,7 @@ func (c *registriesService) List(ctx context.Context, opts ListOptions) (*ListRe
 	return res, nil
 }
 
+// Get retrieves a specific container registry by ID
 func (c *registriesService) Get(ctx context.Context, registryID string) (*RegistryResponse, error) {
 	path := fmt.Sprintf("/v0/registries/%s", registryID)
 
@@ -93,6 +102,7 @@ func (c *registriesService) Get(ctx context.Context, registryID string) (*Regist
 	return res, nil
 }
 
+// Delete removes a container registry by ID
 func (c *registriesService) Delete(ctx context.Context, registryID string) error {
 	path := fmt.Sprintf("/v0/registries/%s", registryID)
 
