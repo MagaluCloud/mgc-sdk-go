@@ -226,7 +226,7 @@ func (s *networkLoadBalancerService) Delete(ctx context.Context, req DeleteNetwo
 		return err
 	}
 
-	if req.DeletePublicIP != nil && *req.DeletePublicIP {
+	if req.DeletePublicIP != nil {
 		query := httpReq.URL.Query()
 		query.Set("delete_public_ip", strconv.FormatBool(*req.DeletePublicIP))
 		httpReq.URL.RawQuery = query.Encode()
