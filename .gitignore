@@ -29,3 +29,4 @@ go.work.sum
 coverage.txt
 docs/output/*
 docs/source/*
+!docs/source/.keep
