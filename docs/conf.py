@@ -6,10 +6,17 @@
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
+# run main_generator.py to generate the source directory and wait for it to finish
+import subprocess
+import time
+subprocess.run(['python', 'main_generator.py'])
+time.sleep(5)
+
 project = 'MGC SDK Go'
 copyright = '2025, Magalu Cloud'
 author = 'Magalu Cloud'
 release = '0.3.45'
+
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration

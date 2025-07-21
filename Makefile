@@ -26,5 +26,5 @@ go-vet:
 	go vet ./...
 
 readthedocs:
-	cd docs && rm -rf output && rm -rf source 
-	python3 docs/main_generator.py
+	cd docs && rm -rf output && rm -rf source && mkdir source
+	sphinx-build -b html ./docs/source ./docs/output/html -c ./docs

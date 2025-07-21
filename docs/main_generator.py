@@ -13,7 +13,7 @@ import re
 from typing import Dict
 
 class DocumentationGenerator:
-    def __init__(self, project_root: str = ".."):
+    def __init__(self, project_root: str = "../.."):
         self.project_root = Path(project_root).resolve() / "mgc-sdk-go"
         self.docs_dir = Path(__file__).parent.resolve()
         self.output_dir = self.docs_dir / "output"
@@ -35,7 +35,9 @@ class DocumentationGenerator:
         """Captures the current project version from VERSION environment variable"""
         try:
             # Try to get version from environment variable
-            version = os.environ.get("VERSION")
+            version = os.environ.get("VERSION") 
+            if not version:
+                version = os.environ.get("READTHEDOCS_VERSION")
             
             if version and version.strip():
                 version = version.strip()
@@ -44,7 +46,7 @@ class DocumentationGenerator:
                 print(f"✅ Captured project version from VERSION env: {version}")
                 return version
             else:
-                print("⚠️  VERSION environment variable not found, using default version")
+                print(f"⚠️  Error getting VERSION from environment, using default version")
                 return "0.3.45"
                 
         except Exception as e:
@@ -70,119 +72,7 @@ class DocumentationGenerator:
         (self.source_dir / "_static").mkdir(exist_ok=True)
         (self.source_dir / "_templates").mkdir(exist_ok=True)
 
-    def create_conf_py(self):
-        """Creates the Sphinx conf.py file"""
-        conf_content = f'''# Configuration file for the Sphinx documentation builder.
-#
-# For the full list of built-in configuration values, see the documentation:
-# https://www.sphinx-doc.org/en/master/usage/configuration.html
-
-# -- Project information -----------------------------------------------------
-# https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
-
-project = '{self.project_name}'
-copyright = '2025, {self.project_author}'
-author = '{self.project_author}'
-release = '{self.project_version}'
-
-# -- General configuration ---------------------------------------------------
-# https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
-
-extensions = [
-    'sphinx.ext.autodoc',
-    'sphinx.ext.napoleon',
-    'sphinx.ext.viewcode',
-    'sphinx.ext.githubpages',
-    'myst_parser',  # For Markdown support
-    'sphinx_copybutton',
-    'sphinx.ext.todo',
-]
-
-templates_path = ['_templates']
-exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
-
-# -- Options for HTML output -------------------------------------------------
-# https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
-
-html_theme = 'sphinx_rtd_theme'
-html_static_path = ['_static']
-html_logo = '_static/logo.png'
-html_favicon = '_static/favicon.ico'
-
-# Theme configuration
-html_theme_options = {{
-    'navigation_depth': 4,
-    'titles_only': False,
-    'collapse_navigation': False,
-    'sticky_navigation': True,
-    'includehidden': True,
-    'prev_next_buttons_location': 'bottom',
-    'style_external_links': True,
-}}
-
-# MyST-Parser configuration
-myst_enable_extensions = [
-    "colon_fence",
-    "deflist",
-    "dollarmath",
-    "html_image",
-    "html_admonition",
-    "replacements",
-    "smartquotes",
-    "substitution",
-    "tasklist",
-]
-
-# Autodoc configuration
-autodoc_default_options = {{
-    'members': True,
-    'member-order': 'bysource',
-    'special-members': '__init__',
-    'undoc-members': True,
-    'exclude-members': '__weakref__'
-}}
-
-# Copybutton configuration
-copybutton_prompt_text = ">>> |\\.\\.\\. |\\$ |In \\[\\d*\\]: | {2,5}\\.\\.\\.: | {5,8}: "
-copybutton_prompt_is_regexp = True
-
-# Todo configuration
-todo_include_todos = True
-
-# Language configuration
-language = 'en'
-
-# Numbering configuration
-numfig = True
-numfig_format = {{
-    'figure': 'Figure %s',
-    'table': 'Table %s',
-    'code-block': 'Listing %s',
-    'section': 'Section %s'
-}}
-
-# Syntax highlighting configuration
-highlight_language = 'go'
-pygments_style = 'sphinx'
-pygments_dark_style = 'monokai'
-
-# Disable syntax highlighting for problematic code blocks
-highlight_options = {{
-    'go': {{
-        'linenos': False,
-        'hl_lines': [],
-        'linenostart': 1,
-    }}
-}}
-
-# Suppress warnings for syntax highlighting failures
-suppress_warnings = ['misc.highlighting_failure']
-'''
-        
-        with open(self.source_dir / "conf.py", "w", encoding="utf-8") as f:
-            f.write(conf_content)
-        print("✅ conf.py file created")
-
+    
     def create_index_rst(self):
         """Creates the main index.rst file"""
         # Get list of available examples
@@ -719,23 +609,7 @@ help:
             print(f"❌ Error installing dependencies: {e}")
             print("Try installing manually: pip install -r requirements.txt")
 
-    def build_documentation(self):
-        """Builds documentation using Sphinx"""
-        print("🔨 Building documentation...")
-        try:
-            subprocess.run([
-                "sphinx-build", "-b", "html", 
-                str(self.source_dir), 
-                str(self.output_dir / "html")
-            ], check=True)
-            print("✅ Documentation built successfully!")
-            print(f"📖 Documentation available at: {self.output_dir / 'html' / 'index.html'}")
-        except subprocess.CalledProcessError as e:
-            print(f"❌ Error building documentation: {e}")
-            print("Check if Sphinx is installed: pip install sphinx")
-        except FileNotFoundError:
-            print("❌ Sphinx not found. Install with: pip install sphinx")
-
+    
     def run(self):
         """Executes the complete documentation generation process"""
         print("🚀 Starting documentation generation for MGC Go SDK")
@@ -752,7 +626,6 @@ help:
         self.create_sphinx_structure()
         
         # 4. Create configuration files
-        self.create_conf_py()
         self.create_requirements_txt()
         self.create_makefile()
         
@@ -776,10 +649,7 @@ help:
         
         # 11. Install dependencies
         self.install_dependencies()
-        
-        # 12. Build documentation
-        self.build_documentation()
-        
+                
         print("=" * 60)
         print("🎉 Documentation generation completed!")
         print(f"📁 Generated files in: {self.output_dir}")
