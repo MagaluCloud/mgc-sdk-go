@@ -76,8 +76,8 @@ autodoc_default_options = {
 }
 
 # Copybutton configuration
-copybutton_prompt_text = ">>> |\.\.\. |\$ |In \[\d*\]: | (2, 5)\.\.\.: | (5, 8): "
-copybutton_prompt_is_regexp = True
+# copybutton_prompt_text = ">>> |\.\.\. |\$ |In \[\d*\]: | (2, 5)\.\.\.: | (5, 8): "
+# copybutton_prompt_is_regexp = True
 
 # Todo configuration
 todo_include_todos = True
