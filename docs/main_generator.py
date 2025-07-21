@@ -18,6 +18,12 @@ class DocumentationGenerator:
         self.docs_dir = Path(__file__).parent.resolve()
         self.output_dir = self.docs_dir / "output"
         self.source_dir = self.docs_dir / "source"
+
+        # Print vars to debug
+        print(f"project_root: {self.project_root}")
+        print(f"docs_dir: {self.docs_dir}")
+        print(f"output_dir: {self.output_dir}")
+        print(f"source_dir: {self.source_dir}")
         
         # Project configuration
         self.project_name = "MGC SDK Go"
@@ -652,8 +658,6 @@ help:
                 
         print("=" * 60)
         print("🎉 Documentation generation completed!")
-        print(f"📁 Generated files in: {self.output_dir}")
-        print(f"🌐 To view: open {self.output_dir / 'html' / 'index.html'}")
 
 def main():
     """Main function"""
