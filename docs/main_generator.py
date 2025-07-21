@@ -19,17 +19,20 @@ class DocumentationGenerator:
         self.output_dir = self.docs_dir / "output"
         self.source_dir = self.docs_dir / "source"
 
-        subprocess.run(["ls", "-la", self.project_root])
-        subprocess.run(["ls", "-la", self.docs_dir])
-        subprocess.run(["ls", "-la", self.output_dir])
-        subprocess.run(["ls", "-la", self.source_dir])
-        
-        # Print vars to debug
-        print(f"project_root: {self.project_root}")
-        print(f"docs_dir: {self.docs_dir}")
-        print(f"output_dir: {self.output_dir}")
-        print(f"source_dir: {self.source_dir}")
+        print("ls -la .")
+        subprocess.run(["ls", "-la", "."])
 
+        print(f"project_root: {self.project_root}")
+        subprocess.run(["ls", "-la", self.project_root])
+
+        print(f"docs_dir: {self.docs_dir}")
+        subprocess.run(["ls", "-la", self.docs_dir])
+
+        print(f"output_dir: {self.output_dir}")
+        subprocess.run(["ls", "-la", self.output_dir])
+
+        print(f"source_dir: {self.source_dir}")
+        subprocess.run(["ls", "-la", self.source_dir])
 
 
         # Project configuration
