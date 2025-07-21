@@ -15,16 +15,13 @@ from typing import Dict
 class DocumentationGenerator:
     def __init__(self, project_root: str = "../.."):
         self.project_root = Path(project_root).resolve() / ("v" + self.get_project_version())
-        # check if project_root exists
-        
         self.docs_dir = Path(__file__).parent.resolve()
-        self.output_dir = self.docs_dir / "output"
-        self.source_dir = self.docs_dir / "source"
+        self.source_dir = self.docs_dir
 
         if not self.project_root.exists():
             self.project_root = Path(project_root).resolve() / "mgc-sdk-go"
-            self.docs_dir = Path(__file__).parent.resolve()
-            self.source_dir = self.docs_dir
+            self.output_dir = self.docs_dir / "output"
+            self.source_dir = self.docs_dir / "source"
 
         # Project configuration
         self.project_name = "MGC SDK Go"
