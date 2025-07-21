@@ -13,25 +13,25 @@ import re
 from typing import Dict
 
 class DocumentationGenerator:
-    def __init__(self, project_root: str = "../.."):
+    def __init__(self, project_root: str = ".."):
         self.project_root = Path(project_root).resolve() / "mgc-sdk-go"
         self.docs_dir = Path(__file__).parent.resolve()
         self.output_dir = self.docs_dir / "output"
         self.source_dir = self.docs_dir / "source"
 
-
+        subprocess.run(["ls", "-la", self.project_root])
+        subprocess.run(["ls", "-la", self.docs_dir])
+        subprocess.run(["ls", "-la", self.output_dir])
+        subprocess.run(["ls", "-la", self.source_dir])
+        
         # Print vars to debug
         print(f"project_root: {self.project_root}")
         print(f"docs_dir: {self.docs_dir}")
         print(f"output_dir: {self.output_dir}")
         print(f"source_dir: {self.source_dir}")
 
-        # List top 5 files in each directory
-        print(f"Top 5 files in project_root: {list(self.project_root.iterdir())[:5]}")
-        print(f"Top 5 files in docs_dir: {list(self.docs_dir.iterdir())[:5]}")
-        print(f"Top 5 files in output_dir: {list(self.output_dir.iterdir())[:5]}")
-        print(f"Top 5 files in source_dir: {list(self.source_dir.iterdir())[:5]}")
-        
+
+
         # Project configuration
         self.project_name = "MGC SDK Go"
         self.project_version = self.get_project_version()
