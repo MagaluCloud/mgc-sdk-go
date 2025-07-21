@@ -10,7 +10,7 @@
 import subprocess
 import time
 subprocess.run(['python', 'main_generator.py'])
-time.sleep(5)
+time.sleep(10)
 
 project = 'MGC SDK Go'
 copyright = '2025, Magalu Cloud'
