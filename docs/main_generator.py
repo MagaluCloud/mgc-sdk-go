@@ -20,8 +20,8 @@ class DocumentationGenerator:
         self.source_dir = self.docs_dir / "source"
         
         # Project configuration
-        self.project_name = "MGC Go SDK"
-        self.project_version = "1.0.0"
+        self.project_name = "MGC SDK Go"
+        self.project_version = self.get_project_version()
         self.project_author = "Magalu Cloud"
         
         # Go modules to document
@@ -30,6 +30,26 @@ class DocumentationGenerator:
             "dbaas", "containerregistry", "sshkeys", "availabilityzones",
             "audit", "lbaas", "helpers"
         ]
+
+    def get_project_version(self) -> str:
+        """Captures the current project version from VERSION environment variable"""
+        try:
+            # Try to get version from environment variable
+            version = os.environ.get("VERSION")
+            
+            if version and version.strip():
+                version = version.strip()
+                if version.startswith('v'):
+                    version = version[1:]
+                print(f"✅ Captured project version from VERSION env: {version}")
+                return version
+            else:
+                print("⚠️  VERSION environment variable not found, using default version")
+                return "0.3.45"
+                
+        except Exception as e:
+            print(f"⚠️  Error getting VERSION from environment: {e}, using default version")
+            return "0.3.45"
 
     def clean_output_directory(self):
         """Completely cleans the output/ directory"""

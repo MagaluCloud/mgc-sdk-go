@@ -28,4 +28,4 @@ go.work.sum
 .vscode/*
 coverage.txt
 docs/output/*
-docs/source/*
+
