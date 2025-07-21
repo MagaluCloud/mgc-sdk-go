@@ -13,7 +13,7 @@ import re
 from typing import Dict
 
 class DocumentationGenerator:
-    def __init__(self, project_root: str = ".."):
+    def __init__(self, project_root: str = "../.."):
         self.project_root = Path(project_root).resolve() / "mgc-sdk-go"
         self.docs_dir = Path(__file__).parent.resolve()
         self.output_dir = self.docs_dir / "output"
