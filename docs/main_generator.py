@@ -60,9 +60,13 @@ class DocumentationGenerator:
     def clean_output_directory(self):
         """Completely cleans the output/ directory"""
         print("🧹 Cleaning output/ directory...")
-        if self.output_dir.exists():
-            shutil.rmtree(self.output_dir)
-        self.output_dir.mkdir(exist_ok=True)
+        try:    
+            if self.output_dir.exists():
+                shutil.rmtree(self.output_dir)
+            self.output_dir.mkdir(exist_ok=True)
+        except Exception as e:
+            print(f"⚠️  Error cleaning output/ directory: {e}")
+
         print("✅ Output/ directory cleaned successfully")
 
     def create_sphinx_structure(self):
