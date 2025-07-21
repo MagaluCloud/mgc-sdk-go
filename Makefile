@@ -28,3 +28,4 @@ go-vet:
 readthedocs:
 	cd docs && rm -rf output && rm -rf source && mkdir source && touch source/.keep
 	sphinx-build -b html ./docs/source ./docs/output/html -c ./docs
+	open ./docs/output/html/index.html

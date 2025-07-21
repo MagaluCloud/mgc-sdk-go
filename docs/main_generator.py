@@ -12,16 +12,20 @@ from pathlib import Path
 import re
 from typing import Dict
 
+is_readthedocs = os.environ.get("READTHEDOCS") == "True"
+
 class DocumentationGenerator:
     def __init__(self, project_root: str = "../.."):
-        self.project_root = Path(project_root).resolve() / ("v" + self.get_project_version())
         self.docs_dir = Path(__file__).parent.resolve()
-        self.source_dir = self.docs_dir
 
-        if not self.project_root.exists():
+        if is_readthedocs:
+            self.project_root = Path(project_root).resolve() / ("v" + self.get_project_version())
+            self.source_dir = self.docs_dir
+        else:
             self.project_root = Path(project_root).resolve() / "mgc-sdk-go"
             self.output_dir = self.docs_dir / "output"
             self.source_dir = self.docs_dir / "source"
+        
 
         # Project configuration
         self.project_name = "MGC SDK Go"
@@ -38,10 +42,16 @@ class DocumentationGenerator:
     def get_project_version(self) -> str:
         """Captures the current project version from VERSION environment variable"""
         try:
-            # Try to get version from environment variable
-            version = os.environ.get("VERSION") 
-            if not version:
-                version = os.environ.get("READTHEDOCS_VERSION")
+
+            if not is_readthedocs:
+                version = self.get_project_version_from_git()
+            else:
+                version = os.environ.get("VERSION") 
+                if not version:
+                    version = os.environ.get("READTHEDOCS_VERSION")
+
+                if version and (version == "latest" or version == "stable"):
+                    version = self.get_project_version_from_git()
             
             if version and version.strip():
                 version = version.strip()
@@ -55,6 +65,18 @@ class DocumentationGenerator:
                 
         except Exception as e:
             print(f"⚠️  Error getting VERSION from environment: {e}, using default version")
+            return "0.3.45"
+
+    def get_project_version_from_git(self) -> str:
+        """Gets the project version from the git tag"""
+        try:
+            result = subprocess.run(["git", "describe", "--tags"], capture_output=True, text=True, timeout=10)
+            if result.returncode == 0:
+                return result.stdout.strip()
+            else:
+                return "0.3.45" 
+        except Exception as e:
+            print(f"⚠️  Error getting project version from git: {e}, using default version")
             return "0.3.45"
 
     def clean_output_directory(self):
@@ -564,45 +586,6 @@ sphinx-copybutton>=0.5.0
             f.write(requirements)
         print("✅ requirements.txt file created")
 
-    def create_makefile(self):
-        """Creates Makefile to facilitate documentation generation"""
-        makefile_content = """# Makefile for documentation generation
-
-.PHONY: help clean html
-
-help:
-	@echo "Available targets:"
-	@echo "  html       to make standalone HTML files"
-	@echo "  clean      to clean output directory"
-
-clean:
-	rm -rf output/*
-
-html:
-	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) output/html
-	@echo
-	@echo "Build finished. The HTML pages are in output/html."
-
-# Variables
-SPHINXBUILD   = sphinx-build
-SOURCEDIR     = source
-BUILDDIR      = output
-
-# Put it first so that "make" without argument is like "make help".
-help:
-	@$(SPHINXBUILD) -M help "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
-
-.PHONY: help Makefile
-
-# Catch-all target: route all unknown targets to Sphinx using the new
-# "make mode" option.  $(O) is meant as a shortcut for $(SPHINXOPTS).
-%: Makefile
-	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
-"""
-        
-        with open(self.docs_dir / "Makefile", "w", encoding="utf-8") as f:
-            f.write(makefile_content)
-        print("✅ Makefile created")
 
     def install_dependencies(self):
         """Installs required Python dependencies"""
@@ -635,7 +618,6 @@ help:
         
         # 4. Create configuration files
         self.create_requirements_txt()
-        self.create_makefile()
         
         # 5. Extract README content
         readme_sections = self.extract_readme_content()
