@@ -30,7 +30,6 @@ jobs:
           cache-dependency-path: |
             **/go.mod
             **/go.sum
-      
       - name: Validate version format
         id: validate-version
         run: |
