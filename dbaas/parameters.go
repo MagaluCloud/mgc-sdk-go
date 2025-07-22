@@ -10,36 +10,43 @@ import (
 	mgc_http "github.com/MagaluCloud/mgc-sdk-go/internal/http"
 )
 
+// ParameterCreateRequest represents the request payload for creating a parameter
 type ParameterCreateRequest struct {
 	Name  string `json:"name"`
 	Value any    `json:"value"`
 }
 
+// ParameterResponse represents the response when creating a parameter
 type ParameterResponse struct {
 	ID string `json:"id"`
 }
 
+// ParameterUpdateRequest represents the request payload for updating a parameter
 type ParameterUpdateRequest struct {
 	Value any `json:"value"`
 }
 
+// ParameterDetailResponse represents detailed information about a parameter
 type ParameterDetailResponse struct {
 	ID    string `json:"id"`
 	Name  string `json:"name"`
 	Value any    `json:"value"`
 }
 
+// ParametersResponse represents the response when listing parameters
 type ParametersResponse struct {
 	Meta    MetaResponse              `json:"meta"`
 	Results []ParameterDetailResponse `json:"results"`
 }
 
+// ListParametersOptions provides options for listing parameters
 type ListParametersOptions struct {
 	ParameterGroupID string
 	Offset           *int
 	Limit            *int
 }
 
+// ParameterService provides methods for managing parameters within parameter groups
 type ParameterService interface {
 	List(ctx context.Context, opts ListParametersOptions) ([]ParameterDetailResponse, error)
 	Create(ctx context.Context, groupID string, req ParameterCreateRequest) (*ParameterResponse, error)
@@ -47,10 +54,12 @@ type ParameterService interface {
 	Delete(ctx context.Context, groupID, parameterID string) error
 }
 
+// parameterService implements the ParameterService interface
 type parameterService struct {
 	client *DBaaSClient
 }
 
+// List returns a list of parameters within a parameter group
 func (s *parameterService) List(ctx context.Context, opts ListParametersOptions) ([]ParameterDetailResponse, error) {
 	q := make(url.Values)
 	if opts.Offset != nil {
@@ -74,6 +83,7 @@ func (s *parameterService) List(ctx context.Context, opts ListParametersOptions)
 	return resp.Results, nil
 }
 
+// Create creates a new parameter within a parameter group
 func (s *parameterService) Create(ctx context.Context, groupID string, req ParameterCreateRequest) (*ParameterResponse, error) {
 	return mgc_http.ExecuteSimpleRequestWithRespBody[ParameterResponse](
 		ctx,
@@ -86,6 +96,7 @@ func (s *parameterService) Create(ctx context.Context, groupID string, req Param
 	)
 }
 
+// Update updates an existing parameter within a parameter group
 func (s *parameterService) Update(ctx context.Context, groupID, parameterID string, req ParameterUpdateRequest) (*ParameterDetailResponse, error) {
 	return mgc_http.ExecuteSimpleRequestWithRespBody[ParameterDetailResponse](
 		ctx,
@@ -98,6 +109,7 @@ func (s *parameterService) Update(ctx context.Context, groupID, parameterID stri
 	)
 }
 
+// Delete removes a parameter from a parameter group
 func (s *parameterService) Delete(ctx context.Context, groupID, parameterID string) error {
 	return mgc_http.ExecuteSimpleRequest(
 		ctx,

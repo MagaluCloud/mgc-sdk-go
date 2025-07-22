@@ -14,10 +14,8 @@ import (
 type ParameterGroupType string
 
 const (
-	// ParameterGroupTypeSystem represents a system parameter group
 	ParameterGroupTypeSystem ParameterGroupType = "SYSTEM"
-	// ParameterGroupTypeUser represents a user-defined parameter group
-	ParameterGroupTypeUser ParameterGroupType = "USER"
+	ParameterGroupTypeUser   ParameterGroupType = "USER"
 
 	ErrorIDEmpty        = "ID cannot be empty"
 	PathParametersGroup = "/v2/parameter-groups"
@@ -67,19 +65,10 @@ type (
 
 	// ParameterGroupService defines the interface for parameter group operations
 	ParameterGroupService interface {
-		// ListParameterGroups retrieves a list of parameter groups for the tenant.
 		List(ctx context.Context, opts ListParameterGroupsOptions) ([]ParameterGroupDetailResponse, error)
-
-		// CreateParameterGroup creates a new custom parameter group.
 		Create(ctx context.Context, req ParameterGroupCreateRequest) (*ParameterGroupResponse, error)
-
-		// GetParameterGroup retrieves details of a specific parameter group by its ID.
 		Get(ctx context.Context, ID string) (*ParameterGroupDetailResponse, error)
-
-		// UpdateParameterGroup updates the name or description of a parameter group.
 		Update(ctx context.Context, ID string, req ParameterGroupUpdateRequest) (*ParameterGroupDetailResponse, error)
-
-		// DeleteParameterGroup deletes a custom parameter group.
 		Delete(ctx context.Context, ID string) error
 	}
 

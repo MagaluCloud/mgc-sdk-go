@@ -13,6 +13,7 @@ import (
 const tls_certificates = "tls-certificates"
 
 type (
+	// CreateNetworkCertificateRequest represents the request payload for creating a network TLS certificate
 	CreateNetworkCertificateRequest struct {
 		LoadBalancerID string  `json:"-"`
 		Name           string  `json:"name"`
@@ -21,16 +22,19 @@ type (
 		PrivateKey     string  `json:"private_key"`
 	}
 
+	// DeleteNetworkCertificateRequest represents the request payload for deleting a network TLS certificate
 	DeleteNetworkCertificateRequest struct {
 		LoadBalancerID   string `json:"-"`
 		TLSCertificateID string `json:"-"`
 	}
 
+	// GetNetworkCertificateRequest represents the request payload for getting a network TLS certificate
 	GetNetworkCertificateRequest struct {
 		LoadBalancerID   string `json:"-"`
 		TLSCertificateID string `json:"-"`
 	}
 
+	// ListNetworkCertificateRequest represents the request payload for listing network TLS certificates
 	ListNetworkCertificateRequest struct {
 		LoadBalancerID string  `json:"-"`
 		Offset         *int    `json:"-"`
@@ -38,6 +42,7 @@ type (
 		Sort           *string `json:"-"`
 	}
 
+	// UpdateNetworkCertificateRequest represents the request payload for updating a network TLS certificate
 	UpdateNetworkCertificateRequest struct {
 		LoadBalancerID   string `json:"-"`
 		TLSCertificateID string `json:"-"`
@@ -45,6 +50,7 @@ type (
 		PrivateKey       string `json:"private_key"`
 	}
 
+	// NetworkTLSCertificateResponse represents a network TLS certificate response
 	NetworkTLSCertificateResponse struct {
 		ID             string  `json:"id"`
 		Name           string  `json:"name"`
@@ -54,11 +60,13 @@ type (
 		UpdatedAt      string  `json:"updated_at"`
 	}
 
+	// NetworkPaginatedTLSCertificateResponse represents a paginated TLS certificate response
 	NetworkPaginatedTLSCertificateResponse struct {
 		Meta    interface{}                     `json:"meta"`
 		Results []NetworkTLSCertificateResponse `json:"results"`
 	}
 
+	// NetworkCertificateService provides methods for managing network TLS certificates
 	NetworkCertificateService interface {
 		Create(ctx context.Context, req CreateNetworkCertificateRequest) (*NetworkTLSCertificateResponse, error)
 		Delete(ctx context.Context, req DeleteNetworkCertificateRequest) error
@@ -67,15 +75,17 @@ type (
 		Update(ctx context.Context, req UpdateNetworkCertificateRequest) error
 	}
 
+	// networkCertificateService implements the NetworkCertificateService interface
 	networkCertificateService struct {
 		client *LbaasClient
 	}
 )
 
+// Create creates a new network TLS certificate
 func (s *networkCertificateService) Create(ctx context.Context, req CreateNetworkCertificateRequest) (*NetworkTLSCertificateResponse, error) {
 	path := urlNetworkLoadBalancer(&req.LoadBalancerID, tls_certificates)
 
-	// validate if certificate and private key are base64 encoded
+	// Validate if certificate and private key are base64 encoded
 	if _, err := base64.StdEncoding.DecodeString(req.Certificate); err != nil {
 		return nil, errors.New("certificate is not base64 encoded")
 	}
@@ -96,6 +106,7 @@ func (s *networkCertificateService) Create(ctx context.Context, req CreateNetwor
 	return result, nil
 }
 
+// Delete removes a network TLS certificate
 func (s *networkCertificateService) Delete(ctx context.Context, req DeleteNetworkCertificateRequest) error {
 	path := urlNetworkLoadBalancer(&req.LoadBalancerID, tls_certificates, req.TLSCertificateID)
 
@@ -108,6 +119,7 @@ func (s *networkCertificateService) Delete(ctx context.Context, req DeleteNetwor
 	return err
 }
 
+// Get retrieves detailed information about a specific TLS certificate
 func (s *networkCertificateService) Get(ctx context.Context, req GetNetworkCertificateRequest) (*NetworkTLSCertificateResponse, error) {
 	path := urlNetworkLoadBalancer(&req.LoadBalancerID, tls_certificates, req.TLSCertificateID)
 
@@ -124,6 +136,7 @@ func (s *networkCertificateService) Get(ctx context.Context, req GetNetworkCerti
 	return result, nil
 }
 
+// List returns a list of network TLS certificates with optional filtering and pagination
 func (s *networkCertificateService) List(ctx context.Context, req ListNetworkCertificateRequest) ([]NetworkTLSCertificateResponse, error) {
 	path := urlNetworkLoadBalancer(&req.LoadBalancerID, tls_certificates)
 
@@ -145,6 +158,7 @@ func (s *networkCertificateService) List(ctx context.Context, req ListNetworkCer
 	return result.Results, nil
 }
 
+// Update updates a network TLS certificate's properties
 func (s *networkCertificateService) Update(ctx context.Context, req UpdateNetworkCertificateRequest) error {
 	path := urlNetworkLoadBalancer(&req.LoadBalancerID, tls_certificates, req.TLSCertificateID)
 

@@ -9,16 +9,19 @@ import (
 )
 
 type (
+	// ImagesService provides methods for managing images within repositories
 	ImagesService interface {
 		List(ctx context.Context, registryID, repositoryName string, opts ListOptions) (*ImagesResponse, error)
 		Delete(ctx context.Context, registryID, repositoryName, digestOrTag string) error
 		Get(ctx context.Context, registryID, repositoryName, digestOrTag string) (*ImageResponse, error)
 	}
 
+	// ImagesResponse represents the response when listing images
 	ImagesResponse struct {
 		Results []ImageResponse `json:"results"`
 	}
 
+	// ImageResponse represents a container image
 	ImageResponse struct {
 		Digest            string             `json:"digest"`
 		SizeBytes         int                `json:"size_bytes"`
@@ -31,6 +34,7 @@ type (
 		ExtraAttr         string             `json:"extra_attr"`
 	}
 
+	// ImageTagResponse represents detailed information about an image tag
 	ImageTagResponse struct {
 		Name     string `json:"name"`
 		PushedAt string `json:"pushed_at"`
@@ -38,11 +42,13 @@ type (
 		Signed   bool   `json:"signed"`
 	}
 
+	// imagesService implements the ImagesService interface
 	imagesService struct {
 		client *ContainerRegistryClient
 	}
 )
 
+// List retrieves a list of images within a repository with optional filtering
 func (c *imagesService) List(ctx context.Context, registryID, repositoryName string, opts ListOptions) (*ImagesResponse, error) {
 	path := fmt.Sprintf("/v0/registries/%s/repositories/%s/images", registryID, repositoryName)
 
@@ -53,6 +59,7 @@ func (c *imagesService) List(ctx context.Context, registryID, repositoryName str
 	return res, nil
 }
 
+// Delete removes an image from a repository by digest or tag
 func (c *imagesService) Delete(ctx context.Context, registryID, repositoryName, digestOrTag string) error {
 	path := fmt.Sprintf("/v0/registries/%s/repositories/%s/images/%s", registryID, repositoryName, digestOrTag)
 
@@ -63,6 +70,7 @@ func (c *imagesService) Delete(ctx context.Context, registryID, repositoryName, 
 	return nil
 }
 
+// Get retrieves a specific image from a repository by digest or tag
 func (c *imagesService) Get(ctx context.Context, registryID, repositoryName, digestOrTag string) (*ImageResponse, error) {
 	path := fmt.Sprintf("/v0/registries/%s/repositories/%s/images/%s", registryID, repositoryName, digestOrTag)
 

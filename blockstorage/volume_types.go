@@ -9,29 +9,34 @@ import (
 	mgc_http "github.com/MagaluCloud/mgc-sdk-go/internal/http"
 )
 
-type (
-	ListVolumeTypesResponse struct {
-		Types []VolumeType `json:"types"`
-	}
+// ListVolumeTypesResponse represents the response from listing volume types.
+// This structure encapsulates the API response format for volume types.
+type ListVolumeTypesResponse struct {
+	Types []VolumeType `json:"types"`
+}
 
-	VolumeType struct {
-		ID                string         `json:"id"`
-		Name              string         `json:"name"`
-		DiskType          string         `json:"disk_type"`
-		Status            string         `json:"status"`
-		IOPS              VolumeTypeIOPS `json:"iops"`
-		AvailabilityZones []string       `json:"availability_zones"`
-		AllowsEncryption  bool           `json:"allows_encryption"`
-	}
+// VolumeType represents a block storage volume type.
+// Each volume type defines the characteristics and capabilities of volumes created with it.
+type VolumeType struct {
+	ID                string         `json:"id"`
+	Name              string         `json:"name"`
+	DiskType          string         `json:"disk_type"`
+	Status            string         `json:"status"`
+	IOPS              VolumeTypeIOPS `json:"iops"`
+	AvailabilityZones []string       `json:"availability_zones"`
+	AllowsEncryption  bool           `json:"allows_encryption"`
+}
 
-	VolumeTypeIOPS struct {
-		Read  int `json:"read"`
-		Write int `json:"write"`
-		Total int `json:"total"`
-	}
-)
+// VolumeTypeIOPS represents the IOPS specifications for a volume type.
+// IOPS defines the performance characteristics in terms of read/write operations.
+type VolumeTypeIOPS struct {
+	Read  int `json:"read"`
+	Write int `json:"write"`
+	Total int `json:"total"`
+}
 
-// DiskType represents the physical disk type
+// DiskType represents the physical disk type used for storage.
+// Different disk types offer different performance characteristics and costs.
 type DiskType string
 
 const (
@@ -39,25 +44,29 @@ const (
 	DiskTypeHDD  DiskType = "hdd"
 )
 
-// ListVolumeTypesOptions contains the options for listing volume types
+// ListVolumeTypesOptions contains the options for listing volume types.
+// All fields are optional and allow filtering the results.
 type ListVolumeTypesOptions struct {
 	AvailabilityZone string
 	Name             string
 	AllowsEncryption *bool
 }
 
-// VolumeTypeService provides operations for managing volume types
+// VolumeTypeService provides operations for managing volume types.
+// This interface allows listing available volume types with optional filtering.
 type VolumeTypeService interface {
-	// List returns all available volume types
-	// Use options to filter by availability zone, encryption support, or name
 	List(ctx context.Context, opts ListVolumeTypesOptions) ([]VolumeType, error)
 }
 
+// volumeTypeService implements the VolumeTypeService interface.
+// This is an internal implementation that should not be used directly.
 type volumeTypeService struct {
 	client *BlockStorageClient
 }
 
-// List retrieves all volume types with optional filtering
+// List retrieves all volume types with optional filtering.
+// This method makes an HTTP request to get the list of volume types
+// and applies the filters specified in the options.
 func (s *volumeTypeService) List(ctx context.Context, opts ListVolumeTypesOptions) ([]VolumeType, error) {
 	queryParams := make(url.Values)
 	if opts.AvailabilityZone != "" {

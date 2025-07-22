@@ -1,5 +1,6 @@
 package lbaas
 
+// AclActionType represents the action type for ACL rules
 type AclActionType string
 
 const (
@@ -8,6 +9,7 @@ const (
 	AclActionTypeDenyUnspecified AclActionType = "DENY_UNSPECIFIED"
 )
 
+// AclEtherType represents the ethernet type for ACL rules
 type AclEtherType string
 
 const (
@@ -15,12 +17,14 @@ const (
 	AclEtherTypeIPv6 AclEtherType = "IPv6"
 )
 
+// BackendBalanceAlgorithm represents the load balancing algorithm for backends
 type BackendBalanceAlgorithm string
 
 const (
 	BackendBalanceAlgorithmRoundRobin BackendBalanceAlgorithm = "round_robin"
 )
 
+// BackendType represents the type of backend targets
 type BackendType string
 
 const (
@@ -28,6 +32,7 @@ const (
 	BackendTypeRaw      BackendType = "raw"
 )
 
+// HealthCheckProtocol represents the protocol for health checks
 type HealthCheckProtocol string
 
 const (
@@ -35,6 +40,7 @@ const (
 	HealthCheckProtocolHTTP HealthCheckProtocol = "http"
 )
 
+// LoadBalancerStatus represents the status of a load balancer
 type LoadBalancerStatus string
 
 const (
@@ -48,6 +54,7 @@ const (
 	LoadBalancerStatusInactive LoadBalancerStatus = "inactive"
 )
 
+// LoadBalancerVisibility represents the visibility of a load balancer
 type LoadBalancerVisibility string
 
 const (
@@ -55,6 +62,7 @@ const (
 	LoadBalancerVisibilityExternal LoadBalancerVisibility = "external"
 )
 
+// AclProtocol represents the protocol for ACL rules
 type AclProtocol string
 
 const (
@@ -62,6 +70,7 @@ const (
 	AclProtocolTLS AclProtocol = "tls"
 )
 
+// ListenerProtocol represents the protocol for listeners
 type ListenerProtocol string
 
 const (

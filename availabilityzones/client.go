@@ -1,3 +1,5 @@
+// Package availabilityzones provides functionality to interact with the MagaluCloud availability zones service.
+// This package allows listing availability zones across different regions.
 package availabilityzones
 
 import (
@@ -8,6 +10,7 @@ import (
 	mgc_http "github.com/MagaluCloud/mgc-sdk-go/internal/http"
 )
 
+// DefaultBasePath defines the default base path for availability zones APIs.
 const (
 	DefaultBasePath = "/profile"
 )
@@ -55,10 +58,14 @@ func New(core *client.CoreClient, opts ...ClientOption) *Client {
 	return azClient
 }
 
+// newRequest creates a new HTTP request for the availability zones service.
+// This method is internal and should not be called directly by SDK users.
 func (c *Client) newRequest(ctx context.Context, method, path string, body any) (*http.Request, error) {
 	return mgc_http.NewRequest(c.GetConfig(), ctx, method, DefaultBasePath+path, &body)
 }
 
+// AvailabilityZones returns a service to manage availability zones.
+// This method allows access to functionality such as listing availability zones.
 func (c *Client) AvailabilityZones() Service {
 	return &service{client: c}
 }

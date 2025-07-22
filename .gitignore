@@ -27,3 +27,6 @@ go.work.sum
 .vscode/
 .vscode/*
 coverage.txt
+docs/output/*
+docs/source/*
+!docs/source/.keep

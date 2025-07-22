@@ -12,14 +12,11 @@ import (
 )
 
 type (
-	// ListOptions represents parameters for filtering and pagination
+	// ListSubnetPoolsOptions represents parameters for filtering and pagination
 	ListSubnetPoolsOptions struct {
-		// Limit specifies the maximum number of items to return
-		Limit *int
-		// Offset specifies the number of items to skip
+		Limit  *int
 		Offset *int
-		// Sort specifies the field and direction for sorting results
-		Sort *string
+		Sort   *string
 	}
 
 	// ListSubnetPoolsResponse represents a list of subnet pools response
@@ -28,11 +25,13 @@ type (
 		Results []SubnetPoolResponse `json:"results"`
 	}
 
+	// MetaModel represents pagination metadata
 	MetaModel struct {
 		Page  PageModel `json:"page"`
 		Links LinkModel `json:"links"`
 	}
 
+	// PageModel represents page information
 	PageModel struct {
 		Limit  *int `json:"limit,omitempty"`
 		Offset *int `json:"offset,omitempty"`
@@ -40,6 +39,7 @@ type (
 		Total  int  `json:"total"`
 	}
 
+	// LinkModel represents navigation links
 	LinkModel struct {
 		Previous *string `json:"previous"`
 		Next     *string `json:"next"`
@@ -56,6 +56,7 @@ type (
 		IsDefault   bool    `json:"is_default"`
 	}
 
+	// SubnetPoolDetailsResponse represents detailed subnet pool information
 	SubnetPoolDetailsResponse struct {
 		CIDR        *string                        `json:"cidr,omitempty"`
 		ID          string                         `json:"id"`
@@ -75,15 +76,18 @@ type (
 		Type        *string `json:"type,omitempty"`
 	}
 
+	// BookCIDRRequest represents parameters for booking a CIDR range
 	BookCIDRRequest struct {
 		CIDR *string `json:"cidr,omitempty"`
 		Mask *int    `json:"mask,omitempty"`
 	}
 
+	// BookCIDRResponse represents the response after booking a CIDR range
 	BookCIDRResponse struct {
 		CIDR string `json:"cidr"`
 	}
 
+	// UnbookCIDRRequest represents parameters for unbooking a CIDR range
 	UnbookCIDRRequest struct {
 		CIDR string `json:"cidr"`
 	}
@@ -96,25 +100,15 @@ type (
 
 // SubnetPoolService provides operations for managing subnet pools
 type SubnetPoolService interface {
-	// List returns all subnet pools
 	List(ctx context.Context, opts ListOptions) ([]SubnetPoolResponse, error)
-
-	// Get retrieves a specific subnet pool
 	Get(ctx context.Context, id string) (*SubnetPoolDetailsResponse, error)
-
-	// Create provisions a new subnet pool
 	Create(ctx context.Context, req CreateSubnetPoolRequest) (string, error)
-
-	// Delete removes a subnet pool
 	Delete(ctx context.Context, id string) error
-
-	// BookCIDR books a CIDR range from a subnet pool
 	BookCIDR(ctx context.Context, id string, req BookCIDRRequest) (*BookCIDRResponse, error)
-
-	// UnbookCIDR releases a CIDR range from a subnet pool
 	UnbookCIDR(ctx context.Context, id string, req UnbookCIDRRequest) error
 }
 
+// subnetPoolService implements the SubnetPoolService interface
 type subnetPoolService struct {
 	client *NetworkClient
 }
@@ -190,6 +184,7 @@ func (s *subnetPoolService) Delete(ctx context.Context, id string) error {
 	)
 }
 
+// BookCIDR books a CIDR range from a subnet pool
 func (s *subnetPoolService) BookCIDR(ctx context.Context, id string, req BookCIDRRequest) (*BookCIDRResponse, error) {
 	return mgc_http.ExecuteSimpleRequestWithRespBody[BookCIDRResponse](
 		ctx,
@@ -202,6 +197,7 @@ func (s *subnetPoolService) BookCIDR(ctx context.Context, id string, req BookCID
 	)
 }
 
+// UnbookCIDR releases a CIDR range from a subnet pool
 func (s *subnetPoolService) UnbookCIDR(ctx context.Context, id string, req UnbookCIDRRequest) error {
 	return mgc_http.ExecuteSimpleRequest(
 		ctx,

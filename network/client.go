@@ -1,3 +1,5 @@
+// Package network provides a client for interacting with the Magalu Cloud Network API.
+// This package allows you to manage VPCs, subnets, ports, security groups, rules, public IPs, subnet pools, and NAT gateways.
 package network
 
 import (

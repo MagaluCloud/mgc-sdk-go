@@ -48,35 +48,26 @@ type (
 
 	// PortUpdateRequest represents the fields available for update in a port resource
 	PortUpdateRequest struct {
-		// Allows spoofed packets to enter a port
 		IPSpoofingGuard *bool `json:"ip_spoofing_guard,omitempty"`
 	}
 )
 
 // PortService provides operations for managing network ports
 type PortService interface {
-	// List retrieves all ports for the current tenant
 	List(ctx context.Context) ([]PortResponse, error)
-
-	// Get retrieves details of a specific port by its ID
 	Get(ctx context.Context, id string) (*PortResponse, error)
-
-	// Delete removes a port by its ID
 	Delete(ctx context.Context, id string) error
-
-	// Patch updates a port
 	Update(ctx context.Context, id string, req PortUpdateRequest) error
-
-	// AttachSecurityGroup associates a security group with a specific port
 	AttachSecurityGroup(ctx context.Context, portID string, securityGroupID string) error
-
-	// DetachSecurityGroup removes the association between a security group and a port
 	DetachSecurityGroup(ctx context.Context, portID string, securityGroupID string) error
 }
 
+// portService implements the PortService interface
 type portService struct {
 	client *NetworkClient
 }
+
+const v0PortsPath = "/v0/ports"
 
 // List retrieves all ports for the current tenant
 func (s *portService) List(ctx context.Context) ([]PortResponse, error) {
@@ -85,7 +76,7 @@ func (s *portService) List(ctx context.Context) ([]PortResponse, error) {
 		s.client.newRequest,
 		s.client.GetConfig(),
 		http.MethodGet,
-		"/v0/ports",
+		v0PortsPath,
 		nil,
 		nil,
 	)
@@ -102,7 +93,7 @@ func (s *portService) Get(ctx context.Context, id string) (*PortResponse, error)
 		s.client.newRequest,
 		s.client.GetConfig(),
 		http.MethodGet,
-		fmt.Sprintf("/v0/ports/%s", id),
+		fmt.Sprintf("%s/%s", v0PortsPath, id),
 		nil,
 		nil,
 	)
@@ -115,7 +106,7 @@ func (s *portService) Delete(ctx context.Context, id string) error {
 		s.client.newRequest,
 		s.client.GetConfig(),
 		http.MethodDelete,
-		fmt.Sprintf("/v0/ports/%s", id),
+		fmt.Sprintf("%s/%s", v0PortsPath, id),
 		nil,
 		nil,
 	)
@@ -128,7 +119,7 @@ func (s *portService) Update(ctx context.Context, id string, req PortUpdateReque
 		s.client.newRequest,
 		s.client.GetConfig(),
 		http.MethodPatch,
-		fmt.Sprintf("/v0/ports/%s", id),
+		fmt.Sprintf("%s/%s", v0PortsPath, id),
 		req,
 		nil,
 	)
@@ -141,7 +132,7 @@ func (s *portService) AttachSecurityGroup(ctx context.Context, portID string, se
 		s.client.newRequest,
 		s.client.GetConfig(),
 		http.MethodPost,
-		fmt.Sprintf("/v0/ports/%s/attach/%s", portID, securityGroupID),
+		fmt.Sprintf("%s/%s/attach/%s", v0PortsPath, portID, securityGroupID),
 		nil,
 		nil,
 	)
@@ -154,7 +145,7 @@ func (s *portService) DetachSecurityGroup(ctx context.Context, portID string, se
 		s.client.newRequest,
 		s.client.GetConfig(),
 		http.MethodPost,
-		fmt.Sprintf("/v0/ports/%s/detach/%s", portID, securityGroupID),
+		fmt.Sprintf("%s/%s/detach/%s", v0PortsPath, portID, securityGroupID),
 		nil,
 		nil,
 	)
