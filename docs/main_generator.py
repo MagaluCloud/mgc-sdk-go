@@ -127,7 +127,9 @@ class DocumentationGenerator:
 {chr(10).join(example_entries)}
 '''
         
-        index_content = f'''# MGC Go SDK
+        index_content = f'''
+MGC Go SDK
+###########
 
 Welcome to the MGC Go SDK documentation!
 
