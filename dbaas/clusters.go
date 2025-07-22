@@ -43,6 +43,7 @@ type (
 		ParameterGroupID *string
 	}
 
+	// AddressPurpose represents the network address purpose on a cluster
 	AddressPurpose string
 
 	// ClustersResponse represents the response when listing clusters
