@@ -43,6 +43,8 @@ type (
 		ParameterGroupID *string
 	}
 
+	AddressPurpose string
+
 	// ClustersResponse represents the response when listing clusters
 	ClustersResponse struct {
 		Results []ClusterDetailResponse `json:"results"`
@@ -80,10 +82,11 @@ type (
 
 	// LoadBalancerAddress represents a load balancer address
 	LoadBalancerAddress struct {
-		Access  AddressAccess `json:"access"`
-		Type    AddressType   `json:"type,omitempty"`
-		Address string        `json:"address,omitempty"`
-		Port    string        `json:"port,omitempty"`
+		Access  AddressAccess  `json:"access"`
+		Type    AddressType    `json:"type,omitempty"`
+		Address string         `json:"address,omitempty"`
+		Port    string         `json:"port,omitempty"`
+		Purpose AddressPurpose `json:"purpose,omitempty"`
 	}
 
 	// ClusterDetailResponse represents detailed information about a cluster
