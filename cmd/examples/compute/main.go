@@ -230,7 +230,7 @@ func ExampleListMachineTypes() {
 		fmt.Printf("Machine Type: %s (ID: %s)\n", mt.Name, mt.ID)
 		fmt.Printf("  VCPUs: %d\n", mt.VCPUs)
 		fmt.Printf("  RAM: %d MB\n", mt.RAM)
-		fmt.Printf("  Disk: %d GB\n", mt.Disk)
+		fmt.Printf("  Disk: %d GiB\n", mt.Disk)
 		fmt.Printf("  GPU: %d\n", mt.GPU)
 		fmt.Printf("  Status: %s\n", mt.Status)
 	}

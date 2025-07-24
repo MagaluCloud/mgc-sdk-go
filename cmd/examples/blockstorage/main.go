@@ -68,7 +68,7 @@ func ExampleListVolumes() {
 	// Print volume details
 	for _, vol := range volumes {
 		fmt.Printf("Volume: %s (ID: %s)\n", vol.Name, vol.ID)
-		fmt.Printf("  Size: %d GB\n", vol.Size)
+		fmt.Printf("  Size: %d GiB\n", vol.Size)
 		if vol.Type.Name != nil {
 			fmt.Printf("  Type: %s\n", *vol.Type.Name)
 		}

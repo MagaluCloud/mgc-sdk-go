@@ -103,7 +103,7 @@ func ExampleListInstances() {
 		fmt.Printf("Instance: %s (ID: %s)\n", instance.Name, instance.ID)
 		fmt.Printf("  Engine ID: %s\n", instance.EngineID)
 		fmt.Printf("  Status: %s\n", instance.Status)
-		fmt.Printf("  Volume Size: %d GB\n", instance.Volume.Size)
+		fmt.Printf("  Volume Size: %d GiB\n", instance.Volume.Size)
 		fmt.Printf("  Volume Type: %s\n", instance.Volume.Type)
 		if len(instance.Addresses) > 0 {
 			fmt.Println("  Addresses:")
@@ -132,7 +132,7 @@ func ExampleCreateInstance() {
 		User:           "dbadmin",
 		Password:       "YourStrongPassword123!",
 		Volume: dbaas.InstanceVolumeRequest{
-			Size: 20, // Size in GB
+			Size: 20, // Size in GiB
 			Type: "CLOUD_NVME15K",
 		},
 		BackupStartAt: helpers.StrPtr("02:00"), // Start backup at 2 AM
@@ -164,7 +164,7 @@ func ExampleListClusters() {
 		fmt.Printf("Cluster: %s (ID: %s)\n", cluster.Name, cluster.ID)
 		fmt.Printf("  Engine ID: %s\n", cluster.EngineID)
 		fmt.Printf("  Status: %s\n", cluster.Status)
-		fmt.Printf("  Volume Size: %d GB\n", cluster.Volume.Size)
+		fmt.Printf("  Volume Size: %d GiB\n", cluster.Volume.Size)
 		fmt.Printf("  Volume Type: %s\n", cluster.Volume.Type)
 		fmt.Printf("  Parameter Group ID: %s\n", cluster.ParameterGroupID)
 		fmt.Printf("  Backup Retention: %d days\n", cluster.BackupRetentionDays)
@@ -199,7 +199,7 @@ func ExampleCreateCluster() {
 		User:           "dbadmin",
 		Password:       "YourStrongPassword123!",
 		Volume: dbaas.ClusterVolumeRequest{
-			Size: 50, // Size in GB
+			Size: 50, // Size in GiB
 			Type: &volumeType,
 		},
 		// ParameterGroupID:    &paramGroupID,
@@ -232,7 +232,7 @@ func ExampleGetCluster() {
 	fmt.Printf("  Engine ID: %s\n", cluster.EngineID)
 	fmt.Printf("  Instance Type ID: %s\n", cluster.InstanceTypeID)
 	fmt.Printf("  Parameter Group ID: %s\n", cluster.ParameterGroupID)
-	fmt.Printf("  Volume Size: %d GB\n", cluster.Volume.Size)
+	fmt.Printf("  Volume Size: %d GiB\n", cluster.Volume.Size)
 	fmt.Printf("  Created At: %s\n", cluster.CreatedAt)
 	fmt.Printf("  Apply Parameters Pending: %v\n", cluster.ApplyParametersPending)
 }
