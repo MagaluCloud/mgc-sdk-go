@@ -336,13 +336,110 @@ client := client.NewMgcClient(
 )
 ```
 
+### Advanced HTTP Client Usage
+
+For more advanced use cases, you can directly use the `mgc_http` package. This is useful when you need to interact with API endpoints that are not yet fully supported by the SDK.
+
+#### `ExecuteSimpleRequestWithRespBody`
+
+Use this function when you expect a response body that needs to be unmarshaled into a struct.
+
+```go
+import (
+    "context"
+    "github.com/MagaluCloud/mgc-sdk-go/internal/http"
+    "github.com/MagaluCloud/mgc-sdk-go/client"
+)
+
+type MyResponse struct {
+    ID   string `json:"id"`
+    Name string `json:"name"`
+}
+
+// Create a new request function
+newRequest := func(ctx context.Context, method, path string, body any) (*http.Request, error) {
+    return mgc_http.NewRequest(myClient.Config, ctx, method, path, body)
+}
+
+// Make the request
+var myResponse MyResponse
+_, err := mgc_http.ExecuteSimpleRequestWithRespBody(
+    context.Background(),
+    newRequest,
+    myClient.Config,
+    "GET",
+    "/my-endpoint",
+    nil, // No request body
+    nil, // No query parameters
+    &myResponse,
+)
+```
+
+#### `ExecuteSimpleRequest`
+
+Use this function for requests where you don't expect a response body, such as `DELETE` requests or other operations that return a `204 No Content` status.
+
+```go
+err := mgc_http.ExecuteSimpleRequest(
+    context.Background(),
+    newRequest,
+    myClient.Config,
+    "DELETE",
+    "/my-endpoint/123",
+    nil, // No request body
+    nil, // No query parameters
+)
+```
+
+#### Handling Query Parameters
+
+To add query parameters to your request, you can use the `helpers.NewQueryParams` function.
+
+```go
+import "github.com/MagaluCloud/mgc-sdk-go/helpers"
+
+// ...
+
+req, _ := http.NewRequest("GET", "", nil)
+queryParams := helpers.NewQueryParams(req)
+queryParams.Add("name", helpers.StrPtr("my-resource"))
+queryParams.Add("limit", helpers.IntPtr(10))
+
+// The query parameters will be encoded and added to the request URL
+_, err := mgc_http.ExecuteSimpleRequestWithRespBody(
+    // ...
+    queryParams,
+    // ...
+)
+```
+
+#### Handling Optional Fields in JSON
+
+To prevent optional fields from being included in the JSON payload when they are not set, use the `omitempty` tag in your struct definitions. This is standard Go practice and is fully supported by the SDK.
+
+```go
+type MyRequest struct {
+    RequiredField string  `json:"required_field"`
+    OptionalField *string `json:"optional_field,omitempty"`
+}
+
+// Create a request with only the required field
+reqBody := MyRequest{
+    RequiredField: "some-value",
+}
+
+// The resulting JSON will be: {"required_field":"some-value"}
+// The optional_field will be omitted.
+```
+
 ## Full Example
 
 Check the [cmd/examples](cmd/examples) directory for complete working examples of all SDK features.
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+We welcome contributions from the community! Please read our [Contributing Guide](CONTRIBUTING.md) to learn about our development process, how to propose bugfixes and improvements, and how to build and test your changes.
+
 
 ## License
 
