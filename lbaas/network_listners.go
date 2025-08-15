@@ -3,6 +3,7 @@ package lbaas
 import (
 	"context"
 	"net/http"
+	"time"
 
 	"github.com/MagaluCloud/mgc-sdk-go/helpers"
 	mgc_http "github.com/MagaluCloud/mgc-sdk-go/internal/http"
@@ -35,8 +36,8 @@ type (
 		Description      *string          `json:"description,omitempty"`
 		Protocol         ListenerProtocol `json:"protocol"`
 		Port             int              `json:"port"`
-		CreatedAt        string           `json:"created_at"`
-		UpdatedAt        string           `json:"updated_at"`
+		CreatedAt        time.Time        `json:"created_at"`
+		UpdatedAt        time.Time        `json:"updated_at"`
 	}
 
 	// NetworkPaginatedListenerResponse represents a paginated listener response

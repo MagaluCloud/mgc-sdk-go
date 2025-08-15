@@ -3,6 +3,7 @@ package lbaas
 import (
 	"context"
 	"net/http"
+	"time"
 
 	"github.com/MagaluCloud/mgc-sdk-go/helpers"
 	mgc_http "github.com/MagaluCloud/mgc-sdk-go/internal/http"
@@ -53,8 +54,8 @@ type (
 		InitialDelaySeconds     int                 `json:"initial_delay_seconds"`
 		HealthyThresholdCount   int                 `json:"healthy_threshold_count"`
 		UnhealthyThresholdCount int                 `json:"unhealthy_threshold_count"`
-		CreatedAt               string              `json:"created_at"`
-		UpdatedAt               string              `json:"updated_at"`
+		CreatedAt               time.Time           `json:"created_at"`
+		UpdatedAt               time.Time           `json:"updated_at"`
 	}
 
 	// NetworkPaginatedHealthCheckResponse represents a paginated health check response

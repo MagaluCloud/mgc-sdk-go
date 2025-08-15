@@ -203,7 +203,9 @@ func TestNetworkListenerService_Get(t *testing.T) {
 				"protocol": "HTTP",
 				"port": 80,
 				"backend_id": "backend-123",
-				"tls_certificate_id": "cert-123"
+				"tls_certificate_id": "cert-123",
+				"created_at": "2024-01-01T00:00:00Z",
+				"updated_at": "2024-01-01T00:00:00Z"
 			}`,
 			statusCode: http.StatusOK,
 			wantErr:    false,
@@ -268,8 +270,8 @@ func TestNetworkListenerService_List(t *testing.T) {
 					"total_results": 2
 				},
 				"results": [
-					{"id": "listener-1", "name": "test1", "protocol": "HTTP", "port": 80, "backend_id": "backend-1"},
-					{"id": "listener-2", "name": "test2", "protocol": "HTTPS", "port": 443, "backend_id": "backend-2", "tls_certificate_id": "cert-1"}
+					{"id": "listener-1", "name": "test1", "protocol": "HTTP", "port": 80, "backend_id": "backend-1", "created_at": "2024-01-01T00:00:00Z", "updated_at": "2024-01-01T00:00:00Z"},
+					{"id": "listener-2", "name": "test2", "protocol": "HTTPS", "port": 443, "backend_id": "backend-2", "tls_certificate_id": "cert-1", "created_at": "2024-01-01T00:00:00Z", "updated_at": "2024-01-01T00:00:00Z"}
 				]
 			}`,
 			statusCode: http.StatusOK,

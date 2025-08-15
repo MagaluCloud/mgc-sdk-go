@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/MagaluCloud/mgc-sdk-go/helpers"
 	mgc_http "github.com/MagaluCloud/mgc-sdk-go/internal/http"
@@ -104,8 +105,8 @@ type (
 		IPAddress           *string                         `json:"ip_address,omitempty"`
 		VPCID               string                          `json:"vpc_id"`
 		SubnetPoolID        *string                         `json:"subnet_pool_id,omitempty"`
-		CreatedAt           string                          `json:"created_at"`
-		UpdatedAt           string                          `json:"updated_at"`
+		CreatedAt           time.Time                       `json:"created_at"`
+		UpdatedAt           time.Time                       `json:"updated_at"`
 		LastOperationStatus *string                         `json:"last_operation_status,omitempty"`
 	}
 

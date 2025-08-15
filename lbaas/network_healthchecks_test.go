@@ -172,7 +172,9 @@ func TestNetworkHealthCheckService_Get(t *testing.T) {
 				"timeout_seconds": 5,
 				"initial_delay_seconds": 10,
 				"healthy_threshold_count": 3,
-				"unhealthy_threshold_count": 3
+				"unhealthy_threshold_count": 3,
+				"created_at": "2024-01-01T00:00:00Z",
+				"updated_at": "2024-01-01T00:00:00Z"
 			}`,
 			statusCode: http.StatusOK,
 			wantErr:    false,
@@ -269,8 +271,8 @@ func TestNetworkHealthCheckService_List(t *testing.T) {
 					"total_results": 2
 				},
 				"results": [
-					{"id": "hc-1", "name": "test1", "protocol": "HTTP", "port": 80, "healthy_status_code": 200, "interval_seconds": 30, "timeout_seconds": 5, "initial_delay_seconds": 10, "healthy_threshold_count": 3, "unhealthy_threshold_count": 3},
-					{"id": "hc-2", "name": "test2", "protocol": "TCP", "port": 443, "interval_seconds": 30, "timeout_seconds": 5, "initial_delay_seconds": 10, "healthy_threshold_count": 3, "unhealthy_threshold_count": 3}
+					{"id": "hc-1", "name": "test1", "protocol": "HTTP", "port": 80, "healthy_status_code": 200, "interval_seconds": 30, "timeout_seconds": 5, "initial_delay_seconds": 10, "healthy_threshold_count": 3, "unhealthy_threshold_count": 3, "created_at": "2024-01-01T00:00:00Z", "updated_at": "2024-01-01T00:00:00Z"},
+					{"id": "hc-2", "name": "test2", "protocol": "TCP", "port": 443, "interval_seconds": 30, "timeout_seconds": 5, "initial_delay_seconds": 10, "healthy_threshold_count": 3, "unhealthy_threshold_count": 3, "created_at": "2024-01-01T00:00:00Z", "updated_at": "2024-01-01T00:00:00Z"}
 				]
 			}`,
 			statusCode: http.StatusOK,
