@@ -24,6 +24,8 @@ func TestNetworkListenerService_Create(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
 		name       string
+		lbID       string
+		backendID  string
 		request    CreateNetworkListenerRequest
 		response   string
 		statusCode int
@@ -31,13 +33,13 @@ func TestNetworkListenerService_Create(t *testing.T) {
 		wantErr    bool
 	}{
 		{
-			name: "successful creation",
+			name:      "successful creation",
+			lbID:      "lb-123",
+			backendID: "backend-123",
 			request: CreateNetworkListenerRequest{
-				LoadBalancerID: "lb-123",
-				BackendID:      "backend-123",
-				Name:           "test-listener",
-				Protocol:       "HTTP",
-				Port:           80,
+				Name:     "test-listener",
+				Protocol: "HTTP",
+				Port:     80,
 			},
 			response:   `{"id": "listener-123"}`,
 			statusCode: http.StatusOK,
@@ -45,104 +47,104 @@ func TestNetworkListenerService_Create(t *testing.T) {
 			wantErr:    false,
 		},
 		{
-			name: "server error",
+			name:      "server error",
+			lbID:      "lb-123",
+			backendID: "backend-123",
 			request: CreateNetworkListenerRequest{
-				LoadBalancerID: "lb-123",
-				BackendID:      "backend-123",
-				Name:           "test-listener",
-				Protocol:       "HTTP",
-				Port:           80,
+				Name:     "test-listener",
+				Protocol: "HTTP",
+				Port:     80,
 			},
 			response:   `{"error": "internal server error"}`,
 			statusCode: http.StatusInternalServerError,
 			wantErr:    true,
 		},
 		{
-			name: "bad request - invalid protocol",
+			name:      "bad request - invalid protocol",
+			lbID:      "lb-123",
+			backendID: "backend-123",
 			request: CreateNetworkListenerRequest{
-				LoadBalancerID: "lb-123",
-				BackendID:      "backend-123",
-				Name:           "test-listener",
-				Protocol:       "INVALID",
-				Port:           80,
+				Name:     "test-listener",
+				Protocol: "INVALID",
+				Port:     80,
 			},
 			response:   `{"error": "invalid protocol"}`,
 			statusCode: http.StatusBadRequest,
 			wantErr:    true,
 		},
 		{
-			name: "bad request - invalid port",
+			name:      "bad request - invalid port",
+			lbID:      "lb-123",
+			backendID: "backend-123",
 			request: CreateNetworkListenerRequest{
-				LoadBalancerID: "lb-123",
-				BackendID:      "backend-123",
-				Name:           "test-listener",
-				Protocol:       "HTTP",
-				Port:           -1,
+				Name:     "test-listener",
+				Protocol: "HTTP",
+				Port:     -1,
 			},
 			response:   `{"error": "invalid port number"}`,
 			statusCode: http.StatusBadRequest,
 			wantErr:    true,
 		},
 		{
-			name: "unauthorized access",
+			name:      "unauthorized access",
+			lbID:      "lb-123",
+			backendID: "backend-123",
 			request: CreateNetworkListenerRequest{
-				LoadBalancerID: "lb-123",
-				BackendID:      "backend-123",
-				Name:           "test-listener",
-				Protocol:       "HTTP",
-				Port:           80,
+				Name:     "test-listener",
+				Protocol: "HTTP",
+				Port:     80,
 			},
 			response:   `{"error": "unauthorized"}`,
 			statusCode: http.StatusUnauthorized,
 			wantErr:    true,
 		},
 		{
-			name: "forbidden access",
+			name:      "forbidden access",
+			lbID:      "lb-123",
+			backendID: "backend-123",
 			request: CreateNetworkListenerRequest{
-				LoadBalancerID: "lb-123",
-				BackendID:      "backend-123",
-				Name:           "test-listener",
-				Protocol:       "HTTP",
-				Port:           80,
+				Name:     "test-listener",
+				Protocol: "HTTP",
+				Port:     80,
 			},
 			response:   `{"error": "forbidden"}`,
 			statusCode: http.StatusForbidden,
 			wantErr:    true,
 		},
 		{
-			name: "load balancer not found",
+			name:      "load balancer not found",
+			lbID:      "invalid-lb",
+			backendID: "backend-123",
 			request: CreateNetworkListenerRequest{
-				LoadBalancerID: "invalid-lb",
-				BackendID:      "backend-123",
-				Name:           "test-listener",
-				Protocol:       "HTTP",
-				Port:           80,
+				Name:     "test-listener",
+				Protocol: "HTTP",
+				Port:     80,
 			},
 			response:   `{"error": "load balancer not found"}`,
 			statusCode: http.StatusNotFound,
 			wantErr:    true,
 		},
 		{
-			name: "backend not found",
+			name:      "backend not found",
+			lbID:      "lb-123",
+			backendID: "invalid-backend",
 			request: CreateNetworkListenerRequest{
-				LoadBalancerID: "lb-123",
-				BackendID:      "invalid-backend",
-				Name:           "test-listener",
-				Protocol:       "HTTP",
-				Port:           80,
+				Name:     "test-listener",
+				Protocol: "HTTP",
+				Port:     80,
 			},
 			response:   `{"error": "backend not found"}`,
 			statusCode: http.StatusNotFound,
 			wantErr:    true,
 		},
 		{
-			name: "conflict - port already in use",
+			name:      "conflict - port already in use",
+			lbID:      "lb-123",
+			backendID: "backend-123",
 			request: CreateNetworkListenerRequest{
-				LoadBalancerID: "lb-123",
-				BackendID:      "backend-123",
-				Name:           "test-listener",
-				Protocol:       "HTTP",
-				Port:           80,
+				Name:     "test-listener",
+				Protocol: "HTTP",
+				Port:     80,
 			},
 			response:   `{"error": "port 80 is already in use"}`,
 			statusCode: http.StatusConflict,
@@ -155,10 +157,10 @@ func TestNetworkListenerService_Create(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				assertEqual(t, fmt.Sprintf("/load-balancer/v0beta1/network-load-balancers/%s/listeners", tt.request.LoadBalancerID), r.URL.Path)
+				assertEqual(t, fmt.Sprintf("/load-balancer/v0beta1/network-load-balancers/%s/listeners", tt.lbID), r.URL.Path)
 				assertEqual(t, http.MethodPost, r.Method)
 				backendID := r.URL.Query().Get("backend_id")
-				assertEqual(t, tt.request.BackendID, backendID)
+				assertEqual(t, tt.backendID, backendID)
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(tt.statusCode)
 				w.Write([]byte(tt.response))
@@ -166,7 +168,7 @@ func TestNetworkListenerService_Create(t *testing.T) {
 			defer server.Close()
 
 			client := testListenerClient(server.URL)
-			listener, err := client.Create(context.Background(), tt.request)
+			listener, err := client.Create(context.Background(), tt.lbID, tt.backendID, tt.request)
 
 			if tt.wantErr {
 				assertError(t, err)
@@ -230,10 +232,7 @@ func TestNetworkListenerService_Get(t *testing.T) {
 			defer server.Close()
 
 			client := testListenerClient(server.URL)
-			listener, err := client.Get(context.Background(), GetNetworkListenerRequest{
-				LoadBalancerID: tt.lbID,
-				ListenerID:     tt.listenerID,
-			})
+			listener, err := client.Get(context.Background(), tt.lbID, tt.listenerID)
 
 			if tt.wantErr {
 				assertError(t, err)
@@ -316,9 +315,7 @@ func TestNetworkListenerService_List(t *testing.T) {
 			defer server.Close()
 
 			client := testListenerClient(server.URL)
-			listeners, err := client.List(context.Background(), ListNetworkListenerRequest{
-				LoadBalancerID: tt.lbID,
-			})
+			listeners, err := client.List(context.Background(), tt.lbID, ListNetworkLoadBalancerRequest{})
 
 			if tt.wantErr {
 				assertError(t, err)
@@ -347,8 +344,6 @@ func TestNetworkListenerService_Update(t *testing.T) {
 			lbID:       "lb-123",
 			listenerID: "listener-123",
 			request: UpdateNetworkListenerRequest{
-				LoadBalancerID:   "lb-123",
-				ListenerID:       "listener-123",
 				TLSCertificateID: stringPtr("updated-listener"),
 			},
 			statusCode: http.StatusOK,
@@ -359,8 +354,6 @@ func TestNetworkListenerService_Update(t *testing.T) {
 			lbID:       "lb-123",
 			listenerID: "invalid",
 			request: UpdateNetworkListenerRequest{
-				LoadBalancerID:   "lb-123",
-				ListenerID:       "invalid",
 				TLSCertificateID: stringPtr("updated-listener"),
 			},
 			statusCode: http.StatusNotFound,
@@ -380,7 +373,7 @@ func TestNetworkListenerService_Update(t *testing.T) {
 			defer server.Close()
 
 			client := testListenerClient(server.URL)
-			err := client.Update(context.Background(), tt.request)
+			err := client.Update(context.Background(), tt.lbID, tt.listenerID, tt.request)
 
 			if tt.wantErr {
 				assertError(t, err)
@@ -430,10 +423,7 @@ func TestNetworkListenerService_Delete(t *testing.T) {
 			defer server.Close()
 
 			client := testListenerClient(server.URL)
-			err := client.Delete(context.Background(), DeleteNetworkListenerRequest{
-				LoadBalancerID: tt.lbID,
-				ListenerID:     tt.listenerID,
-			})
+			err := client.Delete(context.Background(), tt.lbID, tt.listenerID)
 
 			if tt.wantErr {
 				assertError(t, err)
@@ -456,14 +446,12 @@ func TestNetworkListenerService_Create_NewRequestError(t *testing.T) {
 	client := testListenerClient("http://dummy-url")
 
 	req := CreateNetworkListenerRequest{
-		LoadBalancerID: "lb-123",
-		BackendID:      "backend-123",
-		Name:           "test-listener",
-		Protocol:       "HTTP",
-		Port:           80,
+		Name:     "test-listener",
+		Protocol: "HTTP",
+		Port:     80,
 	}
 
-	_, err := client.Create(ctx, req)
+	_, err := client.Create(ctx, "lb-123", "backend-123", req)
 
 	if err == nil {
 		t.Error("expected error due to canceled context, got nil")

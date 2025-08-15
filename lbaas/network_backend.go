@@ -5,145 +5,71 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/MagaluCloud/mgc-sdk-go/helpers"
 	mgc_http "github.com/MagaluCloud/mgc-sdk-go/internal/http"
 )
 
 const backends = "backends"
 
 type (
-	// NetworkBackendInstanceRequest represents an instance-based backend target
-	NetworkBackendInstanceRequest struct {
-		NicID string `json:"nic_id"`
-		Port  int    `json:"port"`
+	NetworkBackendInstanceTargetRequest struct {
+		NicID     *string `json:"nic_id,omitempty"`
+		IPAddress *string `json:"ip_address,omitempty"`
+		Port      int64   `json:"port"`
 	}
 
-	// NetworkBackendRawTargetRequest represents a raw IP/port backend target
-	NetworkBackendRawTargetRequest struct {
-		IPAddress string `json:"ip_address"`
-		Port      int    `json:"port"`
-	}
-
-	// TargetsRawOrInstancesRequest represents backend targets that can be either instances or raw IPs
-	TargetsRawOrInstancesRequest struct {
-		TargetsInstances []NetworkBackendInstanceRequest  `json:"-"`
-		TargetsRaw       []NetworkBackendRawTargetRequest `json:"-"`
-	}
-
-	// NetworkBackendInstanceUpdateRequest represents an instance-based backend target for updates
-	NetworkBackendInstanceUpdateRequest struct {
-		NicID string `json:"nic_id"`
-		Port  int    `json:"port"`
-	}
-
-	// NetworkBackendRawTargetUpdateRequest represents a raw IP/port backend target for updates
-	NetworkBackendRawTargetUpdateRequest struct {
-		IPAddress string `json:"ip_address"`
-		Port      int    `json:"port"`
-	}
-
-	// TargetsRawOrInstancesUpdateRequest represents backend targets for updates
-	TargetsRawOrInstancesUpdateRequest struct {
-		TargetsInstances []NetworkBackendInstanceUpdateRequest  `json:"-"`
-		TargetsRaw       []NetworkBackendRawTargetUpdateRequest `json:"-"`
-	}
-
-	// CreateNetworkBackendRequest represents the request payload for creating a network backend
 	CreateNetworkBackendRequest struct {
-		LoadBalancerID   string                        `json:"-"`
-		Name             string                        `json:"name"`
-		Description      *string                       `json:"description,omitempty"`
-		BalanceAlgorithm BackendBalanceAlgorithm       `json:"balance_algorithm"`
-		TargetsType      BackendType                   `json:"targets_type"`
-		Targets          *TargetsRawOrInstancesRequest `json:"targets,omitempty"`
-		HealthCheckID    *string                       `json:"health_check_id,omitempty"`
+		HealthCheckName                     *string                                `json:"health_check_name,omitempty"`
+		Name                                string                                 `json:"name"`
+		Description                         *string                                `json:"description,omitempty"`
+		BalanceAlgorithm                    BackendBalanceAlgorithm                `json:"balance_algorithm"`
+		PanicThreshold                      *float64                               `json:"panic_threshold,omitempty"`
+		TargetsType                         BackendType                            `json:"targets_type"`
+		Targets                             *[]NetworkBackendInstanceTargetRequest `json:"targets,omitempty"`
+		CloseConnectionsOnHostHealthFailure *bool                                  `json:"close_connections_on_host_health_failure,omitempty"`
+		HealthCheckID                       *string                                `json:"health_check_id,omitempty"`
 	}
 
-	// DeleteNetworkBackendRequest represents the request payload for deleting a network backend
-	DeleteNetworkBackendRequest struct {
-		LoadBalancerID string `json:"-"`
-		BackendID      string `json:"-"`
-	}
-
-	// GetNetworkBackendRequest represents the request payload for getting a network backend
-	GetNetworkBackendRequest struct {
-		LoadBalancerID string `json:"-"`
-		BackendID      string `json:"-"`
-	}
-
-	// ListNetworkBackendRequest represents the request payload for listing network backends
-	ListNetworkBackendRequest struct {
-		LoadBalancerID string `json:"-"`
-	}
-
-	// UpdateNetworkBackendRequest represents the request payload for updating a network backend
 	UpdateNetworkBackendRequest struct {
-		LoadBalancerID   string                              `json:"-"`
-		BackendID        string                              `json:"-"`
-		Name             *string                             `json:"name,omitempty"`
-		Description      *string                             `json:"description,omitempty"`
-		BalanceAlgorithm *BackendBalanceAlgorithm            `json:"balance_algorithm,omitempty"`
-		TargetsType      *BackendType                        `json:"targets_type,omitempty"`
-		Targets          *TargetsRawOrInstancesUpdateRequest `json:"targets,omitempty"`
-		TargetsInstances *[]NetworkBackendInstanceRequest    `json:"targets_instances,omitempty"`
-		TargetsRaw       *[]NetworkBackendRawTargetRequest   `json:"targets_raw,omitempty"`
-		HealthCheckID    *string                             `json:"health_check_id,omitempty"`
+		HealthCheckID                       *string  `json:"health_check_id,omitempty"`
+		PanicThreshold                      *float64 `json:"panic_threshold,omitempty"`
+		CloseConnectionsOnHostHealthFailure *bool    `json:"close_connections_on_host_health_failure,omitempty"`
 	}
 
-	// NetworkBackendInstanceResponse represents an instance-based backend target response
-	NetworkBackendInstanceResponse struct {
+	NetworkBackedTarget struct {
 		ID        string    `json:"id"`
 		IPAddress *string   `json:"ip_address,omitempty"`
-		NicID     string    `json:"nic_id,omitempty"`
-		Port      int       `json:"port"`
-		CreatedAt time.Time `json:"created_at"`
-		UpdatedAt time.Time `json:"updated_at"`
-	}
-
-	// NetworkBackendRawTargetResponse represents a raw IP/port backend target response
-	NetworkBackendRawTargetResponse struct {
-		ID        string    `json:"id"`
-		IPAddress *string   `json:"ip_address,omitempty"`
-		Port      int       `json:"port"`
-		CreatedAt time.Time `json:"created_at"`
-		UpdatedAt time.Time `json:"updated_at"`
-	}
-
-	// NetworkBackendResponse represents a network backend response
-	NetworkBackendResponse struct {
-		ID               string                         `json:"id"`
-		HealthCheckID    *string                        `json:"health_check_id,omitempty"`
-		Name             string                         `json:"name"`
-		Description      *string                        `json:"description,omitempty"`
-		BalanceAlgorithm BackendBalanceAlgorithm        `json:"balance_algorithm"`
-		TargetsType      BackendType                    `json:"targets_type"`
-		Targets          []NetworkBackendTargetResponse `json:"targets"`
-		CreatedAt        time.Time                      `json:"created_at"`
-		UpdatedAt        time.Time                      `json:"updated_at"`
-	}
-
-	NetworkBackendTargetResponse struct {
-		ID        string    `json:"id"`
-		IPAddress string    `json:"ip_address"`
-		Port      int       `json:"port"`
 		NicID     *string   `json:"nic_id,omitempty"`
+		Port      *int64    `json:"port,omitempty"`
 		CreatedAt time.Time `json:"created_at"`
 		UpdatedAt time.Time `json:"updated_at"`
 	}
 
-	// NetworkPaginatedBackendResponse represents a paginated backend response
+	NetworkBackendResponse struct {
+		ID                                  string                  `json:"id"`
+		HealthCheckID                       *string                 `json:"health_check_id,omitempty"`
+		Name                                string                  `json:"name"`
+		Description                         *string                 `json:"description,omitempty"`
+		BalanceAlgorithm                    BackendBalanceAlgorithm `json:"balance_algorithm"`
+		PanicThreshold                      *float64                `json:"panic_threshold,omitempty"`
+		CloseConnectionsOnHostHealthFailure bool                    `json:"close_connections_on_host_health_failure"`
+		TargetsType                         BackendType             `json:"targets_type"`
+		Targets                             []NetworkBackedTarget   `json:"targets"`
+		CreatedAt                           time.Time               `json:"created_at"`
+		UpdatedAt                           time.Time               `json:"updated_at"`
+	}
+
 	NetworkPaginatedBackendResponse struct {
-		Meta    any                      `json:"meta"`
+		Meta    PaginationMeta           `json:"meta"`
 		Results []NetworkBackendResponse `json:"results"`
 	}
 
-	// NetworkBackendService provides methods for managing network backends
 	NetworkBackendService interface {
-		Create(ctx context.Context, req CreateNetworkBackendRequest) (string, error)
-		Delete(ctx context.Context, req DeleteNetworkBackendRequest) error
-		Get(ctx context.Context, req GetNetworkBackendRequest) (*NetworkBackendResponse, error)
-		List(ctx context.Context, req ListNetworkBackendRequest) ([]NetworkBackendResponse, error)
-		Update(ctx context.Context, req UpdateNetworkBackendRequest) error
-		Targets() *networkBackendTargetService
+		Create(ctx context.Context, lbID string, req CreateNetworkBackendRequest) (string, error)
+		Delete(ctx context.Context, lbID, backendID string) error
+		Get(ctx context.Context, lbID, backendID string) (*NetworkBackendResponse, error)
+		List(ctx context.Context, lbID string, options ListNetworkLoadBalancerRequest) ([]NetworkBackendResponse, error)
+		Update(ctx context.Context, lbID, backendID string, req UpdateNetworkBackendRequest) (string, error)
 	}
 
 	// networkBackendService implements the NetworkBackendService interface
@@ -152,14 +78,9 @@ type (
 	}
 )
 
-// Targets returns a service for managing backend targets
-func (s *networkBackendService) Targets() *networkBackendTargetService {
-	return &networkBackendTargetService{client: s.client}
-}
-
 // Create creates a new network backend
-func (s *networkBackendService) Create(ctx context.Context, req CreateNetworkBackendRequest) (string, error) {
-	path := urlNetworkLoadBalancer(&req.LoadBalancerID, backends)
+func (s *networkBackendService) Create(ctx context.Context, lbID string, req CreateNetworkBackendRequest) (string, error) {
+	path := urlNetworkLoadBalancer(&lbID, backends)
 
 	httpReq, err := s.client.newRequest(ctx, http.MethodPost, path, req)
 	if err != nil {
@@ -177,8 +98,8 @@ func (s *networkBackendService) Create(ctx context.Context, req CreateNetworkBac
 }
 
 // Delete removes a network backend
-func (s *networkBackendService) Delete(ctx context.Context, req DeleteNetworkBackendRequest) error {
-	path := urlNetworkLoadBalancer(&req.LoadBalancerID, backends, req.BackendID)
+func (s *networkBackendService) Delete(ctx context.Context, lbID, backendID string) error {
+	path := urlNetworkLoadBalancer(&lbID, backends, backendID)
 
 	httpReq, err := s.client.newRequest(ctx, http.MethodDelete, path, nil)
 	if err != nil {
@@ -190,8 +111,8 @@ func (s *networkBackendService) Delete(ctx context.Context, req DeleteNetworkBac
 }
 
 // Get retrieves detailed information about a specific backend
-func (s *networkBackendService) Get(ctx context.Context, req GetNetworkBackendRequest) (*NetworkBackendResponse, error) {
-	path := urlNetworkLoadBalancer(&req.LoadBalancerID, backends, req.BackendID)
+func (s *networkBackendService) Get(ctx context.Context, lbID, backendID string) (*NetworkBackendResponse, error) {
+	path := urlNetworkLoadBalancer(&lbID, backends, backendID)
 
 	httpReq, err := s.client.newRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
@@ -207,13 +128,20 @@ func (s *networkBackendService) Get(ctx context.Context, req GetNetworkBackendRe
 }
 
 // List returns a list of network backends
-func (s *networkBackendService) List(ctx context.Context, req ListNetworkBackendRequest) ([]NetworkBackendResponse, error) {
-	path := urlNetworkLoadBalancer(&req.LoadBalancerID, backends)
+func (s *networkBackendService) List(ctx context.Context, lbID string, options ListNetworkLoadBalancerRequest) ([]NetworkBackendResponse, error) {
+	path := urlNetworkLoadBalancer(&lbID, backends)
 
 	httpReq, err := s.client.newRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
 		return nil, err
 	}
+
+	// Add query parameters for pagination and sorting
+	query := helpers.NewQueryParams(httpReq)
+	query.AddReflect("_offset", options.Offset)
+	query.AddReflect("_limit", options.Limit)
+	query.Add("_sort", options.Sort)
+	httpReq.URL.RawQuery = query.Encode()
 
 	var resp NetworkPaginatedBackendResponse
 	result, err := mgc_http.Do(s.client.GetConfig(), ctx, httpReq, &resp)
@@ -223,15 +151,19 @@ func (s *networkBackendService) List(ctx context.Context, req ListNetworkBackend
 	return result.Results, nil
 }
 
-// Update updates a network backend's properties
-func (s *networkBackendService) Update(ctx context.Context, req UpdateNetworkBackendRequest) error {
-	path := urlNetworkLoadBalancer(&req.LoadBalancerID, backends, req.BackendID)
+// Update updates a network backend's properties and returns the backend ID
+func (s *networkBackendService) Update(ctx context.Context, lbID, backendID string, req UpdateNetworkBackendRequest) (string, error) {
+	path := urlNetworkLoadBalancer(&lbID, backends, backendID)
 
 	httpReq, err := s.client.newRequest(ctx, http.MethodPut, path, req)
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	_, err = mgc_http.Do[any](s.client.GetConfig(), ctx, httpReq, nil)
-	return err
+	var resp NetworkGenericCreationResponse
+	result, err := mgc_http.Do(s.client.GetConfig(), ctx, httpReq, &resp)
+	if err != nil {
+		return "", err
+	}
+	return result.ID, nil
 }

@@ -19,12 +19,6 @@ func TestNewQueryParams(t *testing.T) {
 		t.Fatal("NewQueryParams retornou nil")
 	}
 
-	// Verificar se o tipo retornado implementa a interface QueryParams
-	_, ok := qp.(QueryParams)
-	if !ok {
-		t.Fatal("NewQueryParams não retornou um tipo que implementa QueryParams")
-	}
-
 	// Verificar se mantém parâmetros existentes da URL
 	encoded := qp.Encode()
 	if encoded != "existing=value" {

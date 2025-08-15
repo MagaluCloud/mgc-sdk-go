@@ -13,7 +13,6 @@ const health_checks = "health-checks"
 type (
 	// CreateNetworkHealthCheckRequest represents the request payload for creating a network health check
 	CreateNetworkHealthCheckRequest struct {
-		LoadBalancerID          string              `json:"-"`
 		Name                    string              `json:"name"`
 		Description             *string             `json:"description,omitempty"`
 		Protocol                HealthCheckProtocol `json:"protocol"`
@@ -27,30 +26,8 @@ type (
 		UnhealthyThresholdCount *int                `json:"unhealthy_threshold_count,omitempty"`
 	}
 
-	// DeleteNetworkHealthCheckRequest represents the request payload for deleting a network health check
-	DeleteNetworkHealthCheckRequest struct {
-		LoadBalancerID string `json:"-"`
-		HealthCheckID  string `json:"-"`
-	}
-
-	// GetNetworkHealthCheckRequest represents the request payload for getting a network health check
-	GetNetworkHealthCheckRequest struct {
-		LoadBalancerID string `json:"-"`
-		HealthCheckID  string `json:"-"`
-	}
-
-	// ListNetworkHealthCheckRequest represents the request payload for listing network health checks
-	ListNetworkHealthCheckRequest struct {
-		LoadBalancerID string  `json:"-"`
-		Offset         *int    `json:"-"`
-		Limit          *int    `json:"-"`
-		Sort           *string `json:"-"`
-	}
-
 	// UpdateNetworkHealthCheckRequest represents the request payload for updating a network health check
 	UpdateNetworkHealthCheckRequest struct {
-		LoadBalancerID          string              `json:"-"`
-		HealthCheckID           string              `json:"-"`
 		Protocol                HealthCheckProtocol `json:"protocol"`
 		Path                    *string             `json:"path,omitempty"`
 		Port                    int                 `json:"port"`
@@ -82,17 +59,17 @@ type (
 
 	// NetworkPaginatedHealthCheckResponse represents a paginated health check response
 	NetworkPaginatedHealthCheckResponse struct {
-		Meta    interface{}                  `json:"meta"`
+		Meta    PaginationMeta               `json:"meta"`
 		Results []NetworkHealthCheckResponse `json:"results"`
 	}
 
 	// NetworkHealthCheckService provides methods for managing network health checks
 	NetworkHealthCheckService interface {
-		Create(ctx context.Context, req CreateNetworkHealthCheckRequest) (*NetworkHealthCheckResponse, error)
-		Delete(ctx context.Context, req DeleteNetworkHealthCheckRequest) error
-		Get(ctx context.Context, req GetNetworkHealthCheckRequest) (*NetworkHealthCheckResponse, error)
-		List(ctx context.Context, req ListNetworkHealthCheckRequest) ([]NetworkHealthCheckResponse, error)
-		Update(ctx context.Context, req UpdateNetworkHealthCheckRequest) error
+		Create(ctx context.Context, lbID string, req CreateNetworkHealthCheckRequest) (*NetworkHealthCheckResponse, error)
+		Delete(ctx context.Context, lbID, healthCheckID string) error
+		Get(ctx context.Context, lbID, healthCheckID string) (*NetworkHealthCheckResponse, error)
+		List(ctx context.Context, lbID string, options ListNetworkLoadBalancerRequest) ([]NetworkHealthCheckResponse, error)
+		Update(ctx context.Context, lbID, healthCheckID string, req UpdateNetworkHealthCheckRequest) error
 	}
 
 	// networkHealthCheckService implements the NetworkHealthCheckService interface
@@ -102,8 +79,8 @@ type (
 )
 
 // Create creates a new network health check
-func (s *networkHealthCheckService) Create(ctx context.Context, req CreateNetworkHealthCheckRequest) (*NetworkHealthCheckResponse, error) {
-	path := urlNetworkLoadBalancer(&req.LoadBalancerID, health_checks)
+func (s *networkHealthCheckService) Create(ctx context.Context, lbID string, req CreateNetworkHealthCheckRequest) (*NetworkHealthCheckResponse, error) {
+	path := urlNetworkLoadBalancer(&lbID, health_checks)
 
 	httpReq, err := s.client.newRequest(ctx, http.MethodPost, path, req)
 	if err != nil {
@@ -119,8 +96,8 @@ func (s *networkHealthCheckService) Create(ctx context.Context, req CreateNetwor
 }
 
 // Delete removes a network health check
-func (s *networkHealthCheckService) Delete(ctx context.Context, req DeleteNetworkHealthCheckRequest) error {
-	path := urlNetworkLoadBalancer(&req.LoadBalancerID, health_checks, req.HealthCheckID)
+func (s *networkHealthCheckService) Delete(ctx context.Context, lbID, healthCheckID string) error {
+	path := urlNetworkLoadBalancer(&lbID, health_checks, healthCheckID)
 
 	httpReq, err := s.client.newRequest(ctx, http.MethodDelete, path, nil)
 	if err != nil {
@@ -132,8 +109,8 @@ func (s *networkHealthCheckService) Delete(ctx context.Context, req DeleteNetwor
 }
 
 // Get retrieves detailed information about a specific health check
-func (s *networkHealthCheckService) Get(ctx context.Context, req GetNetworkHealthCheckRequest) (*NetworkHealthCheckResponse, error) {
-	path := urlNetworkLoadBalancer(&req.LoadBalancerID, health_checks, req.HealthCheckID)
+func (s *networkHealthCheckService) Get(ctx context.Context, lbID, healthCheckID string) (*NetworkHealthCheckResponse, error) {
+	path := urlNetworkLoadBalancer(&lbID, health_checks, healthCheckID)
 
 	httpReq, err := s.client.newRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
@@ -149,8 +126,8 @@ func (s *networkHealthCheckService) Get(ctx context.Context, req GetNetworkHealt
 }
 
 // List returns a list of network health checks with optional filtering and pagination
-func (s *networkHealthCheckService) List(ctx context.Context, req ListNetworkHealthCheckRequest) ([]NetworkHealthCheckResponse, error) {
-	path := urlNetworkLoadBalancer(&req.LoadBalancerID, health_checks)
+func (s *networkHealthCheckService) List(ctx context.Context, lbID string, options ListNetworkLoadBalancerRequest) ([]NetworkHealthCheckResponse, error) {
+	path := urlNetworkLoadBalancer(&lbID, health_checks)
 
 	httpReq, err := s.client.newRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
@@ -158,9 +135,9 @@ func (s *networkHealthCheckService) List(ctx context.Context, req ListNetworkHea
 	}
 
 	query := helpers.NewQueryParams(httpReq)
-	query.AddReflect("_offset", req.Offset)
-	query.AddReflect("_limit", req.Limit)
-	query.Add("_sort", req.Sort)
+	query.AddReflect("_offset", options.Offset)
+	query.AddReflect("_limit", options.Limit)
+	query.Add("_sort", options.Sort)
 	httpReq.URL.RawQuery = query.Encode()
 
 	var resp NetworkPaginatedHealthCheckResponse
@@ -172,8 +149,8 @@ func (s *networkHealthCheckService) List(ctx context.Context, req ListNetworkHea
 }
 
 // Update updates a network health check's properties
-func (s *networkHealthCheckService) Update(ctx context.Context, req UpdateNetworkHealthCheckRequest) error {
-	path := urlNetworkLoadBalancer(&req.LoadBalancerID, health_checks, req.HealthCheckID)
+func (s *networkHealthCheckService) Update(ctx context.Context, lbID, healthCheckID string, req UpdateNetworkHealthCheckRequest) error {
+	path := urlNetworkLoadBalancer(&lbID, health_checks, healthCheckID)
 
 	httpReq, err := s.client.newRequest(ctx, http.MethodPut, path, req)
 	if err != nil {

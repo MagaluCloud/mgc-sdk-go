@@ -14,33 +14,31 @@ type (
 	CreateNetworkACLRequest struct {
 		Name           *string       `json:"name,omitempty"`
 		Ethertype      AclEtherType  `json:"ethertype"`
-		LoadBalancerID string        `json:"load_balancer_id"`
 		Action         AclActionType `json:"action"`
 		Protocol       AclProtocol   `json:"protocol"`
 		RemoteIPPrefix string        `json:"remote_ip_prefix"`
 	}
 
-	// GetNetworkACLRequest represents the request payload for getting a network ACL rule
-	GetNetworkACLRequest struct {
-		LoadBalancerID string `json:"-"`
-		NetworkACLID   string `json:"-"`
+	// NetworkAclResponse is the persisted form of an ACL rule, as returned by
+	// the API.
+	NetworkAclResponse struct {
+		ID             string       `json:"id"`
+		Name           *string      `json:"name,omitempty"`
+		Ethertype      AclEtherType `json:"ethertype"`
+		Protocol       AclProtocol  `json:"protocol"`
+		RemoteIPPrefix string       `json:"remote_ip_prefix"`
+		Action         string       `json:"action"`
 	}
 
-	// ListNetworkACLRequest represents the request payload for listing network ACL rules
-	ListNetworkACLRequest struct {
-		LoadBalancerID string `json:"-"`
-	}
-
-	// DeleteNetworkACLRequest represents the request payload for deleting a network ACL rule
-	DeleteNetworkACLRequest struct {
-		LoadBalancerID string `json:"load_balancer_id"`
-		ID             string `json:"id"`
+	UpdateNetworkACLRequest struct {
+		Acls []CreateNetworkACLRequest `json:"acls"`
 	}
 
 	// NetworkACLService provides methods for managing network ACL rules
 	NetworkACLService interface {
-		Create(ctx context.Context, req CreateNetworkACLRequest) (string, error)
-		Delete(ctx context.Context, req DeleteNetworkACLRequest) error
+		Create(ctx context.Context, lbID string, req CreateNetworkACLRequest) (string, error)
+		Delete(ctx context.Context, lbID, aclID string) error
+		Replace(ctx context.Context, lbID string, req UpdateNetworkACLRequest) error
 	}
 
 	// networkACLService implements the NetworkACLService interface
@@ -50,8 +48,8 @@ type (
 )
 
 // Create creates a new network ACL rule
-func (s *networkACLService) Create(ctx context.Context, req CreateNetworkACLRequest) (string, error) {
-	path := urlNetworkLoadBalancer(&req.LoadBalancerID, acls)
+func (s *networkACLService) Create(ctx context.Context, lbID string, req CreateNetworkACLRequest) (string, error) {
+	path := urlNetworkLoadBalancer(&lbID, acls)
 	body := CreateNetworkACLRequest{
 		Name:           req.Name,
 		Ethertype:      req.Ethertype,
@@ -77,10 +75,23 @@ func (s *networkACLService) Create(ctx context.Context, req CreateNetworkACLRequ
 }
 
 // Delete removes a network ACL rule
-func (s *networkACLService) Delete(ctx context.Context, req DeleteNetworkACLRequest) error {
-	path := urlNetworkLoadBalancer(&req.LoadBalancerID, acls, req.ID)
+func (s *networkACLService) Delete(ctx context.Context, lbID, aclID string) error {
+	path := urlNetworkLoadBalancer(&lbID, acls, aclID)
 
 	httpReq, err := s.client.newRequest(ctx, http.MethodDelete, path, nil)
+	if err != nil {
+		return err
+	}
+
+	_, err = mgc_http.Do[any](s.client.GetConfig(), ctx, httpReq, nil)
+	return err
+}
+
+// Replace updates the network ACL rules for a load balancer
+func (s *networkACLService) Replace(ctx context.Context, lbID string, req UpdateNetworkACLRequest) error {
+	path := urlNetworkLoadBalancer(&lbID, acls)
+
+	httpReq, err := s.client.newRequest(ctx, http.MethodPut, path, req)
 	if err != nil {
 		return err
 	}

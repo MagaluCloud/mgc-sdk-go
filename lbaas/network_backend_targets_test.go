@@ -17,13 +17,15 @@ func testBackendTargetClient(baseURL string) NetworkBackendTargetService {
 	core := client.NewMgcClient("test-api",
 		client.WithBaseURL(client.MgcUrl(baseURL)),
 		client.WithHTTPClient(httpClient))
-	return New(core).NetworkBackends().Targets()
+	return New(core).NetworkBackendTargets()
 }
 
 func TestNetworkBackendTargetService_Create(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
 		name       string
+		lbID       string
+		backendID  string
 		request    CreateNetworkBackendTargetRequest
 		response   string
 		statusCode int
@@ -31,12 +33,17 @@ func TestNetworkBackendTargetService_Create(t *testing.T) {
 		wantErr    bool
 	}{
 		{
-			name: "successful creation",
+			name:      "successful creation",
+			lbID:      "lb-123",
+			backendID: "backend-123",
 			request: CreateNetworkBackendTargetRequest{
-				LoadBalancerID:   "lb-123",
-				NetworkBackendID: "backend-123",
-				TargetsID:        []string{"target-1", "target-2"},
-				TargetsType:      "instance",
+				TargetsType: "instance",
+				Targets: []NetworkBackendInstanceTargetRequest{
+					{
+						NicID: stringPtr("nic-1"),
+						Port:  80,
+					},
+				},
 			},
 			response:   `{"id": "target-123"}`,
 			statusCode: http.StatusOK,
@@ -44,12 +51,17 @@ func TestNetworkBackendTargetService_Create(t *testing.T) {
 			wantErr:    false,
 		},
 		{
-			name: "server error",
+			name:      "server error",
+			lbID:      "lb-123",
+			backendID: "backend-123",
 			request: CreateNetworkBackendTargetRequest{
-				LoadBalancerID:   "lb-123",
-				NetworkBackendID: "backend-123",
-				TargetsID:        []string{"target-1", "target-2"},
-				TargetsType:      "instance",
+				TargetsType: "instance",
+				Targets: []NetworkBackendInstanceTargetRequest{
+					{
+						NicID: stringPtr("nic-1"),
+						Port:  80,
+					},
+				},
 			},
 			response:   `{"error": "internal server error"}`,
 			statusCode: http.StatusInternalServerError,
@@ -62,7 +74,7 @@ func TestNetworkBackendTargetService_Create(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				assertEqual(t, fmt.Sprintf("/load-balancer/v0beta1/network-load-balancers/%s/backends/%s/targets", tt.request.LoadBalancerID, tt.request.NetworkBackendID), r.URL.Path)
+				assertEqual(t, fmt.Sprintf("/load-balancer/v0beta1/network-load-balancers/%s/backends/%s/targets", tt.lbID, tt.backendID), r.URL.Path)
 				assertEqual(t, http.MethodPost, r.Method)
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(tt.statusCode)
@@ -71,7 +83,87 @@ func TestNetworkBackendTargetService_Create(t *testing.T) {
 			defer server.Close()
 
 			client := testBackendTargetClient(server.URL)
-			id, err := client.Create(context.Background(), tt.request)
+			id, err := client.Create(context.Background(), tt.lbID, tt.backendID, tt.request)
+
+			if tt.wantErr {
+				assertError(t, err)
+				return
+			}
+
+			assertNoError(t, err)
+			assertEqual(t, tt.want, id)
+		})
+	}
+}
+
+func TestNetworkBackendTargetService_Replace(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name       string
+		lbID       string
+		backendID  string
+		request    CreateNetworkBackendTargetRequest
+		response   string
+		statusCode int
+		want       string
+		wantErr    bool
+	}{
+		{
+			name:      "successful replace",
+			lbID:      "lb-123",
+			backendID: "backend-123",
+			request: CreateNetworkBackendTargetRequest{
+				TargetsType: "instance",
+				Targets: []NetworkBackendInstanceTargetRequest{
+					{
+						NicID: stringPtr("nic-1"),
+						Port:  80,
+					},
+					{
+						NicID: stringPtr("nic-2"),
+						Port:  8080,
+					},
+				},
+			},
+			response:   `{"id": "target-456"}`,
+			statusCode: http.StatusOK,
+			want:       "target-456",
+			wantErr:    false,
+		},
+		{
+			name:      "server error",
+			lbID:      "lb-123",
+			backendID: "backend-123",
+			request: CreateNetworkBackendTargetRequest{
+				TargetsType: "instance",
+				Targets: []NetworkBackendInstanceTargetRequest{
+					{
+						NicID: stringPtr("nic-1"),
+						Port:  80,
+					},
+				},
+			},
+			response:   `{"error": "internal server error"}`,
+			statusCode: http.StatusInternalServerError,
+			wantErr:    true,
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				assertEqual(t, fmt.Sprintf("/load-balancer/v0beta1/network-load-balancers/%s/backends/%s/targets", tt.lbID, tt.backendID), r.URL.Path)
+				assertEqual(t, http.MethodPut, r.Method)
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(tt.statusCode)
+				w.Write([]byte(tt.response))
+			}))
+			defer server.Close()
+
+			client := testBackendTargetClient(server.URL)
+			id, err := client.Replace(context.Background(), tt.lbID, tt.backendID, tt.request)
 
 			if tt.wantErr {
 				assertError(t, err)
@@ -124,11 +216,7 @@ func TestNetworkBackendTargetService_Delete(t *testing.T) {
 			defer server.Close()
 
 			client := testBackendTargetClient(server.URL)
-			err := client.Delete(context.Background(), DeleteNetworkBackendTargetRequest{
-				LoadBalancerID:   tt.lbID,
-				NetworkBackendID: tt.backendID,
-				TargetID:         tt.targetID,
-			})
+			err := client.Delete(context.Background(), tt.lbID, tt.backendID, tt.targetID)
 
 			if tt.wantErr {
 				assertError(t, err)
@@ -144,20 +232,65 @@ func TestNetworkBackendTargetService_Delete(t *testing.T) {
 func TestNetworkBackendTargetService_Create_NewRequestError(t *testing.T) {
 	t.Parallel()
 
-	// Usar um contexto cancelado para forçar erro no newRequest
+	// Use a canceled context to force error in newRequest
 	ctx, cancel := context.WithCancel(context.Background())
-	cancel() // Cancela imediatamente
+	cancel() // Cancel immediately
 
 	client := testBackendTargetClient("http://dummy-url")
 
-	req := CreateNetworkBackendTargetRequest{
-		LoadBalancerID:   "lb-123",
-		NetworkBackendID: "backend-123",
-		TargetsID:        []string{"target-1", "target-2"},
-		TargetsType:      "instance",
+	request := CreateNetworkBackendTargetRequest{
+		TargetsType: "instance",
+		Targets: []NetworkBackendInstanceTargetRequest{
+			{
+				NicID: stringPtr("nic-1"),
+				Port:  80,
+			},
+		},
 	}
 
-	_, err := client.Create(ctx, req)
+	_, err := client.Create(ctx, "lb-123", "backend-123", request)
+
+	if err == nil {
+		t.Error("expected error due to canceled context, got nil")
+	}
+}
+
+func TestNetworkBackendTargetService_Replace_NewRequestError(t *testing.T) {
+	t.Parallel()
+
+	// Use a canceled context to force error in newRequest
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel() // Cancel immediately
+
+	client := testBackendTargetClient("http://dummy-url")
+
+	request := CreateNetworkBackendTargetRequest{
+		TargetsType: "instance",
+		Targets: []NetworkBackendInstanceTargetRequest{
+			{
+				NicID: stringPtr("nic-1"),
+				Port:  80,
+			},
+		},
+	}
+
+	_, err := client.Replace(ctx, "lb-123", "backend-123", request)
+
+	if err == nil {
+		t.Error("expected error due to canceled context, got nil")
+	}
+}
+
+func TestNetworkBackendTargetService_Delete_NewRequestError(t *testing.T) {
+	t.Parallel()
+
+	// Use a canceled context to force error in newRequest
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel() // Cancel immediately
+
+	client := testBackendTargetClient("http://dummy-url")
+
+	err := client.Delete(ctx, "lb-123", "backend-123", "target-123")
 
 	if err == nil {
 		t.Error("expected error due to canceled context, got nil")
