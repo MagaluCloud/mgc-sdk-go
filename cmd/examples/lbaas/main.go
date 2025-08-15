@@ -20,6 +20,14 @@ import (
 	"github.com/MagaluCloud/mgc-sdk-go/lbaas"
 )
 
+// main is an orchestrator showcasing the recommended execution order of the examples.
+// It demonstrates: listing LBs, creating a new LB, waiting for status changes,
+// updating the LB, managing sub-resources, and finally deleting the LB.
+//
+// Tip:
+// - Replace vpcID with a valid VPC ID in your account.
+// - You can comment out sections you don't need.
+// - For long-running CI samples, consider skipping creation/deletion and only run read-only samples.
 func main() {
 	ExampleListLoadBalancers()
 
@@ -27,8 +35,8 @@ func main() {
 	lbID := ExampleCreateLoadBalancer(vpcID)
 	time.Sleep(10 * time.Second)
 
-	// Exemplos de operações com Load Balancer existente
-	// Substitua por um ID real para testar
+	// Examples of operations with an existing Load Balancer
+	// Replace with a real ID to test
 	// lbID := "" // comment and uncomment to run the examples
 
 	if lbID != "" {
@@ -52,6 +60,12 @@ func main() {
 	}
 }
 
+// deleteWithRetry attempts to delete a load balancer and retries if the platform responds
+// with a 409 Conflict (usually indicating a concurrent operation in progress).
+//
+// Recommended usage:
+// - Use this helper when tearing down test infrastructure that may still be reconciling.
+// - In production, consider exponential backoff and a max retry budget.
 func deleteWithRetry(lbID string) error {
 	err := ExampleDeleteLoadBalancer(lbID)
 	if err != nil {
@@ -67,8 +81,18 @@ func deleteWithRetry(lbID string) error {
 	return nil
 }
 
+// waitCreateLoadBalancer polls a load balancer until it is no longer in the provided status.
+// Common use cases include waiting for "creating" to finish or "updating" to complete.
+//
+// Parameters:
+// - lbID: the load balancer ID returned by Create
+// - status: the transitional status to wait out (e.g., lbaas.LoadBalancerStatusCreating)
+//
+// Caution:
+//   - This is a simple polling loop for demonstration. In production, set timeouts, backoff,
+//     and maximum attempts to avoid infinite waits.
 func waitCreateLoadBalancer(lbID string, status lbaas.LoadBalancerStatus) {
-	// Criar um novo cliente
+	// Create a new client
 	apiToken := os.Getenv("MGC_API_TOKEN")
 	if apiToken == "" {
 		log.Fatal("MGC_API_TOKEN environment variable is not set")
@@ -77,13 +101,9 @@ func waitCreateLoadBalancer(lbID string, status lbaas.LoadBalancerStatus) {
 	lbaasClient := lbaas.New(c)
 	ctx := context.Background()
 
-	// Obter detalhes do Load Balancer
-	getReq := lbaas.GetNetworkLoadBalancerRequest{
-		LoadBalancerID: lbID,
-	}
-
+	// Get Load Balancer details
 	for {
-		lb, err := lbaasClient.NetworkLoadBalancers().Get(ctx, getReq)
+		lb, err := lbaasClient.NetworkLoadBalancers().Get(ctx, lbID)
 		if err != nil {
 			log.Fatal("Erro ao obter Load Balancer:", err)
 		}
@@ -94,8 +114,23 @@ func waitCreateLoadBalancer(lbID string, status lbaas.LoadBalancerStatus) {
 	}
 }
 
+// ExampleCreateLoadBalancer shows how to create a network load balancer with:
+// - a health check
+// - a backend (with raw IP targets)
+// - a listener
+// - an optional ACL
+//
+// Inputs:
+// - vpcID: the VPC where the load balancer will be provisioned
+//
+// Returns:
+// - The created Load Balancer ID on success
+//
+// After creation:
+// - The platform continues provisioning asynchronously. Use waitCreateLoadBalancer to poll.
+// - You can optionally assign a Public IP at creation or later.
 func ExampleCreateLoadBalancer(vpcID string) string {
-	// Criar um novo cliente
+	// Create a new client
 	apiToken := os.Getenv("MGC_API_TOKEN")
 	if apiToken == "" {
 		log.Fatal("MGC_API_TOKEN environment variable is not set")
@@ -104,7 +139,7 @@ func ExampleCreateLoadBalancer(vpcID string) string {
 	lbaasClient := lbaas.New(c)
 	ctx := context.Background()
 
-	// Configurar health check
+	// Configure health check
 	healthCheck := lbaas.NetworkHealthCheckRequest{
 		Name:                    "example-health-check",
 		Description:             helpers.StrPtr("Health check para exemplo"),
@@ -119,7 +154,7 @@ func ExampleCreateLoadBalancer(vpcID string) string {
 		UnhealthyThresholdCount: helpers.IntPtr(3),
 	}
 
-	// Configurar backend com targets raw (IPs)
+	// Configure backend with raw targets (IPs)
 	backend := lbaas.NetworkBackendRequest{
 		Name:             "example-backend",
 		Description:      helpers.StrPtr("Backend para exemplo"),
@@ -140,7 +175,7 @@ func ExampleCreateLoadBalancer(vpcID string) string {
 		},
 	}
 
-	// Configurar listener
+	// Configure listener
 	listener := lbaas.NetworkListenerRequest{
 		Name:        "example-listener",
 		Description: helpers.StrPtr("Listener HTTP para exemplo"),
@@ -149,7 +184,7 @@ func ExampleCreateLoadBalancer(vpcID string) string {
 		Port:        80,
 	}
 
-	// Configurar ACL (opcional)
+	// Configure ACL (optional)
 	acl := lbaas.NetworkAclRequest{
 		Name:           helpers.StrPtr("allow-all"),
 		Ethertype:      lbaas.AclEtherTypeIPv4,
@@ -158,7 +193,7 @@ func ExampleCreateLoadBalancer(vpcID string) string {
 		Action:         lbaas.AclActionTypeAllow,
 	}
 
-	// Criar Load Balancer
+	// Create Load Balancer
 	createReq := lbaas.CreateNetworkLoadBalancerRequest{
 		Name:         "example-load-balancer-" + time.Now().Format("20060102-150405"),
 		Description:  helpers.StrPtr("Load Balancer de exemplo criado via SDK"),
@@ -169,8 +204,7 @@ func ExampleCreateLoadBalancer(vpcID string) string {
 		HealthChecks: []lbaas.NetworkHealthCheckRequest{healthCheck},
 		ACLs:         []lbaas.NetworkAclRequest{acl},
 		VPCID:        vpcID,
-		// PublicIPID:   helpers.StrPtr("your-public-ip-id"), // Opcional
-		PanicThreshold: helpers.IntPtr(50),
+		// PublicIPID:   helpers.StrPtr("your-public-ip-id"), // Optional
 	}
 
 	id, err := lbaasClient.NetworkLoadBalancers().Create(ctx, createReq)
@@ -182,8 +216,14 @@ func ExampleCreateLoadBalancer(vpcID string) string {
 	return id
 }
 
+// ExampleListLoadBalancers demonstrates listing load balancers with common pagination options.
+// It prints summarized information for each result.
+//
+// Notes:
+// - For large projects, always use pagination to control API and memory impact.
+// - Sorting is supported on common fields like created_at.
 func ExampleListLoadBalancers() {
-	// Criar um novo cliente
+	// Create a new client
 	apiToken := os.Getenv("MGC_API_TOKEN")
 	if apiToken == "" {
 		log.Fatal("MGC_API_TOKEN environment variable is not set")
@@ -192,7 +232,7 @@ func ExampleListLoadBalancers() {
 	lbaasClient := lbaas.New(c)
 	ctx := context.Background()
 
-	// Listar Load Balancers com paginação
+	// List Load Balancers with pagination
 	listReq := lbaas.ListNetworkLoadBalancerRequest{
 		Limit:  helpers.IntPtr(10),
 		Offset: helpers.IntPtr(0),
@@ -225,8 +265,14 @@ func ExampleListLoadBalancers() {
 	}
 }
 
+// ExampleGetLoadBalancer fetches a single load balancer by ID and prints key details,
+// including public IPs, listeners, and backends.
+//
+// Use cases:
+// - Inspect current state during workflows
+// - Gather identifiers for sub-resource operations
 func ExampleGetLoadBalancer(lbID string) {
-	// Criar um novo cliente
+	// Create a new client
 	apiToken := os.Getenv("MGC_API_TOKEN")
 	if apiToken == "" {
 		log.Fatal("MGC_API_TOKEN environment variable is not set")
@@ -235,12 +281,8 @@ func ExampleGetLoadBalancer(lbID string) {
 	lbaasClient := lbaas.New(c)
 	ctx := context.Background()
 
-	// Obter detalhes do Load Balancer
-	getReq := lbaas.GetNetworkLoadBalancerRequest{
-		LoadBalancerID: lbID,
-	}
-
-	lb, err := lbaasClient.NetworkLoadBalancers().Get(ctx, getReq)
+	// Get Load Balancer details
+	lb, err := lbaasClient.NetworkLoadBalancers().Get(ctx, lbID)
 	if err != nil {
 		log.Fatal("Erro ao obter Load Balancer:", err)
 	}
@@ -263,7 +305,7 @@ func ExampleGetLoadBalancer(lbID string) {
 	fmt.Printf("  Criado em: %s\n", lb.CreatedAt)
 	fmt.Printf("  Atualizado em: %s\n", lb.UpdatedAt)
 
-	// Exibir IPs públicos
+	// Show public IPs
 	if len(lb.PublicIPs) > 0 {
 		fmt.Println("  IPs Públicos:")
 		for _, ip := range lb.PublicIPs {
@@ -280,7 +322,7 @@ func ExampleGetLoadBalancer(lbID string) {
 		}
 	}
 
-	// Exibir listeners
+	// Show listeners
 	if len(lb.Listeners) > 0 {
 		fmt.Println("  Listeners:")
 		for _, listener := range lb.Listeners {
@@ -289,7 +331,7 @@ func ExampleGetLoadBalancer(lbID string) {
 		}
 	}
 
-	// Exibir backends
+	// Show backends
 	if len(lb.Backends) > 0 {
 		fmt.Println("  Backends:")
 		for _, backend := range lb.Backends {
@@ -299,8 +341,14 @@ func ExampleGetLoadBalancer(lbID string) {
 	}
 }
 
+// ExampleUpdateLoadBalancer performs an in-place update on a load balancer,
+// such as changing its name, description, or panic threshold.
+//
+// Lifecycle:
+// - Updates are applied asynchronously by the platform. Poll until the LB leaves "updating".
+// - Some fields may be immutable post-creation; consult the API docs for constraints.
 func ExampleUpdateLoadBalancer(lbID string) {
-	// Criar um novo cliente
+	// Create a new client
 	apiToken := os.Getenv("MGC_API_TOKEN")
 	if apiToken == "" {
 		log.Fatal("MGC_API_TOKEN environment variable is not set")
@@ -309,15 +357,13 @@ func ExampleUpdateLoadBalancer(lbID string) {
 	lbaasClient := lbaas.New(c)
 	ctx := context.Background()
 
-	// Atualizar Load Balancer
+	// Update Load Balancer
 	updateReq := lbaas.UpdateNetworkLoadBalancerRequest{
-		LoadBalancerID: lbID,
-		Name:           helpers.StrPtr("load-balancer-atualizado"),
-		Description:    helpers.StrPtr("Descrição atualizada via SDK"),
-		PanicThreshold: helpers.IntPtr(75),
+		Name:        helpers.StrPtr("load-balancer-atualizado"),
+		Description: helpers.StrPtr("Descrição atualizada via SDK"),
 	}
 
-	err := lbaasClient.NetworkLoadBalancers().Update(ctx, updateReq)
+	err := lbaasClient.NetworkLoadBalancers().Update(ctx, lbID, updateReq)
 	if err != nil {
 		log.Fatal("Erro ao atualizar Load Balancer:", err)
 	}
@@ -325,6 +371,14 @@ func ExampleUpdateLoadBalancer(lbID string) {
 	fmt.Printf("Load Balancer %s atualizado com sucesso!\n", lbID)
 }
 
+// ExampleManageBackends demonstrates how to:
+// - List existing backends for a load balancer
+// - Create a new backend with raw targets
+// - Retrieve the newly created backend’s details
+//
+// Tips:
+// - Use instances or raw targets according to your environment topology.
+// - Keep health checks aligned with backend target behavior.
 func ExampleManageBackends(lbID string) {
 	// Criar um novo cliente
 	apiToken := os.Getenv("MGC_API_TOKEN")
@@ -392,6 +446,12 @@ func ExampleManageBackends(lbID string) {
 	}
 }
 
+// ExampleManageListeners demonstrates how to list listeners associated with a load balancer.
+// Use this to discover IDs and properties before updating or deleting listeners.
+//
+// Extending this example:
+// - Add create/update/delete flows similar to backends and health checks.
+// - Enforce protocol/port policies according to your security standards.
 func ExampleManageListeners(lbID string) {
 	// Criar um novo cliente
 	apiToken := os.Getenv("MGC_API_TOKEN")
@@ -419,6 +479,16 @@ func ExampleManageListeners(lbID string) {
 	}
 }
 
+// ExampleManageHealthChecks demonstrates how to:
+// - List health checks on a load balancer
+// - Create a new health check with common settings
+//
+// Guidance:
+// - Tune intervals, timeouts, and thresholds to match your application’s responsiveness.
+// - For HTTP checks, consider path and expected status codes.
+//
+// Returns:
+// - Prints created health check ID for follow-up operations.
 func ExampleManageHealthChecks(lbID string) {
 	// Criar um novo cliente
 	apiToken := os.Getenv("MGC_API_TOKEN")
@@ -470,6 +540,17 @@ func ExampleManageHealthChecks(lbID string) {
 }
 
 // generateSelfSignedCertificate gera um certificado autoassinado em memória para testes
+//
+// generateSelfSignedCertificate produces an in-memory self-signed certificate and private key.
+// This is intended for demo purposes only and should NOT be used in production.
+//
+// Returns:
+// - PEM-encoded certificate string
+// - PEM-encoded private key string
+// - error, if any
+//
+// Security note:
+// - In production, obtain certificates from a trusted CA and store private keys securely.
 func generateSelfSignedCertificate() (string, string, error) {
 	// Gerar chave privada RSA
 	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
@@ -522,6 +603,15 @@ func generateSelfSignedCertificate() (string, string, error) {
 	return string(certPEM), string(privateKeyPEM), nil
 }
 
+// ExampleManageCertificates demonstrates how to:
+// - List existing TLS certificates associated with a load balancer
+// - Generate a temporary self-signed certificate (demo only)
+// - Create a certificate on the load balancer and fetch its details
+//
+// Best practices:
+// - Use real certificates from a trusted CA in production.
+// - Avoid logging or printing sensitive key material.
+// - Consider certificate rotation policies and expiration monitoring.
 func ExampleManageCertificates(lbID string) {
 	// Criar um novo cliente
 	apiToken := os.Getenv("MGC_API_TOKEN")
@@ -601,6 +691,12 @@ func ExampleManageCertificates(lbID string) {
 	}
 }
 
+// ExampleManageACLs demonstrates how to create an ACL entry for a load balancer.
+// The sample shows an allow rule for a CIDR range and protocol.
+//
+// Operational tips:
+// - Start with deny-all and explicitly allow only what’s required (principle of least privilege).
+// - Keep network policies versioned and auditable.
 func ExampleManageACLs(lbID string) {
 	// Criar um novo cliente
 	apiToken := os.Getenv("MGC_API_TOKEN")
@@ -649,8 +745,14 @@ func ExampleManageACLs(lbID string) {
 	}
 }
 
+// ExampleDeleteLoadBalancer deletes a load balancer by ID.
+// Optionally, it can also delete the attached public IP (set DeletePublicIP to true if desired).
+//
+// Recommendations:
+// - Ensure no dependent resources (e.g., listeners, backends) require cleanup policies.
+// - In test environments, wrap deletion with retries to handle transient 409 conflicts.
 func ExampleDeleteLoadBalancer(lbID string) error {
-	// Criar um novo cliente
+	// Create a new client
 	apiToken := os.Getenv("MGC_API_TOKEN")
 	if apiToken == "" {
 		log.Fatal("MGC_API_TOKEN environment variable is not set")
@@ -659,13 +761,12 @@ func ExampleDeleteLoadBalancer(lbID string) error {
 	lbaasClient := lbaas.New(c)
 	ctx := context.Background()
 
-	// Deletar Load Balancer
+	// Delete Load Balancer
 	deleteReq := lbaas.DeleteNetworkLoadBalancerRequest{
-		LoadBalancerID: lbID,
-		DeletePublicIP: helpers.BoolPtr(false), // Manter o IP público
+		DeletePublicIP: helpers.BoolPtr(false), // Keep the public IP
 	}
 
-	err := lbaasClient.NetworkLoadBalancers().Delete(ctx, deleteReq)
+	err := lbaasClient.NetworkLoadBalancers().Delete(ctx, lbID, deleteReq)
 	if err != nil {
 		return err
 	}

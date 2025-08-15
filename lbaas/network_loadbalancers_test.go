@@ -236,7 +236,7 @@ func TestNetworkLoadBalancerService_Get(t *testing.T) {
 			defer server.Close()
 
 			client := testLoadBalancerClient(server.URL)
-			lb, err := client.Get(context.Background(), GetNetworkLoadBalancerRequest{LoadBalancerID: tt.lbID})
+			lb, err := client.Get(context.Background(), tt.lbID)
 
 			if tt.wantErr {
 				assertError(t, err)
@@ -340,8 +340,7 @@ func TestNetworkLoadBalancerService_Update(t *testing.T) {
 			name: "successful update",
 			lbID: "lb-123",
 			request: UpdateNetworkLoadBalancerRequest{
-				LoadBalancerID: "lb-123",
-				Name:           stringPtr("updated-lb"),
+				Name: stringPtr("updated-lb"),
 			},
 			statusCode: http.StatusOK,
 			wantErr:    false,
@@ -350,8 +349,7 @@ func TestNetworkLoadBalancerService_Update(t *testing.T) {
 			name: "non-existent load balancer",
 			lbID: "invalid",
 			request: UpdateNetworkLoadBalancerRequest{
-				LoadBalancerID: "invalid",
-				Name:           stringPtr("updated-lb"),
+				Name: stringPtr("updated-lb"),
 			},
 			statusCode: http.StatusNotFound,
 			wantErr:    true,
@@ -360,8 +358,7 @@ func TestNetworkLoadBalancerService_Update(t *testing.T) {
 			name: "bad request - invalid data",
 			lbID: "lb-123",
 			request: UpdateNetworkLoadBalancerRequest{
-				LoadBalancerID: "lb-123",
-				Name:           stringPtr(""),
+				Name: stringPtr(""),
 			},
 			statusCode: http.StatusBadRequest,
 			wantErr:    true,
@@ -370,8 +367,7 @@ func TestNetworkLoadBalancerService_Update(t *testing.T) {
 			name: "unauthorized access",
 			lbID: "lb-123",
 			request: UpdateNetworkLoadBalancerRequest{
-				LoadBalancerID: "lb-123",
-				Name:           stringPtr("updated-lb"),
+				Name: stringPtr("updated-lb"),
 			},
 			statusCode: http.StatusUnauthorized,
 			wantErr:    true,
@@ -380,8 +376,7 @@ func TestNetworkLoadBalancerService_Update(t *testing.T) {
 			name: "forbidden access",
 			lbID: "lb-123",
 			request: UpdateNetworkLoadBalancerRequest{
-				LoadBalancerID: "lb-123",
-				Name:           stringPtr("updated-lb"),
+				Name: stringPtr("updated-lb"),
 			},
 			statusCode: http.StatusForbidden,
 			wantErr:    true,
@@ -390,8 +385,7 @@ func TestNetworkLoadBalancerService_Update(t *testing.T) {
 			name: "conflict - name already exists",
 			lbID: "lb-123",
 			request: UpdateNetworkLoadBalancerRequest{
-				LoadBalancerID: "lb-123",
-				Name:           stringPtr("existing-name"),
+				Name: stringPtr("existing-name"),
 			},
 			statusCode: http.StatusConflict,
 			wantErr:    true,
@@ -400,8 +394,7 @@ func TestNetworkLoadBalancerService_Update(t *testing.T) {
 			name: "server error",
 			lbID: "lb-123",
 			request: UpdateNetworkLoadBalancerRequest{
-				LoadBalancerID: "lb-123",
-				Name:           stringPtr("updated-lb"),
+				Name: stringPtr("updated-lb"),
 			},
 			statusCode: http.StatusInternalServerError,
 			wantErr:    true,
@@ -420,7 +413,7 @@ func TestNetworkLoadBalancerService_Update(t *testing.T) {
 			defer server.Close()
 
 			client := testLoadBalancerClient(server.URL)
-			err := client.Update(context.Background(), tt.request)
+			err := client.Update(context.Background(), tt.lbID, tt.request)
 
 			if tt.wantErr {
 				assertError(t, err)
@@ -443,11 +436,9 @@ func TestNetworkLoadBalancerService_Delete(t *testing.T) {
 		wantErr    bool
 	}{
 		{
-			name: "successful deletion",
-			lbID: "lb-123",
-			request: DeleteNetworkLoadBalancerRequest{
-				LoadBalancerID: "lb-123",
-			},
+			name:       "successful deletion",
+			lbID:       "lb-123",
+			request:    DeleteNetworkLoadBalancerRequest{},
 			statusCode: http.StatusOK,
 			wantErr:    false,
 		},
@@ -455,7 +446,6 @@ func TestNetworkLoadBalancerService_Delete(t *testing.T) {
 			name: "deletion with delete public IP",
 			lbID: "lb-123",
 			request: DeleteNetworkLoadBalancerRequest{
-				LoadBalancerID: "lb-123",
 				DeletePublicIP: boolPtr(true),
 			},
 			statusCode: http.StatusOK,
@@ -465,54 +455,43 @@ func TestNetworkLoadBalancerService_Delete(t *testing.T) {
 			name: "deletion without deleting public IP",
 			lbID: "lb-123",
 			request: DeleteNetworkLoadBalancerRequest{
-				LoadBalancerID: "lb-123",
 				DeletePublicIP: boolPtr(false),
 			},
 			statusCode: http.StatusOK,
 			wantErr:    false,
 		},
 		{
-			name: "non-existent load balancer",
-			lbID: "invalid",
-			request: DeleteNetworkLoadBalancerRequest{
-				LoadBalancerID: "invalid",
-			},
+			name:       "non-existent load balancer",
+			lbID:       "invalid",
+			request:    DeleteNetworkLoadBalancerRequest{},
 			statusCode: http.StatusNotFound,
 			wantErr:    true,
 		},
 		{
-			name: "unauthorized access",
-			lbID: "lb-123",
-			request: DeleteNetworkLoadBalancerRequest{
-				LoadBalancerID: "lb-123",
-			},
+			name:       "unauthorized access",
+			lbID:       "lb-123",
+			request:    DeleteNetworkLoadBalancerRequest{},
 			statusCode: http.StatusUnauthorized,
 			wantErr:    true,
 		},
 		{
-			name: "forbidden access",
-			lbID: "lb-123",
-			request: DeleteNetworkLoadBalancerRequest{
-				LoadBalancerID: "lb-123",
-			},
+			name:       "forbidden access",
+			lbID:       "lb-123",
+			request:    DeleteNetworkLoadBalancerRequest{},
 			statusCode: http.StatusForbidden,
 			wantErr:    true,
 		},
 		{
-			name: "conflict - resource in use",
-			lbID: "lb-123",
-			request: DeleteNetworkLoadBalancerRequest{
-				LoadBalancerID: "lb-123",
-			},
+			name:       "conflict - resource in use",
+			lbID:       "lb-123",
+			request:    DeleteNetworkLoadBalancerRequest{},
 			statusCode: http.StatusConflict,
 			wantErr:    true,
 		},
 		{
-			name: "server error",
-			lbID: "lb-123",
-			request: DeleteNetworkLoadBalancerRequest{
-				LoadBalancerID: "lb-123",
-			},
+			name:       "server error",
+			lbID:       "lb-123",
+			request:    DeleteNetworkLoadBalancerRequest{},
 			statusCode: http.StatusInternalServerError,
 			wantErr:    true,
 		},
@@ -540,7 +519,7 @@ func TestNetworkLoadBalancerService_Delete(t *testing.T) {
 			defer server.Close()
 
 			client := testLoadBalancerClient(server.URL)
-			err := client.Delete(context.Background(), tt.request)
+			err := client.Delete(context.Background(), tt.lbID, tt.request)
 
 			if tt.wantErr {
 				assertError(t, err)

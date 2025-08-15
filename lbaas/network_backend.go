@@ -3,6 +3,7 @@ package lbaas
 import (
 	"context"
 	"net/http"
+	"time"
 
 	mgc_http "github.com/MagaluCloud/mgc-sdk-go/internal/http"
 )
@@ -90,39 +91,48 @@ type (
 
 	// NetworkBackendInstanceResponse represents an instance-based backend target response
 	NetworkBackendInstanceResponse struct {
-		ID        string  `json:"id"`
-		IPAddress *string `json:"ip_address,omitempty"`
-		NicID     string  `json:"nic_id,omitempty"`
-		Port      int     `json:"port"`
-		CreatedAt string  `json:"created_at"`
-		UpdatedAt string  `json:"updated_at"`
+		ID        string    `json:"id"`
+		IPAddress *string   `json:"ip_address,omitempty"`
+		NicID     string    `json:"nic_id,omitempty"`
+		Port      int       `json:"port"`
+		CreatedAt time.Time `json:"created_at"`
+		UpdatedAt time.Time `json:"updated_at"`
 	}
 
 	// NetworkBackendRawTargetResponse represents a raw IP/port backend target response
 	NetworkBackendRawTargetResponse struct {
-		ID        string  `json:"id"`
-		IPAddress *string `json:"ip_address,omitempty"`
-		Port      int     `json:"port"`
-		CreatedAt string  `json:"created_at"`
-		UpdatedAt string  `json:"updated_at"`
+		ID        string    `json:"id"`
+		IPAddress *string   `json:"ip_address,omitempty"`
+		Port      int       `json:"port"`
+		CreatedAt time.Time `json:"created_at"`
+		UpdatedAt time.Time `json:"updated_at"`
 	}
 
 	// NetworkBackendResponse represents a network backend response
 	NetworkBackendResponse struct {
-		ID               string                  `json:"id"`
-		HealthCheckID    *string                 `json:"health_check_id,omitempty"`
-		Name             string                  `json:"name"`
-		Description      *string                 `json:"description,omitempty"`
-		BalanceAlgorithm BackendBalanceAlgorithm `json:"balance_algorithm"`
-		TargetsType      BackendType             `json:"targets_type"`
-		Targets          interface{}             `json:"targets"`
-		CreatedAt        string                  `json:"created_at"`
-		UpdatedAt        string                  `json:"updated_at"`
+		ID               string                         `json:"id"`
+		HealthCheckID    *string                        `json:"health_check_id,omitempty"`
+		Name             string                         `json:"name"`
+		Description      *string                        `json:"description,omitempty"`
+		BalanceAlgorithm BackendBalanceAlgorithm        `json:"balance_algorithm"`
+		TargetsType      BackendType                    `json:"targets_type"`
+		Targets          []NetworkBackendTargetResponse `json:"targets"`
+		CreatedAt        time.Time                      `json:"created_at"`
+		UpdatedAt        time.Time                      `json:"updated_at"`
+	}
+
+	NetworkBackendTargetResponse struct {
+		ID        string    `json:"id"`
+		IPAddress string    `json:"ip_address"`
+		Port      int       `json:"port"`
+		NicID     *string   `json:"nic_id,omitempty"`
+		CreatedAt time.Time `json:"created_at"`
+		UpdatedAt time.Time `json:"updated_at"`
 	}
 
 	// NetworkPaginatedBackendResponse represents a paginated backend response
 	NetworkPaginatedBackendResponse struct {
-		Meta    interface{}              `json:"meta"`
+		Meta    any                      `json:"meta"`
 		Results []NetworkBackendResponse `json:"results"`
 	}
 
