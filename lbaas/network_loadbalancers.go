@@ -24,7 +24,7 @@ import (
 type (
 	// NetworkListenerRequest represents a listener configuration for load balancer creation
 	NetworkListenerRequest struct {
-		BackendName        string                      `json:"backend_name"`
+		BackendName        string           `json:"backend_name"`
 		TLSCertificateName *string          `json:"tls_certificate_name,omitempty"`
 		Name               string           `json:"name"`
 		Description        *string          `json:"description,omitempty"`
