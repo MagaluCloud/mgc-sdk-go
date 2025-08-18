@@ -29,7 +29,7 @@ func TestNetworkBackendService_Create(t *testing.T) {
 	tests := []struct {
 		name       string
 		lbID       string
-		request    CreateNetworkBackendRequest
+		request    CreateBackendRequest
 		response   string
 		statusCode int
 		want       string
@@ -38,7 +38,7 @@ func TestNetworkBackendService_Create(t *testing.T) {
 		{
 			name: "successful creation",
 			lbID: "lb-123",
-			request: CreateNetworkBackendRequest{
+			request: CreateBackendRequest{
 				Name:             "test-backend",
 				BalanceAlgorithm: "round_robin",
 				TargetsType:      "instance",
@@ -51,7 +51,7 @@ func TestNetworkBackendService_Create(t *testing.T) {
 		{
 			name: "successful creation with all fields",
 			lbID: "lb-123",
-			request: CreateNetworkBackendRequest{
+			request: CreateBackendRequest{
 				Name:                                "test-backend",
 				Description:                         stringPtr("Test backend description"),
 				BalanceAlgorithm:                    "least_connections",
@@ -76,7 +76,7 @@ func TestNetworkBackendService_Create(t *testing.T) {
 		{
 			name: "server error",
 			lbID: "lb-123",
-			request: CreateNetworkBackendRequest{
+			request: CreateBackendRequest{
 				Name:             "test-backend",
 				BalanceAlgorithm: "round_robin",
 				TargetsType:      "instance",
@@ -88,7 +88,7 @@ func TestNetworkBackendService_Create(t *testing.T) {
 		{
 			name: "bad request - invalid balance algorithm",
 			lbID: "lb-123",
-			request: CreateNetworkBackendRequest{
+			request: CreateBackendRequest{
 				Name:             "test-backend",
 				BalanceAlgorithm: "invalid_algorithm",
 				TargetsType:      "instance",
@@ -100,7 +100,7 @@ func TestNetworkBackendService_Create(t *testing.T) {
 		{
 			name: "unauthorized access",
 			lbID: "lb-123",
-			request: CreateNetworkBackendRequest{
+			request: CreateBackendRequest{
 				Name:             "test-backend",
 				BalanceAlgorithm: "round_robin",
 				TargetsType:      "instance",
@@ -112,7 +112,7 @@ func TestNetworkBackendService_Create(t *testing.T) {
 		{
 			name: "forbidden access",
 			lbID: "lb-123",
-			request: CreateNetworkBackendRequest{
+			request: CreateBackendRequest{
 				Name:             "test-backend",
 				BalanceAlgorithm: "round_robin",
 				TargetsType:      "instance",
@@ -124,7 +124,7 @@ func TestNetworkBackendService_Create(t *testing.T) {
 		{
 			name: "load balancer not found",
 			lbID: "invalid-lb",
-			request: CreateNetworkBackendRequest{
+			request: CreateBackendRequest{
 				Name:             "test-backend",
 				BalanceAlgorithm: "round_robin",
 				TargetsType:      "instance",
@@ -136,7 +136,7 @@ func TestNetworkBackendService_Create(t *testing.T) {
 		{
 			name: "conflict - backend already exists",
 			lbID: "lb-123",
-			request: CreateNetworkBackendRequest{
+			request: CreateBackendRequest{
 				Name:             "existing-backend",
 				BalanceAlgorithm: "round_robin",
 				TargetsType:      "instance",
@@ -197,8 +197,8 @@ func TestNetworkBackendService_Get(t *testing.T) {
 				"health_check_id": "hc-123",
 				"close_connections_on_host_health_failure": false,
 				"targets": [],
-				"created_at": "2023-01-01T00:00:00Z",
-				"updated_at": "2023-01-01T00:00:00Z"
+				"created_at": "2023-01-01T00:00:00.000000",
+				"updated_at": "2023-01-01T00:00:00.000000"
 			}`,
 			statusCode: http.StatusOK,
 			wantErr:    false,
@@ -296,8 +296,8 @@ func TestNetworkBackendService_List(t *testing.T) {
 						"targets_type": "instance",
 						"close_connections_on_host_health_failure": false,
 						"targets": [],
-						"created_at": "2023-01-01T00:00:00Z",
-						"updated_at": "2023-01-01T00:00:00Z"
+						"created_at": "2023-01-01T00:00:00.000000",
+						"updated_at": "2023-01-01T00:00:00.000000"
 					},
 					{
 						"id": "backend-2",
@@ -306,8 +306,8 @@ func TestNetworkBackendService_List(t *testing.T) {
 						"targets_type": "raw",
 						"close_connections_on_host_health_failure": true,
 						"targets": [],
-						"created_at": "2023-01-01T00:00:00Z",
-						"updated_at": "2023-01-01T00:00:00Z"
+						"created_at": "2023-01-01T00:00:00.000000",
+						"updated_at": "2023-01-01T00:00:00.000000"
 					}
 				]
 			}`,
@@ -358,8 +358,8 @@ func TestNetworkBackendService_List(t *testing.T) {
 						"targets_type": "raw",
 						"close_connections_on_host_health_failure": false,
 						"targets": [],
-						"created_at": "2023-01-01T00:00:00Z",
-						"updated_at": "2023-01-01T00:00:00Z"
+						"created_at": "2023-01-01T00:00:00.000000",
+						"updated_at": "2023-01-01T00:00:00.000000"
 					}
 				]
 			}`,
@@ -626,7 +626,7 @@ func TestNetworkBackendService_Create_NewRequestError(t *testing.T) {
 
 	client := testBackendClient("http://dummy-url")
 
-	req := CreateNetworkBackendRequest{
+	req := CreateBackendRequest{
 		Name:             "test-backend",
 		BalanceAlgorithm: "round_robin",
 		TargetsType:      "instance",

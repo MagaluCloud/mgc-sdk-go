@@ -5,10 +5,10 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
-	"time"
 
 	"github.com/MagaluCloud/mgc-sdk-go/helpers"
 	mgc_http "github.com/MagaluCloud/mgc-sdk-go/internal/http"
+	"github.com/MagaluCloud/mgc-sdk-go/internal/utils"
 )
 
 //
@@ -24,8 +24,23 @@ import (
 type (
 	// NetworkListenerRequest represents a listener configuration for load balancer creation
 	NetworkListenerRequest struct {
-		BackendName string `json:"backend_name"`
-		CreateNetworkListenerRequest
+		BackendName        string                      `json:"backend_name"`
+		TLSCertificateName *string          `json:"tls_certificate_name,omitempty"`
+		Name               string           `json:"name"`
+		Description        *string          `json:"description,omitempty"`
+		Protocol           ListenerProtocol `json:"protocol"`
+		Port               int              `json:"port"`
+	}
+
+	CreateNetworkBackendRequest struct {
+		HealthCheckName                     *string                                `json:"health_check_name,omitempty"`
+		Name                                string                                 `json:"name"`
+		Description                         *string                                `json:"description,omitempty"`
+		BalanceAlgorithm                    BackendBalanceAlgorithm                `json:"balance_algorithm"`
+		PanicThreshold                      *float64                               `json:"panic_threshold,omitempty"`
+		TargetsType                         BackendType                            `json:"targets_type"`
+		Targets                             *[]NetworkBackendInstanceTargetRequest `json:"targets,omitempty"`
+		CloseConnectionsOnHostHealthFailure *bool                                  `json:"close_connections_on_host_health_failure,omitempty"`
 	}
 
 	// CreateNetworkLoadBalancerRequest is the request to create a Network Load Balancer.
@@ -105,8 +120,8 @@ type (
 		IPAddress           *string                         `json:"ip_address,omitempty"`
 		VPCID               string                          `json:"vpc_id"`
 		SubnetPoolID        *string                         `json:"subnet_pool_id,omitempty"`
-		CreatedAt           time.Time                       `json:"created_at"`
-		UpdatedAt           time.Time                       `json:"updated_at"`
+		CreatedAt           utils.LocalDateTimeWithoutZone  `json:"created_at"`
+		UpdatedAt           utils.LocalDateTimeWithoutZone  `json:"updated_at"`
 		LastOperationStatus *string                         `json:"last_operation_status,omitempty"`
 	}
 

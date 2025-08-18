@@ -22,7 +22,7 @@ import (
 // Configuration constants - modify these for your environment
 const (
 	// Replace with your actual VPC ID
-	ExampleVPCID = "vpc-12345678-1234-1234-1234-123456789012"
+	ExampleVPCID = "93ccb13b-e7d1-4f2f-bde8-a02230c8de2b"
 	// Replace with your actual subnet pool ID (optional)
 	ExampleSubnetPoolID = "subnet-pool-12345678-1234-1234-1234-123456789012"
 	// Replace with your actual public IP ID (optional for external LBs)
@@ -99,21 +99,12 @@ func initializeClient() (*client.CoreClient, error) {
 		return nil, fmt.Errorf("MGC_API_KEY environment variable is required")
 	}
 
-	region := os.Getenv("MGC_REGION")
-	if region == "" {
-		region = "br-se1" // Default region
-		fmt.Printf("Using default region: %s\n", region)
-	}
-
 	// Create the core client with configuration
 	coreClient := client.NewMgcClient(
 		apiKey,
-		// Add other options as needed:
-		// client.WithTimeout(30 * time.Second),
-		// client.WithRetries(3),
+		client.WithBaseURL(client.BrSe1),
 	)
 
-	fmt.Printf("✓ Client initialized successfully for region: %s\n", region)
 	return coreClient, nil
 }
 
@@ -237,31 +228,25 @@ func runCreateLoadBalancerExample(ctx context.Context, client *client.CoreClient
 		Listeners: []lbaas.NetworkListenerRequest{
 			{
 				BackendName: "web-servers", // Links to the backend defined above
-				CreateNetworkListenerRequest: lbaas.CreateNetworkListenerRequest{
-					Name:        "http-listener",
-					Description: stringPtr("HTTP listener for web traffic"),
-					Protocol:    lbaas.ListenerProtocolTCP,
-					Port:        80,
-				},
+				Name:        "http-listener",
+				Description: stringPtr("HTTP listener for web traffic"),
+				Protocol:    lbaas.ListenerProtocolTCP,
+				Port:        80,
 			},
 			{
-				BackendName: "web-servers",
-				CreateNetworkListenerRequest: lbaas.CreateNetworkListenerRequest{
-					Name:             "https-listener",
-					Description:      stringPtr("HTTPS listener for secure web traffic"),
-					Protocol:         lbaas.ListenerProtocolTLS,
-					Port:             443,
-					TLSCertificateID: stringPtr("web-ssl-cert"), // Links to certificate by name
-				},
+				BackendName:        "web-servers",
+				Name:               "https-listener",
+				Description:        stringPtr("HTTPS listener for secure web traffic"),
+				Protocol:           lbaas.ListenerProtocolTLS,
+				Port:               443,
+				TLSCertificateName: stringPtr("web-ssl-cert"), // Links to certificate by name
 			},
 			{
 				BackendName: "api-servers",
-				CreateNetworkListenerRequest: lbaas.CreateNetworkListenerRequest{
-					Name:        "api-listener",
-					Description: stringPtr("API listener"),
-					Protocol:    lbaas.ListenerProtocolTCP,
-					Port:        8080,
-				},
+				Name:        "api-listener",
+				Description: stringPtr("API listener"),
+				Protocol:    lbaas.ListenerProtocolTCP,
+				Port:        8080,
 			},
 		},
 
@@ -462,7 +447,7 @@ func runManageBackendsExample(ctx context.Context, client *client.CoreClient, lb
 
 	// Create a new backend
 	fmt.Println("Creating a new backend...")
-	createBackendReq := lbaas.CreateNetworkBackendRequest{
+	createBackendReq := lbaas.CreateBackendRequest{
 		Name:                                "new-backend-pool",
 		Description:                         stringPtr("Additional backend pool for scaling"),
 		BalanceAlgorithm:                    lbaas.BackendBalanceAlgorithmRoundRobin,

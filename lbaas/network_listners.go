@@ -3,10 +3,10 @@ package lbaas
 import (
 	"context"
 	"net/http"
-	"time"
 
 	"github.com/MagaluCloud/mgc-sdk-go/helpers"
 	mgc_http "github.com/MagaluCloud/mgc-sdk-go/internal/http"
+	"github.com/MagaluCloud/mgc-sdk-go/internal/utils"
 )
 
 const listeners = "listeners"
@@ -29,15 +29,15 @@ type (
 
 	// NetworkListenerResponse represents a network listener response
 	NetworkListenerResponse struct {
-		ID               string           `json:"id"`
-		TLSCertificateID *string          `json:"tls_certificate_id,omitempty"`
-		BackendID        string           `json:"backend_id"`
-		Name             string           `json:"name"`
-		Description      *string          `json:"description,omitempty"`
-		Protocol         ListenerProtocol `json:"protocol"`
-		Port             int              `json:"port"`
-		CreatedAt        time.Time        `json:"created_at"`
-		UpdatedAt        time.Time        `json:"updated_at"`
+		ID               string                         `json:"id"`
+		TLSCertificateID *string                        `json:"tls_certificate_id,omitempty"`
+		BackendID        string                         `json:"backend_id"`
+		Name             string                         `json:"name"`
+		Description      *string                        `json:"description,omitempty"`
+		Protocol         ListenerProtocol               `json:"protocol"`
+		Port             int                            `json:"port"`
+		CreatedAt        utils.LocalDateTimeWithoutZone `json:"created_at"`
+		UpdatedAt        utils.LocalDateTimeWithoutZone `json:"updated_at"`
 	}
 
 	// NetworkPaginatedListenerResponse represents a paginated listener response
