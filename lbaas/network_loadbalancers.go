@@ -110,7 +110,7 @@ type (
 		Description         *string                         `json:"description,omitempty"`
 		Type                string                          `json:"type"`
 		Visibility          LoadBalancerVisibility          `json:"visibility"`
-		Status              string                          `json:"status"`
+		Status              LoadBalancerStatus              `json:"status"`
 		Listeners           []NetworkListenerResponse       `json:"listeners"`
 		Backends            []NetworkBackendResponse        `json:"backends"`
 		HealthChecks        []NetworkHealthCheckResponse    `json:"health_checks"`
