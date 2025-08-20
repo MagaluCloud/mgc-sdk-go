@@ -493,7 +493,7 @@ func runManageBackendsExample(ctx context.Context, client *client.CoreClient, lb
 		if backend.PanicThreshold != nil {
 			fmt.Printf("  Panic Threshold: %.1f%%\n", *backend.PanicThreshold)
 		}
-		fmt.Printf("  Close Connections on Health Failure: %t\n", backend.CloseConnectionsOnHostHealthFailure)
+		fmt.Printf("  Close Connections on Health Failure: %t\n", *backend.CloseConnectionsOnHostHealthFailure)
 	}
 
 	// Update the backend

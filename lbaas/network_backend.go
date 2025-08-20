@@ -52,7 +52,7 @@ type (
 		Description                         *string                        `json:"description,omitempty"`
 		BalanceAlgorithm                    BackendBalanceAlgorithm        `json:"balance_algorithm"`
 		PanicThreshold                      *float64                       `json:"panic_threshold,omitempty"`
-		CloseConnectionsOnHostHealthFailure bool                           `json:"close_connections_on_host_health_failure"`
+		CloseConnectionsOnHostHealthFailure *bool                          `json:"close_connections_on_host_health_failure,omitempty"`
 		TargetsType                         BackendType                    `json:"targets_type"`
 		Targets                             []NetworkBackedTarget          `json:"targets"`
 		CreatedAt                           utils.LocalDateTimeWithoutZone `json:"created_at"`
