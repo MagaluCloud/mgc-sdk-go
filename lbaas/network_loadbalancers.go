@@ -2,159 +2,107 @@ package lbaas
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"strconv"
 
 	"github.com/MagaluCloud/mgc-sdk-go/helpers"
 	mgc_http "github.com/MagaluCloud/mgc-sdk-go/internal/http"
+	"github.com/MagaluCloud/mgc-sdk-go/internal/utils"
 )
 
+//
+// Package overview
+//
+// The lbaas package provides a client for Magalu Cloud's Network Load Balancer service.
+// This file contains request/response models aligned with the OpenAPI v0beta1 specification.
+//
+
+// NetworkListenerRequest represents a listener configuration for load balancer creation.
+// Name, BackendName, Protocol, and Port are required.
+// For TLS protocol, set TLSCertificateName to reference a certificate by name.
 type (
 	// NetworkListenerRequest represents a listener configuration for load balancer creation
 	NetworkListenerRequest struct {
+		BackendName        string           `json:"backend_name"`
 		TLSCertificateName *string          `json:"tls_certificate_name,omitempty"`
 		Name               string           `json:"name"`
 		Description        *string          `json:"description,omitempty"`
-		BackendName        string           `json:"backend_name"`
 		Protocol           ListenerProtocol `json:"protocol"`
 		Port               int              `json:"port"`
 	}
 
-	// NetworkBackendRequest represents a backend configuration for load balancer creation
-	NetworkBackendRequest struct {
-		HealthCheckName  *string                       `json:"health_check_name,omitempty"`
-		Name             string                        `json:"name"`
-		Description      *string                       `json:"description,omitempty"`
-		BalanceAlgorithm BackendBalanceAlgorithm       `json:"balance_algorithm"`
-		TargetsType      BackendType                   `json:"targets_type"`
-		Targets          *TargetsRawOrInstancesRequest `json:"targets,omitempty"`
+	CreateNetworkBackendRequest struct {
+		HealthCheckName                     *string                                `json:"health_check_name,omitempty"`
+		Name                                string                                 `json:"name"`
+		Description                         *string                                `json:"description,omitempty"`
+		BalanceAlgorithm                    BackendBalanceAlgorithm                `json:"balance_algorithm"`
+		PanicThreshold                      *float64                               `json:"panic_threshold,omitempty"`
+		TargetsType                         BackendType                            `json:"targets_type"`
+		Targets                             *[]NetworkBackendInstanceTargetRequest `json:"targets,omitempty"`
+		CloseConnectionsOnHostHealthFailure *bool                                  `json:"close_connections_on_host_health_failure,omitempty"`
 	}
 
-	// NetworkHealthCheckRequest represents a health check configuration for load balancer creation
-	NetworkHealthCheckRequest struct {
-		Name                    string              `json:"name"`
-		Description             *string             `json:"description,omitempty"`
-		Protocol                HealthCheckProtocol `json:"protocol"`
-		Path                    *string             `json:"path,omitempty"`
-		Port                    int                 `json:"port"`
-		HealthyStatusCode       *int                `json:"healthy_status_code,omitempty"`
-		IntervalSeconds         *int                `json:"interval_seconds,omitempty"`
-		TimeoutSeconds          *int                `json:"timeout_seconds,omitempty"`
-		InitialDelaySeconds     *int                `json:"initial_delay_seconds,omitempty"`
-		HealthyThresholdCount   *int                `json:"healthy_threshold_count,omitempty"`
-		UnhealthyThresholdCount *int                `json:"unhealthy_threshold_count,omitempty"`
-	}
-
-	// NetworkTLSCertificateRequest represents a TLS certificate configuration for load balancer creation
-	NetworkTLSCertificateRequest struct {
-		Name        string  `json:"name"`
-		Description *string `json:"description,omitempty"`
-		Certificate string  `json:"certificate"`
-		PrivateKey  string  `json:"private_key"`
-	}
-
-	// NetworkAclRequest represents an ACL rule configuration for load balancer creation
-	NetworkAclRequest struct {
-		Name           *string       `json:"name,omitempty"`
-		Ethertype      AclEtherType  `json:"ethertype"`
-		Protocol       AclProtocol   `json:"protocol"`
-		RemoteIPPrefix string        `json:"remote_ip_prefix"`
-		Action         AclActionType `json:"action"`
-	}
-
-	// CreateNetworkLoadBalancerRequest represents the request payload for creating a load balancer
+	// CreateNetworkLoadBalancerRequest is the request to create a Network Load Balancer.
+	// Name, Visibility, VPCID, Listeners, and Backends are required.
+	// Cross-references: BackendName must match a backend Name, TLSCertificateName must match a certificate Name.
 	CreateNetworkLoadBalancerRequest struct {
-		Name            string                         `json:"name"`
-		Description     *string                        `json:"description,omitempty"`
-		Type            *string                        `json:"type,omitempty"`
-		Visibility      LoadBalancerVisibility         `json:"visibility"`
-		Listeners       []NetworkListenerRequest       `json:"listeners"`
-		Backends        []NetworkBackendRequest        `json:"backends"`
-		HealthChecks    []NetworkHealthCheckRequest    `json:"health_checks,omitempty"`
-		TLSCertificates []NetworkTLSCertificateRequest `json:"tls_certificates,omitempty"`
-		ACLs            []NetworkAclRequest            `json:"acls,omitempty"`
-		VPCID           string                         `json:"vpc_id"`
-		SubnetPoolID    *string                        `json:"subnet_pool_id,omitempty"`
-		PublicIPID      *string                        `json:"public_ip_id,omitempty"`
-		PanicThreshold  *int                           `json:"panic_threshold,omitempty"`
+		Name            string                            `json:"name"`
+		Description     *string                           `json:"description,omitempty"`
+		Type            *string                           `json:"type,omitempty"`
+		Visibility      LoadBalancerVisibility            `json:"visibility"`
+		Listeners       []NetworkListenerRequest          `json:"listeners"`
+		Backends        []CreateNetworkBackendRequest     `json:"backends"`
+		HealthChecks    []CreateNetworkHealthCheckRequest `json:"health_checks,omitempty"`
+		TLSCertificates []CreateNetworkCertificateRequest `json:"tls_certificates,omitempty"`
+		ACLs            []CreateNetworkACLRequest         `json:"acls,omitempty"`
+		VPCID           string                            `json:"vpc_id"`
+		SubnetPoolID    *string                           `json:"subnet_pool_id,omitempty"`
+		PublicIPID      *string                           `json:"public_ip_id,omitempty"`
 	}
 
-	// DeleteNetworkLoadBalancerRequest represents the request payload for deleting a load balancer
+	// DeleteNetworkLoadBalancerRequest controls deletion behavior.
+	// Set DeletePublicIP=true to also delete the associated public IP.
 	DeleteNetworkLoadBalancerRequest struct {
-		LoadBalancerID string `json:"-"`
-		DeletePublicIP *bool  `json:"-"`
+		DeletePublicIP *bool `json:"-"`
 	}
 
-	// GetNetworkLoadBalancerRequest represents the request payload for getting a load balancer
-	GetNetworkLoadBalancerRequest struct {
-		LoadBalancerID string `json:"-"`
-	}
-
-	// ListNetworkLoadBalancerRequest represents the request payload for listing load balancers
+	// ListNetworkLoadBalancerRequest defines pagination and sorting for listing.
+	// All fields are optional and map to query parameters.
+	// Sort format: "field:direction" (e.g., "created_at:desc").
 	ListNetworkLoadBalancerRequest struct {
 		Offset *int    `json:"-"`
 		Limit  *int    `json:"-"`
 		Sort   *string `json:"-"`
 	}
 
-	// NetworkBackendUpdateRequest represents a backend update configuration
-	NetworkBackendUpdateRequest struct {
-		ID            string                              `json:"id"`
-		HealthCheckID *string                             `json:"health_check_id,omitempty"`
-		TargetsType   BackendType                         `json:"targets_type"`
-		Targets       *TargetsRawOrInstancesUpdateRequest `json:"targets,omitempty"`
-	}
-
-	// UpdateNetworkLoadBalancerRequest represents the request payload for updating a load balancer
+	// UpdateNetworkLoadBalancerRequest updates a Network Load Balancer.
+	// Only Name and Description can be updated. All fields are optional.
+	// Sub-resource updates require separate API calls.
 	UpdateNetworkLoadBalancerRequest struct {
-		LoadBalancerID  string                               `json:"-"`
-		Name            *string                              `json:"name,omitempty"`
-		Description     *string                              `json:"description,omitempty"`
-		Backends        []NetworkBackendUpdateRequest        `json:"backends,omitempty"`
-		HealthChecks    []NetworkHealthCheckUpdateRequest    `json:"health_checks,omitempty"`
-		TLSCertificates []NetworkTLSCertificateUpdateRequest `json:"tls_certificates,omitempty"`
-		PanicThreshold  *int                                 `json:"panic_threshold,omitempty"`
+		Name        *string `json:"name,omitempty"`
+		Description *string `json:"description,omitempty"`
 	}
 
-	// NetworkHealthCheckUpdateRequest represents a health check update configuration
-	NetworkHealthCheckUpdateRequest struct {
-		ID                      string              `json:"id"`
-		Protocol                HealthCheckProtocol `json:"protocol"`
-		Path                    *string             `json:"path,omitempty"`
-		Port                    int                 `json:"port"`
-		HealthyStatusCode       *int                `json:"healthy_status_code,omitempty"`
-		IntervalSeconds         *int                `json:"interval_seconds,omitempty"`
-		TimeoutSeconds          *int                `json:"timeout_seconds,omitempty"`
-		InitialDelaySeconds     *int                `json:"initial_delay_seconds,omitempty"`
-		HealthyThresholdCount   *int                `json:"healthy_threshold_count,omitempty"`
-		UnhealthyThresholdCount *int                `json:"unhealthy_threshold_count,omitempty"`
+	// NetworkGenericCreationResponse represents a generic creation/update response
+	NetworkGenericCreationResponse struct {
+		ID string `json:"id"`
 	}
 
-	// NetworkTLSCertificateUpdateRequest represents a TLS certificate update configuration
-	NetworkTLSCertificateUpdateRequest struct {
-		ID          string `json:"id"`
-		Certificate string `json:"certificate"`
-		PrivateKey  string `json:"private_key"`
-	}
-
-	// NetworkPublicIPResponse represents a public IP response
+	// NetworkPublicIPResponse contains information about a public IP associated
+	// with a Load Balancer.
 	NetworkPublicIPResponse struct {
 		ID         string  `json:"id"`
 		IPAddress  *string `json:"ip_address,omitempty"`
 		ExternalID string  `json:"external_id"`
 	}
 
-	// NetworkAclResponse represents an ACL rule response
-	NetworkAclResponse struct {
-		ID             string       `json:"id"`
-		Name           *string      `json:"name,omitempty"`
-		Ethertype      AclEtherType `json:"ethertype"`
-		Protocol       AclProtocol  `json:"protocol"`
-		RemoteIPPrefix string       `json:"remote_ip_prefix"`
-		Action         string       `json:"action"`
-	}
-
-	// NetworkLoadBalancerResponse represents a load balancer response
+	// NetworkLoadBalancerResponse describes a Load Balancer and its
+	// sub-resources as returned by the API.
+	//
+	// Fields include status and timestamps that can help track provisioning
+	// progress. The optional `LastOperationStatus` may surface the last
+	// lifecycle operation outcome.
 	NetworkLoadBalancerResponse struct {
 		ID                  string                          `json:"id"`
 		Name                string                          `json:"name"`
@@ -162,7 +110,7 @@ type (
 		Description         *string                         `json:"description,omitempty"`
 		Type                string                          `json:"type"`
 		Visibility          LoadBalancerVisibility          `json:"visibility"`
-		Status              string                          `json:"status"`
+		Status              LoadBalancerStatus              `json:"status"`
 		Listeners           []NetworkListenerResponse       `json:"listeners"`
 		Backends            []NetworkBackendResponse        `json:"backends"`
 		HealthChecks        []NetworkHealthCheckResponse    `json:"health_checks"`
@@ -170,39 +118,61 @@ type (
 		TLSCertificates     []NetworkTLSCertificateResponse `json:"tls_certificates"`
 		ACLs                []NetworkAclResponse            `json:"acls"`
 		IPAddress           *string                         `json:"ip_address,omitempty"`
-		Port                *string                         `json:"port,omitempty"`
 		VPCID               string                          `json:"vpc_id"`
 		SubnetPoolID        *string                         `json:"subnet_pool_id,omitempty"`
-		CreatedAt           string                          `json:"created_at"`
-		UpdatedAt           string                          `json:"updated_at"`
+		CreatedAt           utils.LocalDateTimeWithoutZone  `json:"created_at"`
+		UpdatedAt           utils.LocalDateTimeWithoutZone  `json:"updated_at"`
 		LastOperationStatus *string                         `json:"last_operation_status,omitempty"`
 	}
 
-	// NetworkLBPaginatedResponse represents a paginated load balancer response
+	// PaginationLinks provides navigation links for pagination
+	PaginationLinks struct {
+		Next     *string `json:"next,omitempty"`
+		Previous *string `json:"previous,omitempty"`
+		Self     string  `json:"self"`
+	}
+
+	// PaginationPage contains pagination metadata
+	PaginationPage struct {
+		Count  int `json:"count"`
+		Limit  int `json:"limit"`
+		Offset int `json:"offset"`
+		Total  int `json:"total"`
+	}
+
+	// PaginationMeta combines links and page information
+	PaginationMeta struct {
+		Links PaginationLinks `json:"links"`
+		Page  PaginationPage  `json:"page"`
+	}
+
+	// NetworkLBPaginatedResponse is the paginated response for listing LBs.
 	NetworkLBPaginatedResponse struct {
+		Meta    PaginationMeta                `json:"meta"`
 		Results []NetworkLoadBalancerResponse `json:"results"`
 	}
 
-	// NetworkLoadBalancerService provides methods for managing network load balancers
+	// NetworkLoadBalancerService provides CRUD operations for Network Load Balancers.
 	NetworkLoadBalancerService interface {
-		Create(ctx context.Context, req CreateNetworkLoadBalancerRequest) (string, error)
-		Delete(ctx context.Context, req DeleteNetworkLoadBalancerRequest) error
-		Get(ctx context.Context, req GetNetworkLoadBalancerRequest) (*NetworkLoadBalancerResponse, error)
-		List(ctx context.Context, req ListNetworkLoadBalancerRequest) ([]NetworkLoadBalancerResponse, error)
-		Update(ctx context.Context, req UpdateNetworkLoadBalancerRequest) error
+		Create(ctx context.Context, create CreateNetworkLoadBalancerRequest) (string, error)
+		Delete(ctx context.Context, id string, options DeleteNetworkLoadBalancerRequest) error
+		Get(ctx context.Context, id string) (NetworkLoadBalancerResponse, error)
+		List(ctx context.Context, options ListNetworkLoadBalancerRequest) ([]NetworkLoadBalancerResponse, error)
+		Update(ctx context.Context, id string, loadBalancer UpdateNetworkLoadBalancerRequest) (string, error)
 	}
 
-	// networkLoadBalancerService implements the NetworkLoadBalancerService interface
+	// networkLoadBalancerService implements the NetworkLoadBalancerService interface.
+	// It is typically constructed by `(*LbaasClient).NetworkLoadBalancers()`.
 	networkLoadBalancerService struct {
 		client *LbaasClient
 	}
 )
 
-// Create creates a new network load balancer
-func (s *networkLoadBalancerService) Create(ctx context.Context, req CreateNetworkLoadBalancerRequest) (string, error) {
+// Create creates a new Network Load Balancer and returns its ID.
+func (s *networkLoadBalancerService) Create(ctx context.Context, create CreateNetworkLoadBalancerRequest) (string, error) {
 	path := urlNetworkLoadBalancer(nil)
 
-	httpReq, err := s.client.newRequest(ctx, http.MethodPost, path, req)
+	httpReq, err := s.client.newRequest(ctx, http.MethodPost, path, create)
 	if err != nil {
 		return "", err
 	}
@@ -217,18 +187,19 @@ func (s *networkLoadBalancerService) Create(ctx context.Context, req CreateNetwo
 	return result.ID, nil
 }
 
-// Delete removes a network load balancer
-func (s *networkLoadBalancerService) Delete(ctx context.Context, req DeleteNetworkLoadBalancerRequest) error {
-	path := urlNetworkLoadBalancer(&req.LoadBalancerID)
+// Delete removes a Network Load Balancer by ID.
+// Set DeletePublicIP=true in options to also remove the public IP.
+func (s *networkLoadBalancerService) Delete(ctx context.Context, id string, options DeleteNetworkLoadBalancerRequest) error {
+	path := urlNetworkLoadBalancer(&id)
 
 	httpReq, err := s.client.newRequest(ctx, http.MethodDelete, path, nil)
 	if err != nil {
 		return err
 	}
 
-	if req.DeletePublicIP != nil {
+	if options.DeletePublicIP != nil {
 		query := httpReq.URL.Query()
-		query.Set("delete_public_ip", strconv.FormatBool(*req.DeletePublicIP))
+		query.Set("delete_public_ip", strconv.FormatBool(*options.DeletePublicIP))
 		httpReq.URL.RawQuery = query.Encode()
 	}
 
@@ -236,25 +207,29 @@ func (s *networkLoadBalancerService) Delete(ctx context.Context, req DeleteNetwo
 	return err
 }
 
-// Get retrieves detailed information about a specific load balancer
-func (s *networkLoadBalancerService) Get(ctx context.Context, req GetNetworkLoadBalancerRequest) (*NetworkLoadBalancerResponse, error) {
-	path := urlNetworkLoadBalancer(&req.LoadBalancerID)
+// Get retrieves detailed information about a Load Balancer by ID.
+func (s *networkLoadBalancerService) Get(ctx context.Context, id string) (NetworkLoadBalancerResponse, error) {
+	path := urlNetworkLoadBalancer(&id)
 
 	httpReq, err := s.client.newRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
-		return nil, err
+		return NetworkLoadBalancerResponse{}, err
 	}
 
 	var resp NetworkLoadBalancerResponse
 	result, err := mgc_http.Do(s.client.GetConfig(), ctx, httpReq, &resp)
 	if err != nil {
-		return nil, err
+		return NetworkLoadBalancerResponse{}, err
 	}
-	return result, nil
+	if result == nil {
+		return NetworkLoadBalancerResponse{}, errors.New("load balancer found but response is nil")
+	}
+
+	return *result, nil
 }
 
-// List returns a list of network load balancers with optional filtering and pagination
-func (s *networkLoadBalancerService) List(ctx context.Context, req ListNetworkLoadBalancerRequest) ([]NetworkLoadBalancerResponse, error) {
+// List returns Network Load Balancers with optional pagination and sorting.
+func (s *networkLoadBalancerService) List(ctx context.Context, options ListNetworkLoadBalancerRequest) ([]NetworkLoadBalancerResponse, error) {
 	path := urlNetworkLoadBalancer(nil)
 
 	httpReq, err := s.client.newRequest(ctx, http.MethodGet, path, nil)
@@ -263,9 +238,9 @@ func (s *networkLoadBalancerService) List(ctx context.Context, req ListNetworkLo
 	}
 
 	query := helpers.NewQueryParams(httpReq)
-	query.AddReflect("_offset", req.Offset)
-	query.AddReflect("_limit", req.Limit)
-	query.Add("_sort", req.Sort)
+	query.AddReflect("_offset", options.Offset)
+	query.AddReflect("_limit", options.Limit)
+	query.Add("_sort", options.Sort)
 	httpReq.URL.RawQuery = query.Encode()
 
 	var resp NetworkLBPaginatedResponse
@@ -276,15 +251,21 @@ func (s *networkLoadBalancerService) List(ctx context.Context, req ListNetworkLo
 	return result.Results, nil
 }
 
-// Update updates a network load balancer's properties
-func (s *networkLoadBalancerService) Update(ctx context.Context, req UpdateNetworkLoadBalancerRequest) error {
-	path := urlNetworkLoadBalancer(&req.LoadBalancerID)
+// Update modifies a Network Load Balancer's name and/or description.
+// Returns the ID of the updated load balancer.
+// Only name and description can be updated via this endpoint.
+func (s *networkLoadBalancerService) Update(ctx context.Context, id string, loadBalancer UpdateNetworkLoadBalancerRequest) (string, error) {
+	path := urlNetworkLoadBalancer(&id)
 
-	httpReq, err := s.client.newRequest(ctx, http.MethodPut, path, req)
+	httpReq, err := s.client.newRequest(ctx, http.MethodPut, path, loadBalancer)
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	_, err = mgc_http.Do[any](s.client.GetConfig(), ctx, httpReq, nil)
-	return err
+	var resp NetworkGenericCreationResponse
+	result, err := mgc_http.Do(s.client.GetConfig(), ctx, httpReq, &resp)
+	if err != nil {
+		return "", err
+	}
+	return result.ID, nil
 }

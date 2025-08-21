@@ -6,6 +6,7 @@ import (
 
 	"github.com/MagaluCloud/mgc-sdk-go/helpers"
 	mgc_http "github.com/MagaluCloud/mgc-sdk-go/internal/http"
+	"github.com/MagaluCloud/mgc-sdk-go/internal/utils"
 )
 
 const listeners = "listeners"
@@ -13,68 +14,45 @@ const listeners = "listeners"
 type (
 	// CreateNetworkListenerRequest represents the request payload for creating a network listener
 	CreateNetworkListenerRequest struct {
-		LoadBalancerID   string           `json:"-"`
-		BackendID        string           `json:"-"`
 		TLSCertificateID *string          `json:"tls_certificate_id,omitempty"`
 		Name             string           `json:"name"`
 		Description      *string          `json:"description,omitempty"`
 		Protocol         ListenerProtocol `json:"protocol"`
 		Port             int              `json:"port"`
-	}
-
-	// DeleteNetworkListenerRequest represents the request payload for deleting a network listener
-	DeleteNetworkListenerRequest struct {
-		LoadBalancerID string `json:"-"`
-		ListenerID     string `json:"-"`
-	}
-
-	// GetNetworkListenerRequest represents the request payload for getting a network listener
-	GetNetworkListenerRequest struct {
-		LoadBalancerID string `json:"-"`
-		ListenerID     string `json:"-"`
-	}
-
-	// ListNetworkListenerRequest represents the request payload for listing network listeners
-	ListNetworkListenerRequest struct {
-		LoadBalancerID string  `json:"-"`
-		Offset         *int    `json:"-"`
-		Limit          *int    `json:"-"`
-		Sort           *string `json:"-"`
 	}
 
 	// UpdateNetworkListenerRequest represents the request payload for updating a network listener
 	UpdateNetworkListenerRequest struct {
-		LoadBalancerID   string  `json:"-"`
-		ListenerID       string  `json:"-"`
 		TLSCertificateID *string `json:"tls_certificate_id,omitempty"`
+		Name             *string `json:"name,omitempty"`
 	}
 
 	// NetworkListenerResponse represents a network listener response
 	NetworkListenerResponse struct {
-		ID               string           `json:"id"`
-		TLSCertificateID *string          `json:"tls_certificate_id,omitempty"`
-		BackendID        string           `json:"backend_id"`
-		Name             string           `json:"name"`
-		Description      *string          `json:"description,omitempty"`
-		Protocol         ListenerProtocol `json:"protocol"`
-		Port             int              `json:"port"`
-		CreatedAt        string           `json:"created_at"`
-		UpdatedAt        string           `json:"updated_at"`
+		ID               string                         `json:"id"`
+		TLSCertificateID *string                        `json:"tls_certificate_id,omitempty"`
+		BackendID        string                         `json:"backend_id"`
+		Name             string                         `json:"name"`
+		Description      *string                        `json:"description,omitempty"`
+		Protocol         ListenerProtocol               `json:"protocol"`
+		Port             int                            `json:"port"`
+		CreatedAt        utils.LocalDateTimeWithoutZone `json:"created_at"`
+		UpdatedAt        utils.LocalDateTimeWithoutZone `json:"updated_at"`
 	}
 
 	// NetworkPaginatedListenerResponse represents a paginated listener response
 	NetworkPaginatedListenerResponse struct {
-		Meta    interface{}               `json:"meta"`
+		Meta    PaginationMeta            `json:"meta"`
 		Results []NetworkListenerResponse `json:"results"`
 	}
 
 	// NetworkListenerService provides methods for managing network listeners
 	NetworkListenerService interface {
-		Create(ctx context.Context, req CreateNetworkListenerRequest) (*NetworkListenerResponse, error)
-		Delete(ctx context.Context, req DeleteNetworkListenerRequest) error
-		Get(ctx context.Context, req GetNetworkListenerRequest) (*NetworkListenerResponse, error)
-		List(ctx context.Context, req ListNetworkListenerRequest) ([]NetworkListenerResponse, error)
-		Update(ctx context.Context, req UpdateNetworkListenerRequest) error
+		Create(ctx context.Context, lbID, backendID string, req CreateNetworkListenerRequest) (*NetworkListenerResponse, error)
+		Delete(ctx context.Context, lbID, listenerID string) error
+		Get(ctx context.Context, lbID, listenerID string) (*NetworkListenerResponse, error)
+		List(ctx context.Context, lbID string, options ListNetworkLoadBalancerRequest) ([]NetworkListenerResponse, error)
+		Update(ctx context.Context, lbID, listenerID string, req UpdateNetworkListenerRequest) error
 	}
 
 	// networkListenerService implements the NetworkListenerService interface
@@ -84,8 +62,8 @@ type (
 )
 
 // Create creates a new network listener
-func (s *networkListenerService) Create(ctx context.Context, req CreateNetworkListenerRequest) (*NetworkListenerResponse, error) {
-	path := urlNetworkLoadBalancer(&req.LoadBalancerID, listeners)
+func (s *networkListenerService) Create(ctx context.Context, lbID, backendID string, req CreateNetworkListenerRequest) (*NetworkListenerResponse, error) {
+	path := urlNetworkLoadBalancer(&lbID, listeners)
 
 	httpReq, err := s.client.newRequest(ctx, http.MethodPost, path, req)
 	if err != nil {
@@ -94,7 +72,7 @@ func (s *networkListenerService) Create(ctx context.Context, req CreateNetworkLi
 
 	// Add backend_id as required query parameter
 	query := httpReq.URL.Query()
-	query.Set("backend_id", req.BackendID)
+	query.Set("backend_id", backendID)
 	httpReq.URL.RawQuery = query.Encode()
 
 	var resp NetworkListenerResponse
@@ -106,8 +84,8 @@ func (s *networkListenerService) Create(ctx context.Context, req CreateNetworkLi
 }
 
 // Delete removes a network listener
-func (s *networkListenerService) Delete(ctx context.Context, req DeleteNetworkListenerRequest) error {
-	path := urlNetworkLoadBalancer(&req.LoadBalancerID, listeners, req.ListenerID)
+func (s *networkListenerService) Delete(ctx context.Context, lbID, listenerID string) error {
+	path := urlNetworkLoadBalancer(&lbID, listeners, listenerID)
 
 	httpReq, err := s.client.newRequest(ctx, http.MethodDelete, path, nil)
 	if err != nil {
@@ -119,8 +97,8 @@ func (s *networkListenerService) Delete(ctx context.Context, req DeleteNetworkLi
 }
 
 // Get retrieves detailed information about a specific listener
-func (s *networkListenerService) Get(ctx context.Context, req GetNetworkListenerRequest) (*NetworkListenerResponse, error) {
-	path := urlNetworkLoadBalancer(&req.LoadBalancerID, listeners, req.ListenerID)
+func (s *networkListenerService) Get(ctx context.Context, lbID, listenerID string) (*NetworkListenerResponse, error) {
+	path := urlNetworkLoadBalancer(&lbID, listeners, listenerID)
 
 	httpReq, err := s.client.newRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
@@ -136,8 +114,8 @@ func (s *networkListenerService) Get(ctx context.Context, req GetNetworkListener
 }
 
 // List returns a list of network listeners with optional filtering and pagination
-func (s *networkListenerService) List(ctx context.Context, req ListNetworkListenerRequest) ([]NetworkListenerResponse, error) {
-	path := urlNetworkLoadBalancer(&req.LoadBalancerID, listeners)
+func (s *networkListenerService) List(ctx context.Context, lbID string, options ListNetworkLoadBalancerRequest) ([]NetworkListenerResponse, error) {
+	path := urlNetworkLoadBalancer(&lbID, listeners)
 
 	httpReq, err := s.client.newRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
@@ -145,9 +123,9 @@ func (s *networkListenerService) List(ctx context.Context, req ListNetworkListen
 	}
 
 	query := helpers.NewQueryParams(httpReq)
-	query.AddReflect("_offset", req.Offset)
-	query.AddReflect("_limit", req.Limit)
-	query.Add("_sort", req.Sort)
+	query.AddReflect("_offset", options.Offset)
+	query.AddReflect("_limit", options.Limit)
+	query.AddReflect("_sort", options.Sort)
 	httpReq.URL.RawQuery = query.Encode()
 
 	var resp NetworkPaginatedListenerResponse
@@ -159,8 +137,8 @@ func (s *networkListenerService) List(ctx context.Context, req ListNetworkListen
 }
 
 // Update updates a network listener's properties
-func (s *networkListenerService) Update(ctx context.Context, req UpdateNetworkListenerRequest) error {
-	path := urlNetworkLoadBalancer(&req.LoadBalancerID, listeners, req.ListenerID)
+func (s *networkListenerService) Update(ctx context.Context, lbID, listenerID string, req UpdateNetworkListenerRequest) error {
+	path := urlNetworkLoadBalancer(&lbID, listeners, listenerID)
 
 	httpReq, err := s.client.newRequest(ctx, http.MethodPut, path, req)
 	if err != nil {

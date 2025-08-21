@@ -24,9 +24,7 @@ func TestNetworkErrorScenarios(t *testing.T) {
 			client.WithHTTPClient(httpClient))
 		lbClient := New(core).NetworkLoadBalancers()
 
-		_, err := lbClient.Get(context.Background(), GetNetworkLoadBalancerRequest{
-			LoadBalancerID: "test-lb",
-		})
+		_, err := lbClient.Get(context.Background(), "test-lb")
 
 		assertError(t, err)
 	})
@@ -48,9 +46,7 @@ func TestNetworkErrorScenarios(t *testing.T) {
 			client.WithHTTPClient(httpClient))
 		lbClient := New(core).NetworkLoadBalancers()
 
-		_, err := lbClient.Get(context.Background(), GetNetworkLoadBalancerRequest{
-			LoadBalancerID: "test-lb",
-		})
+		_, err := lbClient.Get(context.Background(), "test-lb")
 
 		assertError(t, err)
 	})
@@ -66,9 +62,7 @@ func TestNetworkErrorScenarios(t *testing.T) {
 		defer server.Close()
 
 		client := testLoadBalancerClient(server.URL)
-		_, err := client.Get(context.Background(), GetNetworkLoadBalancerRequest{
-			LoadBalancerID: "test-lb",
-		})
+		_, err := client.Get(context.Background(), "test-lb")
 
 		assertError(t, err)
 	})
@@ -83,9 +77,7 @@ func TestNetworkErrorScenarios(t *testing.T) {
 		defer server.Close()
 
 		client := testLoadBalancerClient(server.URL)
-		_, err := client.Get(context.Background(), GetNetworkLoadBalancerRequest{
-			LoadBalancerID: "test-lb",
-		})
+		_, err := client.Get(context.Background(), "test-lb")
 
 		assertError(t, err)
 	})
@@ -100,9 +92,7 @@ func TestNetworkErrorScenarios(t *testing.T) {
 		defer server.Close()
 
 		client := testLoadBalancerClient(server.URL)
-		_, err := client.Get(context.Background(), GetNetworkLoadBalancerRequest{
-			LoadBalancerID: "test-lb",
-		})
+		_, err := client.Get(context.Background(), "test-lb")
 
 		assertError(t, err)
 	})
@@ -128,9 +118,7 @@ func TestContextCancellation(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 		defer cancel()
 
-		_, err := client.Get(ctx, GetNetworkLoadBalancerRequest{
-			LoadBalancerID: "test-lb",
-		})
+		_, err := client.Get(ctx, "test-lb")
 
 		assertError(t, err)
 	})
@@ -149,9 +137,7 @@ func TestContextCancellation(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())
 		cancel() // Cancela imediatamente
 
-		_, err := client.Get(ctx, GetNetworkLoadBalancerRequest{
-			LoadBalancerID: "test-lb",
-		})
+		_, err := client.Get(ctx, "test-lb")
 
 		assertError(t, err)
 	})
@@ -172,9 +158,7 @@ func TestRateLimitingScenarios(t *testing.T) {
 		defer server.Close()
 
 		client := testLoadBalancerClient(server.URL)
-		_, err := client.Get(context.Background(), GetNetworkLoadBalancerRequest{
-			LoadBalancerID: "test-lb",
-		})
+		_, err := client.Get(context.Background(), "test-lb")
 
 		assertError(t, err)
 	})
@@ -189,9 +173,7 @@ func TestRateLimitingScenarios(t *testing.T) {
 		defer server.Close()
 
 		client := testLoadBalancerClient(server.URL)
-		_, err := client.Get(context.Background(), GetNetworkLoadBalancerRequest{
-			LoadBalancerID: "test-lb",
-		})
+		_, err := client.Get(context.Background(), "test-lb")
 
 		assertError(t, err)
 	})
@@ -206,9 +188,7 @@ func TestRateLimitingScenarios(t *testing.T) {
 		defer server.Close()
 
 		client := testLoadBalancerClient(server.URL)
-		_, err := client.Get(context.Background(), GetNetworkLoadBalancerRequest{
-			LoadBalancerID: "test-lb",
-		})
+		_, err := client.Get(context.Background(), "test-lb")
 
 		assertError(t, err)
 	})
@@ -228,9 +208,7 @@ func TestInvalidRequestScenarios(t *testing.T) {
 		defer server.Close()
 
 		client := testLoadBalancerClient(server.URL)
-		_, err := client.Get(context.Background(), GetNetworkLoadBalancerRequest{
-			LoadBalancerID: "",
-		})
+		_, err := client.Get(context.Background(), "")
 
 		assertError(t, err)
 	})
@@ -245,9 +223,7 @@ func TestInvalidRequestScenarios(t *testing.T) {
 		defer server.Close()
 
 		client := testLoadBalancerClient(server.URL)
-		_, err := client.Get(context.Background(), GetNetworkLoadBalancerRequest{
-			LoadBalancerID: "invalid@#$%",
-		})
+		_, err := client.Get(context.Background(), "invalid@#$%")
 
 		assertError(t, err)
 	})
@@ -276,9 +252,7 @@ func TestLargeResponseScenarios(t *testing.T) {
 		defer server.Close()
 
 		client := testLoadBalancerClient(server.URL)
-		_, err := client.Get(context.Background(), GetNetworkLoadBalancerRequest{
-			LoadBalancerID: "test-lb",
-		})
+		_, err := client.Get(context.Background(), "test-lb")
 
 		// Pode ou não dar erro dependendo dos limites do cliente
 		// Mas pelo menos testamos o cenário
@@ -300,9 +274,7 @@ func TestConnectionErrorScenarios(t *testing.T) {
 			client.WithHTTPClient(httpClient))
 		lbClient := New(core).NetworkLoadBalancers()
 
-		_, err := lbClient.Get(context.Background(), GetNetworkLoadBalancerRequest{
-			LoadBalancerID: "test-lb",
-		})
+		_, err := lbClient.Get(context.Background(), "test-lb")
 
 		assertError(t, err)
 
@@ -329,9 +301,7 @@ func TestConnectionErrorScenarios(t *testing.T) {
 		defer server.Close()
 
 		client := testLoadBalancerClient(server.URL)
-		_, err := client.Get(context.Background(), GetNetworkLoadBalancerRequest{
-			LoadBalancerID: "test-lb",
-		})
+		_, err := client.Get(context.Background(), "test-lb")
 
 		assertError(t, err)
 	})

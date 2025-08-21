@@ -24,6 +24,7 @@ func TestNetworkHealthCheckService_Create(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
 		name       string
+		lbID       string
 		request    CreateNetworkHealthCheckRequest
 		response   string
 		statusCode int
@@ -32,11 +33,11 @@ func TestNetworkHealthCheckService_Create(t *testing.T) {
 	}{
 		{
 			name: "successful creation",
+			lbID: "lb-123",
 			request: CreateNetworkHealthCheckRequest{
-				LoadBalancerID: "lb-123",
-				Name:           "test-hc",
-				Protocol:       "HTTP",
-				Port:           80,
+				Name:     "test-hc",
+				Protocol: "HTTP",
+				Port:     80,
 			},
 			response:   `{"id": "hc-123"}`,
 			statusCode: http.StatusOK,
@@ -45,11 +46,11 @@ func TestNetworkHealthCheckService_Create(t *testing.T) {
 		},
 		{
 			name: "server error",
+			lbID: "lb-123",
 			request: CreateNetworkHealthCheckRequest{
-				LoadBalancerID: "lb-123",
-				Name:           "test-hc",
-				Protocol:       "HTTP",
-				Port:           80,
+				Name:     "test-hc",
+				Protocol: "HTTP",
+				Port:     80,
 			},
 			response:   `{"error": "internal server error"}`,
 			statusCode: http.StatusInternalServerError,
@@ -57,11 +58,11 @@ func TestNetworkHealthCheckService_Create(t *testing.T) {
 		},
 		{
 			name: "bad request - invalid protocol",
+			lbID: "lb-123",
 			request: CreateNetworkHealthCheckRequest{
-				LoadBalancerID: "lb-123",
-				Name:           "test-hc",
-				Protocol:       "INVALID",
-				Port:           80,
+				Name:     "test-hc",
+				Protocol: "INVALID",
+				Port:     80,
 			},
 			response:   `{"error": "invalid protocol"}`,
 			statusCode: http.StatusBadRequest,
@@ -69,11 +70,11 @@ func TestNetworkHealthCheckService_Create(t *testing.T) {
 		},
 		{
 			name: "unauthorized access",
+			lbID: "lb-123",
 			request: CreateNetworkHealthCheckRequest{
-				LoadBalancerID: "lb-123",
-				Name:           "test-hc",
-				Protocol:       "HTTP",
-				Port:           80,
+				Name:     "test-hc",
+				Protocol: "HTTP",
+				Port:     80,
 			},
 			response:   `{"error": "unauthorized"}`,
 			statusCode: http.StatusUnauthorized,
@@ -81,11 +82,11 @@ func TestNetworkHealthCheckService_Create(t *testing.T) {
 		},
 		{
 			name: "forbidden access",
+			lbID: "lb-123",
 			request: CreateNetworkHealthCheckRequest{
-				LoadBalancerID: "lb-123",
-				Name:           "test-hc",
-				Protocol:       "HTTP",
-				Port:           80,
+				Name:     "test-hc",
+				Protocol: "HTTP",
+				Port:     80,
 			},
 			response:   `{"error": "forbidden"}`,
 			statusCode: http.StatusForbidden,
@@ -93,11 +94,11 @@ func TestNetworkHealthCheckService_Create(t *testing.T) {
 		},
 		{
 			name: "load balancer not found",
+			lbID: "invalid-lb",
 			request: CreateNetworkHealthCheckRequest{
-				LoadBalancerID: "invalid-lb",
-				Name:           "test-hc",
-				Protocol:       "HTTP",
-				Port:           80,
+				Name:     "test-hc",
+				Protocol: "HTTP",
+				Port:     80,
 			},
 			response:   `{"error": "load balancer not found"}`,
 			statusCode: http.StatusNotFound,
@@ -105,11 +106,11 @@ func TestNetworkHealthCheckService_Create(t *testing.T) {
 		},
 		{
 			name: "conflict - healthcheck already exists",
+			lbID: "lb-123",
 			request: CreateNetworkHealthCheckRequest{
-				LoadBalancerID: "lb-123",
-				Name:           "existing-hc",
-				Protocol:       "HTTP",
-				Port:           80,
+				Name:     "existing-hc",
+				Protocol: "HTTP",
+				Port:     80,
 			},
 			response:   `{"error": "healthcheck with this name already exists"}`,
 			statusCode: http.StatusConflict,
@@ -122,7 +123,7 @@ func TestNetworkHealthCheckService_Create(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				assertEqual(t, fmt.Sprintf("/load-balancer/v0beta1/network-load-balancers/%s/health-checks", tt.request.LoadBalancerID), r.URL.Path)
+				assertEqual(t, fmt.Sprintf("/load-balancer/v0beta1/network-load-balancers/%s/health-checks", tt.lbID), r.URL.Path)
 				assertEqual(t, http.MethodPost, r.Method)
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(tt.statusCode)
@@ -131,7 +132,7 @@ func TestNetworkHealthCheckService_Create(t *testing.T) {
 			defer server.Close()
 
 			client := testHealthCheckClient(server.URL)
-			hc, err := client.Create(context.Background(), tt.request)
+			hc, err := client.Create(context.Background(), tt.lbID, tt.request)
 
 			if tt.wantErr {
 				assertError(t, err)
@@ -171,7 +172,9 @@ func TestNetworkHealthCheckService_Get(t *testing.T) {
 				"timeout_seconds": 5,
 				"initial_delay_seconds": 10,
 				"healthy_threshold_count": 3,
-				"unhealthy_threshold_count": 3
+				"unhealthy_threshold_count": 3,
+				"created_at": "2024-01-01T00:00:00.000000",
+				"updated_at": "2024-01-01T00:00:00.000000"
 			}`,
 			statusCode: http.StatusOK,
 			wantErr:    false,
@@ -232,10 +235,7 @@ func TestNetworkHealthCheckService_Get(t *testing.T) {
 			defer server.Close()
 
 			client := testHealthCheckClient(server.URL)
-			hc, err := client.Get(context.Background(), GetNetworkHealthCheckRequest{
-				LoadBalancerID: tt.lbID,
-				HealthCheckID:  tt.hcID,
-			})
+			hc, err := client.Get(context.Background(), tt.lbID, tt.hcID)
 
 			if tt.wantErr {
 				assertError(t, err)
@@ -271,8 +271,8 @@ func TestNetworkHealthCheckService_List(t *testing.T) {
 					"total_results": 2
 				},
 				"results": [
-					{"id": "hc-1", "name": "test1", "protocol": "HTTP", "port": 80, "healthy_status_code": 200, "interval_seconds": 30, "timeout_seconds": 5, "initial_delay_seconds": 10, "healthy_threshold_count": 3, "unhealthy_threshold_count": 3},
-					{"id": "hc-2", "name": "test2", "protocol": "TCP", "port": 443, "interval_seconds": 30, "timeout_seconds": 5, "initial_delay_seconds": 10, "healthy_threshold_count": 3, "unhealthy_threshold_count": 3}
+					{"id": "hc-1", "name": "test1", "protocol": "HTTP", "port": 80, "healthy_status_code": 200, "interval_seconds": 30, "timeout_seconds": 5, "initial_delay_seconds": 10, "healthy_threshold_count": 3, "unhealthy_threshold_count": 3, "created_at": "2024-01-01T00:00:00.000000", "updated_at": "2024-01-01T00:00:00.000000"},
+					{"id": "hc-2", "name": "test2", "protocol": "TCP", "port": 443, "interval_seconds": 30, "timeout_seconds": 5, "initial_delay_seconds": 10, "healthy_threshold_count": 3, "unhealthy_threshold_count": 3, "created_at": "2024-01-01T00:00:00.000000", "updated_at": "2024-01-01T00:00:00.000000"}
 				]
 			}`,
 			statusCode: http.StatusOK,
@@ -318,9 +318,7 @@ func TestNetworkHealthCheckService_List(t *testing.T) {
 			defer server.Close()
 
 			client := testHealthCheckClient(server.URL)
-			hcs, err := client.List(context.Background(), ListNetworkHealthCheckRequest{
-				LoadBalancerID: tt.lbID,
-			})
+			hcs, err := client.List(context.Background(), tt.lbID, ListNetworkLoadBalancerRequest{})
 
 			if tt.wantErr {
 				assertError(t, err)
@@ -349,9 +347,7 @@ func TestNetworkHealthCheckService_Update(t *testing.T) {
 			lbID: "lb-123",
 			hcID: "hc-123",
 			request: UpdateNetworkHealthCheckRequest{
-				LoadBalancerID: "lb-123",
-				HealthCheckID:  "hc-123",
-				Path:           stringPtr("updated-hc"),
+				Path: stringPtr("updated-hc"),
 			},
 			statusCode: http.StatusOK,
 			wantErr:    false,
@@ -361,9 +357,7 @@ func TestNetworkHealthCheckService_Update(t *testing.T) {
 			lbID: "lb-123",
 			hcID: "invalid",
 			request: UpdateNetworkHealthCheckRequest{
-				LoadBalancerID: "lb-123",
-				HealthCheckID:  "invalid",
-				Path:           stringPtr("updated-hc"),
+				Path: stringPtr("updated-hc"),
 			},
 			statusCode: http.StatusNotFound,
 			wantErr:    true,
@@ -382,7 +376,7 @@ func TestNetworkHealthCheckService_Update(t *testing.T) {
 			defer server.Close()
 
 			client := testHealthCheckClient(server.URL)
-			err := client.Update(context.Background(), tt.request)
+			err := client.Update(context.Background(), tt.lbID, tt.hcID, tt.request)
 
 			if tt.wantErr {
 				assertError(t, err)
@@ -432,10 +426,7 @@ func TestNetworkHealthCheckService_Delete(t *testing.T) {
 			defer server.Close()
 
 			client := testHealthCheckClient(server.URL)
-			err := client.Delete(context.Background(), DeleteNetworkHealthCheckRequest{
-				LoadBalancerID: tt.lbID,
-				HealthCheckID:  tt.hcID,
-			})
+			err := client.Delete(context.Background(), tt.lbID, tt.hcID)
 
 			if tt.wantErr {
 				assertError(t, err)
@@ -458,13 +449,12 @@ func TestNetworkHealthCheckService_Create_NewRequestError(t *testing.T) {
 	client := testHealthCheckClient("http://dummy-url")
 
 	req := CreateNetworkHealthCheckRequest{
-		LoadBalancerID: "lb-123",
-		Name:           "test-hc",
-		Protocol:       "HTTP",
-		Port:           80,
+		Name:     "test-hc",
+		Protocol: "HTTP",
+		Port:     80,
 	}
 
-	_, err := client.Create(ctx, req)
+	_, err := client.Create(ctx, "lb-123", req)
 
 	if err == nil {
 		t.Error("expected error due to canceled context, got nil")

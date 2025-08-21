@@ -8,6 +8,7 @@ import (
 
 	"github.com/MagaluCloud/mgc-sdk-go/helpers"
 	mgc_http "github.com/MagaluCloud/mgc-sdk-go/internal/http"
+	"github.com/MagaluCloud/mgc-sdk-go/internal/utils"
 )
 
 const tls_certificates = "tls-certificates"
@@ -15,64 +16,41 @@ const tls_certificates = "tls-certificates"
 type (
 	// CreateNetworkCertificateRequest represents the request payload for creating a network TLS certificate
 	CreateNetworkCertificateRequest struct {
-		LoadBalancerID string  `json:"-"`
-		Name           string  `json:"name"`
-		Description    *string `json:"description,omitempty"`
-		Certificate    string  `json:"certificate"`
-		PrivateKey     string  `json:"private_key"`
-	}
-
-	// DeleteNetworkCertificateRequest represents the request payload for deleting a network TLS certificate
-	DeleteNetworkCertificateRequest struct {
-		LoadBalancerID   string `json:"-"`
-		TLSCertificateID string `json:"-"`
-	}
-
-	// GetNetworkCertificateRequest represents the request payload for getting a network TLS certificate
-	GetNetworkCertificateRequest struct {
-		LoadBalancerID   string `json:"-"`
-		TLSCertificateID string `json:"-"`
-	}
-
-	// ListNetworkCertificateRequest represents the request payload for listing network TLS certificates
-	ListNetworkCertificateRequest struct {
-		LoadBalancerID string  `json:"-"`
-		Offset         *int    `json:"-"`
-		Limit          *int    `json:"-"`
-		Sort           *string `json:"-"`
+		Name        string  `json:"name"`
+		Description *string `json:"description,omitempty"`
+		Certificate string  `json:"certificate"`
+		PrivateKey  string  `json:"private_key"`
 	}
 
 	// UpdateNetworkCertificateRequest represents the request payload for updating a network TLS certificate
 	UpdateNetworkCertificateRequest struct {
-		LoadBalancerID   string `json:"-"`
-		TLSCertificateID string `json:"-"`
-		Certificate      string `json:"certificate"`
-		PrivateKey       string `json:"private_key"`
+		Certificate string `json:"certificate"`
+		PrivateKey  string `json:"private_key"`
 	}
 
 	// NetworkTLSCertificateResponse represents a network TLS certificate response
 	NetworkTLSCertificateResponse struct {
-		ID             string  `json:"id"`
-		Name           string  `json:"name"`
-		ExpirationDate *string `json:"expiration_date,omitempty"`
-		Description    *string `json:"description,omitempty"`
-		CreatedAt      string  `json:"created_at"`
-		UpdatedAt      string  `json:"updated_at"`
+		ID             string                          `json:"id"`
+		Name           string                          `json:"name"`
+		ExpirationDate *utils.LocalDateTimeWithoutZone `json:"expiration_date,omitempty"`
+		Description    *string                         `json:"description,omitempty"`
+		CreatedAt      utils.LocalDateTimeWithoutZone  `json:"created_at"`
+		UpdatedAt      utils.LocalDateTimeWithoutZone  `json:"updated_at"`
 	}
 
 	// NetworkPaginatedTLSCertificateResponse represents a paginated TLS certificate response
 	NetworkPaginatedTLSCertificateResponse struct {
-		Meta    interface{}                     `json:"meta"`
+		Meta    PaginationMeta                  `json:"meta"`
 		Results []NetworkTLSCertificateResponse `json:"results"`
 	}
 
 	// NetworkCertificateService provides methods for managing network TLS certificates
 	NetworkCertificateService interface {
-		Create(ctx context.Context, req CreateNetworkCertificateRequest) (*NetworkTLSCertificateResponse, error)
-		Delete(ctx context.Context, req DeleteNetworkCertificateRequest) error
-		Get(ctx context.Context, req GetNetworkCertificateRequest) (*NetworkTLSCertificateResponse, error)
-		List(ctx context.Context, req ListNetworkCertificateRequest) ([]NetworkTLSCertificateResponse, error)
-		Update(ctx context.Context, req UpdateNetworkCertificateRequest) error
+		Create(ctx context.Context, lbID string, req CreateNetworkCertificateRequest) (*NetworkTLSCertificateResponse, error)
+		Delete(ctx context.Context, lbID, certicateID string) error
+		Get(ctx context.Context, lbID, certicateID string) (*NetworkTLSCertificateResponse, error)
+		List(ctx context.Context, lbID string, options ListNetworkLoadBalancerRequest) ([]NetworkTLSCertificateResponse, error)
+		Update(ctx context.Context, lbID, certicateID string, req UpdateNetworkCertificateRequest) error
 	}
 
 	// networkCertificateService implements the NetworkCertificateService interface
@@ -82,8 +60,8 @@ type (
 )
 
 // Create creates a new network TLS certificate
-func (s *networkCertificateService) Create(ctx context.Context, req CreateNetworkCertificateRequest) (*NetworkTLSCertificateResponse, error) {
-	path := urlNetworkLoadBalancer(&req.LoadBalancerID, tls_certificates)
+func (s *networkCertificateService) Create(ctx context.Context, lbID string, req CreateNetworkCertificateRequest) (*NetworkTLSCertificateResponse, error) {
+	path := urlNetworkLoadBalancer(&lbID, tls_certificates)
 
 	// Validate if certificate and private key are base64 encoded
 	if _, err := base64.StdEncoding.DecodeString(req.Certificate); err != nil {
@@ -107,8 +85,8 @@ func (s *networkCertificateService) Create(ctx context.Context, req CreateNetwor
 }
 
 // Delete removes a network TLS certificate
-func (s *networkCertificateService) Delete(ctx context.Context, req DeleteNetworkCertificateRequest) error {
-	path := urlNetworkLoadBalancer(&req.LoadBalancerID, tls_certificates, req.TLSCertificateID)
+func (s *networkCertificateService) Delete(ctx context.Context, lbID, certicateID string) error {
+	path := urlNetworkLoadBalancer(&lbID, tls_certificates, certicateID)
 
 	httpReq, err := s.client.newRequest(ctx, http.MethodDelete, path, nil)
 	if err != nil {
@@ -120,8 +98,8 @@ func (s *networkCertificateService) Delete(ctx context.Context, req DeleteNetwor
 }
 
 // Get retrieves detailed information about a specific TLS certificate
-func (s *networkCertificateService) Get(ctx context.Context, req GetNetworkCertificateRequest) (*NetworkTLSCertificateResponse, error) {
-	path := urlNetworkLoadBalancer(&req.LoadBalancerID, tls_certificates, req.TLSCertificateID)
+func (s *networkCertificateService) Get(ctx context.Context, lbID, certicateID string) (*NetworkTLSCertificateResponse, error) {
+	path := urlNetworkLoadBalancer(&lbID, tls_certificates, certicateID)
 
 	httpReq, err := s.client.newRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
@@ -137,17 +115,17 @@ func (s *networkCertificateService) Get(ctx context.Context, req GetNetworkCerti
 }
 
 // List returns a list of network TLS certificates with optional filtering and pagination
-func (s *networkCertificateService) List(ctx context.Context, req ListNetworkCertificateRequest) ([]NetworkTLSCertificateResponse, error) {
-	path := urlNetworkLoadBalancer(&req.LoadBalancerID, tls_certificates)
+func (s *networkCertificateService) List(ctx context.Context, lbID string, options ListNetworkLoadBalancerRequest) ([]NetworkTLSCertificateResponse, error) {
+	path := urlNetworkLoadBalancer(&lbID, tls_certificates)
 
 	httpReq, err := s.client.newRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
 		return nil, err
 	}
 	query := helpers.NewQueryParams(httpReq)
-	query.AddReflect("_offset", req.Offset)
-	query.AddReflect("_limit", req.Limit)
-	query.Add("_sort", req.Sort)
+	query.AddReflect("_offset", options.Offset)
+	query.AddReflect("_limit", options.Limit)
+	query.Add("_sort", options.Sort)
 	httpReq.URL.RawQuery = query.Encode()
 
 	var resp NetworkPaginatedTLSCertificateResponse
@@ -159,8 +137,8 @@ func (s *networkCertificateService) List(ctx context.Context, req ListNetworkCer
 }
 
 // Update updates a network TLS certificate's properties
-func (s *networkCertificateService) Update(ctx context.Context, req UpdateNetworkCertificateRequest) error {
-	path := urlNetworkLoadBalancer(&req.LoadBalancerID, tls_certificates, req.TLSCertificateID)
+func (s *networkCertificateService) Update(ctx context.Context, lbID, certicateID string, req UpdateNetworkCertificateRequest) error {
+	path := urlNetworkLoadBalancer(&lbID, tls_certificates, certicateID)
 
 	httpReq, err := s.client.newRequest(ctx, http.MethodPut, path, req)
 	if err != nil {

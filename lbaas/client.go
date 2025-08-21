@@ -42,6 +42,10 @@ func (c *LbaasClient) NetworkBackends() NetworkBackendService {
 	return &networkBackendService{client: c}
 }
 
+func (c *LbaasClient) NetworkBackendTargets() NetworkBackendTargetService {
+	return &networkBackendTargetService{client: c}
+}
+
 // NetworkCertificates returns a service for managing network certificates
 func (c *LbaasClient) NetworkCertificates() NetworkCertificateService {
 	return &networkCertificateService{client: c}

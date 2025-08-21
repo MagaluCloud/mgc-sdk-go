@@ -34,12 +34,20 @@ func (q *queryParam) Add(name string, value *string) {
 
 func (q *queryParam) AddReflect(name string, value any) {
 	if value != nil {
+		valueOf := reflect.ValueOf(value)
 		typeOf := reflect.TypeOf(value)
+
+		// Handle pointer types by dereferencing them
+		if typeOf.Kind() == reflect.Ptr && !valueOf.IsNil() {
+			valueOf = valueOf.Elem()
+			typeOf = valueOf.Type()
+		}
+
 		switch typeOf.Kind() {
 		case reflect.String:
-			q.query.Set(name, value.(string))
+			q.query.Set(name, valueOf.String())
 		case reflect.Int:
-			q.query.Set(name, strconv.Itoa(value.(int)))
+			q.query.Set(name, strconv.FormatInt(valueOf.Int(), 10))
 		}
 	}
 }

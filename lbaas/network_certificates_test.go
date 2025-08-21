@@ -44,10 +44,9 @@ func TestNetworkCertificateService_Create(t *testing.T) {
 		{
 			name: "successful creation",
 			request: CreateNetworkCertificateRequest{
-				LoadBalancerID: "lb-123",
-				Name:           "test-cert",
-				Certificate:    certBase64,
-				PrivateKey:     keyBase64,
+				Name:        "test-cert",
+				Certificate: certBase64,
+				PrivateKey:  keyBase64,
 			},
 			response:   `{"id": "cert-123"}`,
 			statusCode: http.StatusOK,
@@ -57,10 +56,9 @@ func TestNetworkCertificateService_Create(t *testing.T) {
 		{
 			name: "invalid certificate - not base64 encoded",
 			request: CreateNetworkCertificateRequest{
-				LoadBalancerID: "lb-123",
-				Name:           "test-cert",
-				Certificate:    "invalid-base64@#$%",
-				PrivateKey:     keyBase64,
+				Name:        "test-cert",
+				Certificate: "invalid-base64@#$%",
+				PrivateKey:  keyBase64,
 			},
 			wantErr:  true,
 			errorMsg: "certificate is not base64 encoded",
@@ -68,10 +66,9 @@ func TestNetworkCertificateService_Create(t *testing.T) {
 		{
 			name: "invalid private key - not base64 encoded",
 			request: CreateNetworkCertificateRequest{
-				LoadBalancerID: "lb-123",
-				Name:           "test-cert",
-				Certificate:    certBase64,
-				PrivateKey:     "invalid-base64@#$%",
+				Name:        "test-cert",
+				Certificate: certBase64,
+				PrivateKey:  "invalid-base64@#$%",
 			},
 			wantErr:  true,
 			errorMsg: "private key is not base64 encoded",
@@ -79,10 +76,9 @@ func TestNetworkCertificateService_Create(t *testing.T) {
 		{
 			name: "server error",
 			request: CreateNetworkCertificateRequest{
-				LoadBalancerID: "lb-123",
-				Name:           "test-cert",
-				Certificate:    certBase64,
-				PrivateKey:     keyBase64,
+				Name:        "test-cert",
+				Certificate: certBase64,
+				PrivateKey:  keyBase64,
 			},
 			response:   `{"error": "internal server error"}`,
 			statusCode: http.StatusInternalServerError,
@@ -91,10 +87,9 @@ func TestNetworkCertificateService_Create(t *testing.T) {
 		{
 			name: "bad request - invalid certificate",
 			request: CreateNetworkCertificateRequest{
-				LoadBalancerID: "lb-123",
-				Name:           "test-cert",
-				Certificate:    certBase64,
-				PrivateKey:     keyBase64,
+				Name:        "test-cert",
+				Certificate: certBase64,
+				PrivateKey:  keyBase64,
 			},
 			response:   `{"error": "invalid certificate format"}`,
 			statusCode: http.StatusBadRequest,
@@ -103,10 +98,9 @@ func TestNetworkCertificateService_Create(t *testing.T) {
 		{
 			name: "unauthorized access",
 			request: CreateNetworkCertificateRequest{
-				LoadBalancerID: "lb-123",
-				Name:           "test-cert",
-				Certificate:    certBase64,
-				PrivateKey:     keyBase64,
+				Name:        "test-cert",
+				Certificate: certBase64,
+				PrivateKey:  keyBase64,
 			},
 			response:   `{"error": "unauthorized"}`,
 			statusCode: http.StatusUnauthorized,
@@ -115,10 +109,9 @@ func TestNetworkCertificateService_Create(t *testing.T) {
 		{
 			name: "forbidden access",
 			request: CreateNetworkCertificateRequest{
-				LoadBalancerID: "lb-123",
-				Name:           "test-cert",
-				Certificate:    certBase64,
-				PrivateKey:     keyBase64,
+				Name:        "test-cert",
+				Certificate: certBase64,
+				PrivateKey:  keyBase64,
 			},
 			response:   `{"error": "forbidden"}`,
 			statusCode: http.StatusForbidden,
@@ -127,10 +120,9 @@ func TestNetworkCertificateService_Create(t *testing.T) {
 		{
 			name: "load balancer not found",
 			request: CreateNetworkCertificateRequest{
-				LoadBalancerID: "invalid-lb",
-				Name:           "test-cert",
-				Certificate:    certBase64,
-				PrivateKey:     keyBase64,
+				Name:        "test-cert",
+				Certificate: certBase64,
+				PrivateKey:  keyBase64,
 			},
 			response:   `{"error": "load balancer not found"}`,
 			statusCode: http.StatusNotFound,
@@ -139,10 +131,9 @@ func TestNetworkCertificateService_Create(t *testing.T) {
 		{
 			name: "conflict - certificate already exists",
 			request: CreateNetworkCertificateRequest{
-				LoadBalancerID: "lb-123",
-				Name:           "existing-cert",
-				Certificate:    certBase64,
-				PrivateKey:     keyBase64,
+				Name:        "existing-cert",
+				Certificate: certBase64,
+				PrivateKey:  keyBase64,
 			},
 			response:   `{"error": "certificate with this name already exists"}`,
 			statusCode: http.StatusConflict,
@@ -158,7 +149,7 @@ func TestNetworkCertificateService_Create(t *testing.T) {
 			// Casos que testam validação de base64 não precisam de servidor HTTP
 			if tt.errorMsg != "" {
 				client := testCertificateClient("http://dummy-url")
-				_, err := client.Create(context.Background(), tt.request)
+				_, err := client.Create(context.Background(), "lb-123", tt.request)
 
 				assertError(t, err)
 				if err.Error() != tt.errorMsg {
@@ -168,7 +159,7 @@ func TestNetworkCertificateService_Create(t *testing.T) {
 			}
 
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				assertEqual(t, fmt.Sprintf("/load-balancer/v0beta1/network-load-balancers/%s/tls-certificates", tt.request.LoadBalancerID), r.URL.Path)
+				assertEqual(t, "/load-balancer/v0beta1/network-load-balancers/lb-123/tls-certificates", r.URL.Path)
 				assertEqual(t, http.MethodPost, r.Method)
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(tt.statusCode)
@@ -177,7 +168,7 @@ func TestNetworkCertificateService_Create(t *testing.T) {
 			defer server.Close()
 
 			client := testCertificateClient(server.URL)
-			cert, err := client.Create(context.Background(), tt.request)
+			cert, err := client.Create(context.Background(), "lb-123", tt.request)
 
 			if tt.wantErr {
 				assertError(t, err)
@@ -210,8 +201,8 @@ func TestNetworkCertificateService_Get(t *testing.T) {
 				"name": "test-cert",
 				"description": "Test certificate",
 				"certificate": "-----BEGIN CERTIFICATE-----\nMIIC...\n-----END CERTIFICATE-----",
-				"created_at": "2024-01-01T00:00:00Z",
-				"updated_at": "2024-01-01T00:00:00Z"
+				"created_at": "2024-01-01T00:00:00.000000",
+				"updated_at": "2024-01-01T00:00:00.000000"
 			}`,
 			statusCode: http.StatusOK,
 			wantErr:    false,
@@ -240,10 +231,7 @@ func TestNetworkCertificateService_Get(t *testing.T) {
 			defer server.Close()
 
 			client := testCertificateClient(server.URL)
-			cert, err := client.Get(context.Background(), GetNetworkCertificateRequest{
-				LoadBalancerID:   tt.lbID,
-				TLSCertificateID: tt.certID,
-			})
+			cert, err := client.Get(context.Background(), tt.lbID, tt.certID)
 
 			if tt.wantErr {
 				assertError(t, err)
@@ -279,8 +267,8 @@ func TestNetworkCertificateService_List(t *testing.T) {
 					"total_results": 2
 				},
 				"results": [
-					{"id": "cert-1", "name": "test1", "certificate": "-----BEGIN CERTIFICATE-----\nMIIC...\n-----END CERTIFICATE-----", "created_at": "2024-01-01T00:00:00Z", "updated_at": "2024-01-01T00:00:00Z"},
-					{"id": "cert-2", "name": "test2", "certificate": "-----BEGIN CERTIFICATE-----\nMIID...\n-----END CERTIFICATE-----", "created_at": "2024-01-01T00:00:00Z", "updated_at": "2024-01-01T00:00:00Z"}
+					{"id": "cert-1", "name": "test1", "certificate": "-----BEGIN CERTIFICATE-----\nMIIC...\n-----END CERTIFICATE-----", "created_at": "2024-01-01T00:00:00.000000", "updated_at": "2024-01-01T00:00:00.000000"},
+					{"id": "cert-2", "name": "test2", "certificate": "-----BEGIN CERTIFICATE-----\nMIID...\n-----END CERTIFICATE-----", "created_at": "2024-01-01T00:00:00.000000", "updated_at": "2024-01-01T00:00:00.000000"}
 				]
 			}`,
 			statusCode: http.StatusOK,
@@ -326,9 +314,7 @@ func TestNetworkCertificateService_List(t *testing.T) {
 			defer server.Close()
 
 			client := testCertificateClient(server.URL)
-			certs, err := client.List(context.Background(), ListNetworkCertificateRequest{
-				LoadBalancerID: tt.lbID,
-			})
+			certs, err := client.List(context.Background(), tt.lbID, ListNetworkLoadBalancerRequest{})
 
 			if tt.wantErr {
 				assertError(t, err)
@@ -357,9 +343,8 @@ func TestNetworkCertificateService_Update(t *testing.T) {
 			lbID:   "lb-123",
 			certID: "cert-123",
 			request: UpdateNetworkCertificateRequest{
-				LoadBalancerID:   "lb-123",
-				TLSCertificateID: "cert-123",
-				Certificate:      "updated-cert",
+				Certificate: "updated-cert",
+				PrivateKey:  "updated-key",
 			},
 			statusCode: http.StatusOK,
 			wantErr:    false,
@@ -369,9 +354,8 @@ func TestNetworkCertificateService_Update(t *testing.T) {
 			lbID:   "lb-123",
 			certID: "invalid",
 			request: UpdateNetworkCertificateRequest{
-				LoadBalancerID:   "lb-123",
-				TLSCertificateID: "invalid",
-				Certificate:      "updated-cert",
+				Certificate: "updated-cert",
+				PrivateKey:  "updated-key",
 			},
 			statusCode: http.StatusNotFound,
 			wantErr:    true,
@@ -390,7 +374,7 @@ func TestNetworkCertificateService_Update(t *testing.T) {
 			defer server.Close()
 
 			client := testCertificateClient(server.URL)
-			err := client.Update(context.Background(), tt.request)
+			err := client.Update(context.Background(), tt.lbID, tt.certID, tt.request)
 
 			if tt.wantErr {
 				assertError(t, err)
@@ -440,10 +424,7 @@ func TestNetworkCertificateService_Delete(t *testing.T) {
 			defer server.Close()
 
 			client := testCertificateClient(server.URL)
-			err := client.Delete(context.Background(), DeleteNetworkCertificateRequest{
-				LoadBalancerID:   tt.lbID,
-				TLSCertificateID: tt.certID,
-			})
+			err := client.Delete(context.Background(), tt.lbID, tt.certID)
 
 			if tt.wantErr {
 				assertError(t, err)
@@ -473,13 +454,12 @@ func TestNetworkCertificateService_Create_NewRequestError(t *testing.T) {
 	keyBase64 := base64.StdEncoding.EncodeToString([]byte(keyPEM))
 
 	req := CreateNetworkCertificateRequest{
-		LoadBalancerID: "lb-123",
-		Name:           "test-cert",
-		Certificate:    certBase64,
-		PrivateKey:     keyBase64,
+		Name:        "test-cert",
+		Certificate: certBase64,
+		PrivateKey:  keyBase64,
 	}
 
-	_, err := certificateService.Create(context.Background(), req)
+	_, err := certificateService.Create(context.Background(), "lb-123", req)
 
 	if err == nil {
 		t.Error("expected error due to invalid URL, got nil")
