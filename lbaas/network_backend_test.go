@@ -256,7 +256,7 @@ func TestNetworkBackendService_Get(t *testing.T) {
 			assertEqual(t, "test-backend", backend.Name)
 			assertEqual(t, BackendBalanceAlgorithm("round_robin"), backend.BalanceAlgorithm)
 			assertEqual(t, BackendType("instance"), backend.TargetsType)
-			assertEqual(t, false, backend.CloseConnectionsOnHostHealthFailure)
+			assertEqual(t, false, *backend.CloseConnectionsOnHostHealthFailure)
 		})
 	}
 }
