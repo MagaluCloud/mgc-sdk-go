@@ -374,6 +374,37 @@ func TestInstanceService_Resize(t *testing.T) {
 			id:   "inst1",
 			request: InstanceResizeRequest{
 				InstanceTypeID: helpers.StrPtr("type-large"),
+			},
+			response: `{
+				"id": "inst1",
+				"instance_type_id": "type-large"
+			}`,
+			statusCode: http.StatusOK,
+			wantID:     "inst1",
+			wantErr:    false,
+		},
+		{
+			name: "resize volume",
+			id:   "inst1",
+			request: InstanceResizeRequest{
+				Volume: &InstanceVolumeResizeRequest{
+					Size: 200,
+					Type: "nvme",
+				},
+			},
+			response: `{
+				"id": "inst1",
+				"volume": {"size": 200, "type": "nvme"}
+			}`,
+			statusCode: http.StatusOK,
+			wantID:     "inst1",
+			wantErr:    false,
+		},
+		{
+			name: "resize instance type and volume simultaneously",
+			id:   "inst1",
+			request: InstanceResizeRequest{
+				InstanceTypeID: helpers.StrPtr("type-large"),
 				Volume: &InstanceVolumeResizeRequest{
 					Size: 200,
 					Type: "nvme",
@@ -382,11 +413,49 @@ func TestInstanceService_Resize(t *testing.T) {
 			response: `{
 				"id": "inst1",
 				"instance_type_id": "type-large",
-				"volume": {"size": 200}
+				"volume": {"size": 200, "type": "nvme"}
 			}`,
 			statusCode: http.StatusOK,
 			wantID:     "inst1",
 			wantErr:    false,
+		},
+		{
+			name: "invalid instance-type",
+			id:   "inst1",
+			request: InstanceResizeRequest{
+				InstanceTypeID: helpers.StrPtr("type-invalid"),
+			},
+			response:   `{"error": "invalid instance-type id"}`,
+			statusCode: http.StatusUnprocessableEntity,
+			wantErr:    true,
+		},
+		{
+			name: "invalid instance-type and valid volume",
+			id:   "inst1",
+			request: InstanceResizeRequest{
+				InstanceTypeID: helpers.StrPtr("type-invalid"),
+				Volume: &InstanceVolumeResizeRequest{
+					Size: 200,
+					Type: "nvme",
+				},
+			},
+			response:   `{"error": "invalid instance-type id"}`,
+			statusCode: http.StatusUnprocessableEntity,
+			wantErr:    true,
+		},
+		{
+			name: "invalid volume",
+			id:   "inst1",
+			request: InstanceResizeRequest{
+				InstanceTypeID: helpers.StrPtr("type-large"),
+				Volume: &InstanceVolumeResizeRequest{
+					Size: 20,
+					Type: "nvme",
+				},
+			},
+			response:   `{"error": "It is not possible to reduce the size of a volume"}`,
+			statusCode: http.StatusUnprocessableEntity,
+			wantErr:    true,
 		},
 	}
 
