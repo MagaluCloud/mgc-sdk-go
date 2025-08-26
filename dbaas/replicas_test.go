@@ -326,13 +326,101 @@ func TestReplicaService_Resize(t *testing.T) {
 			wantErr:    false,
 		},
 		{
-			name: "invalid resize",
+			name: "invalid instance-type",
 			id:   "rep1",
 			request: ReplicaResizeRequest{
-				InstanceTypeID: "invalid-flavor",
+				InstanceTypeID: "invalid-instance-type-id",
 			},
-			response:   `{"error": "invalid flavor"}`,
-			statusCode: http.StatusBadRequest,
+			response:   `{"error": "invalid instance-type id"}`,
+			statusCode: http.StatusUnprocessableEntity,
+			wantErr:    true,
+		},
+		{
+			name: "resize instance type",
+			id:   "rep1",
+			request: ReplicaResizeRequest{
+				InstanceTypeID: "type2",
+			},
+			response: `{
+				"id": "rep1",
+				"instance_type_id": "type2"
+			}`,
+			statusCode: http.StatusOK,
+			wantID:     "rep1",
+			wantErr:    false,
+		},
+		{
+			name: "resize volume",
+			id:   "rep1",
+			request: ReplicaResizeRequest{
+				Volume: &InstanceVolumeResizeRequest{
+					Size: 200,
+					Type: "nvme",
+				},
+			},
+			response: `{
+				"id": "rep1",
+				"volume": {"size": 200, "type": "nvme"}
+			}`,
+			statusCode: http.StatusOK,
+			wantID:     "rep1",
+			wantErr:    false,
+		},
+		{
+			name: "resize instance type and volume simultaneously",
+			id:   "rep1",
+			request: ReplicaResizeRequest{
+				InstanceTypeID: "resize instance type",
+				Volume: &InstanceVolumeResizeRequest{
+					Size: 200,
+					Type: "nvme",
+				},
+			},
+			response: `{
+				"id": "rep1",
+				"instance_type_id": "type-large",
+				"volume": {"size": 200, "type": "nvme"}
+			}`,
+			statusCode: http.StatusOK,
+			wantID:     "rep1",
+			wantErr:    false,
+		},
+		{
+			name: "invalid instance-type",
+			id:   "rep1",
+			request: ReplicaResizeRequest{
+				InstanceTypeID: "invalid-instance-type-id",
+			},
+			response:   `{"error": "invalid instance-type id"}`,
+			statusCode: http.StatusUnprocessableEntity,
+			wantErr:    true,
+		},
+		{
+			name: "invalid instance-type and valid volume",
+			id:   "rep1",
+			request: ReplicaResizeRequest{
+				InstanceTypeID: "invalid-instance-type-id",
+				Volume: &InstanceVolumeResizeRequest{
+					Size: 200,
+					Type: "nvme",
+				},
+			},
+			response:   `{"error": "invalid instance-type id"}`,
+			statusCode: http.StatusUnprocessableEntity,
+			wantErr:    true,
+		},
+		{
+			name: "invalid volume",
+			id:   "rep1",
+			request: ReplicaResizeRequest{
+				InstanceTypeID: "resize instance type",
+				Volume: &InstanceVolumeResizeRequest{
+					Size: 20,
+					Type: "nvme",
+				},
+			},
+			response:   `{"error": "invalid volume size"}`,
+			statusCode: http.StatusUnprocessableEntity,
 			wantErr:    true,
 		},
 	}
