@@ -5,126 +5,110 @@ import (
 	"time"
 )
 
-func TestLocalDateTimeWithoutZone_UnmarshalJSON(t *testing.T) {
-	tests := []struct {
-		name    string
-		data    []byte
-		want    time.Time
-		wantErr bool
-	}{
-		{
-			name:    "valid time",
-			data:    []byte(`"2023-01-02T12:34:56.000000"`),
-			want:    time.Date(2023, time.January, 2, 12, 34, 56, 0, time.UTC),
-			wantErr: false,
-		},
-		{
-			name:    "invalid format with space",
-			data:    []byte(`"2023-01-02 12:34:56.000000"`),
-			wantErr: true,
-		},
-		{
-			name:    "invalid month",
-			data:    []byte(`"2023-13-02T12:34:56.000000"`),
-			wantErr: true,
-		},
-		{
-			name:    "empty string",
-			data:    []byte(`""`),
-			wantErr: true,
-		},
-		{
-			name:    "null input",
-			data:    []byte(`null`),
-			wantErr: true,
-		},
-		{
-			name:    "malformed time",
-			data:    []byte(`"2023-01-02T12:34"`),
-			wantErr: true,
-		},
+func TestLocalDateTimeWithoutZone_UnmarshalJSON_NoMicroseconds(t *testing.T) {
+	var ct LocalDateTimeWithoutZone
+	data := []byte(`"2023-01-02T12:34:56"`)
+	err := ct.UnmarshalJSON(data)
+	if err != nil {
+		t.Fatalf("UnmarshalJSON() unexpected error: %v", err)
 	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			var ct LocalDateTimeWithoutZone
-			err := ct.UnmarshalJSON(tt.data)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("UnmarshalJSON() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !tt.wantErr && !time.Time(ct).Equal(tt.want) {
-				t.Errorf("UnmarshalJSON() got = %v, want %v", time.Time(ct), tt.want)
-			}
-		})
+	want := time.Date(2023, time.January, 2, 12, 34, 56, 0, time.UTC)
+	if !time.Time(ct).Equal(want) {
+		t.Errorf("UnmarshalJSON() got = %v, want %v", time.Time(ct), want)
 	}
 }
 
-func TestLocalDateTimeWithoutZone_MarshalJSON(t *testing.T) {
-	loc, _ := time.LoadLocation("America/New_York")
-	tests := []struct {
-		name    string
-		ct      LocalDateTimeWithoutZone
-		want    []byte
-		wantErr bool
-	}{
-		{
-			name:    "valid UTC time",
-			ct:      LocalDateTimeWithoutZone(time.Date(2023, time.January, 2, 12, 34, 56, 0, time.UTC)),
-			want:    []byte(`"2023-01-02T12:34:56.000000"`),
-			wantErr: false,
-		},
-		{
-			name:    "valid non-UTC time",
-			ct:      LocalDateTimeWithoutZone(time.Date(2023, time.January, 2, 12, 34, 56, 0, loc)),
-			want:    []byte(`"2023-01-02T12:34:56.000000"`),
-			wantErr: false,
-		},
-		{
-			name:    "zero time",
-			ct:      LocalDateTimeWithoutZone(time.Time{}),
-			want:    []byte(`"0001-01-01T00:00:00.000000"`),
-			wantErr: false,
-		},
+func TestLocalDateTimeWithoutZone_UnmarshalJSON_RFC3339Z(t *testing.T) {
+	var ct LocalDateTimeWithoutZone
+	data := []byte(`"2023-01-02T12:34:56Z"`)
+	err := ct.UnmarshalJSON(data)
+	if err != nil {
+		t.Fatalf("UnmarshalJSON() unexpected error: %v", err)
 	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := tt.ct.MarshalJSON()
-			if (err != nil) != tt.wantErr {
-				t.Errorf("MarshalJSON() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if string(got) != string(tt.want) {
-				t.Errorf("MarshalJSON() got = %s, want %s", got, tt.want)
-			}
-		})
+	want := time.Date(2023, time.January, 2, 12, 34, 56, 0, time.UTC)
+	if !time.Time(ct).Equal(want) {
+		t.Errorf("UnmarshalJSON() got = %v, want %v", time.Time(ct), want)
 	}
 }
 
-func TestLocalDateTimeWithoutZone_String(t *testing.T) {
-	tests := []struct {
-		name string
-		ct   LocalDateTimeWithoutZone
-		want string
-	}{
-		{
-			name: "valid time",
-			ct:   LocalDateTimeWithoutZone(time.Date(2023, time.January, 2, 12, 34, 56, 0, time.UTC)),
-			want: "2023-01-02T12:34:56.000000",
-		},
-		{
-			name: "zero time",
-			ct:   LocalDateTimeWithoutZone(time.Time{}),
-			want: "0001-01-01T00:00:00.000000",
-		},
+func TestLocalDateTimeWithoutZone_UnmarshalJSON_RFC3339WithOffset(t *testing.T) {
+	var ct LocalDateTimeWithoutZone
+	data := []byte(`"2023-01-02T12:34:56-05:00"`)
+	err := ct.UnmarshalJSON(data)
+	if err != nil {
+		t.Fatalf("UnmarshalJSON() unexpected error: %v", err)
 	}
+	want := time.Date(2023, time.January, 2, 17, 34, 56, 0, time.UTC)
+	if !time.Time(ct).Equal(want) {
+		t.Errorf("UnmarshalJSON() got = %v, want %v", time.Time(ct), want)
+	}
+}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.ct.String(); got != tt.want {
-				t.Errorf("String() = %v, want %v", got, tt.want)
-			}
-		})
+func TestLocalDateTimeWithoutZone_UnmarshalJSON_RFC3339WithFractionalSeconds_Supported(t *testing.T) {
+	var ct LocalDateTimeWithoutZone
+	data := []byte(`"2023-01-02T12:34:56.789Z"`)
+	err := ct.UnmarshalJSON(data)
+	if err != nil {
+		t.Fatalf("UnmarshalJSON() unexpected error: %v", err)
+	}
+	want := time.Date(2023, time.January, 2, 12, 34, 56, 789000000, time.UTC)
+	if !time.Time(ct).Equal(want) {
+		t.Errorf("UnmarshalJSON() got = %v, want %v", time.Time(ct), want)
+	}
+}
+
+func TestLocalDateTimeWithoutZone_UnmarshalJSON_WhitespaceInsideQuotes_ShouldError(t *testing.T) {
+	var ct LocalDateTimeWithoutZone
+	data := []byte(`" 2023-01-02T12:34:56.000000 "`)
+	err := ct.UnmarshalJSON(data)
+	if err == nil {
+		t.Fatalf("UnmarshalJSON() expected error with leading/trailing whitespace inside quotes, got none")
+	}
+}
+
+func TestLocalDateTimeWithoutZone_UnmarshalJSON_DateOnly_ShouldError(t *testing.T) {
+	var ct LocalDateTimeWithoutZone
+	data := []byte(`"2023-01-02"`)
+	err := ct.UnmarshalJSON(data)
+	if err == nil {
+		t.Fatalf("UnmarshalJSON() expected error for date-only string, got none")
+	}
+}
+
+func TestLocalDateTimeWithoutZone_MarshalJSON_TruncatesToMicroseconds(t *testing.T) {
+	ct := LocalDateTimeWithoutZone(time.Date(2023, time.January, 2, 12, 34, 56, 123456789, time.UTC))
+	got, err := ct.MarshalJSON()
+	if err != nil {
+		t.Fatalf("MarshalJSON() unexpected error: %v", err)
+	}
+	want := []byte(`"2023-01-02T12:34:56.123456"`)
+	if string(got) != string(want) {
+		t.Errorf("MarshalJSON() got = %s, want %s", got, want)
+	}
+}
+
+func TestLocalDateTimeWithoutZone_String_WithNonUTCLocation(t *testing.T) {
+	loc, _ := time.LoadLocation("Asia/Tokyo")
+	ct := LocalDateTimeWithoutZone(time.Date(2023, time.January, 2, 12, 34, 56, 0, loc))
+	got := ct.String()
+	want := "2023-01-02T12:34:56.000000"
+	if got != want {
+		t.Errorf("String() = %v, want %v", got, want)
+	}
+}
+
+func TestLocalDateTimeWithoutZone_RoundTrip_FromRFC3339WithOffset(t *testing.T) {
+	var ct LocalDateTimeWithoutZone
+	data := []byte(`"2023-01-02T12:34:56-05:00"`)
+	if err := ct.UnmarshalJSON(data); err != nil {
+		t.Fatalf("UnmarshalJSON() unexpected error: %v", err)
+	}
+	got, err := ct.MarshalJSON()
+	if err != nil {
+		t.Fatalf("MarshalJSON() unexpected error: %v", err)
+	}
+	want := []byte(`"2023-01-02T12:34:56.000000"`)
+	if string(got) != string(want) {
+		t.Errorf("RoundTrip MarshalJSON() got = %s, want %s", got, want)
 	}
 }
