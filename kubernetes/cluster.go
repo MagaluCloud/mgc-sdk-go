@@ -98,7 +98,6 @@ type (
 		AllowedCIDRs     *[]string      `json:"allowed_cidrs,omitempty"`
 		ServicesIpV4CIDR *string        `json:"services_ipv4_cidr,omitempty"`
 		ClusterIPv4CIDR  *string        `json:"cluster_ipv4_cidr,omitempty"`
-		CNI              *string        `json:"cni,omitempty"`
 	}
 
 	// Controlplane represents control plane configuration
@@ -136,7 +135,6 @@ type (
 		AllowedCIDRs       *[]string                `json:"allowed_cidrs,omitempty"`
 		ServicesIpV4CIDR   *string                  `json:"services_ipv4_cidr,omitempty"`
 		ClusterIPv4CIDR    *string                  `json:"cluster_ipv4_cidr,omitempty"`
-		CNI                *string                  `json:"cni,omitempty"`
 	}
 
 	// AllowedCIDRsUpdateRequest represents the request payload for updating allowed CIDRs
