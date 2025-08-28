@@ -13,7 +13,7 @@ jobs:
     name: Release
     runs-on: ${{ vars.RUNNER_RUNS_ON }} # settings > secrets and variables > variables > RUNNER_RUNS_ON
     permissions:
-      contents: write 
+      contents: write
     env:
       GPG_PASSPHRASE: ${{ secrets.MAGALUBOT_GPG_PASSPHRASE }}
     steps:
@@ -112,4 +112,4 @@ jobs:
           body: "Release ${{ github.event.inputs.version }}"
           draft: true
           prerelease: false
-          
+          generate_release_notes: true
