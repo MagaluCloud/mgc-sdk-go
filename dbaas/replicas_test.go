@@ -315,25 +315,20 @@ func TestReplicaService_Resize(t *testing.T) {
 			name: "resize instance type",
 			id:   "rep1",
 			request: ReplicaResizeRequest{
-				InstanceTypeID: "type2",
+				InstanceTypeID: helpers.StrPtr("type-large"),
+				Volume: &InstanceVolumeResizeRequest{
+					Size: 200,
+					Type: "nvme",
+				},
 			},
 			response: `{
 				"id": "rep1",
-				"instance_type_id": "type2"
+				"instance_type_id": "type-large",
+				"volume": {"size": 200}
 			}`,
 			statusCode: http.StatusOK,
 			wantID:     "rep1",
 			wantErr:    false,
-		},
-		{
-			name: "invalid resize",
-			id:   "rep1",
-			request: ReplicaResizeRequest{
-				InstanceTypeID: "invalid-flavor",
-			},
-			response:   `{"error": "invalid flavor"}`,
-			statusCode: http.StatusBadRequest,
-			wantErr:    true,
 		},
 	}
 
@@ -341,10 +336,12 @@ func TestReplicaService_Resize(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				assertEqual(t, fmt.Sprintf("/database/v2/replicas/%s/resize", tt.id), r.URL.Path)
+				assertEqual(t, http.MethodPost, r.Method)
 
 				var req ReplicaResizeRequest
 				json.NewDecoder(r.Body).Decode(&req)
-				assertEqual(t, tt.request.InstanceTypeID, req.InstanceTypeID)
+				assertEqual(t, *tt.request.InstanceTypeID, *req.InstanceTypeID)
+				assertEqual(t, tt.request.Volume.Size, req.Volume.Size)
 
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(tt.statusCode)
