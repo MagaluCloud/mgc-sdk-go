@@ -68,7 +68,8 @@ type (
 
 	// ReplicaResizeRequest represents the request payload for resizing a replica
 	ReplicaResizeRequest struct {
-		InstanceTypeID string `json:"instance_type_id,omitempty"`
+		InstanceTypeID *string                      `json:"instance_type_id,omitempty"`
+		Volume         *InstanceVolumeResizeRequest `json:"volume,omitempty"`
 	}
 
 	// ReplicaResponse represents the response when creating a replica
