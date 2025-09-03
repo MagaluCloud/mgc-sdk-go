@@ -57,6 +57,11 @@ type (
 		Type *string `json:"type,omitempty"`
 	}
 
+	ClusterVolumeResizeRequest struct {
+		Size int    `json:"size"`
+		Type string `json:"type,omitempty"`
+	}
+
 	// ClusterCreateRequest represents the request payload for creating a cluster
 	ClusterCreateRequest struct {
 		Name                string               `json:"name"`
@@ -68,6 +73,11 @@ type (
 		ParameterGroupID    *string              `json:"parameter_group_id,omitempty"`
 		BackupRetentionDays *int                 `json:"backup_retention_days,omitempty"`
 		BackupStartAt       *string              `json:"backup_start_at,omitempty"`
+	}
+
+	ClusterResizeRequest struct {
+		InstanceTypeID *string                     `json:"instance_type_id,omitempty"`
+		Volume         *ClusterVolumeResizeRequest `json:"volume,omitempty"`
 	}
 
 	// ClusterResponse represents the response when creating a cluster
@@ -123,6 +133,7 @@ type ClusterService interface {
 	Create(ctx context.Context, req ClusterCreateRequest) (*ClusterResponse, error)
 	Get(ctx context.Context, ID string) (*ClusterDetailResponse, error)
 	Update(ctx context.Context, ID string, req ClusterUpdateRequest) (*ClusterDetailResponse, error)
+	Resize(ctx context.Context, id string, req ClusterResizeRequest) (*ClusterDetailResponse, error)
 	Delete(ctx context.Context, ID string) error
 	Start(ctx context.Context, ID string) (*ClusterDetailResponse, error)
 	Stop(ctx context.Context, ID string) (*ClusterDetailResponse, error)
@@ -229,6 +240,24 @@ func (s *clusterService) Update(ctx context.Context, ID string, req ClusterUpdat
 		s.client.GetConfig(),
 		http.MethodPatch,
 		fmt.Sprintf("%s/%s", v2ClustersPath, ID),
+		req,
+		nil,
+	)
+}
+
+// Resize changes the instance type and/or volume specifications of a database instance.
+// Returns the instance details with the new specifications.
+func (s *clusterService) Resize(ctx context.Context, ID string, req ClusterResizeRequest) (*ClusterDetailResponse, error) {
+	if ID == "" {
+		return nil, fmt.Errorf(errIDCannotBeEmpty)
+	}
+
+	return mgc_http.ExecuteSimpleRequestWithRespBody[ClusterDetailResponse](
+		ctx,
+		s.client.newRequest,
+		s.client.GetConfig(),
+		http.MethodPost,
+		fmt.Sprintf("%s/%s/resize", v2ClustersPath, ID),
 		req,
 		nil,
 	)
