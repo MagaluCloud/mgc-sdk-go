@@ -22,7 +22,7 @@ import (
 // Configuration constants - modify these for your environment
 const (
 	// Replace with your actual VPC ID
-	ExampleVPCID = "93ccb13b-e7d1-4f2f-bde8-a02230c8de2b"
+	ExampleVPCID = "65d6acfb-4fce-4a89-85c3-adef2261fe1b"
 	// Replace with your actual subnet pool ID (optional)
 	ExampleSubnetPoolID = "subnet-pool-12345678-1234-1234-1234-123456789012"
 	// Replace with your actual public IP ID (optional for external LBs)
@@ -315,8 +315,8 @@ func runListLoadBalancersExample(ctx context.Context, client *client.CoreClient)
 		fmt.Printf("     Created: %s\n", lb.CreatedAt)
 		fmt.Printf("     Listeners: %d, Backends: %d, Health Checks: %d\n",
 			len(lb.Listeners), len(lb.Backends), len(lb.HealthChecks))
-		if lb.IPAddress != nil {
-			fmt.Printf("     IP Address: %s\n", *lb.IPAddress)
+		if lb.PublicIP != nil {
+			fmt.Printf("     Public IP: %s\n", *lb.PublicIP.IPAddress)
 		}
 		fmt.Println()
 	}
@@ -345,8 +345,8 @@ func runGetLoadBalancerExample(ctx context.Context, client *client.CoreClient, l
 	fmt.Printf("Visibility: %s\n", lb.Visibility)
 	fmt.Printf("Status: %s\n", lb.Status)
 	fmt.Printf("VPC ID: %s\n", lb.VPCID)
-	if lb.IPAddress != nil {
-		fmt.Printf("IP Address: %s\n", *lb.IPAddress)
+	if lb.PublicIP != nil {
+		fmt.Printf("     Public IP: %s\n", *lb.PublicIP.IPAddress)
 	}
 	fmt.Printf("Created: %s\n", lb.CreatedAt)
 	fmt.Printf("Updated: %s\n", lb.UpdatedAt)
@@ -400,13 +400,8 @@ func runGetLoadBalancerExample(ctx context.Context, client *client.CoreClient, l
 	}
 
 	// Display public IPs
-	fmt.Printf("\nPublic IPs (%d):\n", len(lb.PublicIPs))
-	for _, pip := range lb.PublicIPs {
-		fmt.Printf("  - %s", pip.ID)
-		if pip.IPAddress != nil {
-			fmt.Printf(" (%s)", *pip.IPAddress)
-		}
-		fmt.Println()
+	if lb.PublicIP != nil {
+		fmt.Printf("     Public IP: %s\n", *lb.PublicIP.IPAddress)
 	}
 }
 

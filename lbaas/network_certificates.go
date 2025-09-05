@@ -5,10 +5,10 @@ import (
 	"encoding/base64"
 	"errors"
 	"net/http"
+	"time"
 
 	"github.com/MagaluCloud/mgc-sdk-go/helpers"
 	mgc_http "github.com/MagaluCloud/mgc-sdk-go/internal/http"
-	"github.com/MagaluCloud/mgc-sdk-go/internal/utils"
 )
 
 const tls_certificates = "tls-certificates"
@@ -30,12 +30,12 @@ type (
 
 	// NetworkTLSCertificateResponse represents a network TLS certificate response
 	NetworkTLSCertificateResponse struct {
-		ID             string                          `json:"id"`
-		Name           string                          `json:"name"`
-		ExpirationDate *utils.LocalDateTimeWithoutZone `json:"expiration_date,omitempty"`
-		Description    *string                         `json:"description,omitempty"`
-		CreatedAt      utils.LocalDateTimeWithoutZone  `json:"created_at"`
-		UpdatedAt      utils.LocalDateTimeWithoutZone  `json:"updated_at"`
+		ID             string     `json:"id"`
+		Name           string     `json:"name"`
+		ExpirationDate *time.Time `json:"expiration_date,omitempty"`
+		Description    *string    `json:"description,omitempty"`
+		CreatedAt      time.Time  `json:"created_at"`
+		UpdatedAt      time.Time  `json:"updated_at"`
 	}
 
 	// NetworkPaginatedTLSCertificateResponse represents a paginated TLS certificate response
