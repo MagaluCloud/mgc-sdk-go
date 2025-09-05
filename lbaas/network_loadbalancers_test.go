@@ -203,12 +203,12 @@ func TestNetworkLoadBalancerService_Get(t *testing.T) {
 				"listeners": [],
 				"backends": [],
 				"health_checks": [],
-				"public_ips": [],
+				"public_ips": null,
 				"tls_certificates": [],
 				"acls": [],
 				"vpc_id": "vpc-123",
-				"created_at": "2024-01-01T00:00:00.000000",
-				"updated_at": "2024-01-01T00:00:00.000000"
+				"created_at": "2024-01-01T00:00:00Z",
+				"updated_at": "2024-01-01T00:00:00Z"
 			}`,
 			statusCode: http.StatusOK,
 			wantErr:    false,
@@ -297,8 +297,8 @@ func TestNetworkLoadBalancerService_List(t *testing.T) {
 			name: "successful list with multiple load balancers",
 			response: `{
 				"results": [
-					{"id": "lb-1", "name": "test1", "type": "proxy", "visibility": "external", "status": "running", "listeners": [], "backends": [], "health_checks": [], "public_ips": [], "tls_certificates": [], "acls": [], "vpc_id": "vpc-1", "created_at": "2024-01-01T00:00:00.000000", "updated_at": "2024-01-01T00:00:00.000000"},
-					{"id": "lb-2", "name": "test2", "type": "proxy", "visibility": "internal", "status": "running", "listeners": [], "backends": [], "health_checks": [], "public_ips": [], "tls_certificates": [], "acls": [], "vpc_id": "vpc-2", "created_at": "2024-01-01T00:00:00.000000", "updated_at": "2024-01-01T00:00:00.000000"}
+					{"id": "lb-1", "name": "test1", "type": "proxy", "visibility": "external", "status": "running", "listeners": [], "backends": [], "health_checks": [], "public_ips": null, "tls_certificates": [], "acls": [], "vpc_id": "vpc-1", "created_at": "2024-01-01T00:00:00Z", "updated_at": "2024-01-01T00:00:00Z"},
+					{"id": "lb-2", "name": "test2", "type": "proxy", "visibility": "internal", "status": "running", "listeners": [], "backends": [], "health_checks": [], "public_ips": null, "tls_certificates": [], "acls": [], "vpc_id": "vpc-2", "created_at": "2024-01-01T00:00:00Z", "updated_at": "2024-01-01T00:00:00Z"}
 				]
 			}`,
 			statusCode: http.StatusOK,
@@ -379,7 +379,7 @@ func TestNetworkLoadBalancerService_ListWithPagination(t *testing.T) {
 			},
 			response: `{
 				"results": [
-					{"id": "lb-1", "name": "test1", "type": "proxy", "visibility": "external", "status": "running", "listeners": [], "backends": [], "health_checks": [], "public_ips": [], "tls_certificates": [], "acls": [], "vpc_id": "vpc-1", "created_at": "2024-01-01T00:00:00.000000", "updated_at": "2024-01-01T00:00:00.000000"}
+					{"id": "lb-1", "name": "test1", "type": "proxy", "visibility": "external", "status": "running", "listeners": [], "backends": [], "health_checks": [], "public_ips": null, "tls_certificates": [], "acls": [], "vpc_id": "vpc-1", "created_at": "2024-01-01T00:00:00Z", "updated_at": "2024-01-01T00:00:00Z"}
 				]
 			}`,
 			statusCode:  http.StatusOK,
@@ -394,8 +394,8 @@ func TestNetworkLoadBalancerService_ListWithPagination(t *testing.T) {
 			},
 			response: `{
 				"results": [
-					{"id": "lb-1", "name": "test1", "type": "proxy", "visibility": "external", "status": "running", "listeners": [], "backends": [], "health_checks": [], "public_ips": [], "tls_certificates": [], "acls": [], "vpc_id": "vpc-1", "created_at": "2024-01-01T00:00:00.000000", "updated_at": "2024-01-01T00:00:00.000000"},
-					{"id": "lb-2", "name": "test2", "type": "proxy", "visibility": "internal", "status": "running", "listeners": [], "backends": [], "health_checks": [], "public_ips": [], "tls_certificates": [], "acls": [], "vpc_id": "vpc-2", "created_at": "2024-01-01T00:00:00.000000", "updated_at": "2024-01-01T00:00:00.000000"}
+					{"id": "lb-1", "name": "test1", "type": "proxy", "visibility": "external", "status": "running", "listeners": [], "backends": [], "health_checks": [], "public_ips": null, "tls_certificates": [], "acls": [], "vpc_id": "vpc-1", "created_at": "2024-01-01T00:00:00Z", "updated_at": "2024-01-01T00:00:00Z"},
+					{"id": "lb-2", "name": "test2", "type": "proxy", "visibility": "internal", "status": "running", "listeners": [], "backends": [], "health_checks": [], "public_ips": null, "tls_certificates": [], "acls": [], "vpc_id": "vpc-2", "created_at": "2024-01-01T00:00:00Z", "updated_at": "2024-01-01T00:00:00Z"}
 				]
 			}`,
 			statusCode: http.StatusOK,
