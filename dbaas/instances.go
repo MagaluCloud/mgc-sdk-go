@@ -133,6 +133,7 @@ type (
 	DatabaseInstanceUpdateRequest struct {
 		BackupRetentionDays *int    `json:"backup_retention_days,omitempty"`
 		BackupStartAt       *string `json:"backup_start_at,omitempty"`
+		ParameterGroupID    *string `json:"parameter_group_id,omitempty"`
 	}
 
 	// ReplicaAddressResponse represents a replica address
