@@ -35,12 +35,12 @@ func TestInstanceTypeService_List(t *testing.T) {
 			response: `{
 				"meta": {"total": 6},
 				"results": [
-					{"id": "type1_mysql8", "name": "small", "vcpu": "1", "ram": "2GB", "status": "ACTIVE", "engine_id": "mysql8_id"},
-					{"id": "type2_mysql8", "name": "medium", "vcpu": "2", "ram": "4GB", "status": "ACTIVE", "engine_id": "mysql8_id"},
-					{"id": "type3_mysql8", "name": "medium", "vcpu": "2", "ram": "4GB", "status": "DEPRECATED", "engine_id": "mysql8_id"},
-					{"id": "type1_mysql84", "name": "small", "vcpu": "1", "ram": "2GB", "status": "ACTIVE", "engine_id": "mysql84_id"},
-					{"id": "type2_mysql84", "name": "medium", "vcpu": "2", "ram": "4GB", "status": "ACTIVE", "engine_id": "mysql84_id"},
-					{"id": "type1_postgres16", "name": "small", "vcpu": "1", "ram": "2GB", "status": "ACTIVE", "engine_id": "postgresql16_id"}
+					{"id": "type1_mysql8", "name": "small", "vcpu": "1", "ram": "2GB", "status": "ACTIVE", "engine_id": "mysql8_id", "compatible_product": "SINGLE_INSTANCE"},
+					{"id": "type2_mysql8", "name": "medium", "vcpu": "2", "ram": "4GB", "status": "ACTIVE", "engine_id": "mysql8_id", "compatible_product": "SINGLE_INSTANCE"},
+					{"id": "type3_mysql8", "name": "medium", "vcpu": "2", "ram": "4GB", "status": "DEPRECATED", "engine_id": "mysql8_id", "compatible_product": "SINGLE_INSTANCE"},
+					{"id": "type1_mysql84", "name": "small", "vcpu": "1", "ram": "2GB", "status": "ACTIVE", "engine_id": "mysql84_id", "compatible_product": "SINGLE_INSTANCE_REPLICA"},
+					{"id": "type2_mysql84", "name": "medium", "vcpu": "2", "ram": "4GB", "status": "ACTIVE", "engine_id": "mysql84_id", "compatible_product": "CLUSTER"},
+					{"id": "type1_postgres16", "name": "small", "vcpu": "1", "ram": "2GB", "status": "ACTIVE", "engine_id": "postgresql16_id", "compatible_product": "SINGLE_INSTANCE"}
 				]
 			}`,
 			statusCode: http.StatusOK,
@@ -50,14 +50,15 @@ func TestInstanceTypeService_List(t *testing.T) {
 		{
 			name: "with filters and pagination",
 			opts: ListInstanceTypeOptions{
-				Limit:    helpers.IntPtr(10),
-				Offset:   helpers.IntPtr(5),
-				Status:   helpers.StrPtr("ACTIVE"),
-				EngineID: helpers.StrPtr("mysql8_id"),
+				Limit:             helpers.IntPtr(10),
+				Offset:            helpers.IntPtr(5),
+				Status:            helpers.StrPtr("ACTIVE"),
+				EngineID:          helpers.StrPtr("mysql8_id"),
+				CompatibleProduct: helpers.StrPtr("SINGLE_INSTANCE"),
 			},
 			response: `{
 				"meta": {"total": 1},
-				"results": [{"id": "type1_mysql8", "status": "ACTIVE", "engine_id": "mysql8_id"}]
+				"results": [{"id": "type1_mysql8", "status": "ACTIVE", "engine_id": "mysql8_id", "compatible_product": "SINGLE_INSTANCE"}]
 			}`,
 			statusCode: http.StatusOK,
 			wantCount:  1,
@@ -88,6 +89,9 @@ func TestInstanceTypeService_List(t *testing.T) {
 				}
 				if tt.opts.EngineID != nil {
 					assertEqual(t, string(*tt.opts.EngineID), query.Get("engine_id"))
+				}
+				if tt.opts.EngineID != nil {
+					assertEqual(t, string(*tt.opts.CompatibleProduct), query.Get("compatible_product"))
 				}
 
 				w.Header().Set("Content-Type", "application/json")
