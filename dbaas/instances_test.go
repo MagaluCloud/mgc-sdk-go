@@ -315,11 +315,13 @@ func TestInstanceService_Update(t *testing.T) {
 			request: DatabaseInstanceUpdateRequest{
 				BackupRetentionDays: helpers.IntPtr(7),
 				BackupStartAt:       helpers.StrPtr("02:00"),
+				ParameterGroupID:    helpers.StrPtr("pg-id"),
 			},
 			response: `{
 				"id": "inst1",
 				"backup_retention_days": 7,
-				"backup_start_at": "02:00"
+				"backup_start_at": "02:00",
+				"parameter_group_id": "pg-id"
 			}`,
 			statusCode: http.StatusOK,
 			wantID:     "inst1",
@@ -337,6 +339,7 @@ func TestInstanceService_Update(t *testing.T) {
 				json.NewDecoder(r.Body).Decode(&req)
 				assertEqual(t, *tt.request.BackupRetentionDays, *req.BackupRetentionDays)
 				assertEqual(t, *tt.request.BackupStartAt, *req.BackupStartAt)
+				assertEqual(t, *tt.request.ParameterGroupID, *req.ParameterGroupID)
 
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(tt.statusCode)
