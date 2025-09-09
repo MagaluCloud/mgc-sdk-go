@@ -45,10 +45,11 @@ type (
 
 	// ListInstanceTypeOptions provides options for listing instance types
 	ListInstanceTypeOptions struct {
-		Offset   *int    `json:"offset,omitempty"`
-		Limit    *int    `json:"limit,omitempty"`
-		Status   *string `json:"status,omitempty"`
-		EngineID *string `json:"engine_id,omitempty"`
+		Offset            *int    `json:"offset,omitempty"`
+		Limit             *int    `json:"limit,omitempty"`
+		Status            *string `json:"status,omitempty"`
+		EngineID          *string `json:"engine_id,omitempty"`
+		CompatibleProduct *string `json:"compatible_product,omitempty"`
 	}
 )
 
@@ -67,6 +68,9 @@ func (s *instanceTypeService) List(ctx context.Context, opts ListInstanceTypeOpt
 	}
 	if opts.EngineID != nil {
 		query.Set("engine_id", *opts.EngineID)
+	}
+	if opts.CompatibleProduct != nil {
+		query.Set("compatible_product", *opts.CompatibleProduct)
 	}
 
 	result, err := mgc_http.ExecuteSimpleRequestWithRespBody[ListInstanceTypesResponse](
