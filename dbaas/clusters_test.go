@@ -395,6 +395,69 @@ func TestClusterService_Update(t *testing.T) {
 	}
 }
 
+func TestClusterService_Resize(t *testing.T) {
+	tests := []struct {
+		name       string
+		id         string
+		request    ClusterResizeRequest
+		response   string
+		statusCode int
+		wantID     string
+		wantErr    bool
+	}{
+		{
+			name: "resize simultaneously instance-type and volume",
+			id:   "cluster-1",
+			request: ClusterResizeRequest{
+				InstanceTypeID: helpers.StrPtr("type-large"),
+				Volume: &ClusterVolumeResizeRequest{
+					Size: 200,
+					Type: "nvme",
+				},
+			},
+			response: `{
+				"id": "cluster-1",
+				"instance_type_id": "type-large",
+				"volume": {"size": 200}
+			}`,
+			statusCode: http.StatusOK,
+			wantID:     "cluster-1",
+			wantErr:    false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				assertEqual(t, fmt.Sprintf("/database/v2/clusters/%s/resize", tt.id), r.URL.Path)
+				assertEqual(t, http.MethodPost, r.Method)
+
+				var req ClusterResizeRequest
+				json.NewDecoder(r.Body).Decode(&req)
+				assertEqual(t, *tt.request.InstanceTypeID, *req.InstanceTypeID)
+				assertEqual(t, tt.request.Volume.Size, req.Volume.Size)
+
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(tt.statusCode)
+				w.Write([]byte(tt.response))
+			}))
+			defer server.Close()
+
+			client := testClusterClient(server.URL)
+			result, err := client.Resize(context.Background(), tt.id, tt.request)
+
+			if tt.wantErr {
+				assertError(t, err)
+				assertEqual(t, true, strings.Contains(err.Error(), strconv.Itoa(tt.statusCode)))
+				return
+			}
+
+			assertNoError(t, err)
+			assertEqual(t, tt.wantID, result.ID)
+		})
+	}
+}
+
 func TestClusterService_Delete(t *testing.T) {
 	tests := []struct {
 		name       string
