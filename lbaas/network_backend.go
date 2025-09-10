@@ -3,10 +3,10 @@ package lbaas
 import (
 	"context"
 	"net/http"
+	"time"
 
 	"github.com/MagaluCloud/mgc-sdk-go/helpers"
 	mgc_http "github.com/MagaluCloud/mgc-sdk-go/internal/http"
-	"github.com/MagaluCloud/mgc-sdk-go/internal/utils"
 )
 
 const backends = "backends"
@@ -37,26 +37,26 @@ type (
 	}
 
 	NetworkBackedTarget struct {
-		ID        string                         `json:"id"`
-		IPAddress *string                        `json:"ip_address,omitempty"`
-		NicID     *string                        `json:"nic_id,omitempty"`
-		Port      *int64                         `json:"port,omitempty"`
-		CreatedAt utils.LocalDateTimeWithoutZone `json:"created_at"`
-		UpdatedAt utils.LocalDateTimeWithoutZone `json:"updated_at"`
+		ID        string    `json:"id"`
+		IPAddress *string   `json:"ip_address,omitempty"`
+		NicID     *string   `json:"nic_id,omitempty"`
+		Port      *int64    `json:"port,omitempty"`
+		CreatedAt time.Time `json:"created_at"`
+		UpdatedAt time.Time `json:"updated_at"`
 	}
 
 	NetworkBackendResponse struct {
-		ID                                  string                         `json:"id"`
-		HealthCheckID                       *string                        `json:"health_check_id,omitempty"`
-		Name                                string                         `json:"name"`
-		Description                         *string                        `json:"description,omitempty"`
-		BalanceAlgorithm                    BackendBalanceAlgorithm        `json:"balance_algorithm"`
-		PanicThreshold                      *float64                       `json:"panic_threshold,omitempty"`
-		CloseConnectionsOnHostHealthFailure *bool                          `json:"close_connections_on_host_health_failure,omitempty"`
-		TargetsType                         BackendType                    `json:"targets_type"`
-		Targets                             []NetworkBackedTarget          `json:"targets"`
-		CreatedAt                           utils.LocalDateTimeWithoutZone `json:"created_at"`
-		UpdatedAt                           utils.LocalDateTimeWithoutZone `json:"updated_at"`
+		ID                                  string                  `json:"id"`
+		HealthCheckID                       *string                 `json:"health_check_id,omitempty"`
+		Name                                string                  `json:"name"`
+		Description                         *string                 `json:"description,omitempty"`
+		BalanceAlgorithm                    BackendBalanceAlgorithm `json:"balance_algorithm"`
+		PanicThreshold                      *float64                `json:"panic_threshold,omitempty"`
+		CloseConnectionsOnHostHealthFailure *bool                   `json:"close_connections_on_host_health_failure,omitempty"`
+		TargetsType                         BackendType             `json:"targets_type"`
+		Targets                             []NetworkBackedTarget   `json:"targets"`
+		CreatedAt                           time.Time               `json:"created_at"`
+		UpdatedAt                           time.Time               `json:"updated_at"`
 	}
 
 	NetworkPaginatedBackendResponse struct {

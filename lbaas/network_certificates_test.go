@@ -201,8 +201,8 @@ func TestNetworkCertificateService_Get(t *testing.T) {
 				"name": "test-cert",
 				"description": "Test certificate",
 				"certificate": "-----BEGIN CERTIFICATE-----\nMIIC...\n-----END CERTIFICATE-----",
-				"created_at": "2024-01-01T00:00:00.000000",
-				"updated_at": "2024-01-01T00:00:00.000000"
+				"created_at": "2024-01-01T00:00:00Z",
+				"updated_at": "2024-01-01T00:00:00Z"
 			}`,
 			statusCode: http.StatusOK,
 			wantErr:    false,
@@ -267,8 +267,8 @@ func TestNetworkCertificateService_List(t *testing.T) {
 					"total_results": 2
 				},
 				"results": [
-					{"id": "cert-1", "name": "test1", "certificate": "-----BEGIN CERTIFICATE-----\nMIIC...\n-----END CERTIFICATE-----", "created_at": "2024-01-01T00:00:00.000000", "updated_at": "2024-01-01T00:00:00.000000"},
-					{"id": "cert-2", "name": "test2", "certificate": "-----BEGIN CERTIFICATE-----\nMIID...\n-----END CERTIFICATE-----", "created_at": "2024-01-01T00:00:00.000000", "updated_at": "2024-01-01T00:00:00.000000"}
+					{"id": "cert-1", "name": "test1", "certificate": "-----BEGIN CERTIFICATE-----\nMIIC...\n-----END CERTIFICATE-----", "created_at": "2024-01-01T00:00:00Z", "updated_at": "2024-01-01T00:00:00Z"},
+					{"id": "cert-2", "name": "test2", "certificate": "-----BEGIN CERTIFICATE-----\nMIID...\n-----END CERTIFICATE-----", "created_at": "2024-01-01T00:00:00Z", "updated_at": "2024-01-01T00:00:00Z"}
 				]
 			}`,
 			statusCode: http.StatusOK,
