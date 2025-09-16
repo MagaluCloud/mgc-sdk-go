@@ -39,7 +39,7 @@ func main() {
 	_ = GetNodes(k8sClient, idComNodePool, idNodepool)
 }
 
-func GetNodes(k8sClient *kubernetes.KubernetesClient, clusterID string, nodePoolID string) []kubernetes.Node {
+func GetNodes(k8sClient *kubernetes.KubernetesClient, clusterID string, nodePoolID string) []kubernetes.NodeResponse {
 	nodes, err := k8sClient.Nodepools().Nodes(context.Background(), clusterID, nodePoolID)
 	if err != nil {
 		log.Fatal(err)

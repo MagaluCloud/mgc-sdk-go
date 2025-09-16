@@ -30,7 +30,7 @@ type (
 
 	// NodePoolService provides methods for managing Kubernetes node pools
 	NodePoolService interface {
-		Nodes(ctx context.Context, clusterID, nodePoolID string) ([]Node, error)
+		Nodes(ctx context.Context, clusterID, nodePoolID string) ([]NodeResponse, error)
 		List(ctx context.Context, clusterID string, opts ListOptions) ([]NodePool, error)
 		Create(ctx context.Context, clusterID string, req CreateNodePoolRequest) (*NodePool, error)
 		Get(ctx context.Context, clusterID, nodePoolID string) (*NodePool, error)
@@ -71,14 +71,14 @@ type (
 		AvailabilityZones *[]string         `json:"availability_zones,omitempty"`
 	}
 
-	// Addresses represents network addresses
-	Addresses struct {
+	// NodeAddress represents network addresses
+	NodeAddress struct {
 		Address string `json:"address"`
 		Type    string `json:"type"`
 	}
 
-	// Allocatable represents allocatable resources
-	Allocatable struct {
+	// NodeResources represents node resources (used for both allocatable and capacity)
+	NodeResources struct {
 		CPU              string `json:"cpu"`
 		EphemeralStorage string `json:"ephemeral_storage"`
 		Hugepages1Gi     string `json:"hugepages_1Gi"`
@@ -87,46 +87,39 @@ type (
 		Pods             string `json:"pods"`
 	}
 
-	// Capacity represents total capacity
-	Capacity struct {
-		CPU              string `json:"cpu"`
-		EphemeralStorage string `json:"ephemeral_storage"`
-		Hugepages1Gi     string `json:"hugepages_1Gi"`
-		Hugepages2Mi     string `json:"hugepages_2Mi"`
-		Memory           string `json:"memory"`
-		Pods             string `json:"pods"`
+	// NodeInfrastructure represents node infrastructure information
+	NodeInfrastructure struct {
+		Architecture            string        `json:"architecture"`
+		ContainerRuntimeVersion string        `json:"containerRuntimeVersion"`
+		KernelVersion           string        `json:"kernelVersion"`
+		KubeProxyVersion        string        `json:"kubeProxyVersion"`
+		KubeletVersion          string        `json:"kubeletVersion"`
+		OperatingSystem         string        `json:"operatingSystem"`
+		OsImage                 string        `json:"osImage"`
+		Allocatable             NodeResources `json:"allocatable"`
+		Capacity                NodeResources `json:"capacity"`
 	}
 
-	// Infrastructure represents node infrastructure information
-	Infrastructure struct {
-		Allocatable             Allocatable `json:"allocatable"`
-		Architecture            string      `json:"architecture"`
-		Capacity                Capacity    `json:"capacity"`
-		ContainerRuntimeVersion string      `json:"containerRuntimeVersion"`
-		KernelVersion           string      `json:"kernelVersion"`
-		KubeProxyVersion        string      `json:"kubeProxyVersion"`
-		KubeletVersion          string      `json:"kubeletVersion"`
-		OperatingSystem         string      `json:"operatingSystem"`
-		OsImage                 string      `json:"osImage"`
+	// NodeResponse represents a Kubernetes node
+	NodeResponse struct {
+		ID             string             `json:"id"`
+		Name           string             `json:"name"`
+		Namespace      string             `json:"namespace"`
+		ClusterName    string             `json:"cluster_name"`
+		NodepoolName   string             `json:"nodepool_name"`
+		CreatedAt      time.Time          `json:"created_at"`
+		Annotations    map[string]string  `json:"annotations"`
+		Labels         map[string]string  `json:"labels"`
+		Taints         *[]Taint           `json:"taints,omitempty"`
+		Addresses      []NodeAddress      `json:"addresses"`
+		Flavor         string             `json:"flavor"`
+		Infrastructure NodeInfrastructure `json:"infrastructure"`
+		Status         MessageState       `json:"status"`
 	}
 
-	// Node represents a Kubernetes node
-	Node struct {
-		Addresses      []Addresses       `json:"addresses"`
-		Annotations    map[string]string `json:"annotations"`
-		ClusterName    string            `json:"cluster_name"`
-		CreatedAt      time.Time         `json:"created_at"`
-		Flavor         string            `json:"flavor"`
-		ID             string            `json:"id"`
-		Infrastructure Infrastructure    `json:"infrastructure"`
-		Labels         map[string]string `json:"labels"`
-		Name           string            `json:"name"`
-		Namespace      string            `json:"namespace"`
-		NodeImage      string            `json:"node_image"`
-		NodepoolName   string            `json:"nodepool_name"`
-		Status         MessageState      `json:"status"`
-		Taints         *[]Taint          `json:"taints,omitempty"`
-		Zone           *string           `json:"zone,omitempty"`
+	// NodesResponse represents the response when listing nodes
+	NodesResponse struct {
+		Results []NodeResponse `json:"results"`
 	}
 
 	// CreateNodePoolRequest represents the request payload for creating a node pool
@@ -167,7 +160,7 @@ type (
 )
 
 // Nodes returns a list of nodes in a specific node pool
-func (s *nodePoolService) Nodes(ctx context.Context, clusterID, nodePoolID string) ([]Node, error) {
+func (s *nodePoolService) Nodes(ctx context.Context, clusterID, nodePoolID string) ([]NodeResponse, error) {
 	if clusterID == "" {
 		return nil, &client.ValidationError{Field: clusterIdField, Message: utils.CannotBeEmpty}
 	}
@@ -176,11 +169,7 @@ func (s *nodePoolService) Nodes(ctx context.Context, clusterID, nodePoolID strin
 		return nil, &client.ValidationError{Field: nodePoolIdField, Message: utils.CannotBeEmpty}
 	}
 
-	type NodeList struct {
-		Results []Node `json:"results"`
-	}
-
-	resp, err := mgc_http.ExecuteSimpleRequestWithRespBody[NodeList](ctx, s.client.newRequest,
+	resp, err := mgc_http.ExecuteSimpleRequestWithRespBody[NodesResponse](ctx, s.client.newRequest,
 		s.client.GetConfig(), http.MethodGet,
 		fmt.Sprintf(clusterNodepoolURL+"/nodes", clusterID, nodePoolID), nil, nil)
 
