@@ -62,3 +62,9 @@ func (c *BlockStorageClient) VolumeTypes() VolumeTypeService {
 func (c *BlockStorageClient) Snapshots() SnapshotService {
 	return &snapshotService{client: c}
 }
+
+// Schedulers returns a service to manage volume schedulers.
+// This method allows access to functionality such as creating, listing, and managing schedulers for automated snapshot creation.
+func (c *BlockStorageClient) Schedulers() SchedulerService {
+	return &schedulerService{client: c}
+}

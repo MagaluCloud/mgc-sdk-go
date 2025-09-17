@@ -13,12 +13,6 @@ import (
 	"github.com/MagaluCloud/mgc-sdk-go/helpers"
 )
 
-const (
-	volumeTypeNVMe = "cloud_nvme1k"
-	waitTimeout    = 5 * time.Minute
-	retryInterval  = 5 * time.Second
-)
-
 func main() {
 	ExampleListVolumeTypes()
 	ExampleListVolumes()
@@ -26,6 +20,7 @@ func main() {
 	ExampleGetVolume(id)
 	ExampleManageVolume(id)
 	ExampleVolumeAttachments(id)
+	ExampleSchedulers(id)
 	ExampleDeleteVolume(id)
 }
 
@@ -233,5 +228,109 @@ func ExampleListVolumeTypes() {
 		fmt.Printf("  IOPS: Read=%d, Write=%d, Total=%d\n", vt.IOPS.Read, vt.IOPS.Write, vt.IOPS.Total)
 		fmt.Printf("  Availability Zones: %v\n", vt.AvailabilityZones)
 		fmt.Printf("  Allows Encryption: %v\n", vt.AllowsEncryption)
+	}
+}
+
+func ExampleSchedulers(volumeID string) {
+	apiToken := os.Getenv("MGC_API_TOKEN")
+	if apiToken == "" {
+		log.Fatal("MGC_API_TOKEN environment variable is not set")
+	}
+	c := client.NewMgcClient(apiToken)
+	blockClient := blockstorage.New(c)
+	ctx := context.Background()
+
+	fmt.Println("\n=== Scheduler Examples ===")
+
+	// Create a new scheduler
+	schedulerReq := blockstorage.SchedulerPayload{
+		Name:        "daily-backup-scheduler",
+		Description: helpers.StrPtr("Daily backup scheduler for important volumes"),
+		Snapshot: blockstorage.SnapshotConfig{
+			Type: "instant",
+		},
+		Policy: blockstorage.Policy{
+			RetentionInDays: 7,
+			Frequency: blockstorage.Frequency{
+				Daily: blockstorage.DailyFrequency{
+					StartTime: "02:00:00",
+				},
+			},
+		},
+	}
+
+	schedulerID, err := blockClient.Schedulers().Create(ctx, schedulerReq)
+	if err != nil {
+		log.Printf("Failed to create scheduler: %v", err)
+		return
+	}
+	fmt.Printf("Created scheduler with ID: %s\n", schedulerID)
+
+	// Get scheduler details
+	scheduler, err := blockClient.Schedulers().Get(ctx, schedulerID, []blockstorage.ExpandSchedulers{blockstorage.ExpandSchedulersVolume})
+	if err != nil {
+		log.Printf("Failed to get scheduler: %v", err)
+		return
+	}
+	fmt.Printf("Scheduler: %s (ID: %s)\n", scheduler.Name, scheduler.ID)
+	fmt.Printf("  Description: %v\n", scheduler.Description)
+	fmt.Printf("  State: %s\n", scheduler.State)
+	fmt.Printf("  Retention: %d days\n", scheduler.Policy.RetentionInDays)
+	fmt.Printf("  Start Time: %s\n", scheduler.Policy.Frequency.Daily.StartTime)
+	fmt.Printf("  Created At: %s\n", scheduler.CreatedAt)
+
+	// Attach volume to scheduler
+	attachReq := blockstorage.SchedulerVolumeIdentifierPayload{
+		Volume: blockstorage.IDOrName{
+			ID: &volumeID,
+		},
+	}
+	if err := blockClient.Schedulers().AttachVolume(ctx, schedulerID, attachReq); err != nil {
+		log.Printf("Failed to attach volume to scheduler: %v", err)
+	} else {
+		fmt.Printf("Volume %s attached to scheduler %s\n", volumeID, schedulerID)
+	}
+
+	// List schedulers with expansion
+	schedulerList, err := blockClient.Schedulers().List(ctx, blockstorage.SchedulerListOptions{
+		Limit:  helpers.IntPtr(10),
+		Offset: helpers.IntPtr(0),
+		Expand: []blockstorage.ExpandSchedulers{blockstorage.ExpandSchedulersVolume},
+	})
+	if err != nil {
+		log.Printf("Failed to list schedulers: %v", err)
+		return
+	}
+
+	fmt.Printf("\nFound %d schedulers:\n", len(schedulerList.Schedulers))
+	for _, sched := range schedulerList.Schedulers {
+		fmt.Printf("  Scheduler: %s (ID: %s)\n", sched.Name, sched.ID)
+		fmt.Printf("    State: %s\n", sched.State)
+		fmt.Printf("    Attached Volumes: %d\n", len(sched.Volumes))
+		for _, volID := range sched.Volumes {
+			fmt.Printf("      - %s\n", volID)
+		}
+	}
+
+	// Wait a moment to demonstrate functionality
+	time.Sleep(2 * time.Second)
+
+	// Detach volume from scheduler
+	detachReq := blockstorage.SchedulerVolumeIdentifierPayload{
+		Volume: blockstorage.IDOrName{
+			ID: &volumeID,
+		},
+	}
+	if err := blockClient.Schedulers().DetachVolume(ctx, schedulerID, detachReq); err != nil {
+		log.Printf("Failed to detach volume from scheduler: %v", err)
+	} else {
+		fmt.Printf("Volume %s detached from scheduler %s\n", volumeID, schedulerID)
+	}
+
+	// Delete the scheduler
+	if err := blockClient.Schedulers().Delete(ctx, schedulerID); err != nil {
+		log.Printf("Failed to delete scheduler: %v", err)
+	} else {
+		fmt.Printf("Scheduler %s deleted successfully\n", schedulerID)
 	}
 }
