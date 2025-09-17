@@ -74,12 +74,6 @@ type (
 		Platform           *Platform           `json:"platform,omitempty"`
 	}
 
-	// MessageState represents a status message
-	MessageState struct {
-		State   string `json:"state"`
-		Message string `json:"message"`
-	}
-
 	// Cluster represents detailed information about a Kubernetes cluster
 	Cluster struct {
 		Name             string         `json:"name"`
@@ -141,12 +135,6 @@ type (
 	// Platform represents platform information
 	Platform struct {
 		Version string `json:"version"`
-	}
-
-	// Status represents a status with messages
-	Status struct {
-		State    string   `json:"state"`
-		Messages []string `json:"messages,omitempty"`
 	}
 
 	// KubeConfig represents a Kubernetes configuration file

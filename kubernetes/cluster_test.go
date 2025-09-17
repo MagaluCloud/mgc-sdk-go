@@ -462,11 +462,3 @@ func TestClusterService_EdgeCases(t *testing.T) {
 		}
 	})
 }
-
-func intPtr(i int) *int {
-	return &i
-}
-
-func strPtr(s string) *string {
-	return &s
-}

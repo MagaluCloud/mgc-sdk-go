@@ -28,15 +28,6 @@ type (
 		ControlPlane []Flavor `json:"controlplane"`
 	}
 
-	// Flavor represents a Kubernetes flavor (instance type)
-	Flavor struct {
-		Name string `json:"name"`
-		ID   string `json:"id"`
-		VCPU int    `json:"vcpu"`
-		RAM  int    `json:"ram"`
-		Size int    `json:"size"`
-	}
-
 	// flavorService implements the FlavorService interface
 	flavorService struct {
 		client *KubernetesClient
