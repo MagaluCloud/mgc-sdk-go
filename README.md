@@ -36,6 +36,7 @@ go get github.com/MagaluCloud/mgc-sdk-go
   - Volumes
   - Snapshots
   - Volume Types
+  - Schedulers
 - SSH Keys
 - Availability Zones
 - Audit
@@ -60,13 +61,23 @@ go get github.com/MagaluCloud/mgc-sdk-go
   - Info
   - Nodepool
   - Version
+- Load Balancer as a Service (LBaaS)
+  - Load Balancers
+  - Listeners
+  - Backends
+  - Backend Targets
+  - Health Checks
+  - Certificates
+  - Network ACLs
 - Network
   - VPCs
-  - Interfaces
   - Subnets
+  - Ports
   - Security Groups
+  - Rules
   - Public IPs
-  - Subnetpools
+  - Subnet Pools
+  - NAT Gateways
 
 ## Authentication
 
@@ -439,7 +450,6 @@ Check the [cmd/examples](cmd/examples) directory for complete working examples o
 ## Contributing
 
 We welcome contributions from the community! Please read our [Contributing Guide](CONTRIBUTING.md) to learn about our development process, how to propose bugfixes and improvements, and how to build and test your changes.
-
 
 ## License
 

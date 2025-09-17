@@ -176,6 +176,16 @@ func TestBlockStorageClient_Services(t *testing.T) {
 			t.Error("expected SnapshotService to be of type *snapshotService")
 		}
 	})
+
+	t.Run("Schedulers", func(t *testing.T) {
+		svc := bsClient.Schedulers()
+		if svc == nil {
+			t.Error("expected SchedulerService to not be nil")
+		}
+		if _, ok := svc.(*schedulerService); !ok {
+			t.Error("expected SchedulerService to be of type *schedulerService")
+		}
+	})
 }
 
 func TestBlockStorageClient_DefaultBasePath(t *testing.T) {
