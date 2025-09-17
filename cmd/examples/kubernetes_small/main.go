@@ -39,7 +39,7 @@ func main() {
 	_ = GetNodes(k8sClient, idComNodePool, idNodepool)
 }
 
-func GetNodes(k8sClient *kubernetes.KubernetesClient, clusterID string, nodePoolID string) []kubernetes.Node {
+func GetNodes(k8sClient *kubernetes.KubernetesClient, clusterID string, nodePoolID string) []kubernetes.NodeResponse {
 	nodes, err := k8sClient.Nodepools().Nodes(context.Background(), clusterID, nodePoolID)
 	if err != nil {
 		log.Fatal(err)
@@ -158,8 +158,8 @@ func ExampleGetCluster(k8sClient *kubernetes.KubernetesClient, clusterID string)
 
 func ExampleUpdateCluster(k8sClient *kubernetes.KubernetesClient, clusterID string) {
 	ctx := context.Background()
-	updateReq := kubernetes.AllowedCIDRsUpdateRequest{
-		AllowedCIDRs: []string{"192.168.0.0/24", "10.0.0.0/16"},
+	updateReq := kubernetes.PatchClusterRequest{
+		AllowedCIDRs: &[]string{"192.168.0.0/24", "10.0.0.0/16"},
 	}
 
 	updatedCluster, err := k8sClient.Clusters().Update(ctx, clusterID, updateReq)

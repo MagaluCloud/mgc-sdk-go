@@ -6,8 +6,6 @@ import (
 	"net/http/httptest"
 	"testing"
 	"time"
-
-	"github.com/MagaluCloud/mgc-sdk-go/client"
 )
 
 func TestVersionService_List(t *testing.T) {
@@ -103,12 +101,4 @@ func TestVersionService_List_ContextCancellation(t *testing.T) {
 	if err == nil {
 		t.Error("Expected context cancellation error, got nil")
 	}
-}
-
-func testClient(baseURL string) *KubernetesClient {
-	core := client.NewMgcClient("test-token",
-		client.WithBaseURL(client.MgcUrl(baseURL)),
-		client.WithHTTPClient(&http.Client{Timeout: 1 * time.Second}),
-	)
-	return New(core)
 }

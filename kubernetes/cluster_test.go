@@ -274,7 +274,7 @@ func TestClusterService_Update(t *testing.T) {
 	tests := []struct {
 		name       string
 		clusterID  string
-		request    AllowedCIDRsUpdateRequest
+		request    PatchClusterRequest
 		response   string
 		statusCode int
 		wantCIDRs  int
@@ -283,8 +283,8 @@ func TestClusterService_Update(t *testing.T) {
 		{
 			name:      "successful update",
 			clusterID: "cluster-123",
-			request: AllowedCIDRsUpdateRequest{
-				AllowedCIDRs: []string{"192.168.1.0/24", "10.0.0.0/8"},
+			request: PatchClusterRequest{
+				AllowedCIDRs: &[]string{"192.168.1.0/24", "10.0.0.0/8"},
 			},
 			response:   `{"allowed_cidrs": ["192.168.1.0/24", "10.0.0.0/8"]}`,
 			statusCode: http.StatusOK,
@@ -294,21 +294,21 @@ func TestClusterService_Update(t *testing.T) {
 		{
 			name:       "empty CIDRs list",
 			clusterID:  "cluster-123",
-			request:    AllowedCIDRsUpdateRequest{},
+			request:    PatchClusterRequest{},
 			statusCode: http.StatusBadRequest,
 			wantErr:    true,
 		},
 		{
 			name:       "server error",
 			clusterID:  "cluster-123",
-			request:    AllowedCIDRsUpdateRequest{},
+			request:    PatchClusterRequest{},
 			statusCode: http.StatusInternalServerError,
 			wantErr:    true,
 		},
 		{
 			name:       "empty cluster ID",
 			clusterID:  "",
-			request:    AllowedCIDRsUpdateRequest{},
+			request:    PatchClusterRequest{},
 			statusCode: http.StatusBadRequest,
 			wantErr:    true,
 		},
@@ -461,12 +461,4 @@ func TestClusterService_EdgeCases(t *testing.T) {
 			t.Error("Esperado erro de parsing")
 		}
 	})
-}
-
-func intPtr(i int) *int {
-	return &i
-}
-
-func strPtr(s string) *string {
-	return &s
 }

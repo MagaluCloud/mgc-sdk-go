@@ -223,8 +223,8 @@ func ExampleGetCluster(k8sClient *kubernetes.KubernetesClient, clusterID string)
 
 func ExampleUpdateCluster(k8sClient *kubernetes.KubernetesClient, clusterID string) {
 	ctx := context.Background()
-	updateReq := kubernetes.AllowedCIDRsUpdateRequest{
-		AllowedCIDRs: []string{"192.168.0.0/24", "10.0.0.0/16"},
+	updateReq := kubernetes.PatchClusterRequest{
+		AllowedCIDRs: &[]string{"192.168.0.0/24", "10.0.0.0/16"},
 	}
 
 	updatedCluster, err := k8sClient.Clusters().Update(ctx, clusterID, updateReq)

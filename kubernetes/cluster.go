@@ -25,23 +25,23 @@ type (
 		Create(ctx context.Context, req ClusterRequest) (*CreateClusterResponse, error)
 		Get(ctx context.Context, clusterID string) (*Cluster, error)
 		Delete(ctx context.Context, clusterID string) error
-		Update(ctx context.Context, clusterID string, req AllowedCIDRsUpdateRequest) (*Cluster, error)
+		Update(ctx context.Context, clusterID string, req PatchClusterRequest) (*PatchClusterResponse, error)
 		GetKubeConfig(ctx context.Context, clusterID string) (*KubeConfig, error)
 	}
 
 	// Network represents network configuration for a cluster
 	Network struct {
-		UUID     string  `json:"uuid"`
-		CIDR     string  `json:"cidr"`
-		Name     *string `json:"name,omitempty"`
-		SubnetID string  `json:"subnet_id"`
+		UUID     string `json:"uuid"`
+		CIDR     string `json:"cidr"`
+		Name     string `json:"name"`
+		SubnetID string `json:"subnet_id"`
 	}
 
 	// Addons represents cluster addons configuration
 	Addons struct {
-		Loadbalance *string `json:"loadbalance,omitempty"`
-		Volume      *string `json:"volume,omitempty"`
-		Secrets     *string `json:"secrets,omitempty"`
+		Loadbalance string `json:"loadbalance"`
+		Volume      string `json:"volume"`
+		Secrets     string `json:"secrets"`
 	}
 
 	// KubeApiServer represents Kubernetes API server configuration
@@ -50,12 +50,6 @@ type (
 		FixedIp             *string `json:"fixed_ip,omitempty"`
 		FloatingIp          *string `json:"floating_ip,omitempty"`
 		Port                *int    `json:"port,omitempty"`
-	}
-
-	// AutoScaleResponse represents autoscaling configuration
-	AutoScaleResponse struct {
-		MinReplicas *int `json:"min_replicas,omitempty"`
-		MaxReplicas *int `json:"max_replicas,omitempty"`
 	}
 
 	// ClusterListResponse represents the response when listing clusters
@@ -72,12 +66,12 @@ type (
 		Region        *string        `json:"region,omitempty"`
 		Status        *MessageState  `json:"status,omitempty"`
 		Version       *string        `json:"version,omitempty"`
-	}
 
-	// MessageState represents a status message
-	MessageState struct {
-		State   string `json:"state"`
-		Message string `json:"message"`
+		CreatedAt          *time.Time          `json:"created_at,omitempty"`
+		MachineTypesSource *MachineTypesSource `json:"machine_types_source,omitempty"`
+		ClusterIPv4CIDR    *string             `json:"cluster_ipv4_cidr,omitempty"`
+		ServicesIpV4CIDR   *string             `json:"services_ipv4_cidr,omitempty"`
+		Platform           *Platform           `json:"platform,omitempty"`
 	}
 
 	// Cluster represents detailed information about a Kubernetes cluster
@@ -98,31 +92,19 @@ type (
 		AllowedCIDRs     *[]string      `json:"allowed_cidrs,omitempty"`
 		ServicesIpV4CIDR *string        `json:"services_ipv4_cidr,omitempty"`
 		ClusterIPv4CIDR  *string        `json:"cluster_ipv4_cidr,omitempty"`
-	}
 
-	// Controlplane represents control plane configuration
-	Controlplane struct {
-		AutoScale        AutoScale        `json:"auto_scale"`
-		CreatedAt        *string          `json:"created_at,omitempty"`
-		Id               string           `json:"id"`
-		InstanceTemplate InstanceTemplate `json:"instance_template"`
-		Labels           []string         `json:"labels"`
-		Name             string           `json:"name"`
-		Replicas         int              `json:"replicas"`
-		SecurityGroups   *[]string        `json:"securityGroups,omitempty"`
-		Status           *Status          `json:"status"`
-		Tags             *[]string        `json:"tags,omitempty"`
-		Taints           *[]Taint         `json:"taints,omitempty"`
-		UpdatedAt        *string          `json:"updated_at,omitempty"`
-		Zone             *[]string        `json:"zone"`
+		MachineTypesSource *MachineTypesSource `json:"machine_types_source,omitempty"`
+		Platform           *Platform           `json:"platform,omitempty"`
 	}
 
 	// CreateClusterResponse represents the response when creating a cluster
 	CreateClusterResponse struct {
-		ID           string       `json:"id"`
-		Name         string       `json:"name"`
-		Status       MessageState `json:"status"`
-		AllowedCidrs *[]string    `json:"allowed_cidrs,omitempty"`
+		ID               string       `json:"id"`
+		Name             string       `json:"name"`
+		Status           MessageState `json:"status"`
+		AllowedCidrs     *[]string    `json:"allowed_cidrs,omitempty"`
+		ClusterIPv4CIDR  *string      `json:"cluster_ipv4_cidr,omitempty"`
+		ServicesIpV4CIDR *string      `json:"services_ipv4_cidr,omitempty"`
 	}
 
 	// ClusterRequest represents the request payload for creating a cluster
@@ -137,15 +119,22 @@ type (
 		ClusterIPv4CIDR    *string                  `json:"cluster_ipv4_cidr,omitempty"`
 	}
 
-	// AllowedCIDRsUpdateRequest represents the request payload for updating allowed CIDRs
-	AllowedCIDRsUpdateRequest struct {
-		AllowedCIDRs []string `json:"allowed_cidrs"`
+	// PatchClusterRequest represents the request payload for patching a cluster
+	PatchClusterRequest struct {
+		AllowedCIDRs *[]string `json:"allowed_cidrs,omitempty"`
 	}
 
-	// Status represents a status with messages
-	Status struct {
-		State    string   `json:"state"`
-		Messages []string `json:"messages,omitempty"`
+	// PatchClusterResponse represents the response when patching a cluster
+	PatchClusterResponse struct {
+		AllowedCIDRs *[]string `json:"allowed_cidrs,omitempty"`
+	}
+
+	// MachineTypesSource represents the source of machine types
+	MachineTypesSource string
+
+	// Platform represents platform information
+	Platform struct {
+		Version string `json:"version"`
 	}
 
 	// KubeConfig represents a Kubernetes configuration file
@@ -181,6 +170,12 @@ type (
 	clusterService struct {
 		client *KubernetesClient
 	}
+)
+
+// Constants for MachineTypesSource
+const (
+	MachineTypesSourceExternal MachineTypesSource = "external"
+	MachineTypesSourceInternal MachineTypesSource = "internal"
 )
 
 // List returns a list of Kubernetes clusters with optional filtering and pagination
@@ -236,12 +231,12 @@ func (s *clusterService) Delete(ctx context.Context, clusterID string) error {
 }
 
 // Update updates the allowed CIDRs for a cluster
-func (s *clusterService) Update(ctx context.Context, clusterID string, req AllowedCIDRsUpdateRequest) (*Cluster, error) {
+func (s *clusterService) Update(ctx context.Context, clusterID string, req PatchClusterRequest) (*PatchClusterResponse, error) {
 	if clusterID == "" {
 		return nil, &client.ValidationError{Field: "clusterID", Message: utils.CannotBeEmpty}
 	}
 
-	return mgc_http.ExecuteSimpleRequestWithRespBody[Cluster](ctx, s.client.newRequest, s.client.GetConfig(), http.MethodPatch, fmt.Sprintf(clusterUrlWithID, clusterID), req, nil)
+	return mgc_http.ExecuteSimpleRequestWithRespBody[PatchClusterResponse](ctx, s.client.newRequest, s.client.GetConfig(), http.MethodPatch, fmt.Sprintf(clusterUrlWithID, clusterID), req, nil)
 }
 
 // GetKubeConfig retrieves the kubeconfig for a cluster
