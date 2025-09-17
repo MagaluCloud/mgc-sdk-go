@@ -57,8 +57,6 @@ type (
 		Name              string            `json:"name"`
 		InstanceTemplate  InstanceTemplate  `json:"instance_template"`
 		Replicas          int               `json:"replicas"`
-		Zone              *[]string         `json:"zone,omitempty"`
-		Tags              *[]string         `json:"tags"`
 		Labels            map[string]string `json:"labels,omitempty"`
 		Taints            *[]Taint          `json:"taints,omitempty"`
 		SecurityGroups    *[]string         `json:"security_groups,omitempty"`
