@@ -5,10 +5,10 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/MagaluCloud/mgc-sdk-go/helpers"
 	mgc_http "github.com/MagaluCloud/mgc-sdk-go/internal/http"
-	"github.com/MagaluCloud/mgc-sdk-go/internal/utils"
 )
 
 //
@@ -114,14 +114,13 @@ type (
 		Listeners           []NetworkListenerResponse       `json:"listeners"`
 		Backends            []NetworkBackendResponse        `json:"backends"`
 		HealthChecks        []NetworkHealthCheckResponse    `json:"health_checks"`
-		PublicIPs           []NetworkPublicIPResponse       `json:"public_ips"`
+		PublicIP            *NetworkPublicIPResponse        `json:"public_ips,omitempty"`
 		TLSCertificates     []NetworkTLSCertificateResponse `json:"tls_certificates"`
 		ACLs                []NetworkAclResponse            `json:"acls"`
-		IPAddress           *string                         `json:"ip_address,omitempty"`
 		VPCID               string                          `json:"vpc_id"`
 		SubnetPoolID        *string                         `json:"subnet_pool_id,omitempty"`
-		CreatedAt           utils.LocalDateTimeWithoutZone  `json:"created_at"`
-		UpdatedAt           utils.LocalDateTimeWithoutZone  `json:"updated_at"`
+		CreatedAt           time.Time                       `json:"created_at"`
+		UpdatedAt           time.Time                       `json:"updated_at"`
 		LastOperationStatus *string                         `json:"last_operation_status,omitempty"`
 	}
 

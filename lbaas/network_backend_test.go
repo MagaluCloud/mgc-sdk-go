@@ -197,8 +197,8 @@ func TestNetworkBackendService_Get(t *testing.T) {
 				"health_check_id": "hc-123",
 				"close_connections_on_host_health_failure": false,
 				"targets": [],
-				"created_at": "2023-01-01T00:00:00.000000",
-				"updated_at": "2023-01-01T00:00:00.000000"
+				"created_at": "2023-01-01T00:00:00Z",
+				"updated_at": "2023-01-01T00:00:00Z"
 			}`,
 			statusCode: http.StatusOK,
 			wantErr:    false,
@@ -296,8 +296,8 @@ func TestNetworkBackendService_List(t *testing.T) {
 						"targets_type": "instance",
 						"close_connections_on_host_health_failure": false,
 						"targets": [],
-						"created_at": "2023-01-01T00:00:00.000000",
-						"updated_at": "2023-01-01T00:00:00.000000"
+						"created_at": "2023-01-01T00:00:00Z",
+						"updated_at": "2023-01-01T00:00:00Z"
 					},
 					{
 						"id": "backend-2",
@@ -306,8 +306,8 @@ func TestNetworkBackendService_List(t *testing.T) {
 						"targets_type": "raw",
 						"close_connections_on_host_health_failure": true,
 						"targets": [],
-						"created_at": "2023-01-01T00:00:00.000000",
-						"updated_at": "2023-01-01T00:00:00.000000"
+						"created_at": "2023-01-01T00:00:00Z",
+						"updated_at": "2023-01-01T00:00:00Z"
 					}
 				]
 			}`,
@@ -358,8 +358,8 @@ func TestNetworkBackendService_List(t *testing.T) {
 						"targets_type": "raw",
 						"close_connections_on_host_health_failure": false,
 						"targets": [],
-						"created_at": "2023-01-01T00:00:00.000000",
-						"updated_at": "2023-01-01T00:00:00.000000"
+						"created_at": "2023-01-01T00:00:00Z",
+						"updated_at": "2023-01-01T00:00:00Z"
 					}
 				]
 			}`,

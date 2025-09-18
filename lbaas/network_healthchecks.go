@@ -3,10 +3,10 @@ package lbaas
 import (
 	"context"
 	"net/http"
+	"time"
 
 	"github.com/MagaluCloud/mgc-sdk-go/helpers"
 	mgc_http "github.com/MagaluCloud/mgc-sdk-go/internal/http"
-	"github.com/MagaluCloud/mgc-sdk-go/internal/utils"
 )
 
 const health_checks = "health-checks"
@@ -42,20 +42,20 @@ type (
 
 	// NetworkHealthCheckResponse represents a network health check response
 	NetworkHealthCheckResponse struct {
-		ID                      string                         `json:"id"`
-		Name                    string                         `json:"name"`
-		Description             *string                        `json:"description,omitempty"`
-		Protocol                HealthCheckProtocol            `json:"protocol"`
-		Path                    *string                        `json:"path,omitempty"`
-		Port                    int                            `json:"port"`
-		HealthyStatusCode       int                            `json:"healthy_status_code"`
-		IntervalSeconds         int                            `json:"interval_seconds"`
-		TimeoutSeconds          int                            `json:"timeout_seconds"`
-		InitialDelaySeconds     int                            `json:"initial_delay_seconds"`
-		HealthyThresholdCount   int                            `json:"healthy_threshold_count"`
-		UnhealthyThresholdCount int                            `json:"unhealthy_threshold_count"`
-		CreatedAt               utils.LocalDateTimeWithoutZone `json:"created_at"`
-		UpdatedAt               utils.LocalDateTimeWithoutZone `json:"updated_at"`
+		ID                      string              `json:"id"`
+		Name                    string              `json:"name"`
+		Description             *string             `json:"description,omitempty"`
+		Protocol                HealthCheckProtocol `json:"protocol"`
+		Path                    *string             `json:"path,omitempty"`
+		Port                    int                 `json:"port"`
+		HealthyStatusCode       int                 `json:"healthy_status_code"`
+		IntervalSeconds         int                 `json:"interval_seconds"`
+		TimeoutSeconds          int                 `json:"timeout_seconds"`
+		InitialDelaySeconds     int                 `json:"initial_delay_seconds"`
+		HealthyThresholdCount   int                 `json:"healthy_threshold_count"`
+		UnhealthyThresholdCount int                 `json:"unhealthy_threshold_count"`
+		CreatedAt               time.Time           `json:"created_at"`
+		UpdatedAt               time.Time           `json:"updated_at"`
 	}
 
 	// NetworkPaginatedHealthCheckResponse represents a paginated health check response
