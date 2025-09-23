@@ -92,13 +92,13 @@ type CreateParametersNetwork struct {
 
 // CreateParametersNetworkInterface represents network interface configuration.
 type CreateParametersNetworkInterface struct {
-	Interface      *IDOrName                                             `json:"interface,omitempty"`
-	SecurityGroups *[]CreateParametersNetworkInterfaceSecurityGroupsItem `json:"security_groups,omitempty"`
+	ID             *string                                   `json:"id,omitempty"`
+	SecurityGroups *[]CreateParametersNetworkInterfaceWithID `json:"security_groups,omitempty"`
 }
 
-// CreateParametersNetworkInterfaceSecurityGroupsItem represents a security group item.
-type CreateParametersNetworkInterfaceSecurityGroupsItem struct {
-	Id string `json:"id"`
+// CreateParametersNetworkInterfaceWithID represents a security group item.
+type CreateParametersNetworkInterfaceWithID struct {
+	ID string `json:"id"`
 }
 
 // IDOrName represents a resource that can be identified by ID or name.
