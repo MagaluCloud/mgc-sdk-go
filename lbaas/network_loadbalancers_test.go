@@ -22,13 +22,6 @@ func assertEqual(t *testing.T, expected, actual interface{}, msgAndArgs ...inter
 	}
 }
 
-func assertNotEqual(t *testing.T, notExpected, actual interface{}, msgAndArgs ...interface{}) {
-	t.Helper()
-	if notExpected == actual {
-		t.Errorf("Expected anything but %v. %v", notExpected, msgAndArgs)
-	}
-}
-
 func assertError(t *testing.T, err error) {
 	t.Helper()
 	if err == nil {
