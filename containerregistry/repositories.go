@@ -34,8 +34,8 @@ type (
 
 	// RepositoriesResponse represents the response when listing repositories
 	RepositoriesResponse struct {
-		Goal    AmountRepositoryResponse `json:"goal"`
-		Results []RepositoryResponse     `json:"results"`
+		Meta    Meta                 `json:"meta"`
+		Results []RepositoryResponse `json:"results"`
 	}
 
 	// repositoriesService implements the RepositoriesService interface

@@ -45,6 +45,7 @@ type (
 	// ListRegistriesResponse represents the response when listing registries
 	ListRegistriesResponse struct {
 		Registries []RegistryResponse `json:"results"`
+		Meta       Meta               `json:"meta"`
 	}
 
 	// registriesService implements the RegistriesService interface
