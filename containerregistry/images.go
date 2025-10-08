@@ -18,6 +18,7 @@ type (
 
 	// ImagesResponse represents the response when listing images
 	ImagesResponse struct {
+		Meta    Meta            `json:"meta"`
 		Results []ImageResponse `json:"results"`
 	}
 

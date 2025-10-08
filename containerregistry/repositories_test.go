@@ -21,8 +21,13 @@ func TestRepositoriesService_List(t *testing.T) {
 			name:       "successful list repositories",
 			registryID: "reg-123",
 			response: `{
-				"goal": {
-					"total": 2
+				"meta": {
+					"page": {
+						"count": 2,
+						"limit": 0,
+						"offset": 0,
+						"total": 2
+					}
 				},
 				"results": [
 					{
@@ -43,7 +48,7 @@ func TestRepositoriesService_List(t *testing.T) {
 			}`,
 			statusCode: http.StatusOK,
 			want: &RepositoriesResponse{
-				Goal: AmountRepositoryResponse{Total: 2},
+				Meta: Meta{Page: Page{Count: 2, Limit: 0, Offset: 0, Total: 2}},
 				Results: []RepositoryResponse{
 					{
 						RegistryName: "test-registry",
@@ -111,7 +116,14 @@ func TestRepositoriesService_List(t *testing.T) {
 				Offset: intPtr(20),
 			},
 			response: `{
-				"goal": {"total": 30},
+				"meta": {
+					"page": {
+						"count": 1,
+						"limit": 10,
+						"offset": 20,
+						"total": 30
+					}
+				},
 				"results": [
 					{
 						"registry_name": "test-registry",
@@ -124,7 +136,7 @@ func TestRepositoriesService_List(t *testing.T) {
 			}`,
 			statusCode: http.StatusOK,
 			want: &RepositoriesResponse{
-				Goal: AmountRepositoryResponse{Total: 30},
+				Meta: Meta{Page: Page{Count: 1, Limit: 10, Offset: 20, Total: 30}},
 				Results: []RepositoryResponse{
 					{
 						RegistryName: "test-registry",
@@ -144,7 +156,14 @@ func TestRepositoriesService_List(t *testing.T) {
 				Sort: strPtr("name:asc"),
 			},
 			response: `{
-				"goal": {"total": 1},
+				"meta": {
+					"page": {
+						"count": 1,
+						"limit": 0,
+						"offset": 0,
+						"total": 1
+					}
+				},
 				"results": [
 					{
 						"registry_name": "test-registry",
@@ -157,7 +176,7 @@ func TestRepositoriesService_List(t *testing.T) {
 			}`,
 			statusCode: http.StatusOK,
 			want: &RepositoriesResponse{
-				Goal: AmountRepositoryResponse{Total: 1},
+				Meta: Meta{Page: Page{Count: 1, Limit: 0, Offset: 0, Total: 1}},
 				Results: []RepositoryResponse{
 					{
 						RegistryName: "test-registry",
@@ -195,8 +214,8 @@ func TestRepositoriesService_List(t *testing.T) {
 				if len(got.Results) != len(tt.want.Results) {
 					t.Errorf("List() got %v results, want %v", len(got.Results), len(tt.want.Results))
 				}
-				if got.Goal.Total != tt.want.Goal.Total {
-					t.Errorf("List() got total %v, want %v", got.Goal.Total, tt.want.Goal.Total)
+				if got.Meta.Page.Total != tt.want.Meta.Page.Total {
+					t.Errorf("List() got total %v, want %v", got.Meta.Page.Total, tt.want.Meta.Page.Total)
 				}
 			}
 		})
@@ -363,7 +382,7 @@ func TestRepositoriesService_Concurrent(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"goal": {"total": 0}, "results": []}`))
+		w.Write([]byte(`{"meta": {"page": {"count": 0, "limit": 0, "offset": 0, "total": 0}}, "results": []}`))
 	}))
 	defer server.Close()
 
