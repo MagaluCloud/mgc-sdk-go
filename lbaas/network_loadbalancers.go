@@ -114,7 +114,7 @@ type (
 		Listeners           []NetworkListenerResponse       `json:"listeners"`
 		Backends            []NetworkBackendResponse        `json:"backends"`
 		HealthChecks        []NetworkHealthCheckResponse    `json:"health_checks"`
-		PublicIP            *NetworkPublicIPResponse        `json:"public_ips,omitempty"`
+		PublicIP            *NetworkPublicIPResponse        `json:"public_ip,omitempty"`
 		TLSCertificates     []NetworkTLSCertificateResponse `json:"tls_certificates"`
 		ACLs                []NetworkAclResponse            `json:"acls"`
 		VPCID               string                          `json:"vpc_id"`
