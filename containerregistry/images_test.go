@@ -15,6 +15,7 @@ func TestImagesService_List(t *testing.T) {
 		opts           ListOptions
 		response       string
 		statusCode     int
+		expectedQuery  map[string]string
 		want           *ImagesResponse
 		wantErr        bool
 	}{
@@ -43,7 +44,8 @@ func TestImagesService_List(t *testing.T) {
 					}
 				]
 			}`,
-			statusCode: http.StatusOK,
+			statusCode:    http.StatusOK,
+			expectedQuery: map[string]string{},
 			want: &ImagesResponse{
 				Results: []ImageResponse{
 					{
@@ -68,11 +70,105 @@ func TestImagesService_List(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name:           "list images with limit",
+			registryID:     "reg-123",
+			repositoryName: "repo-test",
+			opts: ListOptions{
+				Limit: intPtr(10),
+			},
+			response: `{
+				"results": []
+			}`,
+			statusCode:    http.StatusOK,
+			expectedQuery: map[string]string{"_limit": "10"},
+			want: &ImagesResponse{
+				Results: []ImageResponse{},
+			},
+			wantErr: false,
+		},
+		{
+			name:           "list images with offset",
+			registryID:     "reg-123",
+			repositoryName: "repo-test",
+			opts: ListOptions{
+				Offset: intPtr(5),
+			},
+			response: `{
+				"results": []
+			}`,
+			statusCode:    http.StatusOK,
+			expectedQuery: map[string]string{"_offset": "5"},
+			want: &ImagesResponse{
+				Results: []ImageResponse{},
+			},
+			wantErr: false,
+		},
+		{
+			name:           "list images with sort",
+			registryID:     "reg-123",
+			repositoryName: "repo-test",
+			opts: ListOptions{
+				Sort: strPtr("pushed_at"),
+			},
+			response: `{
+				"results": []
+			}`,
+			statusCode:    http.StatusOK,
+			expectedQuery: map[string]string{"_sort": "pushed_at"},
+			want: &ImagesResponse{
+				Results: []ImageResponse{},
+			},
+			wantErr: false,
+		},
+		{
+			name:           "list images with expand",
+			registryID:     "reg-123",
+			repositoryName: "repo-test",
+			opts: ListOptions{
+				Expand: []string{"tags", "manifest"},
+			},
+			response: `{
+				"results": []
+			}`,
+			statusCode:    http.StatusOK,
+			expectedQuery: map[string]string{"_expand": "tags,manifest"},
+			want: &ImagesResponse{
+				Results: []ImageResponse{},
+			},
+			wantErr: false,
+		},
+		{
+			name:           "list images with multiple options",
+			registryID:     "reg-123",
+			repositoryName: "repo-test",
+			opts: ListOptions{
+				Limit:  intPtr(20),
+				Offset: intPtr(10),
+				Sort:   strPtr("created_at"),
+				Expand: []string{"tags"},
+			},
+			response: `{
+				"results": []
+			}`,
+			statusCode: http.StatusOK,
+			expectedQuery: map[string]string{
+				"_limit":  "20",
+				"_offset": "10",
+				"_sort":   "created_at",
+				"_expand": "tags",
+			},
+			want: &ImagesResponse{
+				Results: []ImageResponse{},
+			},
+			wantErr: false,
+		},
+		{
 			name:           "empty response",
 			registryID:     "reg-123",
 			repositoryName: "repo-test",
 			response:       "",
 			statusCode:     http.StatusOK,
+			expectedQuery:  map[string]string{},
 			want:           nil,
 			wantErr:        true,
 		},
@@ -82,6 +178,7 @@ func TestImagesService_List(t *testing.T) {
 			repositoryName: "repo-test",
 			response:       `{"results": [{"digest": "sha256:123"`,
 			statusCode:     http.StatusOK,
+			expectedQuery:  map[string]string{},
 			want:           nil,
 			wantErr:        true,
 		},
@@ -91,6 +188,7 @@ func TestImagesService_List(t *testing.T) {
 			repositoryName: "repo-test",
 			response:       `{"error": "internal server error"}`,
 			statusCode:     http.StatusInternalServerError,
+			expectedQuery:  map[string]string{},
 			want:           nil,
 			wantErr:        true,
 		},
@@ -100,6 +198,7 @@ func TestImagesService_List(t *testing.T) {
 			repositoryName: "repo-test",
 			response:       `{"error": "unauthorized"}`,
 			statusCode:     http.StatusUnauthorized,
+			expectedQuery:  map[string]string{},
 			want:           nil,
 			wantErr:        true,
 		},
@@ -109,6 +208,7 @@ func TestImagesService_List(t *testing.T) {
 			repositoryName: "repo-test",
 			response:       `{"error": "repository not found"}`,
 			statusCode:     http.StatusNotFound,
+			expectedQuery:  map[string]string{},
 			want:           nil,
 			wantErr:        true,
 		},
@@ -119,6 +219,12 @@ func TestImagesService_List(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				if r.Method != http.MethodGet {
 					t.Errorf("expected GET method, got %s", r.Method)
+				}
+				query := r.URL.Query()
+				for key, expectedValue := range tt.expectedQuery {
+					if actualValue := query.Get(key); actualValue != expectedValue {
+						t.Errorf("expected query param %s=%s, got %s", key, expectedValue, actualValue)
+					}
 				}
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(tt.statusCode)

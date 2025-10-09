@@ -52,8 +52,9 @@ type (
 // List retrieves a list of images within a repository with optional filtering
 func (c *imagesService) List(ctx context.Context, registryID, repositoryName string, opts ListOptions) (*ImagesResponse, error) {
 	path := fmt.Sprintf("/v0/registries/%s/repositories/%s/images", registryID, repositoryName)
+	query := CreatePaginationParams(opts)
 
-	res, err := mgc_http.ExecuteSimpleRequestWithRespBody[ImagesResponse](ctx, c.client.newRequest, c.client.GetConfig(), http.MethodGet, path, nil, nil)
+	res, err := mgc_http.ExecuteSimpleRequestWithRespBody[ImagesResponse](ctx, c.client.newRequest, c.client.GetConfig(), http.MethodGet, path, nil, query)
 	if err != nil {
 		return nil, err
 	}
