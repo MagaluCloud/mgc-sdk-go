@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"net/url"
-	"strconv"
 
 	mgc_http "github.com/MagaluCloud/mgc-sdk-go/internal/http"
 )
@@ -47,18 +45,7 @@ type (
 // List retrieves a list of repositories within a registry with optional filtering and pagination
 func (c *repositoriesService) List(ctx context.Context, registryID string, opts ListOptions) (*RepositoriesResponse, error) {
 	path := fmt.Sprintf("/v0/registries/%s/repositories", registryID)
-
-	query := make(url.Values)
-
-	if opts.Limit != nil {
-		query.Set("_limit", strconv.Itoa(*opts.Limit))
-	}
-	if opts.Offset != nil {
-		query.Set("_offset", strconv.Itoa(*opts.Offset))
-	}
-	if opts.Sort != nil {
-		query.Set("_sort", *opts.Sort)
-	}
+	query := CreatePaginationParams(opts)
 
 	res, err := mgc_http.ExecuteSimpleRequestWithRespBody[RepositoriesResponse](ctx, c.client.newRequest, c.client.GetConfig(), http.MethodGet, path, nil, query)
 	if err != nil {
