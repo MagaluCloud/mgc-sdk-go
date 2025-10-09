@@ -203,7 +203,7 @@ func TestNetworkLoadBalancerService_Get(t *testing.T) {
 				"listeners": [],
 				"backends": [],
 				"health_checks": [],
-				"public_ips": null,
+				"public_ip": null,
 				"tls_certificates": [],
 				"acls": [],
 				"vpc_id": "vpc-123",
@@ -280,6 +280,8 @@ func TestNetworkLoadBalancerService_Get(t *testing.T) {
 			assertNoError(t, err)
 			assertEqual(t, "lb-123", lb.ID)
 			assertEqual(t, "test-lb", lb.Name)
+			// Validate the PublicIP field is correctly recognized as null
+			assertEqual(t, true, lb.PublicIP == nil)
 		})
 	}
 }
@@ -297,8 +299,8 @@ func TestNetworkLoadBalancerService_List(t *testing.T) {
 			name: "successful list with multiple load balancers",
 			response: `{
 				"results": [
-					{"id": "lb-1", "name": "test1", "type": "proxy", "visibility": "external", "status": "running", "listeners": [], "backends": [], "health_checks": [], "public_ips": null, "tls_certificates": [], "acls": [], "vpc_id": "vpc-1", "created_at": "2024-01-01T00:00:00Z", "updated_at": "2024-01-01T00:00:00Z"},
-					{"id": "lb-2", "name": "test2", "type": "proxy", "visibility": "internal", "status": "running", "listeners": [], "backends": [], "health_checks": [], "public_ips": null, "tls_certificates": [], "acls": [], "vpc_id": "vpc-2", "created_at": "2024-01-01T00:00:00Z", "updated_at": "2024-01-01T00:00:00Z"}
+					{"id": "lb-1", "name": "test1", "type": "proxy", "visibility": "external", "status": "running", "listeners": [], "backends": [], "health_checks": [], "public_ip": null, "tls_certificates": [], "acls": [], "vpc_id": "vpc-1", "created_at": "2024-01-01T00:00:00Z", "updated_at": "2024-01-01T00:00:00Z"},
+					{"id": "lb-2", "name": "test2", "type": "proxy", "visibility": "internal", "status": "running", "listeners": [], "backends": [], "health_checks": [], "public_ip": null, "tls_certificates": [], "acls": [], "vpc_id": "vpc-2", "created_at": "2024-01-01T00:00:00Z", "updated_at": "2024-01-01T00:00:00Z"}
 				]
 			}`,
 			statusCode: http.StatusOK,
@@ -379,7 +381,7 @@ func TestNetworkLoadBalancerService_ListWithPagination(t *testing.T) {
 			},
 			response: `{
 				"results": [
-					{"id": "lb-1", "name": "test1", "type": "proxy", "visibility": "external", "status": "running", "listeners": [], "backends": [], "health_checks": [], "public_ips": null, "tls_certificates": [], "acls": [], "vpc_id": "vpc-1", "created_at": "2024-01-01T00:00:00Z", "updated_at": "2024-01-01T00:00:00Z"}
+					{"id": "lb-1", "name": "test1", "type": "proxy", "visibility": "external", "status": "running", "listeners": [], "backends": [], "health_checks": [], "public_ip": null, "tls_certificates": [], "acls": [], "vpc_id": "vpc-1", "created_at": "2024-01-01T00:00:00Z", "updated_at": "2024-01-01T00:00:00Z"}
 				]
 			}`,
 			statusCode:  http.StatusOK,
@@ -394,8 +396,8 @@ func TestNetworkLoadBalancerService_ListWithPagination(t *testing.T) {
 			},
 			response: `{
 				"results": [
-					{"id": "lb-1", "name": "test1", "type": "proxy", "visibility": "external", "status": "running", "listeners": [], "backends": [], "health_checks": [], "public_ips": null, "tls_certificates": [], "acls": [], "vpc_id": "vpc-1", "created_at": "2024-01-01T00:00:00Z", "updated_at": "2024-01-01T00:00:00Z"},
-					{"id": "lb-2", "name": "test2", "type": "proxy", "visibility": "internal", "status": "running", "listeners": [], "backends": [], "health_checks": [], "public_ips": null, "tls_certificates": [], "acls": [], "vpc_id": "vpc-2", "created_at": "2024-01-01T00:00:00Z", "updated_at": "2024-01-01T00:00:00Z"}
+					{"id": "lb-1", "name": "test1", "type": "proxy", "visibility": "external", "status": "running", "listeners": [], "backends": [], "health_checks": [], "public_ip": null, "tls_certificates": [], "acls": [], "vpc_id": "vpc-1", "created_at": "2024-01-01T00:00:00Z", "updated_at": "2024-01-01T00:00:00Z"},
+					{"id": "lb-2", "name": "test2", "type": "proxy", "visibility": "internal", "status": "running", "listeners": [], "backends": [], "health_checks": [], "public_ip": null, "tls_certificates": [], "acls": [], "vpc_id": "vpc-2", "created_at": "2024-01-01T00:00:00Z", "updated_at": "2024-01-01T00:00:00Z"}
 				]
 			}`,
 			statusCode: http.StatusOK,
@@ -720,4 +722,39 @@ func TestNetworkLoadBalancerService_ContextCancellation(t *testing.T) {
 		assertError(t, err)
 		assertEqual(t, true, strings.Contains(err.Error(), "context deadline exceeded"))
 	})
+}
+
+// New test validating the JSON tag for PublicIP
+func TestNetworkLoadBalancer_PublicIPJSONTag(t *testing.T) {
+	t.Parallel()
+
+	ip := "1.2.3.4"
+	lb := NetworkLoadBalancerResponse{
+		ID:         "lb-1",
+		Name:       "name",
+		Type:       "proxy",
+		Visibility: "external",
+		Status:     "running",
+		PublicIP: &NetworkPublicIPResponse{
+			ID:         "pip-1",
+			IPAddress:  &ip,
+			ExternalID: "ext-1",
+		},
+		VPCID:     "vpc-1",
+		CreatedAt: time.Unix(0, 0).UTC(),
+		UpdatedAt: time.Unix(0, 0).UTC(),
+	}
+
+	data, err := json.Marshal(lb)
+	assertNoError(t, err)
+
+	js := string(data)
+	assertEqual(t, true, strings.Contains(js, "\"public_ip\""))
+	assertEqual(t, false, strings.Contains(js, "\"public_ips\""))
+
+	// Ensure unmarshalling with the correct tag works and sets PublicIP to nil when null
+	var decoded NetworkLoadBalancerResponse
+	err = json.Unmarshal([]byte(`{"id":"lb-1","name":"name","type":"proxy","visibility":"external","status":"running","listeners":[],"backends":[],"health_checks":[],"public_ip":null,"tls_certificates":[],"acls":[],"vpc_id":"vpc-1","created_at":"1970-01-01T00:00:00Z","updated_at":"1970-01-01T00:00:00Z"}`), &decoded)
+	assertNoError(t, err)
+	assertEqual(t, true, decoded.PublicIP == nil)
 }
