@@ -122,6 +122,8 @@ type (
 		CreatedAt           time.Time                       `json:"created_at"`
 		UpdatedAt           time.Time                       `json:"updated_at"`
 		LastOperationStatus *string                         `json:"last_operation_status,omitempty"`
+		ErrorDetails        *string                         `json:"error_details,omitempty"`
+		// New field for error details
 	}
 
 	// PaginationLinks provides navigation links for pagination

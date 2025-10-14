@@ -185,11 +185,14 @@ func TestNetworkLoadBalancerService_Create(t *testing.T) {
 func TestNetworkLoadBalancerService_Get(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
-		name       string
-		lbID       string
-		response   string
-		statusCode int
-		wantErr    bool
+		name                 string
+		lbID                 string
+		response             string
+		statusCode           int
+		wantErr              bool
+		expectedID           string
+		expectedName         string
+		expectedErrorDetails *string
 	}{
 		{
 			name: "existing load balancer",
@@ -210,43 +213,87 @@ func TestNetworkLoadBalancerService_Get(t *testing.T) {
 				"created_at": "2024-01-01T00:00:00Z",
 				"updated_at": "2024-01-01T00:00:00Z"
 			}`,
-			statusCode: http.StatusOK,
-			wantErr:    false,
+			statusCode:           http.StatusOK,
+			wantErr:              false,
+			expectedID:           "lb-123",
+			expectedName:         "test-lb",
+			expectedErrorDetails: nil,
 		},
 		{
-			name:       "non-existent load balancer",
-			lbID:       "invalid",
-			response:   `{"error": "not found"}`,
-			statusCode: http.StatusNotFound,
-			wantErr:    true,
+			name: "load balancer with error details",
+			lbID: "lb-456",
+			response: `{
+				"id": "lb-456",
+				"name": "test-lb-error",
+				"type": "proxy",
+				"visibility": "external",
+				"status": "error",
+				"listeners": [],
+				"backends": [],
+				"health_checks": [],
+				"public_ip": null,
+				"tls_certificates": [],
+				"acls": [],
+				"vpc_id": "vpc-456",
+				"created_at": "2024-01-01T00:00:00Z",
+				"updated_at": "2024-01-01T00:00:00Z",
+				"error_details": "Failed to provision backend"
+			}`,
+			statusCode:           http.StatusOK,
+			wantErr:              false,
+			expectedID:           "lb-456",
+			expectedName:         "test-lb-error",
+			expectedErrorDetails: stringPtr("Failed to provision backend"),
 		},
 		{
-			name:       "unauthorized access",
-			lbID:       "lb-123",
-			response:   `{"error": "unauthorized"}`,
-			statusCode: http.StatusUnauthorized,
-			wantErr:    true,
+			name:                 "non-existent load balancer",
+			lbID:                 "invalid",
+			response:             `{"error": "not found"}`,
+			statusCode:           http.StatusNotFound,
+			wantErr:              true,
+			expectedID:           "",
+			expectedName:         "",
+			expectedErrorDetails: nil,
 		},
 		{
-			name:       "forbidden access",
-			lbID:       "lb-123",
-			response:   `{"error": "forbidden"}`,
-			statusCode: http.StatusForbidden,
-			wantErr:    true,
+			name:                 "unauthorized access",
+			lbID:                 "lb-123",
+			response:             `{"error": "unauthorized"}`,
+			statusCode:           http.StatusUnauthorized,
+			wantErr:              true,
+			expectedID:           "",
+			expectedName:         "",
+			expectedErrorDetails: nil,
 		},
 		{
-			name:       "server error",
-			lbID:       "lb-123",
-			response:   `{"error": "internal server error"}`,
-			statusCode: http.StatusInternalServerError,
-			wantErr:    true,
+			name:                 "forbidden access",
+			lbID:                 "lb-123",
+			response:             `{"error": "forbidden"}`,
+			statusCode:           http.StatusForbidden,
+			wantErr:              true,
+			expectedID:           "",
+			expectedName:         "",
+			expectedErrorDetails: nil,
 		},
 		{
-			name:       "nil response body",
-			lbID:       "lb-123",
-			response:   ``,
-			statusCode: http.StatusOK,
-			wantErr:    true,
+			name:                 "server error",
+			lbID:                 "lb-123",
+			response:             `{"error": "internal server error"}`,
+			statusCode:           http.StatusInternalServerError,
+			wantErr:              true,
+			expectedID:           "",
+			expectedName:         "",
+			expectedErrorDetails: nil,
+		},
+		{
+			name:                 "nil response body",
+			lbID:                 "lb-123",
+			response:             ``,
+			statusCode:           http.StatusOK,
+			wantErr:              true,
+			expectedID:           "",
+			expectedName:         "",
+			expectedErrorDetails: nil,
 		},
 	}
 
@@ -278,10 +325,16 @@ func TestNetworkLoadBalancerService_Get(t *testing.T) {
 			}
 
 			assertNoError(t, err)
-			assertEqual(t, "lb-123", lb.ID)
-			assertEqual(t, "test-lb", lb.Name)
+			assertEqual(t, tt.expectedID, lb.ID)
+			assertEqual(t, tt.expectedName, lb.Name)
 			// Validate the PublicIP field is correctly recognized as null
 			assertEqual(t, true, lb.PublicIP == nil)
+			// Validate ErrorDetails
+			if tt.expectedErrorDetails == nil {
+				assertEqual(t, true, lb.ErrorDetails == nil)
+			} else {
+				assertEqual(t, *tt.expectedErrorDetails, *lb.ErrorDetails)
+			}
 		})
 	}
 }
