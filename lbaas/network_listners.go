@@ -51,7 +51,8 @@ type (
 		Create(ctx context.Context, lbID, backendID string, req CreateNetworkListenerRequest) (*NetworkListenerResponse, error)
 		Delete(ctx context.Context, lbID, listenerID string) error
 		Get(ctx context.Context, lbID, listenerID string) (*NetworkListenerResponse, error)
-		List(ctx context.Context, lbID string, options ListNetworkLoadBalancerRequest) ([]NetworkListenerResponse, error)
+		List(ctx context.Context, lbID string, options ListNetworkLoadBalancerRequest) (NetworkPaginatedListenerResponse, error)
+		ListAll(ctx context.Context, lbID string) ([]NetworkListenerResponse, error)
 		Update(ctx context.Context, lbID, listenerID string, req UpdateNetworkListenerRequest) error
 	}
 
@@ -113,13 +114,13 @@ func (s *networkListenerService) Get(ctx context.Context, lbID, listenerID strin
 	return result, nil
 }
 
-// List returns a list of network listeners with optional filtering and pagination
-func (s *networkListenerService) List(ctx context.Context, lbID string, options ListNetworkLoadBalancerRequest) ([]NetworkListenerResponse, error) {
+// List returns a paginated list of network listeners with optional filtering and pagination
+func (s *networkListenerService) List(ctx context.Context, lbID string, options ListNetworkLoadBalancerRequest) (NetworkPaginatedListenerResponse, error) {
 	path := urlNetworkLoadBalancer(&lbID, listeners)
 
 	httpReq, err := s.client.newRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
-		return nil, err
+		return NetworkPaginatedListenerResponse{}, err
 	}
 
 	query := helpers.NewQueryParams(httpReq)
@@ -131,9 +132,40 @@ func (s *networkListenerService) List(ctx context.Context, lbID string, options 
 	var resp NetworkPaginatedListenerResponse
 	result, err := mgc_http.Do(s.client.GetConfig(), ctx, httpReq, &resp)
 	if err != nil {
-		return nil, err
+		return NetworkPaginatedListenerResponse{}, err
 	}
-	return result.Results, nil
+	return *result, nil
+}
+
+// ListAll retrieves all network listeners by fetching all pages
+func (s *networkListenerService) ListAll(ctx context.Context, lbID string) ([]NetworkListenerResponse, error) {
+	var allListeners []NetworkListenerResponse
+	offset := 0
+	limit := 50
+
+	for {
+		currentOffset := offset
+		currentLimit := limit
+		pageOptions := ListNetworkLoadBalancerRequest{
+			Offset: &currentOffset,
+			Limit:  &currentLimit,
+		}
+
+		resp, err := s.List(ctx, lbID, pageOptions)
+		if err != nil {
+			return nil, err
+		}
+
+		allListeners = append(allListeners, resp.Results...)
+
+		if len(resp.Results) < limit {
+			break
+		}
+
+		offset += limit
+	}
+
+	return allListeners, nil
 }
 
 // Update updates a network listener's properties

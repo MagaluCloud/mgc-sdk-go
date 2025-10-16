@@ -401,7 +401,7 @@ func TestNetworkLoadBalancerService_List(t *testing.T) {
 			defer server.Close()
 
 			client := testLoadBalancerClient(server.URL)
-			lbs, err := client.List(context.Background(), ListNetworkLoadBalancerRequest{})
+			resp, err := client.List(context.Background(), ListNetworkLoadBalancerRequest{})
 
 			if tt.wantErr {
 				assertError(t, err)
@@ -410,7 +410,7 @@ func TestNetworkLoadBalancerService_List(t *testing.T) {
 			}
 
 			assertNoError(t, err)
-			assertEqual(t, tt.want, len(lbs))
+			assertEqual(t, tt.want, len(resp.Results))
 		})
 	}
 }
@@ -498,7 +498,7 @@ func TestNetworkLoadBalancerService_ListWithPagination(t *testing.T) {
 			defer server.Close()
 
 			client := testLoadBalancerClient(server.URL)
-			lbs, err := client.List(context.Background(), tt.request)
+			resp, err := client.List(context.Background(), tt.request)
 
 			if tt.wantErr {
 				assertError(t, err)
@@ -507,9 +507,192 @@ func TestNetworkLoadBalancerService_ListWithPagination(t *testing.T) {
 			}
 
 			assertNoError(t, err)
-			assertEqual(t, tt.want, len(lbs))
+			assertEqual(t, tt.want, len(resp.Results))
 		})
 	}
+}
+
+func TestNetworkLoadBalancerService_ListAll(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name       string
+		pages      []string
+		statusCode int
+		wantCount  int
+		wantErr    bool
+	}{
+		{
+			name: "single page with all results",
+			pages: []string{
+				`{
+					"meta": {
+						"links": {
+							"self": "/network-load-balancers?_limit=50&_offset=0"
+						},
+						"page": {
+							"count": 2,
+							"limit": 50,
+							"offset": 0,
+							"total": 2
+						}
+					},
+					"results": [
+						{
+							"id": "lb-1",
+							"name": "test1",
+							"type": "proxy",
+							"visibility": "external",
+							"status": "running",
+							"listeners": [],
+							"backends": [],
+							"health_checks": [],
+							"tls_certificates": [],
+							"acls": [],
+							"vpc_id": "vpc-1",
+							"created_at": "2024-01-01T00:00:00Z",
+							"updated_at": "2024-01-01T00:00:00Z"
+						},
+						{
+							"id": "lb-2",
+							"name": "test2",
+							"type": "proxy",
+							"visibility": "internal",
+							"status": "running",
+							"listeners": [],
+							"backends": [],
+							"health_checks": [],
+							"tls_certificates": [],
+							"acls": [],
+							"vpc_id": "vpc-2",
+							"created_at": "2024-01-01T00:00:00Z",
+							"updated_at": "2024-01-01T00:00:00Z"
+						}
+					]
+				}`,
+			},
+			statusCode: http.StatusOK,
+			wantCount:  2,
+			wantErr:    false,
+		},
+		{
+			name: "multiple pages",
+			pages: []string{
+				`{
+					"meta": {
+						"links": {
+							"self": "/network-load-balancers?_limit=50&_offset=0",
+							"next": "/network-load-balancers?_limit=50&_offset=50"
+						},
+						"page": {
+							"count": 50,
+							"limit": 50,
+							"offset": 0,
+							"total": 75
+						}
+					},
+					"results": [` + generateLoadBalancerResults(1, 50) + `]
+				}`,
+				`{
+					"meta": {
+						"links": {
+							"self": "/network-load-balancers?_limit=50&_offset=50",
+							"previous": "/network-load-balancers?_limit=50&_offset=0"
+						},
+						"page": {
+							"count": 25,
+							"limit": 50,
+							"offset": 50,
+							"total": 75
+						}
+					},
+					"results": [` + generateLoadBalancerResults(51, 25) + `]
+				}`,
+			},
+			statusCode: http.StatusOK,
+			wantCount:  75,
+			wantErr:    false,
+		},
+		{
+			name: "empty results",
+			pages: []string{
+				`{
+					"meta": {
+						"links": {
+							"self": "/network-load-balancers?_limit=50&_offset=0"
+						},
+						"page": {
+							"count": 0,
+							"limit": 50,
+							"offset": 0,
+							"total": 0
+						}
+					},
+					"results": []
+				}`,
+			},
+			statusCode: http.StatusOK,
+			wantCount:  0,
+			wantErr:    false,
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			pageIndex := 0
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				assertEqual(t, "/load-balancer/v0beta1/network-load-balancers", r.URL.Path)
+				assertEqual(t, http.MethodGet, r.Method)
+
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(tt.statusCode)
+
+				if pageIndex < len(tt.pages) {
+					w.Write([]byte(tt.pages[pageIndex]))
+					pageIndex++
+				} else {
+					w.Write([]byte(`{"meta":{"links":{"self":""},"page":{"count":0,"limit":50,"offset":0,"total":0}},"results":[]}`))
+				}
+			}))
+			defer server.Close()
+
+			client := testLoadBalancerClient(server.URL)
+			loadBalancers, err := client.ListAll(context.Background())
+
+			if tt.wantErr {
+				assertError(t, err)
+				return
+			}
+
+			assertNoError(t, err)
+			assertEqual(t, tt.wantCount, len(loadBalancers))
+		})
+	}
+}
+
+func generateLoadBalancerResults(start, count int) string {
+	results := make([]string, count)
+	for i := 0; i < count; i++ {
+		id := start + i
+		results[i] = fmt.Sprintf(`{
+			"id": "lb-%d",
+			"name": "test%d",
+			"type": "proxy",
+			"visibility": "external",
+			"status": "running",
+			"listeners": [],
+			"backends": [],
+			"health_checks": [],
+			"tls_certificates": [],
+			"acls": [],
+			"vpc_id": "vpc-%d",
+			"created_at": "2024-01-01T00:00:00Z",
+			"updated_at": "2024-01-01T00:00:00Z"
+		}`, id, id, id)
+	}
+	return strings.Join(results, ",")
 }
 
 func TestNetworkLoadBalancerService_Update(t *testing.T) {
@@ -810,4 +993,106 @@ func TestNetworkLoadBalancer_PublicIPJSONTag(t *testing.T) {
 	err = json.Unmarshal([]byte(`{"id":"lb-1","name":"name","type":"proxy","visibility":"external","status":"running","listeners":[],"backends":[],"health_checks":[],"public_ip":null,"tls_certificates":[],"acls":[],"vpc_id":"vpc-1","created_at":"1970-01-01T00:00:00Z","updated_at":"1970-01-01T00:00:00Z"}`), &decoded)
 	assertNoError(t, err)
 	assertEqual(t, true, decoded.PublicIP == nil)
+}
+
+func TestNetworkLoadBalancerService_Create_NewRequestError(t *testing.T) {
+	t.Parallel()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	client := testLoadBalancerClient("http://dummy-url")
+
+	req := CreateNetworkLoadBalancerRequest{
+		Name:       "test-lb",
+		Visibility: "external",
+		VPCID:      "vpc-123",
+		Listeners:  []NetworkListenerRequest{},
+		Backends:   []CreateNetworkBackendRequest{},
+	}
+
+	_, err := client.Create(ctx, req)
+
+	if err == nil {
+		t.Error("expected error due to canceled context, got nil")
+	}
+}
+
+func TestNetworkLoadBalancerService_Get_NewRequestError(t *testing.T) {
+	t.Parallel()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	client := testLoadBalancerClient("http://dummy-url")
+
+	_, err := client.Get(ctx, "lb-123")
+
+	if err == nil {
+		t.Error("expected error due to canceled context, got nil")
+	}
+}
+
+func TestNetworkLoadBalancerService_List_NewRequestError(t *testing.T) {
+	t.Parallel()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	client := testLoadBalancerClient("http://dummy-url")
+
+	_, err := client.List(ctx, ListNetworkLoadBalancerRequest{})
+
+	if err == nil {
+		t.Error("expected error due to canceled context, got nil")
+	}
+}
+
+func TestNetworkLoadBalancerService_ListAll_NewRequestError(t *testing.T) {
+	t.Parallel()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	client := testLoadBalancerClient("http://dummy-url")
+
+	_, err := client.ListAll(ctx)
+
+	if err == nil {
+		t.Error("expected error due to canceled context, got nil")
+	}
+}
+
+func TestNetworkLoadBalancerService_Update_NewRequestError(t *testing.T) {
+	t.Parallel()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	client := testLoadBalancerClient("http://dummy-url")
+
+	req := UpdateNetworkLoadBalancerRequest{
+		Name: stringPtr("updated-lb"),
+	}
+
+	_, err := client.Update(ctx, "lb-123", req)
+
+	if err == nil {
+		t.Error("expected error due to canceled context, got nil")
+	}
+}
+
+func TestNetworkLoadBalancerService_Delete_NewRequestError(t *testing.T) {
+	t.Parallel()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	client := testLoadBalancerClient("http://dummy-url")
+
+	err := client.Delete(ctx, "lb-123", DeleteNetworkLoadBalancerRequest{})
+
+	if err == nil {
+		t.Error("expected error due to canceled context, got nil")
+	}
 }

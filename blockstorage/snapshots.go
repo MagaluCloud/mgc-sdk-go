@@ -14,12 +14,15 @@ import (
 
 // SnapshotVolumeExpand is a constant used for expanding volume information in snapshot responses.
 const (
-	SnapshotVolumeExpand = "volume"
+	SnapshotVolumeExpand SnapshotExpand = "volume"
 )
+
+type SnapshotExpand = string
 
 // ListSnapshotsResponse represents the response from listing snapshots.
 // This structure encapsulates the API response format for snapshots.
 type ListSnapshotsResponse struct {
+	Meta      Metadata   `json:"meta"`
 	Snapshots []Snapshot `json:"snapshots"`
 }
 
@@ -90,10 +93,20 @@ const (
 	SnapshotStatusReserved           SnapshotStatusV1 = "reserved"
 )
 
+// ListOptions contains options for listing volumes.
+// All fields are optional and allow controlling pagination and expansion.
+type SnaphotListOptions struct {
+	Limit  *int
+	Offset *int
+	Sort   *string
+	Expand []SnapshotExpand
+}
+
 // SnapshotService provides operations for managing volume snapshots.
 // This interface allows creating, listing, retrieving, and managing snapshots.
 type SnapshotService interface {
-	List(ctx context.Context, opts ListOptions) ([]Snapshot, error)
+	List(ctx context.Context, opts SnaphotListOptions) (*ListSnapshotsResponse, error)
+	ListAll(ctx context.Context, expand []string) ([]Snapshot, error)
 	Create(ctx context.Context, req CreateSnapshotRequest) (string, error)
 	Get(ctx context.Context, id string, expand []string) (*Snapshot, error)
 	Delete(ctx context.Context, id string) error
@@ -106,10 +119,10 @@ type snapshotService struct {
 	client *BlockStorageClient
 }
 
-// List returns all snapshots.
+// List returns a paginated list of snapshots.
 // This method makes an HTTP request to get the list of snapshots
 // and applies the filters specified in the options.
-func (s *snapshotService) List(ctx context.Context, opts ListOptions) ([]Snapshot, error) {
+func (s *snapshotService) List(ctx context.Context, opts SnaphotListOptions) (*ListSnapshotsResponse, error) {
 	q := url.Values{}
 	if opts.Limit != nil {
 		q.Add("_limit", strconv.Itoa(*opts.Limit))
@@ -139,7 +152,39 @@ func (s *snapshotService) List(ctx context.Context, opts ListOptions) ([]Snapsho
 		return nil, err
 	}
 
-	return result.Snapshots, nil
+	return result, nil
+}
+
+// ListAll retrieves all snapshots by fetching all pages
+func (s *snapshotService) ListAll(ctx context.Context, expand []string) ([]Snapshot, error) {
+	var allSnapshots []Snapshot
+	offset := 0
+	limit := 50
+
+	for {
+		currentOffset := offset
+		currentLimit := limit
+		opts := SnaphotListOptions{
+			Offset: &currentOffset,
+			Limit:  &currentLimit,
+			Expand: expand,
+		}
+
+		resp, err := s.List(ctx, opts)
+		if err != nil {
+			return nil, err
+		}
+
+		allSnapshots = append(allSnapshots, resp.Snapshots...)
+
+		if len(resp.Snapshots) < limit {
+			break
+		}
+
+		offset += limit
+	}
+
+	return allSnapshots, nil
 }
 
 // Create provisions a new snapshot.

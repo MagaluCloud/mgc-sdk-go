@@ -68,7 +68,8 @@ type (
 		Create(ctx context.Context, lbID string, req CreateBackendRequest) (string, error)
 		Delete(ctx context.Context, lbID, backendID string) error
 		Get(ctx context.Context, lbID, backendID string) (*NetworkBackendResponse, error)
-		List(ctx context.Context, lbID string, options ListNetworkLoadBalancerRequest) ([]NetworkBackendResponse, error)
+		List(ctx context.Context, lbID string, options ListNetworkLoadBalancerRequest) (NetworkPaginatedBackendResponse, error)
+		ListAll(ctx context.Context, lbID string) ([]NetworkBackendResponse, error)
 		Update(ctx context.Context, lbID, backendID string, req UpdateNetworkBackendRequest) (string, error)
 	}
 
@@ -127,13 +128,13 @@ func (s *networkBackendService) Get(ctx context.Context, lbID, backendID string)
 	return result, nil
 }
 
-// List returns a list of network backends
-func (s *networkBackendService) List(ctx context.Context, lbID string, options ListNetworkLoadBalancerRequest) ([]NetworkBackendResponse, error) {
+// List returns a paginated list of network backends
+func (s *networkBackendService) List(ctx context.Context, lbID string, options ListNetworkLoadBalancerRequest) (NetworkPaginatedBackendResponse, error) {
 	path := urlNetworkLoadBalancer(&lbID, backends)
 
 	httpReq, err := s.client.newRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
-		return nil, err
+		return NetworkPaginatedBackendResponse{}, err
 	}
 
 	// Add query parameters for pagination and sorting
@@ -146,9 +147,40 @@ func (s *networkBackendService) List(ctx context.Context, lbID string, options L
 	var resp NetworkPaginatedBackendResponse
 	result, err := mgc_http.Do(s.client.GetConfig(), ctx, httpReq, &resp)
 	if err != nil {
-		return nil, err
+		return NetworkPaginatedBackendResponse{}, err
 	}
-	return result.Results, nil
+	return *result, nil
+}
+
+// ListAll retrieves all network backends by fetching all pages
+func (s *networkBackendService) ListAll(ctx context.Context, lbID string) ([]NetworkBackendResponse, error) {
+	var allBackends []NetworkBackendResponse
+	offset := 0
+	limit := 50
+
+	for {
+		currentOffset := offset
+		currentLimit := limit
+		pageOptions := ListNetworkLoadBalancerRequest{
+			Offset: &currentOffset,
+			Limit:  &currentLimit,
+		}
+
+		resp, err := s.List(ctx, lbID, pageOptions)
+		if err != nil {
+			return nil, err
+		}
+
+		allBackends = append(allBackends, resp.Results...)
+
+		if len(resp.Results) < limit {
+			break
+		}
+
+		offset += limit
+	}
+
+	return allBackends, nil
 }
 
 // Update updates a network backend's properties and returns the backend ID

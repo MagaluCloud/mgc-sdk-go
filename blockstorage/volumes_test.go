@@ -49,6 +49,7 @@ func TestVolumeService_List(t *testing.T) {
 			name: "basic list",
 			opts: ListOptions{},
 			response: `{
+				"meta": {"page": {"offset": 0, "limit": 50, "count": 2, "total": 2, "max_limit": 100}},
 				"volumes": [
 					{"id": "vol1", "name": "test1"},
 					{"id": "vol2", "name": "test2"}
@@ -65,6 +66,7 @@ func TestVolumeService_List(t *testing.T) {
 				Offset: helpers.IntPtr(1),
 			},
 			response: `{
+				"meta": {"page": {"offset": 1, "limit": 1, "count": 1, "total": 2, "max_limit": 100}},
 				"volumes": [
 					{"id": "vol2", "name": "test2"}
 				]
@@ -79,6 +81,7 @@ func TestVolumeService_List(t *testing.T) {
 				Expand: []string{VolumeTypeExpand, VolumeAttachExpand},
 			},
 			response: `{
+				"meta": {"page": {"offset": 0, "limit": 50, "count": 1, "total": 1, "max_limit": 100}},
 				"volumes": [
 					{"id": "vol1", "type": {"id": "type1"}, "attachment": {"instance": {"id": "inst1"}}}
 				]
@@ -106,7 +109,7 @@ func TestVolumeService_List(t *testing.T) {
 			defer server.Close()
 
 			client := testClient(server.URL)
-			volumes, err := client.List(context.Background(), tt.opts)
+			resp, err := client.List(context.Background(), tt.opts)
 
 			if tt.wantErr {
 				assertError(t, err)
@@ -115,7 +118,11 @@ func TestVolumeService_List(t *testing.T) {
 			}
 
 			assertNoError(t, err)
-			assertEqual(t, tt.want, len(volumes))
+			if resp == nil {
+				t.Error("expected response, got nil")
+				return
+			}
+			assertEqual(t, tt.want, len(resp.Volumes))
 		})
 	}
 }
@@ -568,6 +575,203 @@ func TestVolumeService_AttachDetach(t *testing.T) {
 
 			assertNoError(t, err)
 		})
+	}
+}
+
+func TestVolumeService_ListAll(t *testing.T) {
+	tests := []struct {
+		name       string
+		response   string
+		statusCode int
+		wantCount  int
+		wantErr    bool
+	}{
+		{
+			name:       "single page",
+			response:   `{"meta": {"page": {"offset": 0, "limit": 50, "count": 2, "total": 2, "max_limit": 100}}, "volumes": [{"id": "vol1", "name": "Volume 1"}, {"id": "vol2", "name": "Volume 2"}]}`,
+			statusCode: http.StatusOK,
+			wantCount:  2,
+		},
+		{
+			name:       "empty result",
+			response:   `{"meta": {"page": {"offset": 0, "limit": 50, "count": 0, "total": 0, "max_limit": 100}}, "volumes": []}`,
+			statusCode: http.StatusOK,
+			wantCount:  0,
+		},
+		{
+			name:       "server error",
+			response:   `{"error": "internal server error"}`,
+			statusCode: http.StatusInternalServerError,
+			wantErr:    true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				assertEqual(t, "/volume/v1/volumes", r.URL.Path)
+
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(tt.statusCode)
+				w.Write([]byte(tt.response))
+			}))
+			defer server.Close()
+
+			client := testClient(server.URL)
+			volumes, err := client.ListAll(context.Background(), nil)
+
+			if tt.wantErr {
+				assertError(t, err)
+				return
+			}
+
+			assertNoError(t, err)
+			assertEqual(t, tt.wantCount, len(volumes))
+		})
+	}
+}
+
+func TestVolumeService_ListAll_MultiplePagesWithPagination(t *testing.T) {
+	requestCount := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assertEqual(t, "/volume/v1/volumes", r.URL.Path)
+
+		query := r.URL.Query()
+		offset := query.Get("_offset")
+		limit := query.Get("_limit")
+
+		if limit != "50" {
+			t.Errorf("expected limit 50, got %s", limit)
+		}
+
+		requestCount++
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+
+		// Simulate pagination: first page has 50 items, second page has 25
+		switch offset {
+		case "0":
+			// First page: 50 items
+			volumes := make([]string, 50)
+			for i := 0; i < 50; i++ {
+				volumes[i] = fmt.Sprintf(`{"id": "vol%d", "name": "Volume%d"}`, i+1, i+1)
+			}
+			response := fmt.Sprintf(`{"meta": {"page": {"offset": 0, "limit": 50, "count": 50, "total": 75, "max_limit": 100}}, "volumes": [%s]}`,
+				strings.Join(volumes, ","))
+			w.Write([]byte(response))
+		case "50":
+			// Second page: 25 items
+			volumes := make([]string, 25)
+			for i := 0; i < 25; i++ {
+				volumes[i] = fmt.Sprintf(`{"id": "vol%d", "name": "Volume%d"}`, i+51, i+51)
+			}
+			response := fmt.Sprintf(`{"meta": {"page": {"offset": 50, "limit": 50, "count": 25, "total": 75, "max_limit": 100}}, "volumes": [%s]}`,
+				strings.Join(volumes, ","))
+			w.Write([]byte(response))
+		default:
+			t.Errorf("unexpected offset: %s", offset)
+		}
+	}))
+	defer server.Close()
+
+	client := testClient(server.URL)
+	volumes, err := client.ListAll(context.Background(), nil)
+
+	assertNoError(t, err)
+
+	// Should have fetched all 75 volumes across 2 pages
+	assertEqual(t, 75, len(volumes))
+
+	// Should have made exactly 2 requests
+	if requestCount != 2 {
+		t.Errorf("made %d requests, want 2", requestCount)
+	}
+
+	// Verify first and last items
+	if volumes[0].ID != "vol1" {
+		t.Errorf("first volume ID: got %s, want vol1", volumes[0].ID)
+	}
+	if volumes[74].ID != "vol75" {
+		t.Errorf("last volume ID: got %s, want vol75", volumes[74].ID)
+	}
+}
+
+func TestVolumeService_ListAll_WithExpand(t *testing.T) {
+	requestCount := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assertEqual(t, "/volume/v1/volumes", r.URL.Path)
+
+		query := r.URL.Query()
+
+		// Verify expand parameters are present
+		expandValues := query["expand"]
+		if len(expandValues) != 2 {
+			t.Errorf("expected 2 expand values, got %d", len(expandValues))
+		}
+		hasVolumeType := false
+		hasAttachment := false
+		for _, v := range expandValues {
+			if v == "volume_type" {
+				hasVolumeType = true
+			}
+			if v == "attachment" {
+				hasAttachment = true
+			}
+		}
+		if !hasVolumeType || !hasAttachment {
+			t.Errorf("expected expand values volume_type and attachment, got %v", expandValues)
+		}
+
+		requestCount++
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+
+		// Return 50 items on first page, 25 on second
+		offset := query.Get("_offset")
+		switch offset {
+		case "0":
+			// First page: 50 items
+			volumes := make([]string, 50)
+			for i := 0; i < 50; i++ {
+				volumes[i] = fmt.Sprintf(`{"id": "vol%d", "name": "Volume%d"}`, i+1, i+1)
+			}
+			response := fmt.Sprintf(`{"meta": {"page": {"offset": 0, "limit": 50, "count": 50, "total": 75, "max_limit": 100}}, "volumes": [%s]}`,
+				strings.Join(volumes, ","))
+			w.Write([]byte(response))
+		case "50":
+			// Second page: 25 items
+			volumes := make([]string, 25)
+			for i := 0; i < 25; i++ {
+				volumes[i] = fmt.Sprintf(`{"id": "vol%d", "name": "Volume%d"}`, i+51, i+51)
+			}
+			response := fmt.Sprintf(`{"meta": {"page": {"offset": 50, "limit": 50, "count": 25, "total": 75, "max_limit": 100}}, "volumes": [%s]}`,
+				strings.Join(volumes, ","))
+			w.Write([]byte(response))
+		default:
+			t.Errorf("unexpected offset: %s", offset)
+		}
+	}))
+	defer server.Close()
+
+	client := testClient(server.URL)
+	volumes, err := client.ListAll(context.Background(), []VolumeExpand{VolumeTypeExpand, VolumeAttachExpand})
+
+	assertNoError(t, err)
+
+	// Should have fetched all 75 volumes
+	assertEqual(t, 75, len(volumes))
+
+	// Should have made exactly 2 requests
+	if requestCount != 2 {
+		t.Errorf("made %d requests, want 2", requestCount)
+	}
+
+	// Verify first and last items
+	if volumes[0].ID != "vol1" {
+		t.Errorf("first volume ID: got %s, want vol1", volumes[0].ID)
+	}
+	if volumes[74].ID != "vol75" {
+		t.Errorf("last volume ID: got %s, want vol75", volumes[74].ID)
 	}
 }
 

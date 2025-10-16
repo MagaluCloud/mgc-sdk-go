@@ -12,6 +12,7 @@ import (
 // ListVolumeTypesResponse represents the response from listing volume types.
 // This structure encapsulates the API response format for volume types.
 type ListVolumeTypesResponse struct {
+	Meta  Metadata     `json:"meta"`
 	Types []VolumeType `json:"types"`
 }
 
@@ -50,12 +51,16 @@ type ListVolumeTypesOptions struct {
 	AvailabilityZone string
 	Name             string
 	AllowsEncryption *bool
+	Offset           *int
+	Limit            *int
+	Sort             *string
 }
 
 // VolumeTypeService provides operations for managing volume types.
 // This interface allows listing available volume types with optional filtering.
 type VolumeTypeService interface {
-	List(ctx context.Context, opts ListVolumeTypesOptions) ([]VolumeType, error)
+	List(ctx context.Context, opts ListVolumeTypesOptions) (*ListVolumeTypesResponse, error)
+	ListAll(ctx context.Context) ([]VolumeType, error)
 }
 
 // volumeTypeService implements the VolumeTypeService interface.
@@ -64,10 +69,10 @@ type volumeTypeService struct {
 	client *BlockStorageClient
 }
 
-// List retrieves all volume types with optional filtering.
+// List retrieves a paginated list of volume types with optional filtering.
 // This method makes an HTTP request to get the list of volume types
 // and applies the filters specified in the options.
-func (s *volumeTypeService) List(ctx context.Context, opts ListVolumeTypesOptions) ([]VolumeType, error) {
+func (s *volumeTypeService) List(ctx context.Context, opts ListVolumeTypesOptions) (*ListVolumeTypesResponse, error) {
 	queryParams := make(url.Values)
 	if opts.AvailabilityZone != "" {
 		queryParams.Add("availability-zone", opts.AvailabilityZone)
@@ -77,6 +82,15 @@ func (s *volumeTypeService) List(ctx context.Context, opts ListVolumeTypesOption
 	}
 	if opts.AllowsEncryption != nil {
 		queryParams.Add("allows-encryption", fmt.Sprintf("%v", *opts.AllowsEncryption))
+	}
+	if opts.Offset != nil {
+		queryParams.Add("_offset", fmt.Sprintf("%d", *opts.Offset))
+	}
+	if opts.Limit != nil {
+		queryParams.Add("_limit", fmt.Sprintf("%d", *opts.Limit))
+	}
+	if opts.Sort != nil {
+		queryParams.Add("_sort", *opts.Sort)
 	}
 
 	resp, err := mgc_http.ExecuteSimpleRequestWithRespBody[ListVolumeTypesResponse](
@@ -96,5 +110,37 @@ func (s *volumeTypeService) List(ctx context.Context, opts ListVolumeTypesOption
 		return nil, fmt.Errorf("empty response")
 	}
 
-	return resp.Types, nil
+	return resp, nil
+}
+
+// ListAll retrieves all volume types by fetching all pages.
+// This method repeatedly calls List to get all available volume types.
+func (s *volumeTypeService) ListAll(ctx context.Context) ([]VolumeType, error) {
+	var allTypes []VolumeType
+	offset := 0
+	limit := 50
+
+	for {
+		currentOffset := offset
+		currentLimit := limit
+		opts := ListVolumeTypesOptions{
+			Offset: &currentOffset,
+			Limit:  &currentLimit,
+		}
+
+		resp, err := s.List(ctx, opts)
+		if err != nil {
+			return nil, err
+		}
+
+		allTypes = append(allTypes, resp.Types...)
+
+		if len(resp.Types) < limit {
+			break
+		}
+
+		offset += limit
+	}
+
+	return allTypes, nil
 }

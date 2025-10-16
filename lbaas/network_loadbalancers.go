@@ -158,7 +158,8 @@ type (
 		Create(ctx context.Context, create CreateNetworkLoadBalancerRequest) (string, error)
 		Delete(ctx context.Context, id string, options DeleteNetworkLoadBalancerRequest) error
 		Get(ctx context.Context, id string) (NetworkLoadBalancerResponse, error)
-		List(ctx context.Context, options ListNetworkLoadBalancerRequest) ([]NetworkLoadBalancerResponse, error)
+		List(ctx context.Context, options ListNetworkLoadBalancerRequest) (NetworkLBPaginatedResponse, error)
+		ListAll(ctx context.Context) ([]NetworkLoadBalancerResponse, error)
 		Update(ctx context.Context, id string, loadBalancer UpdateNetworkLoadBalancerRequest) (string, error)
 	}
 
@@ -229,13 +230,13 @@ func (s *networkLoadBalancerService) Get(ctx context.Context, id string) (Networ
 	return *result, nil
 }
 
-// List returns Network Load Balancers with optional pagination and sorting.
-func (s *networkLoadBalancerService) List(ctx context.Context, options ListNetworkLoadBalancerRequest) ([]NetworkLoadBalancerResponse, error) {
+// List returns a paginated list of Network Load Balancers with optional pagination and sorting.
+func (s *networkLoadBalancerService) List(ctx context.Context, options ListNetworkLoadBalancerRequest) (NetworkLBPaginatedResponse, error) {
 	path := urlNetworkLoadBalancer(nil)
 
 	httpReq, err := s.client.newRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
-		return nil, err
+		return NetworkLBPaginatedResponse{}, err
 	}
 
 	query := helpers.NewQueryParams(httpReq)
@@ -247,9 +248,40 @@ func (s *networkLoadBalancerService) List(ctx context.Context, options ListNetwo
 	var resp NetworkLBPaginatedResponse
 	result, err := mgc_http.Do(s.client.GetConfig(), ctx, httpReq, &resp)
 	if err != nil {
-		return nil, err
+		return NetworkLBPaginatedResponse{}, err
 	}
-	return result.Results, nil
+	return *result, nil
+}
+
+// ListAll retrieves all Network Load Balancers by fetching all pages
+func (s *networkLoadBalancerService) ListAll(ctx context.Context) ([]NetworkLoadBalancerResponse, error) {
+	var allLoadBalancers []NetworkLoadBalancerResponse
+	offset := 0
+	limit := 50
+
+	for {
+		currentOffset := offset
+		currentLimit := limit
+		pageOptions := ListNetworkLoadBalancerRequest{
+			Offset: &currentOffset,
+			Limit:  &currentLimit,
+		}
+
+		resp, err := s.List(ctx, pageOptions)
+		if err != nil {
+			return nil, err
+		}
+
+		allLoadBalancers = append(allLoadBalancers, resp.Results...)
+
+		if len(resp.Results) < limit {
+			break
+		}
+
+		offset += limit
+	}
+
+	return allLoadBalancers, nil
 }
 
 // Update modifies a Network Load Balancer's name and/or description.
