@@ -106,9 +106,9 @@ type SnaphotListOptions struct {
 // This interface allows creating, listing, retrieving, and managing snapshots.
 type SnapshotService interface {
 	List(ctx context.Context, opts SnaphotListOptions) (*ListSnapshotsResponse, error)
-	ListAll(ctx context.Context, expand []string) ([]Snapshot, error)
+	ListAll(ctx context.Context, expand []SnapshotExpand) ([]Snapshot, error)
 	Create(ctx context.Context, req CreateSnapshotRequest) (string, error)
-	Get(ctx context.Context, id string, expand []string) (*Snapshot, error)
+	Get(ctx context.Context, id string, expand []SnapshotExpand) (*Snapshot, error)
 	Delete(ctx context.Context, id string) error
 	Rename(ctx context.Context, id string, newName string) error
 }
@@ -156,7 +156,7 @@ func (s *snapshotService) List(ctx context.Context, opts SnaphotListOptions) (*L
 }
 
 // ListAll retrieves all snapshots by fetching all pages
-func (s *snapshotService) ListAll(ctx context.Context, expand []string) ([]Snapshot, error) {
+func (s *snapshotService) ListAll(ctx context.Context, expand []SnapshotExpand) ([]Snapshot, error) {
 	var allSnapshots []Snapshot
 	offset := 0
 	limit := 50
@@ -209,7 +209,7 @@ func (s *snapshotService) Create(ctx context.Context, req CreateSnapshotRequest)
 // Get retrieves a specific snapshot.
 // This method makes an HTTP request to get detailed information about a snapshot
 // and optionally expands related resources.
-func (s *snapshotService) Get(ctx context.Context, id string, expand []string) (*Snapshot, error) {
+func (s *snapshotService) Get(ctx context.Context, id string, expand []SnapshotExpand) (*Snapshot, error) {
 	path := fmt.Sprintf("/v1/snapshots/%s", id)
 	if len(expand) > 0 {
 		path += "?expand=" + strings.Join(expand, ",")

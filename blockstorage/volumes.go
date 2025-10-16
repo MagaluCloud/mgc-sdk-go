@@ -160,7 +160,7 @@ type VolumeService interface {
 	List(ctx context.Context, opts ListOptions) (*ListVolumesResponse, error)
 	ListAll(ctx context.Context, expand []VolumeExpand) ([]Volume, error)
 	Create(ctx context.Context, req CreateVolumeRequest) (string, error)
-	Get(ctx context.Context, id string, expand []string) (*Volume, error)
+	Get(ctx context.Context, id string, expand []SnapshotExpand) (*Volume, error)
 	Delete(ctx context.Context, id string) error
 	Rename(ctx context.Context, id string, newName string) error
 	Extend(ctx context.Context, id string, req ExtendVolumeRequest) error
@@ -267,7 +267,7 @@ func (s *volumeService) Create(ctx context.Context, req CreateVolumeRequest) (st
 // Get retrieves a specific volume.
 // This method makes an HTTP request to get detailed information about a volume
 // and optionally expands related resources.
-func (s *volumeService) Get(ctx context.Context, id string, expand []string) (*Volume, error) {
+func (s *volumeService) Get(ctx context.Context, id string, expand []SnapshotExpand) (*Volume, error) {
 	path := fmt.Sprintf("/v1/volumes/%s", id)
 	query := make(url.Values)
 	if len(expand) > 0 {
