@@ -314,7 +314,7 @@ func TestNetworkCertificateService_List(t *testing.T) {
 			defer server.Close()
 
 			client := testCertificateClient(server.URL)
-			certs, err := client.List(context.Background(), tt.lbID, ListNetworkLoadBalancerRequest{})
+			resp, err := client.List(context.Background(), tt.lbID, ListNetworkLoadBalancerRequest{})
 
 			if tt.wantErr {
 				assertError(t, err)
@@ -323,9 +323,170 @@ func TestNetworkCertificateService_List(t *testing.T) {
 			}
 
 			assertNoError(t, err)
-			assertEqual(t, tt.want, len(certs))
+			assertEqual(t, tt.want, len(resp.Results))
 		})
 	}
+}
+
+func TestNetworkCertificateService_ListAll(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name       string
+		lbID       string
+		pages      []string
+		statusCode int
+		wantCount  int
+		wantErr    bool
+	}{
+		{
+			name: "single page with all results",
+			lbID: "lb-123",
+			pages: []string{
+				`{
+					"meta": {
+						"links": {
+							"self": "/tls-certificates?_limit=50&_offset=0"
+						},
+						"page": {
+							"count": 2,
+							"limit": 50,
+							"offset": 0,
+							"total": 2
+						}
+					},
+					"results": [
+						{
+							"id": "cert-1",
+							"name": "test1",
+							"created_at": "2024-01-01T00:00:00Z",
+							"updated_at": "2024-01-01T00:00:00Z"
+						},
+						{
+							"id": "cert-2",
+							"name": "test2",
+							"created_at": "2024-01-01T00:00:00Z",
+							"updated_at": "2024-01-01T00:00:00Z"
+						}
+					]
+				}`,
+			},
+			statusCode: http.StatusOK,
+			wantCount:  2,
+			wantErr:    false,
+		},
+		{
+			name: "multiple pages",
+			lbID: "lb-456",
+			pages: []string{
+				`{
+					"meta": {
+						"links": {
+							"self": "/tls-certificates?_limit=50&_offset=0",
+							"next": "/tls-certificates?_limit=50&_offset=50"
+						},
+						"page": {
+							"count": 50,
+							"limit": 50,
+							"offset": 0,
+							"total": 75
+						}
+					},
+					"results": [` + generateCertificateResults(1, 50) + `]
+				}`,
+				`{
+					"meta": {
+						"links": {
+							"self": "/tls-certificates?_limit=50&_offset=50",
+							"previous": "/tls-certificates?_limit=50&_offset=0"
+						},
+						"page": {
+							"count": 25,
+							"limit": 50,
+							"offset": 50,
+							"total": 75
+						}
+					},
+					"results": [` + generateCertificateResults(51, 25) + `]
+				}`,
+			},
+			statusCode: http.StatusOK,
+			wantCount:  75,
+			wantErr:    false,
+		},
+		{
+			name: "empty results",
+			lbID: "lb-789",
+			pages: []string{
+				`{
+					"meta": {
+						"links": {
+							"self": "/tls-certificates?_limit=50&_offset=0"
+						},
+						"page": {
+							"count": 0,
+							"limit": 50,
+							"offset": 0,
+							"total": 0
+						}
+					},
+					"results": []
+				}`,
+			},
+			statusCode: http.StatusOK,
+			wantCount:  0,
+			wantErr:    false,
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			pageIndex := 0
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				assertEqual(t, fmt.Sprintf("/load-balancer/v0beta1/network-load-balancers/%s/tls-certificates", tt.lbID), r.URL.Path)
+				assertEqual(t, http.MethodGet, r.Method)
+
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(tt.statusCode)
+
+				if pageIndex < len(tt.pages) {
+					w.Write([]byte(tt.pages[pageIndex]))
+					pageIndex++
+				} else {
+					// Return empty results if we've exhausted pages
+					w.Write([]byte(`{"meta":{"links":{"self":""},"page":{"count":0,"limit":50,"offset":0,"total":0}},"results":[]}`))
+				}
+			}))
+			defer server.Close()
+
+			client := testCertificateClient(server.URL)
+			certificates, err := client.ListAll(context.Background(), tt.lbID)
+
+			if tt.wantErr {
+				assertError(t, err)
+				return
+			}
+
+			assertNoError(t, err)
+			assertEqual(t, tt.wantCount, len(certificates))
+		})
+	}
+}
+
+func generateCertificateResults(start, count int) string {
+	results := make([]string, count)
+	for i := 0; i < count; i++ {
+		id := start + i
+		results[i] = fmt.Sprintf(`{
+			"id": "cert-%d",
+			"name": "test%d",
+			"created_at": "2024-01-01T00:00:00Z",
+			"updated_at": "2024-01-01T00:00:00Z"
+		}`, id, id)
+	}
+	return strings.Join(results, ",")
 }
 
 func TestNetworkCertificateService_Update(t *testing.T) {
@@ -463,5 +624,90 @@ func TestNetworkCertificateService_Create_NewRequestError(t *testing.T) {
 
 	if err == nil {
 		t.Error("expected error due to invalid URL, got nil")
+	}
+}
+
+func TestNetworkCertificateService_Get_NewRequestError(t *testing.T) {
+	t.Parallel()
+
+	// Use a canceled context to force an error in newRequest
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel() // Cancel immediately
+
+	client := testCertificateClient("http://dummy-url")
+
+	_, err := client.Get(ctx, "lb-123", "cert-123")
+
+	if err == nil {
+		t.Error("expected error due to canceled context, got nil")
+	}
+}
+
+func TestNetworkCertificateService_List_NewRequestError(t *testing.T) {
+	t.Parallel()
+
+	// Use a canceled context to force an error in newRequest
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel() // Cancel immediately
+
+	client := testCertificateClient("http://dummy-url")
+
+	_, err := client.List(ctx, "lb-123", ListNetworkLoadBalancerRequest{})
+
+	if err == nil {
+		t.Error("expected error due to canceled context, got nil")
+	}
+}
+
+func TestNetworkCertificateService_ListAll_NewRequestError(t *testing.T) {
+	t.Parallel()
+
+	// Use a canceled context to force an error in newRequest
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel() // Cancel immediately
+
+	client := testCertificateClient("http://dummy-url")
+
+	_, err := client.ListAll(ctx, "lb-123")
+
+	if err == nil {
+		t.Error("expected error due to canceled context, got nil")
+	}
+}
+
+func TestNetworkCertificateService_Update_NewRequestError(t *testing.T) {
+	t.Parallel()
+
+	// Use a canceled context to force an error in newRequest
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel() // Cancel immediately
+
+	client := testCertificateClient("http://dummy-url")
+
+	req := UpdateNetworkCertificateRequest{
+		Certificate: "updated-cert",
+		PrivateKey:  "updated-key",
+	}
+
+	err := client.Update(ctx, "lb-123", "cert-123", req)
+
+	if err == nil {
+		t.Error("expected error due to canceled context, got nil")
+	}
+}
+
+func TestNetworkCertificateService_Delete_NewRequestError(t *testing.T) {
+	t.Parallel()
+
+	// Use a canceled context to force an error in newRequest
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel() // Cancel immediately
+
+	client := testCertificateClient("http://dummy-url")
+
+	err := client.Delete(ctx, "lb-123", "cert-123")
+
+	if err == nil {
+		t.Error("expected error due to canceled context, got nil")
 	}
 }

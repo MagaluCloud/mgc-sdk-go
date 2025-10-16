@@ -49,7 +49,8 @@ type (
 		Create(ctx context.Context, lbID string, req CreateNetworkCertificateRequest) (*NetworkTLSCertificateResponse, error)
 		Delete(ctx context.Context, lbID, certicateID string) error
 		Get(ctx context.Context, lbID, certicateID string) (*NetworkTLSCertificateResponse, error)
-		List(ctx context.Context, lbID string, options ListNetworkLoadBalancerRequest) ([]NetworkTLSCertificateResponse, error)
+		List(ctx context.Context, lbID string, options ListNetworkLoadBalancerRequest) (NetworkPaginatedTLSCertificateResponse, error)
+		ListAll(ctx context.Context, lbID string) ([]NetworkTLSCertificateResponse, error)
 		Update(ctx context.Context, lbID, certicateID string, req UpdateNetworkCertificateRequest) error
 	}
 
@@ -114,13 +115,13 @@ func (s *networkCertificateService) Get(ctx context.Context, lbID, certicateID s
 	return result, nil
 }
 
-// List returns a list of network TLS certificates with optional filtering and pagination
-func (s *networkCertificateService) List(ctx context.Context, lbID string, options ListNetworkLoadBalancerRequest) ([]NetworkTLSCertificateResponse, error) {
+// List returns a paginated list of network TLS certificates with optional filtering and pagination
+func (s *networkCertificateService) List(ctx context.Context, lbID string, options ListNetworkLoadBalancerRequest) (NetworkPaginatedTLSCertificateResponse, error) {
 	path := urlNetworkLoadBalancer(&lbID, tls_certificates)
 
 	httpReq, err := s.client.newRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
-		return nil, err
+		return NetworkPaginatedTLSCertificateResponse{}, err
 	}
 	query := helpers.NewQueryParams(httpReq)
 	query.AddReflect("_offset", options.Offset)
@@ -131,9 +132,40 @@ func (s *networkCertificateService) List(ctx context.Context, lbID string, optio
 	var resp NetworkPaginatedTLSCertificateResponse
 	result, err := mgc_http.Do(s.client.GetConfig(), ctx, httpReq, &resp)
 	if err != nil {
-		return nil, err
+		return NetworkPaginatedTLSCertificateResponse{}, err
 	}
-	return result.Results, nil
+	return *result, nil
+}
+
+// ListAll retrieves all network TLS certificates by fetching all pages
+func (s *networkCertificateService) ListAll(ctx context.Context, lbID string) ([]NetworkTLSCertificateResponse, error) {
+	var allCertificates []NetworkTLSCertificateResponse
+	offset := 0
+	limit := 50
+
+	for {
+		currentOffset := offset
+		currentLimit := limit
+		pageOptions := ListNetworkLoadBalancerRequest{
+			Offset: &currentOffset,
+			Limit:  &currentLimit,
+		}
+
+		resp, err := s.List(ctx, lbID, pageOptions)
+		if err != nil {
+			return nil, err
+		}
+
+		allCertificates = append(allCertificates, resp.Results...)
+
+		if len(resp.Results) < limit {
+			break
+		}
+
+		offset += limit
+	}
+
+	return allCertificates, nil
 }
 
 // Update updates a network TLS certificate's properties

@@ -13,13 +13,16 @@ import (
 
 // VolumeTypeExpand is a constant used for expanding volume type information in volume responses.
 const (
-	VolumeTypeExpand   = "volume_type"
-	VolumeAttachExpand = "attachment"
+	VolumeTypeExpand   VolumeExpand = "volume_type"
+	VolumeAttachExpand VolumeExpand = "attachment"
 )
+
+type VolumeExpand = string
 
 // ListVolumesResponse represents the response from listing volumes.
 // This structure encapsulates the API response format for volumes.
 type ListVolumesResponse struct {
+	Meta    Metadata `json:"meta"`
 	Volumes []Volume `json:"volumes"`
 }
 
@@ -120,7 +123,7 @@ type ListOptions struct {
 	Limit  *int
 	Offset *int
 	Sort   *string
-	Expand []string
+	Expand []VolumeExpand
 }
 
 // VolumeStateV1 represents the possible states of a volume.
@@ -154,7 +157,8 @@ const (
 // VolumeService defines the interface for volume operations.
 // This interface provides methods for managing block storage volumes.
 type VolumeService interface {
-	List(ctx context.Context, opts ListOptions) ([]Volume, error)
+	List(ctx context.Context, opts ListOptions) (*ListVolumesResponse, error)
+	ListAll(ctx context.Context, expand []VolumeExpand) ([]Volume, error)
 	Create(ctx context.Context, req CreateVolumeRequest) (string, error)
 	Get(ctx context.Context, id string, expand []string) (*Volume, error)
 	Delete(ctx context.Context, id string) error
@@ -171,10 +175,10 @@ type volumeService struct {
 	client *BlockStorageClient
 }
 
-// List retrieves all volumes.
+// List retrieves a paginated list of volumes.
 // This method makes an HTTP request to get the list of volumes
 // and applies the filters specified in the options.
-func (s *volumeService) List(ctx context.Context, opts ListOptions) ([]Volume, error) {
+func (s *volumeService) List(ctx context.Context, opts ListOptions) (*ListVolumesResponse, error) {
 	path := "/v1/volumes"
 	query := make(url.Values)
 
@@ -205,7 +209,40 @@ func (s *volumeService) List(ctx context.Context, opts ListOptions) ([]Volume, e
 	if err != nil {
 		return nil, err
 	}
-	return result.Volumes, nil
+	return result, nil
+}
+
+// ListAll retrieves all volumes by fetching all pages.
+// This method repeatedly calls List to get all available volumes.
+func (s *volumeService) ListAll(ctx context.Context, expand []VolumeExpand) ([]Volume, error) {
+	var allVolumes []Volume
+	offset := 0
+	limit := 50
+
+	for {
+		currentOffset := offset
+		currentLimit := limit
+		opts := ListOptions{
+			Offset: &currentOffset,
+			Limit:  &currentLimit,
+			Expand: expand,
+		}
+
+		resp, err := s.List(ctx, opts)
+		if err != nil {
+			return nil, err
+		}
+
+		allVolumes = append(allVolumes, resp.Volumes...)
+
+		if len(resp.Volumes) < limit {
+			break
+		}
+
+		offset += limit
+	}
+
+	return allVolumes, nil
 }
 
 // Create provisions a new volume.

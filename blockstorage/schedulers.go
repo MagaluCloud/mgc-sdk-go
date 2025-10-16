@@ -11,11 +11,6 @@ import (
 	mgc_http "github.com/MagaluCloud/mgc-sdk-go/internal/http"
 )
 
-// SchedulerVolumeExpand is a constant used for expanding volume information in scheduler responses.
-const (
-	SchedulerVolumeExpand = "volume"
-)
-
 // SchedulerListResponse represents the response from listing schedulers.
 // This structure encapsulates the API response format for schedulers.
 type SchedulerListResponse struct {
@@ -113,6 +108,7 @@ type SchedulerListOptions struct {
 // This interface allows creating, listing, retrieving, and managing schedulers.
 type SchedulerService interface {
 	List(ctx context.Context, opts SchedulerListOptions) (*SchedulerListResponse, error)
+	ListAll(ctx context.Context, expand []ExpandSchedulers) ([]SchedulerResponse, error)
 	Create(ctx context.Context, req SchedulerPayload) (string, error)
 	Get(ctx context.Context, id string, expand []ExpandSchedulers) (*SchedulerResponse, error)
 	Delete(ctx context.Context, id string) error
@@ -164,6 +160,38 @@ func (s *schedulerService) List(ctx context.Context, opts SchedulerListOptions) 
 		return nil, err
 	}
 	return result, nil
+}
+
+// ListAll retrieves all schedulers by fetching all pages
+func (s *schedulerService) ListAll(ctx context.Context, expand []ExpandSchedulers) ([]SchedulerResponse, error) {
+	var allSchedulers []SchedulerResponse
+	offset := 0
+	limit := 50
+
+	for {
+		currentOffset := offset
+		currentLimit := limit
+		opts := SchedulerListOptions{
+			Offset: &currentOffset,
+			Limit:  &currentLimit,
+			Expand: expand,
+		}
+
+		resp, err := s.List(ctx, opts)
+		if err != nil {
+			return nil, err
+		}
+
+		allSchedulers = append(allSchedulers, resp.Schedulers...)
+
+		if len(resp.Schedulers) < limit {
+			break
+		}
+
+		offset += limit
+	}
+
+	return allSchedulers, nil
 }
 
 // Create provisions a new scheduler.

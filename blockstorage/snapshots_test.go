@@ -17,7 +17,7 @@ import (
 func TestSnapshotService_List(t *testing.T) {
 	tests := []struct {
 		name       string
-		opts       ListOptions
+		opts       SnaphotListOptions
 		response   string
 		statusCode int
 		wantCount  int
@@ -25,7 +25,7 @@ func TestSnapshotService_List(t *testing.T) {
 	}{
 		{
 			name: "basic list",
-			opts: ListOptions{},
+			opts: SnaphotListOptions{},
 			response: `{
 				"snapshots": [
 					{"id": "snap1", "name": "backup1"},
@@ -37,7 +37,7 @@ func TestSnapshotService_List(t *testing.T) {
 		},
 		{
 			name: "with pagination",
-			opts: ListOptions{
+			opts: SnaphotListOptions{
 				Limit:  helpers.IntPtr(1),
 				Offset: helpers.IntPtr(1),
 				Sort:   helpers.StrPtr("name:desc"),
@@ -48,8 +48,8 @@ func TestSnapshotService_List(t *testing.T) {
 		},
 		{
 			name: "with expansion",
-			opts: ListOptions{
-				Expand: []string{SnapshotVolumeExpand},
+			opts: SnaphotListOptions{
+				Expand: []SnapshotExpand{SnapshotVolumeExpand},
 			},
 			response:   `{"snapshots": [{"id": "snap1", "volume": {"id": "vol1"}}]}`,
 			statusCode: http.StatusOK,
@@ -91,7 +91,7 @@ func TestSnapshotService_List(t *testing.T) {
 			defer server.Close()
 
 			client := testClientSnaphots(server.URL)
-			snapshots, err := client.List(context.Background(), tt.opts)
+			resp, err := client.List(context.Background(), tt.opts)
 
 			if tt.wantErr {
 				if err == nil {
@@ -105,8 +105,8 @@ func TestSnapshotService_List(t *testing.T) {
 				t.Fatalf("unexpected error: %v", err)
 			}
 
-			if len(snapshots) != tt.wantCount {
-				t.Errorf("got %d snapshots, want %d", len(snapshots), tt.wantCount)
+			if len(resp.Snapshots) != tt.wantCount {
+				t.Errorf("got %d snapshots, want %d", len(resp.Snapshots), tt.wantCount)
 			}
 		})
 	}
@@ -372,6 +372,211 @@ func TestSnapshotService_Rename(t *testing.T) {
 				t.Fatalf("unexpected error: %v", err)
 			}
 		})
+	}
+}
+
+func TestSnapshotService_ListAll(t *testing.T) {
+	tests := []struct {
+		name       string
+		pages      []string
+		statusCode int
+		wantCount  int
+		wantErr    bool
+	}{
+		{
+			name: "single page with all results",
+			pages: []string{
+				`{
+					"snapshots": [
+						{
+							"id": "snap1",
+							"name": "backup1",
+							"size": 10,
+							"state": "available",
+							"status": "completed",
+							"created_at": "2024-01-01T00:00:00Z",
+							"updated_at": "2024-01-01T00:00:00Z",
+							"availability_zones": ["az1"],
+							"type": "standard"
+						},
+						{
+							"id": "snap2",
+							"name": "backup2",
+							"size": 20,
+							"state": "available",
+							"status": "completed",
+							"created_at": "2024-01-01T00:00:00Z",
+							"updated_at": "2024-01-01T00:00:00Z",
+							"availability_zones": ["az1"],
+							"type": "standard"
+						}
+					]
+				}`,
+			},
+			statusCode: http.StatusOK,
+			wantCount:  2,
+			wantErr:    false,
+		},
+		{
+			name: "multiple pages",
+			pages: []string{
+				`{
+					"snapshots": [` + generateSnapshotResults(1, 50) + `]
+				}`,
+				`{
+					"snapshots": [` + generateSnapshotResults(51, 25) + `]
+				}`,
+			},
+			statusCode: http.StatusOK,
+			wantCount:  75,
+			wantErr:    false,
+		},
+		{
+			name: "empty results",
+			pages: []string{
+				`{
+					"snapshots": []
+				}`,
+			},
+			statusCode: http.StatusOK,
+			wantCount:  0,
+			wantErr:    false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			pageIndex := 0
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.URL.Path != "/volume/v1/snapshots" {
+					t.Errorf("Expected path /volume/v1/snapshots, got %s", r.URL.Path)
+				}
+				if r.Method != http.MethodGet {
+					t.Errorf("Expected method GET, got %s", r.Method)
+				}
+
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(tt.statusCode)
+
+				if pageIndex < len(tt.pages) {
+					w.Write([]byte(tt.pages[pageIndex]))
+					pageIndex++
+				} else {
+					w.Write([]byte(`{"snapshots":[]}`))
+				}
+			}))
+			defer server.Close()
+
+			client := testClientSnaphots(server.URL)
+			snapshots, err := client.ListAll(context.Background(), nil)
+
+			if tt.wantErr {
+				if err == nil {
+					t.Error("Expected error but got nil")
+				}
+				return
+			}
+
+			if err != nil {
+				t.Errorf("Unexpected error: %v", err)
+				return
+			}
+
+			if len(snapshots) != tt.wantCount {
+				t.Errorf("Expected %d snapshots, got %d", tt.wantCount, len(snapshots))
+			}
+		})
+	}
+}
+
+func generateSnapshotResults(start, count int) string {
+	results := make([]string, count)
+	for i := 0; i < count; i++ {
+		id := start + i
+		results[i] = `{
+			"id": "snap` + strconv.Itoa(id) + `",
+			"name": "backup` + strconv.Itoa(id) + `",
+			"size": 10,
+			"state": "available",
+			"status": "completed",
+			"created_at": "2024-01-01T00:00:00Z",
+			"updated_at": "2024-01-01T00:00:00Z",
+			"availability_zones": ["az1"],
+			"type": "standard"
+		}`
+	}
+	return strings.Join(results, ",")
+}
+
+func TestSnapshotService_ListAll_WithExpand(t *testing.T) {
+	requestCount := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/volume/v1/snapshots" {
+			t.Errorf("unexpected path: %s", r.URL.Path)
+		}
+
+		query := r.URL.Query()
+
+		// Verify expand parameter is present
+		expandValue := query.Get("expand")
+		if expandValue != "volume" {
+			t.Errorf("expected expand=volume, got %s", expandValue)
+		}
+
+		requestCount++
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+
+		// Return 50 items on first page, 25 on second
+		offset := query.Get("_offset")
+		switch offset {
+		case "0":
+			response := fmt.Sprintf(`{
+				"meta": {"page": {"offset": 0, "limit": 50, "count": 50, "total": 75, "max_limit": 100}},
+				"snapshots": [%s]
+			}`, generateSnapshotResults(0, 50))
+			w.Write([]byte(response))
+		case "50":
+			response := fmt.Sprintf(`{
+				"meta": {"page": {"offset": 50, "limit": 50, "count": 25, "total": 75, "max_limit": 100}},
+				"snapshots": [%s]
+			}`, generateSnapshotResults(50, 25))
+			w.Write([]byte(response))
+		default:
+			t.Errorf("unexpected offset: %s", offset)
+		}
+	}))
+	defer server.Close()
+
+	client := testClientSnaphots(server.URL)
+	snapshots, err := client.ListAll(context.Background(), []string{SnapshotVolumeExpand})
+
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+		return
+	}
+
+	// Should have fetched all 75 snapshots
+	if len(snapshots) != 75 {
+		t.Errorf("expected 75 snapshots, got %d", len(snapshots))
+	}
+
+	// Should have made exactly 2 requests
+	if requestCount != 2 {
+		t.Errorf("made %d requests, want 2", requestCount)
+	}
+}
+
+func TestSnapshotService_ListAll_NewRequestError(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	client := testClientSnaphots("http://dummy-url")
+
+	_, err := client.ListAll(ctx, nil)
+
+	if err == nil {
+		t.Error("expected error due to canceled context, got nil")
 	}
 }
 

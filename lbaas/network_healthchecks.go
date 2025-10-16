@@ -69,7 +69,8 @@ type (
 		Create(ctx context.Context, lbID string, req CreateNetworkHealthCheckRequest) (*NetworkHealthCheckResponse, error)
 		Delete(ctx context.Context, lbID, healthCheckID string) error
 		Get(ctx context.Context, lbID, healthCheckID string) (*NetworkHealthCheckResponse, error)
-		List(ctx context.Context, lbID string, options ListNetworkLoadBalancerRequest) ([]NetworkHealthCheckResponse, error)
+		List(ctx context.Context, lbID string, options ListNetworkLoadBalancerRequest) (NetworkPaginatedHealthCheckResponse, error)
+		ListAll(ctx context.Context, lbID string) ([]NetworkHealthCheckResponse, error)
 		Update(ctx context.Context, lbID, healthCheckID string, req UpdateNetworkHealthCheckRequest) error
 	}
 
@@ -126,13 +127,13 @@ func (s *networkHealthCheckService) Get(ctx context.Context, lbID, healthCheckID
 	return result, nil
 }
 
-// List returns a list of network health checks with optional filtering and pagination
-func (s *networkHealthCheckService) List(ctx context.Context, lbID string, options ListNetworkLoadBalancerRequest) ([]NetworkHealthCheckResponse, error) {
+// List returns a paginated list of network health checks with optional filtering and pagination
+func (s *networkHealthCheckService) List(ctx context.Context, lbID string, options ListNetworkLoadBalancerRequest) (NetworkPaginatedHealthCheckResponse, error) {
 	path := urlNetworkLoadBalancer(&lbID, health_checks)
 
 	httpReq, err := s.client.newRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
-		return nil, err
+		return NetworkPaginatedHealthCheckResponse{}, err
 	}
 
 	query := helpers.NewQueryParams(httpReq)
@@ -144,9 +145,40 @@ func (s *networkHealthCheckService) List(ctx context.Context, lbID string, optio
 	var resp NetworkPaginatedHealthCheckResponse
 	result, err := mgc_http.Do(s.client.GetConfig(), ctx, httpReq, &resp)
 	if err != nil {
-		return nil, err
+		return NetworkPaginatedHealthCheckResponse{}, err
 	}
-	return result.Results, nil
+	return *result, nil
+}
+
+// ListAll retrieves all network health checks by fetching all pages
+func (s *networkHealthCheckService) ListAll(ctx context.Context, lbID string) ([]NetworkHealthCheckResponse, error) {
+	var allHealthChecks []NetworkHealthCheckResponse
+	offset := 0
+	limit := 50
+
+	for {
+		currentOffset := offset
+		currentLimit := limit
+		pageOptions := ListNetworkLoadBalancerRequest{
+			Offset: &currentOffset,
+			Limit:  &currentLimit,
+		}
+
+		resp, err := s.List(ctx, lbID, pageOptions)
+		if err != nil {
+			return nil, err
+		}
+
+		allHealthChecks = append(allHealthChecks, resp.Results...)
+
+		if len(resp.Results) < limit {
+			break
+		}
+
+		offset += limit
+	}
+
+	return allHealthChecks, nil
 }
 
 // Update updates a network health check's properties

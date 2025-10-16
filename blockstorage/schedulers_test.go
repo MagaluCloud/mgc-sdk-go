@@ -3,6 +3,7 @@ package blockstorage
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
@@ -685,6 +686,259 @@ func TestSchedulerService_DetachVolume(t *testing.T) {
 }
 
 // Helper function to create a test scheduler client
+func TestSchedulerService_ListAll(t *testing.T) {
+	tests := []struct {
+		name       string
+		pages      []string
+		statusCode int
+		wantCount  int
+		wantErr    bool
+	}{
+		{
+			name: "single page with all results",
+			pages: []string{
+				`{
+					"meta": {
+						"page": {
+							"offset": 0,
+							"limit": 50,
+							"count": 2,
+							"total": 2,
+							"max_limit": 100
+						}
+					},
+					"schedulers": [
+						{
+							"id": "scheduler1",
+							"name": "test-scheduler-1",
+							"state": "available",
+							"policy": {
+								"retention_in_days": 7,
+								"frequency": {
+									"daily": {
+										"start_time": "02:00:00"
+									}
+								}
+							},
+							"created_at": "2024-01-01T00:00:00Z",
+							"updated_at": "2024-01-01T00:00:00Z"
+						},
+						{
+							"id": "scheduler2",
+							"name": "test-scheduler-2",
+							"state": "available",
+							"policy": {
+								"retention_in_days": 30,
+								"frequency": {
+									"daily": {
+										"start_time": "03:00:00"
+									}
+								}
+							},
+							"created_at": "2024-01-01T00:00:00Z",
+							"updated_at": "2024-01-01T00:00:00Z"
+						}
+					]
+				}`,
+			},
+			statusCode: http.StatusOK,
+			wantCount:  2,
+			wantErr:    false,
+		},
+		{
+			name: "multiple pages",
+			pages: []string{
+				`{
+					"meta": {
+						"page": {
+							"offset": 0,
+							"limit": 50,
+							"count": 50,
+							"total": 75,
+							"max_limit": 100
+						}
+					},
+					"schedulers": [` + generateSchedulerResults(1, 50) + `]
+				}`,
+				`{
+					"meta": {
+						"page": {
+							"offset": 50,
+							"limit": 50,
+							"count": 25,
+							"total": 75,
+							"max_limit": 100
+						}
+					},
+					"schedulers": [` + generateSchedulerResults(51, 25) + `]
+				}`,
+			},
+			statusCode: http.StatusOK,
+			wantCount:  75,
+			wantErr:    false,
+		},
+		{
+			name: "empty results",
+			pages: []string{
+				`{
+					"meta": {
+						"page": {
+							"offset": 0,
+							"limit": 50,
+							"count": 0,
+							"total": 0,
+							"max_limit": 100
+						}
+					},
+					"schedulers": []
+				}`,
+			},
+			statusCode: http.StatusOK,
+			wantCount:  0,
+			wantErr:    false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			pageIndex := 0
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.URL.Path != "/volume/v1/schedulers" {
+					t.Errorf("Expected path /volume/v1/schedulers, got %s", r.URL.Path)
+				}
+				if r.Method != http.MethodGet {
+					t.Errorf("Expected method GET, got %s", r.Method)
+				}
+
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(tt.statusCode)
+
+				if pageIndex < len(tt.pages) {
+					w.Write([]byte(tt.pages[pageIndex]))
+					pageIndex++
+				} else {
+					w.Write([]byte(`{"meta":{"page":{"offset":0,"limit":50,"count":0,"total":0,"max_limit":100}},"schedulers":[]}`))
+				}
+			}))
+			defer server.Close()
+
+			client := testSchedulerClient(server.URL)
+			schedulers, err := client.ListAll(context.Background(), nil)
+
+			if tt.wantErr {
+				if err == nil {
+					t.Error("Expected error but got nil")
+				}
+				return
+			}
+
+			if err != nil {
+				t.Errorf("Unexpected error: %v", err)
+				return
+			}
+
+			if len(schedulers) != tt.wantCount {
+				t.Errorf("Expected %d schedulers, got %d", tt.wantCount, len(schedulers))
+			}
+		})
+	}
+}
+
+func generateSchedulerResults(start, count int) string {
+	results := make([]string, count)
+	for i := 0; i < count; i++ {
+		id := start + i
+		results[i] = `{
+			"id": "scheduler` + strconv.Itoa(id) + `",
+			"name": "test-scheduler-` + strconv.Itoa(id) + `",
+			"state": "available",
+			"policy": {
+				"retention_in_days": 7,
+				"frequency": {
+					"daily": {
+						"start_time": "02:00:00"
+					}
+				}
+			},
+			"created_at": "2024-01-01T00:00:00Z",
+			"updated_at": "2024-01-01T00:00:00Z"
+		}`
+	}
+	return strings.Join(results, ",")
+}
+
+func TestSchedulerService_ListAll_WithExpand(t *testing.T) {
+	requestCount := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/volume/v1/schedulers" {
+			t.Errorf("unexpected path: %s", r.URL.Path)
+		}
+
+		query := r.URL.Query()
+
+		// Verify expand parameter is present
+		expandValues := query["expand"]
+		if len(expandValues) != 1 || expandValues[0] != "volume" {
+			t.Errorf("expected expand=volume, got %v", expandValues)
+		}
+
+		requestCount++
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+
+		// Return 50 items on first page, 25 on second
+		offset := query.Get("_offset")
+		switch offset {
+		case "0":
+			response := fmt.Sprintf(`{
+				"meta": {"page": {"offset": 0, "limit": 50, "count": 50, "total": 75, "max_limit": 100}},
+				"schedulers": [%s]
+			}`, generateSchedulerResults(0, 50))
+			w.Write([]byte(response))
+		case "50":
+			response := fmt.Sprintf(`{
+				"meta": {"page": {"offset": 50, "limit": 50, "count": 25, "total": 75, "max_limit": 100}},
+				"schedulers": [%s]
+			}`, generateSchedulerResults(50, 25))
+			w.Write([]byte(response))
+		default:
+			t.Errorf("unexpected offset: %s", offset)
+		}
+	}))
+	defer server.Close()
+
+	client := testSchedulerClient(server.URL)
+	schedulers, err := client.ListAll(context.Background(), []ExpandSchedulers{ExpandSchedulersVolume})
+
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+		return
+	}
+
+	// Should have fetched all 75 schedulers
+	if len(schedulers) != 75 {
+		t.Errorf("expected 75 schedulers, got %d", len(schedulers))
+	}
+
+	// Should have made exactly 2 requests
+	if requestCount != 2 {
+		t.Errorf("made %d requests, want 2", requestCount)
+	}
+}
+
+func TestSchedulerService_ListAll_NewRequestError(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	client := testSchedulerClient("http://dummy-url")
+
+	_, err := client.ListAll(ctx, nil)
+
+	if err == nil {
+		t.Error("expected error due to canceled context, got nil")
+	}
+}
+
 func testSchedulerClient(baseURL string) SchedulerService {
 	httpClient := &http.Client{}
 	core := client.NewMgcClient("test-api",

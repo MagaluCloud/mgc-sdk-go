@@ -317,7 +317,7 @@ func TestNetworkListenerService_List(t *testing.T) {
 			defer server.Close()
 
 			client := testListenerClient(server.URL)
-			listeners, err := client.List(context.Background(), tt.lbID, ListNetworkLoadBalancerRequest{})
+			resp, err := client.List(context.Background(), tt.lbID, ListNetworkLoadBalancerRequest{})
 
 			if tt.wantErr {
 				assertError(t, err)
@@ -326,9 +326,178 @@ func TestNetworkListenerService_List(t *testing.T) {
 			}
 
 			assertNoError(t, err)
-			assertEqual(t, tt.want, len(listeners))
+			assertEqual(t, tt.want, len(resp.Results))
 		})
 	}
+}
+
+func TestNetworkListenerService_ListAll(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name       string
+		lbID       string
+		pages      []string
+		statusCode int
+		wantCount  int
+		wantErr    bool
+	}{
+		{
+			name: "single page with all results",
+			lbID: "lb-123",
+			pages: []string{
+				`{
+					"meta": {
+						"links": {
+							"self": "/listeners?_limit=50&_offset=0"
+						},
+						"page": {
+							"count": 2,
+							"limit": 50,
+							"offset": 0,
+							"total": 2
+						}
+					},
+					"results": [
+						{
+							"id": "listener-1",
+							"name": "test1",
+							"protocol": "HTTP",
+							"port": 80,
+							"backend_id": "backend-1",
+							"created_at": "2024-01-01T00:00:00Z",
+							"updated_at": "2024-01-01T00:00:00Z"
+						},
+						{
+							"id": "listener-2",
+							"name": "test2",
+							"protocol": "HTTPS",
+							"port": 443,
+							"backend_id": "backend-2",
+							"created_at": "2024-01-01T00:00:00Z",
+							"updated_at": "2024-01-01T00:00:00Z"
+						}
+					]
+				}`,
+			},
+			statusCode: http.StatusOK,
+			wantCount:  2,
+			wantErr:    false,
+		},
+		{
+			name: "multiple pages",
+			lbID: "lb-456",
+			pages: []string{
+				`{
+					"meta": {
+						"links": {
+							"self": "/listeners?_limit=50&_offset=0",
+							"next": "/listeners?_limit=50&_offset=50"
+						},
+						"page": {
+							"count": 50,
+							"limit": 50,
+							"offset": 0,
+							"total": 75
+						}
+					},
+					"results": [` + generateListenerResults(1, 50) + `]
+				}`,
+				`{
+					"meta": {
+						"links": {
+							"self": "/listeners?_limit=50&_offset=50",
+							"previous": "/listeners?_limit=50&_offset=0"
+						},
+						"page": {
+							"count": 25,
+							"limit": 50,
+							"offset": 50,
+							"total": 75
+						}
+					},
+					"results": [` + generateListenerResults(51, 25) + `]
+				}`,
+			},
+			statusCode: http.StatusOK,
+			wantCount:  75,
+			wantErr:    false,
+		},
+		{
+			name: "empty results",
+			lbID: "lb-789",
+			pages: []string{
+				`{
+					"meta": {
+						"links": {
+							"self": "/listeners?_limit=50&_offset=0"
+						},
+						"page": {
+							"count": 0,
+							"limit": 50,
+							"offset": 0,
+							"total": 0
+						}
+					},
+					"results": []
+				}`,
+			},
+			statusCode: http.StatusOK,
+			wantCount:  0,
+			wantErr:    false,
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			pageIndex := 0
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				assertEqual(t, fmt.Sprintf("/load-balancer/v0beta1/network-load-balancers/%s/listeners", tt.lbID), r.URL.Path)
+				assertEqual(t, http.MethodGet, r.Method)
+
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(tt.statusCode)
+
+				if pageIndex < len(tt.pages) {
+					w.Write([]byte(tt.pages[pageIndex]))
+					pageIndex++
+				} else {
+					w.Write([]byte(`{"meta":{"links":{"self":""},"page":{"count":0,"limit":50,"offset":0,"total":0}},"results":[]}`))
+				}
+			}))
+			defer server.Close()
+
+			client := testListenerClient(server.URL)
+			listeners, err := client.ListAll(context.Background(), tt.lbID)
+
+			if tt.wantErr {
+				assertError(t, err)
+				return
+			}
+
+			assertNoError(t, err)
+			assertEqual(t, tt.wantCount, len(listeners))
+		})
+	}
+}
+
+func generateListenerResults(start, count int) string {
+	results := make([]string, count)
+	for i := 0; i < count; i++ {
+		id := start + i
+		results[i] = fmt.Sprintf(`{
+			"id": "listener-%d",
+			"name": "test%d",
+			"protocol": "HTTP",
+			"port": 80,
+			"backend_id": "backend-%d",
+			"created_at": "2024-01-01T00:00:00Z",
+			"updated_at": "2024-01-01T00:00:00Z"
+		}`, id, id, id)
+	}
+	return strings.Join(results, ",")
 }
 
 func TestNetworkListenerService_Update(t *testing.T) {
@@ -454,6 +623,85 @@ func TestNetworkListenerService_Create_NewRequestError(t *testing.T) {
 	}
 
 	_, err := client.Create(ctx, "lb-123", "backend-123", req)
+
+	if err == nil {
+		t.Error("expected error due to canceled context, got nil")
+	}
+}
+
+func TestNetworkListenerService_Get_NewRequestError(t *testing.T) {
+	t.Parallel()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	client := testListenerClient("http://dummy-url")
+
+	_, err := client.Get(ctx, "lb-123", "listener-123")
+
+	if err == nil {
+		t.Error("expected error due to canceled context, got nil")
+	}
+}
+
+func TestNetworkListenerService_List_NewRequestError(t *testing.T) {
+	t.Parallel()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	client := testListenerClient("http://dummy-url")
+
+	_, err := client.List(ctx, "lb-123", ListNetworkLoadBalancerRequest{})
+
+	if err == nil {
+		t.Error("expected error due to canceled context, got nil")
+	}
+}
+
+func TestNetworkListenerService_ListAll_NewRequestError(t *testing.T) {
+	t.Parallel()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	client := testListenerClient("http://dummy-url")
+
+	_, err := client.ListAll(ctx, "lb-123")
+
+	if err == nil {
+		t.Error("expected error due to canceled context, got nil")
+	}
+}
+
+func TestNetworkListenerService_Update_NewRequestError(t *testing.T) {
+	t.Parallel()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	client := testListenerClient("http://dummy-url")
+
+	req := UpdateNetworkListenerRequest{
+		TLSCertificateID: stringPtr("updated-listener"),
+	}
+
+	err := client.Update(ctx, "lb-123", "listener-123", req)
+
+	if err == nil {
+		t.Error("expected error due to canceled context, got nil")
+	}
+}
+
+func TestNetworkListenerService_Delete_NewRequestError(t *testing.T) {
+	t.Parallel()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	client := testListenerClient("http://dummy-url")
+
+	err := client.Delete(ctx, "lb-123", "listener-123")
 
 	if err == nil {
 		t.Error("expected error due to canceled context, got nil")

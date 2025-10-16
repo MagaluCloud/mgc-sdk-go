@@ -49,8 +49,8 @@ func ExampleListVolumes() {
 	c := client.NewMgcClient(apiToken)
 	blockClient := blockstorage.New(c)
 
-	// List volumes with pagination and expansion
-	volumes, err := blockClient.Volumes().List(context.Background(), blockstorage.ListOptions{
+	// List volumes with pagination and expansion (paginated)
+	resp, err := blockClient.Volumes().List(context.Background(), blockstorage.ListOptions{
 		Limit:  helpers.IntPtr(10),
 		Offset: helpers.IntPtr(0),
 		Expand: []string{blockstorage.VolumeTypeExpand, blockstorage.VolumeAttachExpand},
@@ -60,8 +60,14 @@ func ExampleListVolumes() {
 		log.Fatal(err)
 	}
 
+	// Print pagination metadata
+	fmt.Printf("Volumes (Page %d-%d of %d total)\n",
+		resp.Meta.Page.Offset,
+		resp.Meta.Page.Offset+resp.Meta.Page.Count,
+		resp.Meta.Page.Total)
+
 	// Print volume details
-	for _, vol := range volumes {
+	for _, vol := range resp.Volumes {
 		fmt.Printf("Volume: %s (ID: %s)\n", vol.Name, vol.ID)
 		fmt.Printf("  Size: %d GiB\n", vol.Size)
 		if vol.Type.Name != nil {
@@ -75,6 +81,30 @@ func ExampleListVolumes() {
 		if vol.Attachment != nil {
 			fmt.Printf("  Attached to: %s\n", *vol.Attachment.Instance.ID)
 		}
+	}
+}
+
+func ExampleListAllVolumes() {
+	// Create a new client
+	apiToken := os.Getenv("MGC_API_TOKEN")
+	if apiToken == "" {
+		log.Fatal("MGC_API_TOKEN environment variable is not set")
+	}
+	c := client.NewMgcClient(apiToken)
+	blockClient := blockstorage.New(c)
+
+	// List all volumes (fetches all pages automatically)
+	volumes, err := blockClient.Volumes().ListAll(context.Background(), []blockstorage.VolumeExpand{})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Printf("Total Volumes: %d\n", len(volumes))
+
+	// Print volume details
+	for _, vol := range volumes {
+		fmt.Printf("Volume: %s (ID: %s) - Size: %d GiB, Status: %s\n",
+			vol.Name, vol.ID, vol.Size, vol.Status)
 	}
 }
 
@@ -214,11 +244,44 @@ func ExampleListVolumeTypes() {
 	c := client.NewMgcClient(apiToken)
 	blockClient := blockstorage.New(c)
 
-	// List volume types
-	volumeTypes, err := blockClient.VolumeTypes().List(context.Background(), blockstorage.ListVolumeTypesOptions{})
+	// List volume types (paginated)
+	resp, err := blockClient.VolumeTypes().List(context.Background(), blockstorage.ListVolumeTypesOptions{})
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	// Print pagination metadata
+	fmt.Printf("Volume Types (Page %d-%d of %d total)\n",
+		resp.Meta.Page.Offset,
+		resp.Meta.Page.Offset+resp.Meta.Page.Count,
+		resp.Meta.Page.Total)
+
+	// Print volume type details
+	for _, vt := range resp.Types {
+		fmt.Printf("Volume Type: %s (ID: %s)\n", vt.Name, vt.ID)
+		fmt.Printf("  Disk Type: %s\n", vt.DiskType)
+		fmt.Printf("  Status: %s\n", vt.Status)
+		fmt.Printf("  IOPS: Read=%d, Write=%d, Total=%d\n", vt.IOPS.Read, vt.IOPS.Write, vt.IOPS.Total)
+		fmt.Printf("  Availability Zones: %v\n", vt.AvailabilityZones)
+		fmt.Printf("  Allows Encryption: %v\n", vt.AllowsEncryption)
+	}
+}
+
+func ExampleListAllVolumeTypes() {
+	apiToken := os.Getenv("MGC_API_TOKEN")
+	if apiToken == "" {
+		log.Fatal("MGC_API_TOKEN environment variable is not set")
+	}
+	c := client.NewMgcClient(apiToken)
+	blockClient := blockstorage.New(c)
+
+	// List all volume types
+	volumeTypes, err := blockClient.VolumeTypes().ListAll(context.Background())
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Printf("Total Volume Types: %d\n", len(volumeTypes))
 
 	// Print volume type details
 	for _, vt := range volumeTypes {

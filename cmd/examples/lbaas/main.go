@@ -22,7 +22,7 @@ import (
 // Configuration constants - modify these for your environment
 const (
 	// Replace with your actual VPC ID
-	ExampleVPCID = "65d6acfb-4fce-4a89-85c3-adef2261fe1b"
+	ExampleVPCID = "9dd2d30e-565d-42ce-a0a3-f2de1c473fed"
 	// Replace with your actual subnet pool ID (optional)
 	ExampleSubnetPoolID = "subnet-pool-12345678-1234-1234-1234-123456789012"
 	// Replace with your actual public IP ID (optional for external LBs)
@@ -102,7 +102,7 @@ func initializeClient() (*client.CoreClient, error) {
 	// Create the core client with configuration
 	coreClient := client.NewMgcClient(
 		apiKey,
-		client.WithBaseURL(client.BrSe1),
+		client.WithBaseURL(client.BrNe1),
 	)
 
 	return coreClient, nil
@@ -295,21 +295,22 @@ func runListLoadBalancersExample(ctx context.Context, client *client.CoreClient)
 
 	lbService := lbaas.New(client).NetworkLoadBalancers()
 
-	// List with pagination options
+	// Example 1: List with pagination options
 	listOptions := lbaas.ListNetworkLoadBalancerRequest{
 		Limit:  intPtr(10),                   // Get up to 10 results per page
 		Offset: intPtr(0),                    // Start from the beginning
 		Sort:   stringPtr("created_at:desc"), // Sort by creation date, newest first
 	}
 
-	loadBalancers, err := lbService.List(ctx, listOptions)
+	paginatedResp, err := lbService.List(ctx, listOptions)
 	if err != nil {
 		log.Printf("Failed to list load balancers: %v", err)
 		return
 	}
 
-	fmt.Printf("Found %d load balancer(s):\n", len(loadBalancers))
-	for i, lb := range loadBalancers {
+	fmt.Printf("Paginated results - Found %d load balancer(s) on this page (Total: %d):\n",
+		len(paginatedResp.Results), paginatedResp.Meta.Page.Total)
+	for i, lb := range paginatedResp.Results {
 		fmt.Printf("  %d. %s (ID: %s)\n", i+1, lb.Name, lb.ID)
 		fmt.Printf("     Status: %s, Visibility: %s\n", lb.Status, lb.Visibility)
 		fmt.Printf("     Created: %s\n", lb.CreatedAt)
@@ -320,6 +321,16 @@ func runListLoadBalancersExample(ctx context.Context, client *client.CoreClient)
 		}
 		fmt.Println()
 	}
+
+	// Example 2: List all load balancers across all pages
+	fmt.Println("\nFetching ALL load balancers (across all pages)...")
+	allLoadBalancers, err := lbService.ListAll(ctx)
+	if err != nil {
+		log.Printf("Failed to list all load balancers: %v", err)
+		return
+	}
+
+	fmt.Printf("✓ Retrieved %d total load balancer(s) across all pages\n", len(allLoadBalancers))
 }
 
 // runGetLoadBalancerExample demonstrates getting detailed information about a load balancer
@@ -459,9 +470,9 @@ func runManageBackendsExample(ctx context.Context, client *client.CoreClient, lb
 	fmt.Printf("✓ Backend created with ID: %s\n", backendID)
 	createdBackends = append(createdBackends, backendID)
 
-	// List all backends
+	// List all backends (using ListAll to get all pages)
 	fmt.Println("\nListing all backends...")
-	backends, err := backendService.List(ctx, lbID, lbaas.ListNetworkLoadBalancerRequest{})
+	backends, err := backendService.ListAll(ctx, lbID)
 	if err != nil {
 		log.Printf("Failed to list backends: %v", err)
 		return
@@ -514,7 +525,7 @@ func runManageListenersExample(ctx context.Context, client *client.CoreClient, l
 	backendService := lbaas.New(client).NetworkBackends()
 
 	// First, get available backends to link to
-	backends, err := backendService.List(ctx, lbID, lbaas.ListNetworkLoadBalancerRequest{})
+	backends, err := backendService.ListAll(ctx, lbID)
 	if err != nil || len(backends) == 0 {
 		log.Printf("No backends available for listener creation")
 		return
@@ -536,9 +547,9 @@ func runManageListenersExample(ctx context.Context, client *client.CoreClient, l
 	}
 	fmt.Printf("✓ Listener created with ID: %s\n", listener.ID)
 
-	// List all listeners
+	// List all listeners (using ListAll to get all pages)
 	fmt.Println("\nListing all listeners...")
-	listeners, err := listenerService.List(ctx, lbID, lbaas.ListNetworkLoadBalancerRequest{})
+	listeners, err := listenerService.ListAll(ctx, lbID)
 	if err != nil {
 		log.Printf("Failed to list listeners: %v", err)
 		return
@@ -608,9 +619,9 @@ func runManageHealthChecksExample(ctx context.Context, client *client.CoreClient
 	fmt.Printf("✓ Health check created with ID: %s\n", hc.ID)
 	createdHCs = append(createdHCs, hc.ID)
 
-	// List all health checks
+	// List all health checks (using ListAll to get all pages)
 	fmt.Println("\nListing all health checks...")
-	healthChecks, err := hcService.List(ctx, lbID, lbaas.ListNetworkLoadBalancerRequest{})
+	healthChecks, err := hcService.ListAll(ctx, lbID)
 	if err != nil {
 		log.Printf("Failed to list health checks: %v", err)
 		return
@@ -688,9 +699,9 @@ func runManageCertificatesExample(ctx context.Context, client *client.CoreClient
 	fmt.Printf("✓ Certificate created with ID: %s\n", certResp.ID)
 	createdCerts = append(createdCerts, certResp.ID)
 
-	// List all certificates
+	// List all certificates (using ListAll to get all pages)
 	fmt.Println("\nListing all certificates...")
-	certificates, err := certService.List(ctx, lbID, lbaas.ListNetworkLoadBalancerRequest{})
+	certificates, err := certService.ListAll(ctx, lbID)
 	if err != nil {
 		log.Printf("Failed to list certificates: %v", err)
 		return
