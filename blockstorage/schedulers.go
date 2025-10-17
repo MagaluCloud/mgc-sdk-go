@@ -104,11 +104,17 @@ type SchedulerListOptions struct {
 	Expand []ExpandSchedulers
 }
 
+// SchedulerFilterOptions provides filtering options for ListAll (without pagination)
+type SchedulerFilterOptions struct {
+	Sort   *string
+	Expand []ExpandSchedulers
+}
+
 // SchedulerService provides operations for managing volume schedulers.
 // This interface allows creating, listing, retrieving, and managing schedulers.
 type SchedulerService interface {
 	List(ctx context.Context, opts SchedulerListOptions) (*SchedulerListResponse, error)
-	ListAll(ctx context.Context, expand []ExpandSchedulers) ([]SchedulerResponse, error)
+	ListAll(ctx context.Context, filterOpts SchedulerFilterOptions) ([]SchedulerResponse, error)
 	Create(ctx context.Context, req SchedulerPayload) (string, error)
 	Get(ctx context.Context, id string, expand []ExpandSchedulers) (*SchedulerResponse, error)
 	Delete(ctx context.Context, id string) error
@@ -162,8 +168,8 @@ func (s *schedulerService) List(ctx context.Context, opts SchedulerListOptions) 
 	return result, nil
 }
 
-// ListAll retrieves all schedulers by fetching all pages
-func (s *schedulerService) ListAll(ctx context.Context, expand []ExpandSchedulers) ([]SchedulerResponse, error) {
+// ListAll retrieves all schedulers by fetching all pages with optional filtering
+func (s *schedulerService) ListAll(ctx context.Context, filterOpts SchedulerFilterOptions) ([]SchedulerResponse, error) {
 	var allSchedulers []SchedulerResponse
 	offset := 0
 	limit := 50
@@ -174,7 +180,8 @@ func (s *schedulerService) ListAll(ctx context.Context, expand []ExpandScheduler
 		opts := SchedulerListOptions{
 			Offset: &currentOffset,
 			Limit:  &currentLimit,
-			Expand: expand,
+			Sort:   filterOpts.Sort,
+			Expand: filterOpts.Expand,
 		}
 
 		resp, err := s.List(ctx, opts)

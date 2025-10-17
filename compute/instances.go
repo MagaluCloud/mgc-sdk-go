@@ -13,11 +13,14 @@ import (
 	mgc_http "github.com/MagaluCloud/mgc-sdk-go/internal/http"
 )
 
+// InstanceExpand represents the expand options for instance responses.
+type InstanceExpand string
+
 // Constants for expanding related resources in instance responses.
 const (
-	InstanceImageExpand       = "image"
-	InstanceMachineTypeExpand = "machine-type"
-	InstanceNetworkExpand     = "network"
+	InstanceImageExpand       InstanceExpand = "image"
+	InstanceMachineTypeExpand InstanceExpand = "machine-type"
+	InstanceNetworkExpand     InstanceExpand = "network"
 )
 
 // Constants for API version headers.
@@ -28,6 +31,7 @@ const (
 
 // ListInstancesResponse represents the response from listing instances.
 type ListInstancesResponse struct {
+	Meta      Meta       `json:"meta"`
 	Instances []Instance `json:"instances"`
 }
 
@@ -170,9 +174,10 @@ type InitLogResponse struct {
 
 // InstanceService provides operations for managing virtual machine instances.
 type InstanceService interface {
-	List(ctx context.Context, opts ListOptions) ([]Instance, error)
+	List(ctx context.Context, opts ListOptions) (*ListInstancesResponse, error)
+	ListAll(ctx context.Context, opts InstanceFilterOptions) ([]Instance, error)
 	Create(ctx context.Context, req CreateRequest) (string, error)
-	Get(ctx context.Context, id string, expand []string) (*Instance, error)
+	Get(ctx context.Context, id string, expand []InstanceExpand) (*Instance, error)
 	Delete(ctx context.Context, id string, deletePublicIP bool) error
 	Rename(ctx context.Context, id string, newName string) error
 	Retype(ctx context.Context, id string, req RetypeRequest) error
@@ -195,14 +200,21 @@ type ListOptions struct {
 	Limit  *int
 	Offset *int
 	Sort   *string
-	Expand []string
+	Expand []InstanceExpand
 	Name   *string
 }
 
-// List retrieves all instances.
+// InstanceFilterOptions defines filtering options for ListAll (without pagination)
+type InstanceFilterOptions struct {
+	Sort   *string
+	Expand []InstanceExpand
+	Name   *string
+}
+
+// List retrieves instances with pagination metadata.
 // This method makes an HTTP request to get the list of instances
 // and applies the filters specified in the options.
-func (s *instanceService) List(ctx context.Context, opts ListOptions) ([]Instance, error) {
+func (s *instanceService) List(ctx context.Context, opts ListOptions) (*ListInstancesResponse, error) {
 	req, err := s.client.newRequest(ctx, http.MethodGet, "/v1/instances", nil)
 	if err != nil {
 		return nil, err
@@ -222,7 +234,11 @@ func (s *instanceService) List(ctx context.Context, opts ListOptions) ([]Instanc
 		q.Add("_sort", *opts.Sort)
 	}
 	if len(opts.Expand) > 0 {
-		q.Add("expand", strings.Join(opts.Expand, ","))
+		expandStrs := make([]string, len(opts.Expand))
+		for i, e := range opts.Expand {
+			expandStrs[i] = string(e)
+		}
+		q.Add("expand", strings.Join(expandStrs, ","))
 	}
 	if opts.Name != nil {
 		q.Add("name", *opts.Name)
@@ -230,15 +246,49 @@ func (s *instanceService) List(ctx context.Context, opts ListOptions) ([]Instanc
 
 	req.URL.RawQuery = q.Encode()
 
-	var response struct {
-		Instances []Instance `json:"instances"`
-	}
+	response := &ListInstancesResponse{}
 
-	resp, err := mgc_http.Do(s.client.GetConfig(), ctx, req, &response)
+	_, err = mgc_http.Do(s.client.GetConfig(), ctx, req, response)
 	if err != nil {
 		return nil, err
 	}
-	return resp.Instances, nil
+	return response, nil
+}
+
+// ListAll retrieves all instances across all pages with optional filtering.
+// This method automatically handles pagination and returns all results.
+func (s *instanceService) ListAll(ctx context.Context, opts InstanceFilterOptions) ([]Instance, error) {
+	var allInstances []Instance
+	offset := 0
+	limit := 50
+
+	for {
+		currentOffset := offset
+		currentLimit := limit
+		listOpts := ListOptions{
+			Offset: &currentOffset,
+			Limit:  &currentLimit,
+			Sort:   opts.Sort,
+			Expand: opts.Expand,
+			Name:   opts.Name,
+		}
+
+		response, err := s.List(ctx, listOpts)
+		if err != nil {
+			return nil, err
+		}
+
+		allInstances = append(allInstances, response.Instances...)
+
+		// Check if we've retrieved all results
+		if len(response.Instances) < limit {
+			break
+		}
+
+		offset += limit
+	}
+
+	return allInstances, nil
 }
 
 // Create creates a new instance.
@@ -263,7 +313,7 @@ func (s *instanceService) Create(ctx context.Context, createReq CreateRequest) (
 // Get retrieves a specific instance.
 // This method makes an HTTP request to get detailed information about an instance
 // and optionally expands related resources.
-func (s *instanceService) Get(ctx context.Context, id string, expand []string) (*Instance, error) {
+func (s *instanceService) Get(ctx context.Context, id string, expand []InstanceExpand) (*Instance, error) {
 	req, err := s.client.newRequest(ctx, http.MethodGet, fmt.Sprintf("/v1/instances/%s", id), nil)
 	if err != nil {
 		return nil, err
@@ -274,7 +324,11 @@ func (s *instanceService) Get(ctx context.Context, id string, expand []string) (
 
 	if len(expand) > 0 {
 		q := req.URL.Query()
-		q.Add("expand", strings.Join(expand, ","))
+		expandStrs := make([]string, len(expand))
+		for i, e := range expand {
+			expandStrs[i] = string(e)
+		}
+		q.Add("expand", strings.Join(expandStrs, ","))
 		req.URL.RawQuery = q.Encode()
 	}
 

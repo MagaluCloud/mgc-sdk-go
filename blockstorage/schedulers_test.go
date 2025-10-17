@@ -823,7 +823,7 @@ func TestSchedulerService_ListAll(t *testing.T) {
 			defer server.Close()
 
 			client := testSchedulerClient(server.URL)
-			schedulers, err := client.ListAll(context.Background(), nil)
+			schedulers, err := client.ListAll(context.Background(), SchedulerFilterOptions{})
 
 			if tt.wantErr {
 				if err == nil {
@@ -908,7 +908,9 @@ func TestSchedulerService_ListAll_WithExpand(t *testing.T) {
 	defer server.Close()
 
 	client := testSchedulerClient(server.URL)
-	schedulers, err := client.ListAll(context.Background(), []ExpandSchedulers{ExpandSchedulersVolume})
+	schedulers, err := client.ListAll(context.Background(), SchedulerFilterOptions{
+		Expand: []ExpandSchedulers{ExpandSchedulersVolume},
+	})
 
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
@@ -932,7 +934,7 @@ func TestSchedulerService_ListAll_NewRequestError(t *testing.T) {
 
 	client := testSchedulerClient("http://dummy-url")
 
-	_, err := client.ListAll(ctx, nil)
+	_, err := client.ListAll(ctx, SchedulerFilterOptions{})
 
 	if err == nil {
 		t.Error("expected error due to canceled context, got nil")

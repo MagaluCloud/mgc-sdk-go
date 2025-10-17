@@ -34,7 +34,8 @@ type (
 type (
 	// InstanceTypeService provides methods for managing database instance types
 	InstanceTypeService interface {
-		List(ctx context.Context, opts ListInstanceTypeOptions) ([]InstanceType, error)
+		List(ctx context.Context, opts ListInstanceTypeOptions) (*ListInstanceTypesResponse, error)
+		ListAll(ctx context.Context, filterOpts InstanceTypeFilterOptions) ([]InstanceType, error)
 		Get(ctx context.Context, id string) (*InstanceType, error)
 	}
 
@@ -51,10 +52,17 @@ type (
 		EngineID          *string `json:"engine_id,omitempty"`
 		CompatibleProduct *string `json:"compatible_product,omitempty"`
 	}
+
+	// InstanceTypeFilterOptions provides filtering options for ListAll (without pagination)
+	InstanceTypeFilterOptions struct {
+		Status            *string `json:"status,omitempty"`
+		EngineID          *string `json:"engine_id,omitempty"`
+		CompatibleProduct *string `json:"compatible_product,omitempty"`
+	}
 )
 
 // List returns all available instance types
-func (s *instanceTypeService) List(ctx context.Context, opts ListInstanceTypeOptions) ([]InstanceType, error) {
+func (s *instanceTypeService) List(ctx context.Context, opts ListInstanceTypeOptions) (*ListInstanceTypesResponse, error) {
 	query := make(url.Values)
 
 	if opts.Offset != nil {
@@ -86,7 +94,41 @@ func (s *instanceTypeService) List(ctx context.Context, opts ListInstanceTypeOpt
 		return nil, err
 	}
 
-	return result.Results, nil
+	return result, nil
+}
+
+// ListAll retrieves all instance types by fetching all pages with optional filtering
+func (s *instanceTypeService) ListAll(ctx context.Context, filterOpts InstanceTypeFilterOptions) ([]InstanceType, error) {
+	var allInstanceTypes []InstanceType
+	offset := 0
+	limit := 50
+
+	for {
+		currentOffset := offset
+		currentLimit := limit
+		opts := ListInstanceTypeOptions{
+			Offset:            &currentOffset,
+			Limit:             &currentLimit,
+			Status:            filterOpts.Status,
+			EngineID:          filterOpts.EngineID,
+			CompatibleProduct: filterOpts.CompatibleProduct,
+		}
+
+		resp, err := s.List(ctx, opts)
+		if err != nil {
+			return nil, err
+		}
+
+		allInstanceTypes = append(allInstanceTypes, resp.Results...)
+
+		if len(resp.Results) < limit {
+			break
+		}
+
+		offset += limit
+	}
+
+	return allInstanceTypes, nil
 }
 
 // Get retrieves detailed information about a specific instance type

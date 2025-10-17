@@ -2,30 +2,28 @@ package main
 
 import (
 	"context"
-	"encoding/base64"
 	"fmt"
 	"log"
 	"os"
-	"time"
 
 	"github.com/MagaluCloud/mgc-sdk-go/client"
 	"github.com/MagaluCloud/mgc-sdk-go/compute"
-	"github.com/MagaluCloud/mgc-sdk-go/helpers"
 )
 
 func main() {
 	ExampleListMachineTypes()
 	ExampleListImages()
-	id := "" // comment and uncomment to run the examples
-	// id := ExampleCreateInstance() // uncomment to create a new instance
-	// id := ExampleListInstances() // uncomment to list instances and get the id of the last instance
-	time.Sleep(5 * time.Second)
-	ExampleGetInstance(id)
-	ExampleInitLog(id)
-	ExampleRenameAndRetypeInstance(id)
-	ExampleDeleteInstance(id)
+	// id := "" // comment and uncomment to run the examples
+	// // id := ExampleCreateInstance() // uncomment to create a new instance
+	// // id := ExampleListInstances() // uncomment to list instances and get the id of the last instance
+	// time.Sleep(5 * time.Second)
+	// ExampleGetInstance(id)
+	// ExampleInitLog(id)
+	// ExampleRenameAndRetypeInstance(id)
+	// ExampleDeleteInstance(id)
 }
 
+/*
 func ExampleRenameAndRetypeInstance(id string) {
 	// Create a new client
 	apiToken := os.Getenv("MGC_API_TOKEN")
@@ -52,7 +50,9 @@ func ExampleRenameAndRetypeInstance(id string) {
 	}
 	fmt.Println("Instance machine type changed successfully")
 }
+*/
 
+/*
 func ExampleListInstances() string {
 	// Create a new client
 	apiToken := os.Getenv("MGC_API_TOKEN")
@@ -63,10 +63,10 @@ func ExampleListInstances() string {
 	computeClient := compute.New(c)
 
 	// List instances with pagination and sorting
-	instances, err := computeClient.Instances().List(context.Background(), compute.ListOptions{
+	instancesResp, err := computeClient.Instances().List(context.Background(), compute.ListOptions{
 		Limit:  helpers.IntPtr(10),
 		Offset: helpers.IntPtr(0),
-		Expand: []string{compute.InstanceMachineTypeExpand, compute.InstanceImageExpand, compute.InstanceNetworkExpand},
+		Expand: []compute.InstanceExpand{compute.InstanceMachineTypeExpand, compute.InstanceImageExpand, compute.InstanceNetworkExpand},
 	})
 
 	if err != nil {
@@ -74,7 +74,7 @@ func ExampleListInstances() string {
 	}
 	result := ""
 	// Print instance details
-	for _, instance := range instances {
+	for _, instance := range instancesResp.Instances {
 		result = instance.ID
 		fmt.Printf("Instance: %s (ID: %s)\n", *instance.Name, instance.ID)
 		fmt.Printf("  Machine Type: %s\n", *instance.MachineType.Name)
@@ -108,7 +108,9 @@ func ExampleListInstances() string {
 	}
 	return result
 }
+*/
 
+/*
 func ExampleCreateInstance() string {
 	apiToken := os.Getenv("MGC_API_TOKEN")
 	if apiToken == "" {
@@ -145,7 +147,9 @@ func ExampleCreateInstance() string {
 
 	return id
 }
+*/
 
+/*
 func ExampleGetInstance(id string) {
 	apiToken := os.Getenv("MGC_API_TOKEN")
 	if apiToken == "" {
@@ -156,7 +160,7 @@ func ExampleGetInstance(id string) {
 	ctx := context.Background()
 
 	// Get instance details
-	instance, err := computeClient.Instances().Get(ctx, id, []string{compute.InstanceNetworkExpand, compute.InstanceMachineTypeExpand, compute.InstanceImageExpand})
+	instance, err := computeClient.Instances().Get(ctx, id, []compute.InstanceExpand{compute.InstanceNetworkExpand, compute.InstanceMachineTypeExpand, compute.InstanceImageExpand})
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -193,7 +197,9 @@ func ExampleGetInstance(id string) {
 		}
 	}
 }
+*/
 
+/*
 func ExampleDeleteInstance(id string) {
 	apiToken := os.Getenv("MGC_API_TOKEN")
 	if apiToken == "" {
@@ -209,6 +215,7 @@ func ExampleDeleteInstance(id string) {
 
 	fmt.Println("Instance deleted successfully")
 }
+*/
 
 func ExampleListMachineTypes() {
 	apiToken := os.Getenv("MGC_API_TOKEN")
@@ -226,7 +233,7 @@ func ExampleListMachineTypes() {
 	}
 
 	// Print machine type details
-	for _, mt := range machineTypes {
+	for _, mt := range machineTypes.InstanceTypes {
 		fmt.Printf("Machine Type: %s (ID: %s)\n", mt.Name, mt.ID)
 		fmt.Printf("  VCPUs: %d\n", mt.VCPUs)
 		fmt.Printf("  RAM: %d MB\n", mt.RAM)
@@ -246,24 +253,24 @@ func ExampleListImages() {
 	computeClient := compute.New(c)
 
 	// List images
-	images, err := computeClient.Images().List(context.Background(), compute.ImageListOptions{})
+	imagesResp, err := computeClient.Images().List(context.Background(), compute.ImageListOptions{})
 	if err != nil {
 		log.Fatal(err)
 	}
-
 	// Print image details
-	for _, img := range images {
-		fmt.Printf("Image: %s (ID: %s)\n", img.Name, img.ID)
-		fmt.Printf("  Status: %s\n", img.Status)
-		fmt.Printf("  Version: %s\n", *img.Version)
-		fmt.Printf("  Platform: %s\n", *img.Platform)
-		fmt.Printf("  Release At: %s\n", *img.ReleaseAt)
-		fmt.Printf("  End Standard Support At: %s\n", *img.EndStandardSupportAt)
-		fmt.Printf("  End Life At: %s\n", *img.EndLifeAt)
-		fmt.Printf("  Minimum Requirements: %d VCPUs, %d RAM, %d Disk\n", img.MinimumRequirements.VCPU, img.MinimumRequirements.RAM, img.MinimumRequirements.Disk)
+	for _, image := range imagesResp.Images {
+		fmt.Printf("Image: %s (ID: %s)\n", image.Name, image.ID)
+		fmt.Printf("  Status: %s\n", image.Status)
+		fmt.Printf("  Version: %s\n", *image.Version)
+		fmt.Printf("  Platform: %s\n", *image.Platform)
+		fmt.Printf("  Release At: %s\n", *image.ReleaseAt)
+		fmt.Printf("  End Standard Support At: %s\n", *image.EndStandardSupportAt)
+		fmt.Printf("  End Life At: %s\n", *image.EndLifeAt)
+		fmt.Printf("  Minimum Requirements: %d VCPUs, %d RAM, %d Disk\n", image.MinimumRequirements.VCPU, image.MinimumRequirements.RAM, image.MinimumRequirements.Disk)
 	}
 }
 
+/*
 func ExampleInitLog(id string) {
 	awaitRunningCompleted(id)
 	apiToken := os.Getenv("MGC_API_TOKEN")
@@ -281,7 +288,9 @@ func ExampleInitLog(id string) {
 
 	fmt.Println("Init Log: ", initLog)
 }
+*/
 
+/*
 func awaitRunningCompleted(id string) {
 	apiToken := os.Getenv("MGC_API_TOKEN")
 	if apiToken == "" {
@@ -291,7 +300,7 @@ func awaitRunningCompleted(id string) {
 	computeClient := compute.New(c)
 	ctx := context.Background()
 
-	instance, err := computeClient.Instances().Get(ctx, id, []string{})
+	instance, err := computeClient.Instances().Get(ctx, id, []compute.InstanceExpand{})
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -304,7 +313,7 @@ func awaitRunningCompleted(id string) {
 			log.Fatal("Instance is not running after 5 minutes")
 		default:
 			time.Sleep(1 * time.Second)
-			instance, err = computeClient.Instances().Get(ctx, id, []string{})
+			instance, err = computeClient.Instances().Get(ctx, id, []compute.InstanceExpand{})
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -317,7 +326,7 @@ func awaitRunningCompleted(id string) {
 			log.Fatal("Instance is not completed after 5 minutes")
 		default:
 			time.Sleep(1 * time.Second)
-			instance, err = computeClient.Instances().Get(ctx, id, []string{})
+			instance, err = computeClient.Instances().Get(ctx, id, []compute.InstanceExpand{})
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -325,3 +334,4 @@ func awaitRunningCompleted(id string) {
 	}
 	fmt.Println("Instance is running")
 }
+*/

@@ -27,6 +27,7 @@ func TestInstanceService_List(t *testing.T) {
 			name: "basic list",
 			opts: ListOptions{},
 			response: `{
+				"meta": {"page": {"offset": 0, "limit": 50, "count": 2, "total": 2}},
 				"instances": [
 					{"id": "inst1", "name": "test1"},
 					{"id": "inst2", "name": "test2"}
@@ -43,6 +44,7 @@ func TestInstanceService_List(t *testing.T) {
 				Offset: intPtr(1),
 			},
 			response: `{
+				"meta": {"page": {"offset": 1, "limit": 1, "count": 1, "total": 2}},
 				"instances": [
 					{"id": "inst2", "name": "test2"}
 				]
@@ -108,8 +110,153 @@ func TestInstanceService_List(t *testing.T) {
 				t.Errorf("List() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if len(got) != tt.want {
-				t.Errorf("List() got %v instances, want %v", len(got), tt.want)
+			if !tt.wantErr && len(got.Instances) != tt.want {
+				t.Errorf("List() got %v instances, want %v", len(got.Instances), tt.want)
+			}
+			if !tt.wantErr && got.Meta.Page.Total < 0 {
+				t.Errorf("List() missing metadata")
+			}
+		})
+	}
+}
+
+func TestInstanceService_ListAll(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name       string
+		opts       InstanceFilterOptions
+		pages      []string
+		statusCode int
+		wantCount  int
+		wantErr    bool
+	}{
+		{
+			name: "single page",
+			pages: []string{
+				`{
+					"meta": {"page": {"offset": 0, "limit": 50, "count": 2, "total": 2}},
+					"instances": [
+						{"id": "inst1", "name": "test1"},
+						{"id": "inst2", "name": "test2"}
+					]
+				}`,
+			},
+			statusCode: http.StatusOK,
+			wantCount:  2,
+			wantErr:    false,
+		},
+		{
+			name: "multiple pages",
+			pages: []string{
+				func() string {
+					result := `{"meta": {"page": {"offset": 0, "limit": 50, "count": 50, "total": 125}}, "instances": [`
+					for i := 0; i < 50; i++ {
+						if i > 0 {
+							result += ","
+						}
+						result += fmt.Sprintf(`{"id": "inst%d", "name": "test%d"}`, i+1, i+1)
+					}
+					result += `]}`
+					return result
+				}(),
+				func() string {
+					result := `{"meta": {"page": {"offset": 50, "limit": 50, "count": 50, "total": 125}}, "instances": [`
+					for i := 0; i < 50; i++ {
+						if i > 0 {
+							result += ","
+						}
+						result += fmt.Sprintf(`{"id": "inst%d", "name": "test%d"}`, i+51, i+51)
+					}
+					result += `]}`
+					return result
+				}(),
+				func() string {
+					result := `{"meta": {"page": {"offset": 100, "limit": 50, "count": 25, "total": 125}}, "instances": [`
+					for i := 0; i < 25; i++ {
+						if i > 0 {
+							result += ","
+						}
+						result += fmt.Sprintf(`{"id": "inst%d", "name": "test%d"}`, i+101, i+101)
+					}
+					result += `]}`
+					return result
+				}(),
+			},
+			statusCode: http.StatusOK,
+			wantCount:  125,
+			wantErr:    false,
+		},
+		{
+			name: "empty results",
+			pages: []string{
+				`{
+					"meta": {"page": {"offset": 0, "limit": 50, "count": 0, "total": 0}},
+					"instances": []
+				}`,
+			},
+			statusCode: http.StatusOK,
+			wantCount:  0,
+			wantErr:    false,
+		},
+		{
+			name: "with filters",
+			opts: InstanceFilterOptions{
+				Name: strPtr("test-instance"),
+			},
+			pages: []string{
+				`{
+					"meta": {"page": {"offset": 0, "limit": 50, "count": 1, "total": 1}},
+					"instances": [
+						{"id": "inst1", "name": "test-instance"}
+					]
+				}`,
+			},
+			statusCode: http.StatusOK,
+			wantCount:  1,
+			wantErr:    false,
+		},
+		{
+			name:       "server error",
+			pages:      []string{`{"error": "internal server error"}`},
+			statusCode: http.StatusInternalServerError,
+			wantErr:    true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				// Determine which page to return based on offset
+				offset := r.URL.Query().Get("_offset")
+				currentPage := 0
+				if offset != "" {
+					var err error
+					currentPage, err = strconv.Atoi(offset)
+					if err == nil {
+						currentPage = currentPage / 50
+					}
+				}
+
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(tt.statusCode)
+				if currentPage < len(tt.pages) {
+					w.Write([]byte(tt.pages[currentPage]))
+				} else {
+					w.Write([]byte(`{"meta": {"page": {"offset": 0, "limit": 50, "count": 0, "total": 0}}, "instances": []}`))
+				}
+			}))
+			defer server.Close()
+
+			client := testClient(server.URL)
+			instances, err := client.Instances().ListAll(context.Background(), tt.opts)
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ListAll() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			if !tt.wantErr && len(instances) != tt.wantCount {
+				t.Errorf("ListAll() got %v instances, want %v", len(instances), tt.wantCount)
 			}
 		})
 	}
@@ -210,7 +357,7 @@ func TestInstanceService_Get(t *testing.T) {
 	tests := []struct {
 		name       string
 		id         string
-		expand     []string
+		expand     []InstanceExpand
 		response   string
 		statusCode int
 		wantErr    bool
@@ -242,7 +389,7 @@ func TestInstanceService_Get(t *testing.T) {
 		{
 			name:   "with expansion",
 			id:     "inst1",
-			expand: []string{"network", "storage"},
+			expand: []InstanceExpand{InstanceNetworkExpand, "storage"},
 			response: `{
 				"id": "inst1",
 				"name": "test-vm",
@@ -652,9 +799,10 @@ func TestInstanceService_ListWithExpand(t *testing.T) {
 		{
 			name: "single expand",
 			opts: ListOptions{
-				Expand: []string{"network"},
+				Expand: []InstanceExpand{InstanceNetworkExpand},
 			},
 			response: `{
+				"meta": {"page": {"offset": 0, "limit": 50, "count": 1, "total": 1}},
 				"instances": [{
 					"id": "inst1",
 					"name": "test1",
@@ -675,7 +823,7 @@ func TestInstanceService_ListWithExpand(t *testing.T) {
 				switch got {
 				case "network":
 					// single expand ok
-				case "network,storage,machineType":
+				case "network,storage,machine-type":
 					// multiple expand ok
 				case "invalid":
 					// invalid expand ok
@@ -687,9 +835,10 @@ func TestInstanceService_ListWithExpand(t *testing.T) {
 		{
 			name: "multiple expand",
 			opts: ListOptions{
-				Expand: []string{"network", "storage", "machineType"},
+				Expand: []InstanceExpand{InstanceNetworkExpand, "storage", InstanceMachineTypeExpand},
 			},
 			response: `{
+				"meta": {"page": {"offset": 0, "limit": 50, "count": 1, "total": 1}},
 				"instances": [{
 					"id": "inst1",
 					"name": "test1",
@@ -709,7 +858,7 @@ func TestInstanceService_ListWithExpand(t *testing.T) {
 				switch got {
 				case "network":
 					// single expand ok
-				case "network,storage,machineType":
+				case "network,storage,machine-type":
 					// multiple expand ok
 				case "invalid":
 					// invalid expand ok
@@ -721,7 +870,7 @@ func TestInstanceService_ListWithExpand(t *testing.T) {
 		{
 			name: "invalid expand field",
 			opts: ListOptions{
-				Expand: []string{"invalid"},
+				Expand: []InstanceExpand{"invalid"},
 			},
 			response:   `{"error": "invalid expand field: invalid"}`,
 			statusCode: http.StatusBadRequest,
@@ -764,7 +913,7 @@ func TestInstanceService_ListWithExpand(t *testing.T) {
 			if (err != nil) != tt.wantErr {
 				t.Errorf("List() error = %v, wantErr %v", err, tt.wantErr)
 			}
-			if err == nil && len(got) == 0 {
+			if err == nil && len(got.Instances) == 0 {
 				t.Error("List() expected non-empty result")
 			}
 		})
@@ -776,7 +925,7 @@ func TestInstanceService_GetWithExpand(t *testing.T) {
 	tests := []struct {
 		name       string
 		id         string
-		expand     []string
+		expand     []InstanceExpand
 		response   string
 		statusCode int
 		wantErr    bool
@@ -785,7 +934,7 @@ func TestInstanceService_GetWithExpand(t *testing.T) {
 		{
 			name:   "expand network",
 			id:     "inst1",
-			expand: []string{"network"},
+			expand: []InstanceExpand{InstanceNetworkExpand},
 			response: `{
 				"id": "inst1",
 				"name": "test-vm",
@@ -818,7 +967,7 @@ func TestInstanceService_GetWithExpand(t *testing.T) {
 		{
 			name:   "multiple expands",
 			id:     "inst1",
-			expand: []string{"network", "storage"},
+			expand: []InstanceExpand{InstanceNetworkExpand, "storage"},
 			response: `{
 				"id": "inst1",
 				"name": "test-vm",
@@ -848,7 +997,7 @@ func TestInstanceService_GetWithExpand(t *testing.T) {
 		{
 			name:       "empty expand",
 			id:         "inst1",
-			expand:     []string{},
+			expand:     []InstanceExpand{},
 			response:   `{"id": "inst1", "name": "test-vm"}`,
 			statusCode: http.StatusOK,
 			wantErr:    false,
@@ -861,7 +1010,7 @@ func TestInstanceService_GetWithExpand(t *testing.T) {
 		{
 			name:       "invalid expand field",
 			id:         "inst1",
-			expand:     []string{"invalid"},
+			expand:     []InstanceExpand{"invalid"},
 			response:   `{"error": "invalid expand field"}`,
 			statusCode: http.StatusBadRequest,
 			wantErr:    true,

@@ -2,6 +2,7 @@ package dbaas
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -128,8 +129,8 @@ func TestParameterGroupService_List(t *testing.T) {
 				t.Errorf("List() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if len(got) != tt.want {
-				t.Errorf("List() got %v parameter groups, want %v", len(got), tt.want)
+			if !tt.wantErr && len(got.Results) != tt.want {
+				t.Errorf("List() got %v parameter groups, want %v", len(got.Results), tt.want)
 			}
 		})
 	}
@@ -584,4 +585,189 @@ func testClientParamerts(baseURL string) ParameterGroupService {
 		client.WithBaseURL(client.MgcUrl(baseURL)),
 		client.WithHTTPClient(httpClient))
 	return &parameterGroupService{New(core)}
+}
+
+func TestParameterGroupService_List_PaginationMetadata(t *testing.T) {
+	t.Parallel()
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{
+			"meta": {
+				"page": {
+					"offset": 10,
+					"limit": 5,
+					"count": 5,
+					"total": 20,
+					"max_limit": 100
+				},
+				"filters": [
+					{"field": "type", "value": "USER"}
+				]
+			},
+			"results": [
+				{"id": "pg1", "name": "group1", "type": "USER", "engine_id": "eng1"},
+				{"id": "pg2", "name": "group2", "type": "USER", "engine_id": "eng1"}
+			]
+		}`))
+	}))
+	defer server.Close()
+
+	client := testClientParamerts(server.URL)
+	offset := 10
+	limit := 5
+	pgType := ParameterGroupTypeUser
+	result, err := client.List(context.Background(), ListParameterGroupsOptions{
+		Offset: &offset,
+		Limit:  &limit,
+		Type:   &pgType,
+	})
+
+	if err != nil {
+		t.Fatalf("List() error = %v", err)
+	}
+
+	// Validate results
+	if len(result.Results) != 2 {
+		t.Errorf("List() got %d results, want 2", len(result.Results))
+	}
+
+	// Validate pagination metadata
+	if result.Meta.Page.Offset != 10 {
+		t.Errorf("Meta.Page.Offset = %d, want 10", result.Meta.Page.Offset)
+	}
+	if result.Meta.Page.Limit != 5 {
+		t.Errorf("Meta.Page.Limit = %d, want 5", result.Meta.Page.Limit)
+	}
+	if result.Meta.Page.Count != 5 {
+		t.Errorf("Meta.Page.Count = %d, want 5", result.Meta.Page.Count)
+	}
+	if result.Meta.Page.Total != 20 {
+		t.Errorf("Meta.Page.Total = %d, want 20", result.Meta.Page.Total)
+	}
+	if result.Meta.Page.MaxLimit != 100 {
+		t.Errorf("Meta.Page.MaxLimit = %d, want 100", result.Meta.Page.MaxLimit)
+	}
+
+	// Validate filters metadata
+	if len(result.Meta.Filters) != 1 {
+		t.Errorf("Meta.Filters length = %d, want 1", len(result.Meta.Filters))
+	}
+}
+
+func TestParameterGroupService_ListAll(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name       string
+		filterOpts ParameterGroupFilterOptions
+		pages      []string
+		wantCount  int
+		wantErr    bool
+	}{
+		{
+			name:       "single page",
+			filterOpts: ParameterGroupFilterOptions{},
+			pages: []string{
+				`{
+					"meta": {"page": {"offset": 0, "limit": 50, "count": 3, "total": 3}},
+					"results": [
+						{"id": "pg1", "name": "group1", "type": "USER", "engine_id": "eng1"},
+						{"id": "pg2", "name": "group2", "type": "SYSTEM", "engine_id": "eng1"},
+						{"id": "pg3", "name": "group3", "type": "USER", "engine_id": "eng2"}
+					]
+				}`,
+			},
+			wantCount: 3,
+		},
+		{
+			name: "multiple pages",
+			filterOpts: ParameterGroupFilterOptions{
+				Type: paramGroupTypePtr(ParameterGroupTypeUser),
+			},
+			pages: []string{
+				func() string {
+					results := `[`
+					for i := 0; i < 50; i++ {
+						if i > 0 {
+							results += ","
+						}
+						results += `{"id": "pg` + fmt.Sprintf("%d", i) + `", "name": "group` + fmt.Sprintf("%d", i) + `", "type": "USER", "engine_id": "eng1"}`
+					}
+					results += `]`
+					return `{
+						"meta": {"page": {"offset": 0, "limit": 50, "count": 50, "total": 60}},
+						"results": ` + results + `
+					}`
+				}(),
+				`{
+					"meta": {"page": {"offset": 50, "limit": 50, "count": 10, "total": 60}},
+					"results": [
+						{"id": "pg50", "name": "group50", "type": "USER", "engine_id": "eng1"},
+						{"id": "pg51", "name": "group51", "type": "USER", "engine_id": "eng1"},
+						{"id": "pg52", "name": "group52", "type": "USER", "engine_id": "eng1"},
+						{"id": "pg53", "name": "group53", "type": "USER", "engine_id": "eng1"},
+						{"id": "pg54", "name": "group54", "type": "USER", "engine_id": "eng1"},
+						{"id": "pg55", "name": "group55", "type": "USER", "engine_id": "eng1"},
+						{"id": "pg56", "name": "group56", "type": "USER", "engine_id": "eng1"},
+						{"id": "pg57", "name": "group57", "type": "USER", "engine_id": "eng1"},
+						{"id": "pg58", "name": "group58", "type": "USER", "engine_id": "eng1"},
+						{"id": "pg59", "name": "group59", "type": "USER", "engine_id": "eng1"}
+					]
+				}`,
+			},
+			wantCount: 60,
+		},
+		{
+			name: "with engine filter",
+			filterOpts: ParameterGroupFilterOptions{
+				EngineID: helpers.StrPtr("eng2"),
+			},
+			pages: []string{
+				`{
+					"meta": {"page": {"offset": 0, "limit": 50, "count": 1, "total": 1}},
+					"results": [
+						{"id": "pg1", "name": "group1", "type": "USER", "engine_id": "eng2"}
+					]
+				}`,
+			},
+			wantCount: 1,
+		},
+		{
+			name:       "empty result",
+			filterOpts: ParameterGroupFilterOptions{},
+			pages: []string{
+				`{
+					"meta": {"page": {"offset": 0, "limit": 50, "count": 0, "total": 0}},
+					"results": []
+				}`,
+			},
+			wantCount: 0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			requestCount := 0
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusOK)
+				if requestCount < len(tt.pages) {
+					w.Write([]byte(tt.pages[requestCount]))
+					requestCount++
+				} else {
+					w.Write([]byte(`{"meta": {"page": {"offset": 0, "limit": 50, "count": 0, "total": 0}}, "results": []}`))
+				}
+			}))
+			defer server.Close()
+
+			client := testClientParamerts(server.URL)
+			got, err := client.ListAll(context.Background(), tt.filterOpts)
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("ListAll() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if !tt.wantErr && len(got) != tt.wantCount {
+				t.Errorf("ListAll() got %d parameter groups, want %d", len(got), tt.wantCount)
+			}
+		})
+	}
 }

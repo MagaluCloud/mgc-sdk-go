@@ -46,9 +46,15 @@ type ListParametersOptions struct {
 	Limit            *int
 }
 
+// ParameterFilterOptions provides filtering options for ListAll (without pagination)
+type ParameterFilterOptions struct {
+	ParameterGroupID string
+}
+
 // ParameterService provides methods for managing parameters within parameter groups
 type ParameterService interface {
-	List(ctx context.Context, opts ListParametersOptions) ([]ParameterDetailResponse, error)
+	List(ctx context.Context, opts ListParametersOptions) (*ParametersResponse, error)
+	ListAll(ctx context.Context, filterOpts ParameterFilterOptions) ([]ParameterDetailResponse, error)
 	Create(ctx context.Context, groupID string, req ParameterCreateRequest) (*ParameterResponse, error)
 	Update(ctx context.Context, groupID, parameterID string, req ParameterUpdateRequest) (*ParameterDetailResponse, error)
 	Delete(ctx context.Context, groupID, parameterID string) error
@@ -60,7 +66,7 @@ type parameterService struct {
 }
 
 // List returns a list of parameters within a parameter group
-func (s *parameterService) List(ctx context.Context, opts ListParametersOptions) ([]ParameterDetailResponse, error) {
+func (s *parameterService) List(ctx context.Context, opts ListParametersOptions) (*ParametersResponse, error) {
 	q := make(url.Values)
 	if opts.Offset != nil {
 		q.Set("_offset", strconv.Itoa(*opts.Offset))
@@ -80,7 +86,39 @@ func (s *parameterService) List(ctx context.Context, opts ListParametersOptions)
 	if err != nil {
 		return nil, err
 	}
-	return resp.Results, nil
+	return resp, nil
+}
+
+// ListAll retrieves all parameters within a parameter group by fetching all pages
+func (s *parameterService) ListAll(ctx context.Context, filterOpts ParameterFilterOptions) ([]ParameterDetailResponse, error) {
+	var allParameters []ParameterDetailResponse
+	offset := 0
+	limit := 50
+
+	for {
+		currentOffset := offset
+		currentLimit := limit
+		opts := ListParametersOptions{
+			ParameterGroupID: filterOpts.ParameterGroupID,
+			Offset:           &currentOffset,
+			Limit:            &currentLimit,
+		}
+
+		resp, err := s.List(ctx, opts)
+		if err != nil {
+			return nil, err
+		}
+
+		allParameters = append(allParameters, resp.Results...)
+
+		if len(resp.Results) < limit {
+			break
+		}
+
+		offset += limit
+	}
+
+	return allParameters, nil
 }
 
 // Create creates a new parameter within a parameter group

@@ -11,6 +11,27 @@ import (
 	mgc_http "github.com/MagaluCloud/mgc-sdk-go/internal/http"
 )
 
+// FilterMetadata represents a filter applied to a list request
+type FilterMetadata struct {
+	Field string `json:"field"`
+	Value string `json:"value"`
+}
+
+// Metadata represents pagination metadata
+type Metadata struct {
+	Filters []FilterMetadata `json:"filters"`
+	Page    PageMetadata     `json:"page"`
+}
+
+// PageMetadata contains pagination information
+type PageMetadata struct {
+	Offset   int `json:"offset"`
+	Limit    int `json:"limit"`
+	Count    int `json:"count"`
+	Total    int `json:"total"`
+	MaxLimit int `json:"max_limit"`
+}
+
 // ClusterStatus represents the possible states of a cluster
 type ClusterStatus string
 
@@ -43,11 +64,24 @@ type (
 		ParameterGroupID *string
 	}
 
+	// ClusterFilterOptions provides filtering options for ListAll (without pagination)
+	ClusterFilterOptions struct {
+		Status           *ClusterStatus
+		EngineID         *string
+		VolumeSize       *int
+		VolumeSizeGt     *int
+		VolumeSizeGte    *int
+		VolumeSizeLt     *int
+		VolumeSizeLte    *int
+		ParameterGroupID *string
+	}
+
 	// AddressPurpose represents the network address purpose on a cluster
 	AddressPurpose string
 
 	// ClustersResponse represents the response when listing clusters
 	ClustersResponse struct {
+		Meta    Metadata                `json:"meta"`
 		Results []ClusterDetailResponse `json:"results"`
 	}
 
@@ -129,7 +163,8 @@ type (
 
 // ClusterService provides methods for managing database clusters
 type ClusterService interface {
-	List(ctx context.Context, opts ListClustersOptions) ([]ClusterDetailResponse, error)
+	List(ctx context.Context, opts ListClustersOptions) (*ClustersResponse, error)
+	ListAll(ctx context.Context, filterOpts ClusterFilterOptions) ([]ClusterDetailResponse, error)
 	Create(ctx context.Context, req ClusterCreateRequest) (*ClusterResponse, error)
 	Get(ctx context.Context, ID string) (*ClusterDetailResponse, error)
 	Update(ctx context.Context, ID string, req ClusterUpdateRequest) (*ClusterDetailResponse, error)
@@ -147,8 +182,8 @@ type clusterService struct {
 const v2ClustersPath = "/v2/clusters"
 const errIDCannotBeEmpty = "ID cannot be empty"
 
-// List implements the ClusterService interface
-func (s *clusterService) List(ctx context.Context, opts ListClustersOptions) ([]ClusterDetailResponse, error) {
+// List implements the ClusterService interface and returns a paginated list of clusters
+func (s *clusterService) List(ctx context.Context, opts ListClustersOptions) (*ClustersResponse, error) {
 	query := make(url.Values)
 
 	if opts.Offset != nil {
@@ -195,7 +230,46 @@ func (s *clusterService) List(ctx context.Context, opts ListClustersOptions) ([]
 		return nil, err
 	}
 
-	return result.Results, nil
+	return result, nil
+}
+
+// ListAll retrieves all clusters by fetching all pages with optional filtering
+func (s *clusterService) ListAll(ctx context.Context, filterOpts ClusterFilterOptions) ([]ClusterDetailResponse, error) {
+	var allClusters []ClusterDetailResponse
+	offset := 0
+	limit := 50
+
+	for {
+		currentOffset := offset
+		currentLimit := limit
+		opts := ListClustersOptions{
+			Offset:           &currentOffset,
+			Limit:            &currentLimit,
+			Status:           filterOpts.Status,
+			EngineID:         filterOpts.EngineID,
+			VolumeSize:       filterOpts.VolumeSize,
+			VolumeSizeGt:     filterOpts.VolumeSizeGt,
+			VolumeSizeGte:    filterOpts.VolumeSizeGte,
+			VolumeSizeLt:     filterOpts.VolumeSizeLt,
+			VolumeSizeLte:    filterOpts.VolumeSizeLte,
+			ParameterGroupID: filterOpts.ParameterGroupID,
+		}
+
+		resp, err := s.List(ctx, opts)
+		if err != nil {
+			return nil, err
+		}
+
+		allClusters = append(allClusters, resp.Results...)
+
+		if len(resp.Results) < limit {
+			break
+		}
+
+		offset += limit
+	}
+
+	return allClusters, nil
 }
 
 // Create implements the ClusterService interface

@@ -93,20 +93,26 @@ const (
 	SnapshotStatusReserved           SnapshotStatusV1 = "reserved"
 )
 
-// ListOptions contains options for listing volumes.
+// SnaphotListOptions contains options for listing snapshots.
 // All fields are optional and allow controlling pagination and expansion.
 type SnaphotListOptions struct {
 	Limit  *int
 	Offset *int
 	Sort   *string
-	Expand []SnapshotExpand
+	Expand []string
+}
+
+// SnapshotFilterOptions provides filtering options for ListAll (without pagination)
+type SnapshotFilterOptions struct {
+	Sort   *string
+	Expand []string
 }
 
 // SnapshotService provides operations for managing volume snapshots.
 // This interface allows creating, listing, retrieving, and managing snapshots.
 type SnapshotService interface {
 	List(ctx context.Context, opts SnaphotListOptions) (*ListSnapshotsResponse, error)
-	ListAll(ctx context.Context, expand []string) ([]Snapshot, error)
+	ListAll(ctx context.Context, filterOpts SnapshotFilterOptions) ([]Snapshot, error)
 	Create(ctx context.Context, req CreateSnapshotRequest) (string, error)
 	Get(ctx context.Context, id string, expand []string) (*Snapshot, error)
 	Delete(ctx context.Context, id string) error
@@ -155,8 +161,8 @@ func (s *snapshotService) List(ctx context.Context, opts SnaphotListOptions) (*L
 	return result, nil
 }
 
-// ListAll retrieves all snapshots by fetching all pages
-func (s *snapshotService) ListAll(ctx context.Context, expand []string) ([]Snapshot, error) {
+// ListAll retrieves all snapshots by fetching all pages with optional filtering
+func (s *snapshotService) ListAll(ctx context.Context, filterOpts SnapshotFilterOptions) ([]Snapshot, error) {
 	var allSnapshots []Snapshot
 	offset := 0
 	limit := 50
@@ -167,7 +173,8 @@ func (s *snapshotService) ListAll(ctx context.Context, expand []string) ([]Snaps
 		opts := SnaphotListOptions{
 			Offset: &currentOffset,
 			Limit:  &currentLimit,
-			Expand: expand,
+			Sort:   filterOpts.Sort,
+			Expand: filterOpts.Expand,
 		}
 
 		resp, err := s.List(ctx, opts)
@@ -209,7 +216,7 @@ func (s *snapshotService) Create(ctx context.Context, req CreateSnapshotRequest)
 // Get retrieves a specific snapshot.
 // This method makes an HTTP request to get detailed information about a snapshot
 // and optionally expands related resources.
-func (s *snapshotService) Get(ctx context.Context, id string, expand []string) (*Snapshot, error) {
+func (s *snapshotService) Get(ctx context.Context, id string, expand []SnapshotExpand) (*Snapshot, error) {
 	path := fmt.Sprintf("/v1/snapshots/%s", id)
 	if len(expand) > 0 {
 		path += "?expand=" + strings.Join(expand, ",")

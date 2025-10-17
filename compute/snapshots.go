@@ -11,18 +11,22 @@ import (
 	mgc_http "github.com/MagaluCloud/mgc-sdk-go/internal/http"
 )
 
+// SnapshotExpand represents the expand options for snapshot responses.
+type SnapshotExpand string
+
 // Constants for expanding related resources in snapshot responses.
 const (
 	// SnapshotImageExpand is used to include image information in snapshot responses
-	SnapshotImageExpand = "image"
+	SnapshotImageExpand SnapshotExpand = "image"
 	// SnapshotMachineTypeExpand is used to include machine type information in snapshot responses
-	SnapshotMachineTypeExpand = "machine-type"
+	SnapshotMachineTypeExpand SnapshotExpand = "machine-type"
 )
 
 // ListSnapshotsResponse represents the response from listing snapshots.
-// This structure encapsulates the API response format for snapshots.
+// This structure encapsulates the API response format for snapshots with pagination metadata.
 type ListSnapshotsResponse struct {
 	Snapshots []Snapshot `json:"snapshots"`
+	Meta      Meta       `json:"meta"`
 }
 
 // Snapshot represents an instance snapshot.
@@ -67,12 +71,27 @@ type CopySnapshotRequest struct {
 	DestinationRegion string `json:"destination_region"`
 }
 
+// SnapshotListOptions defines the parameters for filtering and pagination of snapshot lists.
+type SnapshotListOptions struct {
+	Limit  *int
+	Offset *int
+	Sort   *string
+	Expand []SnapshotExpand
+}
+
+// SnapshotFilterOptions defines filtering options for ListAll (without pagination).
+type SnapshotFilterOptions struct {
+	Sort   *string
+	Expand []SnapshotExpand
+}
+
 // SnapshotService provides operations for managing snapshots.
 // This interface allows creating, listing, retrieving, and managing instance snapshots.
 type SnapshotService interface {
-	List(ctx context.Context, opts ListOptions) ([]Snapshot, error)
+	List(ctx context.Context, opts SnapshotListOptions) (*ListSnapshotsResponse, error)
+	ListAll(ctx context.Context, opts SnapshotFilterOptions) ([]Snapshot, error)
 	Create(ctx context.Context, req CreateSnapshotRequest) (string, error)
-	Get(ctx context.Context, id string, expand []string) (*Snapshot, error)
+	Get(ctx context.Context, id string, expand []SnapshotExpand) (*Snapshot, error)
 	Delete(ctx context.Context, id string) error
 	Rename(ctx context.Context, id string, newName string) error
 	Restore(ctx context.Context, id string, req RestoreSnapshotRequest) (string, error)
@@ -85,10 +104,10 @@ type snapshotService struct {
 	client *VirtualMachineClient
 }
 
-// List returns a slice of snapshots based on the provided listing options.
+// List retrieves snapshots with pagination metadata.
 // This method makes an HTTP request to get the list of snapshots
 // and applies the filters specified in the options.
-func (s *snapshotService) List(ctx context.Context, opts ListOptions) ([]Snapshot, error) {
+func (s *snapshotService) List(ctx context.Context, opts SnapshotListOptions) (*ListSnapshotsResponse, error) {
 	req, err := s.client.newRequest(ctx, http.MethodGet, "/v1/snapshots", nil)
 	if err != nil {
 		return nil, err
@@ -105,17 +124,56 @@ func (s *snapshotService) List(ctx context.Context, opts ListOptions) ([]Snapsho
 		q.Add("_sort", *opts.Sort)
 	}
 	if len(opts.Expand) > 0 {
-		q.Add("expand", strings.Join(opts.Expand, ","))
+		expandStrs := make([]string, len(opts.Expand))
+		for i, e := range opts.Expand {
+			expandStrs[i] = string(e)
+		}
+		q.Add("expand", strings.Join(expandStrs, ","))
 	}
 	req.URL.RawQuery = q.Encode()
 
-	var response ListSnapshotsResponse
-	resp, err := mgc_http.Do(s.client.GetConfig(), ctx, req, &response)
+	response := &ListSnapshotsResponse{}
+	_, err = mgc_http.Do(s.client.GetConfig(), ctx, req, response)
 	if err != nil {
 		return nil, err
 	}
 
-	return resp.Snapshots, nil
+	return response, nil
+}
+
+// ListAll retrieves all snapshots across all pages with optional filtering.
+// This method automatically handles pagination and returns all results.
+func (s *snapshotService) ListAll(ctx context.Context, opts SnapshotFilterOptions) ([]Snapshot, error) {
+	var allSnapshots []Snapshot
+	offset := 0
+	limit := 50
+
+	for {
+		currentOffset := offset
+		currentLimit := limit
+		listOpts := SnapshotListOptions{
+			Offset: &currentOffset,
+			Limit:  &currentLimit,
+			Sort:   opts.Sort,
+			Expand: opts.Expand,
+		}
+
+		response, err := s.List(ctx, listOpts)
+		if err != nil {
+			return nil, err
+		}
+
+		allSnapshots = append(allSnapshots, response.Snapshots...)
+
+		// Check if we've retrieved all results
+		if len(response.Snapshots) < limit {
+			break
+		}
+
+		offset += limit
+	}
+
+	return allSnapshots, nil
 }
 
 // Create creates a new snapshot from an instance.
@@ -141,7 +199,7 @@ func (s *snapshotService) Create(ctx context.Context, createReq CreateSnapshotRe
 // Get retrieves a specific snapshot.
 // This method makes an HTTP request to get detailed information about a snapshot
 // and optionally expands related resources.
-func (s *snapshotService) Get(ctx context.Context, id string, expand []string) (*Snapshot, error) {
+func (s *snapshotService) Get(ctx context.Context, id string, expand []SnapshotExpand) (*Snapshot, error) {
 	req, err := s.client.newRequest(ctx, http.MethodGet, fmt.Sprintf("/v1/snapshots/%s", id), nil)
 	if err != nil {
 		return nil, err
@@ -149,7 +207,11 @@ func (s *snapshotService) Get(ctx context.Context, id string, expand []string) (
 
 	if len(expand) > 0 {
 		q := req.URL.Query()
-		q.Add("expand", strings.Join(expand, ","))
+		expandStrs := make([]string, len(expand))
+		for i, e := range expand {
+			expandStrs[i] = string(e)
+		}
+		q.Add("expand", strings.Join(expandStrs, ","))
 		req.URL.RawQuery = q.Encode()
 	}
 
