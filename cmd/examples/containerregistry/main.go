@@ -61,7 +61,7 @@ func resetPassword(c *client.CoreClient) {
 
 func listRegistries(c *client.CoreClient) {
 	containerRegistryClient := containerregistry.New(c)
-	registries, err := containerRegistryClient.Registries().List(context.Background(), containerregistry.ListOptions{
+	registries, err := containerRegistryClient.Registries().List(context.Background(), containerregistry.RegistryListOptions{
 		Limit:  helpers.IntPtr(10),
 		Offset: helpers.IntPtr(0),
 	})
@@ -69,7 +69,7 @@ func listRegistries(c *client.CoreClient) {
 		log.Fatal(err)
 	}
 
-	for _, registry := range registries.Registries {
+	for _, registry := range registries.Results {
 		fmt.Println("Registry: ", registry.Name, "Storage: ", registry.Storage, "CreatedAt: ", registry.CreatedAt, "UpdatedAt: ", registry.UpdatedAt)
 	}
 }
@@ -107,7 +107,7 @@ func deleteRegistry(c *client.CoreClient, id string) {
 
 func listRepositories(c *client.CoreClient, id string) string {
 	containerRegistryClient := containerregistry.New(c)
-	repositories, err := containerRegistryClient.Repositories().List(context.Background(), id, containerregistry.ListOptions{
+	repositories, err := containerRegistryClient.Repositories().List(context.Background(), id, containerregistry.RepositoryListOptions{
 		Limit:  helpers.IntPtr(10),
 		Offset: helpers.IntPtr(0),
 	})
@@ -144,7 +144,7 @@ func deleteRepository(c *client.CoreClient, id string, name string) {
 
 func getImages(c *client.CoreClient, id string, name string) {
 	containerRegistryClient := containerregistry.New(c)
-	images, err := containerRegistryClient.Images().List(context.Background(), id, name, containerregistry.ListOptions{
+	images, err := containerRegistryClient.Images().List(context.Background(), id, name, containerregistry.ImageListOptions{
 		Limit:  helpers.IntPtr(10),
 		Offset: helpers.IntPtr(0),
 	})

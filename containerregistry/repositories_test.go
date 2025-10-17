@@ -2,6 +2,7 @@ package containerregistry
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -9,13 +10,14 @@ import (
 
 func TestRepositoriesService_List(t *testing.T) {
 	tests := []struct {
-		name       string
-		registryID string
-		opts       ListOptions
-		response   string
-		statusCode int
-		want       *RepositoriesResponse
-		wantErr    bool
+		name          string
+		registryID    string
+		opts          RepositoryListOptions
+		response      string
+		statusCode    int
+		expectedQuery map[string]string
+		want          *RepositoriesResponse
+		wantErr       bool
 	}{
 		{
 			name:       "successful list repositories",
@@ -111,9 +113,13 @@ func TestRepositoriesService_List(t *testing.T) {
 		{
 			name:       "list with pagination",
 			registryID: "reg-123",
-			opts: ListOptions{
+			opts: RepositoryListOptions{
 				Limit:  intPtr(10),
 				Offset: intPtr(20),
+			},
+			expectedQuery: map[string]string{
+				"_limit":  "10",
+				"_offset": "20",
 			},
 			response: `{
 				"meta": {
@@ -152,8 +158,13 @@ func TestRepositoriesService_List(t *testing.T) {
 		{
 			name:       "list with sorting",
 			registryID: "reg-123",
-			opts: ListOptions{
-				Sort: strPtr("name:asc"),
+			opts: RepositoryListOptions{
+				RepositoryFilterOptions: RepositoryFilterOptions{
+					Sort: strPtr("name:asc"),
+				},
+			},
+			expectedQuery: map[string]string{
+				"_sort": "name:asc",
 			},
 			response: `{
 				"meta": {
@@ -196,6 +207,12 @@ func TestRepositoriesService_List(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				if r.Method != http.MethodGet {
 					t.Errorf("expected GET method, got %s", r.Method)
+				}
+				query := r.URL.Query()
+				for key, expectedValue := range tt.expectedQuery {
+					if actualValue := query.Get(key); actualValue != expectedValue {
+						t.Errorf("expected query param %s=%s, got %s", key, expectedValue, actualValue)
+					}
 				}
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(tt.statusCode)
@@ -393,7 +410,7 @@ func TestRepositoriesService_Concurrent(t *testing.T) {
 	done := make(chan bool)
 	for i := 0; i < 10; i++ {
 		go func() {
-			_, err := client.Repositories().List(ctx, "reg-123", ListOptions{})
+			_, err := client.Repositories().List(ctx, "reg-123", RepositoryListOptions{})
 			if err != nil {
 				t.Errorf("concurrent List() error = %v", err)
 			}
@@ -405,4 +422,166 @@ func TestRepositoriesService_Concurrent(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		<-done
 	}
+}
+
+func TestRepositoriesService_ListAll(t *testing.T) {
+	tests := []struct {
+		name       string
+		registryID string
+		filterOpts RepositoryFilterOptions
+		responses  []string
+		statusCode int
+		wantCount  int
+		wantErr    bool
+	}{
+		{
+			name:       "successful list all - single page",
+			registryID: "reg-123",
+			filterOpts: RepositoryFilterOptions{},
+			responses: []string{
+				`{
+					"meta": {
+						"page": {
+							"count": 2,
+							"limit": 50,
+							"offset": 0,
+							"total": 2
+						}
+					},
+					"results": [
+						{
+							"registry_name": "test-registry",
+							"name": "repo-1",
+							"image_count": 5,
+							"created_at": "2024-01-01T00:00:00Z",
+							"updated_at": "2024-01-01T00:00:00Z"
+						},
+						{
+							"registry_name": "test-registry",
+							"name": "repo-2",
+							"image_count": 10,
+							"created_at": "2024-01-02T00:00:00Z",
+							"updated_at": "2024-01-02T00:00:00Z"
+						}
+					]
+				}`,
+			},
+			statusCode: http.StatusOK,
+			wantCount:  2,
+			wantErr:    false,
+		},
+		{
+			name:       "successful list all - multiple pages",
+			registryID: "reg-123",
+			filterOpts: RepositoryFilterOptions{},
+			responses: []string{
+				`{
+					"meta": {
+						"page": {
+							"count": 50,
+							"limit": 50,
+							"offset": 0,
+							"total": 75
+						}
+					},
+					"results": [` + generateRepositoryJSONArray(50) + `]
+				}`,
+				`{
+					"meta": {
+						"page": {
+							"count": 25,
+							"limit": 50,
+							"offset": 50,
+							"total": 75
+						}
+					},
+					"results": [` + generateRepositoryJSONArray(25) + `]
+				}`,
+			},
+			statusCode: http.StatusOK,
+			wantCount:  75,
+			wantErr:    false,
+		},
+		{
+			name:       "empty results",
+			registryID: "reg-123",
+			filterOpts: RepositoryFilterOptions{},
+			responses: []string{
+				`{
+					"meta": {
+						"page": {
+							"count": 0,
+							"limit": 50,
+							"offset": 0,
+							"total": 0
+						}
+					},
+					"results": []
+				}`,
+			},
+			statusCode: http.StatusOK,
+			wantCount:  0,
+			wantErr:    false,
+		},
+		{
+			name:       "error on first page",
+			registryID: "reg-123",
+			filterOpts: RepositoryFilterOptions{},
+			responses:  []string{`{"error": "internal server error"}`},
+			statusCode: http.StatusInternalServerError,
+			wantCount:  0,
+			wantErr:    true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			requestCount := 0
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.Method != http.MethodGet {
+					t.Errorf("expected GET method, got %s", r.Method)
+				}
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(tt.statusCode)
+				if requestCount < len(tt.responses) {
+					w.Write([]byte(tt.responses[requestCount]))
+					requestCount++
+				}
+			}))
+			defer server.Close()
+
+			client := testClient(server.URL)
+			got, err := client.Repositories().ListAll(context.Background(), tt.registryID, tt.filterOpts)
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ListAll() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !tt.wantErr && len(got) != tt.wantCount {
+				t.Errorf("ListAll() got %v repositories, want %v", len(got), tt.wantCount)
+			}
+		})
+	}
+}
+
+// Helper function to generate repository JSON array for testing pagination
+func generateRepositoryJSONArray(count int) string {
+	var repositories []string
+	for i := 0; i < count; i++ {
+		repositories = append(repositories, fmt.Sprintf(`{
+			"registry_name": "test-registry",
+			"name": "repo-%d",
+			"image_count": %d,
+			"created_at": "2024-01-01T00:00:00Z",
+			"updated_at": "2024-01-01T00:00:00Z"
+		}`, i, i+1))
+	}
+	result := ""
+	for i, repo := range repositories {
+		if i > 0 {
+			result += ","
+		}
+		result += repo
+	}
+	return result
 }

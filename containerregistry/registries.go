@@ -4,7 +4,10 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/url"
+	"strconv"
 
+	"github.com/MagaluCloud/mgc-sdk-go/helpers"
 	mgc_http "github.com/MagaluCloud/mgc-sdk-go/internal/http"
 )
 
@@ -12,7 +15,8 @@ type (
 	// RegistriesService provides methods for managing container registries
 	RegistriesService interface {
 		Create(ctx context.Context, request *RegistryRequest) (*RegistryResponse, error)
-		List(ctx context.Context, opts ListOptions) (*ListRegistriesResponse, error)
+		List(ctx context.Context, opts RegistryListOptions) (*ListRegistriesResponse, error)
+		ListAll(ctx context.Context, filterOpts RegistryFilterOptions) ([]RegistryResponse, error)
 		Get(ctx context.Context, registryID string) (*RegistryResponse, error)
 		Delete(ctx context.Context, registryID string) error
 	}
@@ -31,19 +35,20 @@ type (
 		UpdatedAt string `json:"updated_at"`
 	}
 
-	// ListOptions provides options for listing registries
-	ListOptions struct {
-		Limit  *int
+	// RegistryListOptions provides options for listing registries with pagination
+	RegistryListOptions struct {
 		Offset *int
-		Sort   *string
-		Expand []string
+		Limit  *int
+		RegistryFilterOptions
+	}
+
+	// RegistryFilterOptions provides filtering options for registries
+	RegistryFilterOptions struct {
+		Sort *string
 	}
 
 	// ListRegistriesResponse represents the response when listing registries
-	ListRegistriesResponse struct {
-		Registries []RegistryResponse `json:"results"`
-		Meta       Meta               `json:"meta"`
-	}
+	ListRegistriesResponse = helpers.PaginatedResponse[RegistryResponse]
 
 	// registriesService implements the RegistriesService interface
 	registriesService struct {
@@ -64,15 +69,65 @@ func (c *registriesService) Create(ctx context.Context, request *RegistryRequest
 }
 
 // List retrieves a list of container registries with optional filtering and pagination
-func (c *registriesService) List(ctx context.Context, opts ListOptions) (*ListRegistriesResponse, error) {
+func (c *registriesService) List(ctx context.Context, opts RegistryListOptions) (*ListRegistriesResponse, error) {
 	path := "/v0/registries"
-	query := CreatePaginationParams(opts)
+	query := c.createRegistryQueryParams(opts)
 
 	res, err := mgc_http.ExecuteSimpleRequestWithRespBody[ListRegistriesResponse](ctx, c.client.newRequest, c.client.GetConfig(), http.MethodGet, path, nil, query)
 	if err != nil {
 		return nil, err
 	}
 	return res, nil
+}
+
+// ListAll retrieves all registries across all pages with optional filtering
+func (c *registriesService) ListAll(ctx context.Context, filterOpts RegistryFilterOptions) ([]RegistryResponse, error) {
+	var allRegistries []RegistryResponse
+	offset := 0
+	limit := 50
+
+	for {
+		currentOffset := offset
+		currentLimit := limit
+		opts := RegistryListOptions{
+			Offset:                &currentOffset,
+			Limit:                 &currentLimit,
+			RegistryFilterOptions: filterOpts,
+		}
+
+		result, err := c.List(ctx, opts)
+		if err != nil {
+			return nil, err
+		}
+
+		allRegistries = append(allRegistries, result.Results...)
+
+		// Check if we've retrieved all results
+		if len(result.Results) < limit {
+			break
+		}
+
+		offset += limit
+	}
+
+	return allRegistries, nil
+}
+
+// createRegistryQueryParams creates URL query parameters from RegistryListOptions
+func (c *registriesService) createRegistryQueryParams(opts RegistryListOptions) url.Values {
+	query := make(url.Values)
+
+	if opts.Limit != nil {
+		query.Set("_limit", strconv.Itoa(*opts.Limit))
+	}
+	if opts.Offset != nil {
+		query.Set("_offset", strconv.Itoa(*opts.Offset))
+	}
+	if opts.Sort != nil {
+		query.Set("_sort", *opts.Sort)
+	}
+
+	return query
 }
 
 // Get retrieves a specific container registry by ID

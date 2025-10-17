@@ -4,23 +4,25 @@ import (
 	"net/url"
 	"reflect"
 	"testing"
+
+	"github.com/MagaluCloud/mgc-sdk-go/helpers"
 )
 
-func TestCreatePaginationParams(t *testing.T) {
+func TestCreateImageQueryParams(t *testing.T) {
 	tests := []struct {
 		name string
-		opts ListOptions
+		opts ImageListOptions
 		want url.Values
 	}{
 		{
 			name: "empty options",
-			opts: ListOptions{},
+			opts: ImageListOptions{},
 			want: url.Values{},
 		},
 		{
 			name: "with limit",
-			opts: ListOptions{
-				Limit: intPtr(10),
+			opts: ImageListOptions{
+				Limit: helpers.IntPtr(10),
 			},
 			want: url.Values{
 				"_limit": []string{"10"},
@@ -28,8 +30,8 @@ func TestCreatePaginationParams(t *testing.T) {
 		},
 		{
 			name: "with offset",
-			opts: ListOptions{
-				Offset: intPtr(5),
+			opts: ImageListOptions{
+				Offset: helpers.IntPtr(5),
 			},
 			want: url.Values{
 				"_offset": []string{"5"},
@@ -37,8 +39,10 @@ func TestCreatePaginationParams(t *testing.T) {
 		},
 		{
 			name: "with sort",
-			opts: ListOptions{
-				Sort: strPtr("name:asc"),
+			opts: ImageListOptions{
+				ImageFilterOptions: ImageFilterOptions{
+					Sort: helpers.StrPtr("name:asc"),
+				},
 			},
 			want: url.Values{
 				"_sort": []string{"name:asc"},
@@ -46,66 +50,82 @@ func TestCreatePaginationParams(t *testing.T) {
 		},
 		{
 			name: "with single expand",
-			opts: ListOptions{
-				Expand: []string{"tags"},
+			opts: ImageListOptions{
+				ImageFilterOptions: ImageFilterOptions{
+					Expand: []ImageExpand{ImageTagsDetailsExpand},
+				},
 			},
 			want: url.Values{
-				"_expand": []string{"tags"},
+				"_expand": []string{"tags_details"},
 			},
 		},
 		{
 			name: "with multiple expand",
-			opts: ListOptions{
-				Expand: []string{"tags", "manifest", "layers"},
+			opts: ImageListOptions{
+				ImageFilterOptions: ImageFilterOptions{
+					Expand: []ImageExpand{ImageTagsDetailsExpand, ImageExtraAttrExpand, ImageMediaTypeExpand},
+				},
 			},
 			want: url.Values{
-				"_expand": []string{"tags,manifest,layers"},
+				"_expand": []string{"tags_details,extra_attr,media_type"},
 			},
 		},
 		{
 			name: "with empty expand slice",
-			opts: ListOptions{
-				Expand: []string{},
+			opts: ImageListOptions{
+				ImageFilterOptions: ImageFilterOptions{
+					Expand: []ImageExpand{},
+				},
 			},
 			want: url.Values{},
 		},
 		{
 			name: "with all options",
-			opts: ListOptions{
-				Limit:  intPtr(20),
-				Offset: intPtr(10),
-				Sort:   strPtr("created_at:desc"),
-				Expand: []string{"tags", "metadata"},
+			opts: ImageListOptions{
+				Limit:  helpers.IntPtr(20),
+				Offset: helpers.IntPtr(10),
+				ImageFilterOptions: ImageFilterOptions{
+					Sort:   helpers.StrPtr("created_at:desc"),
+					Expand: []ImageExpand{ImageTagsDetailsExpand, ImageExtraAttrExpand},
+				},
 			},
 			want: url.Values{
 				"_limit":  []string{"20"},
 				"_offset": []string{"10"},
 				"_sort":   []string{"created_at:desc"},
-				"_expand": []string{"tags,metadata"},
+				"_expand": []string{"tags_details,extra_attr"},
 			},
 		},
 		{
-			name: "with zero values",
-			opts: ListOptions{
-				Limit:  intPtr(0),
-				Offset: intPtr(0),
-				Sort:   strPtr(""),
-				Expand: []string{""},
+			name: "with zero limit and offset",
+			opts: ImageListOptions{
+				Limit:  helpers.IntPtr(0),
+				Offset: helpers.IntPtr(0),
 			},
 			want: url.Values{
 				"_limit":  []string{"0"},
 				"_offset": []string{"0"},
-				"_sort":   []string{""},
-				"_expand": []string{""},
+			},
+		},
+		{
+			name: "with empty sort string",
+			opts: ImageListOptions{
+				ImageFilterOptions: ImageFilterOptions{
+					Sort: helpers.StrPtr(""),
+				},
+			},
+			want: url.Values{
+				"_sort": []string{""},
 			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := CreatePaginationParams(tt.opts)
+			service := &imagesService{}
+			got := service.createImageQueryParams(tt.opts)
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("CreatePaginationParams() = %v, want %v", got, tt.want)
+				t.Errorf("createImageQueryParams() = %v, want %v", got, tt.want)
 			}
 		})
 	}
