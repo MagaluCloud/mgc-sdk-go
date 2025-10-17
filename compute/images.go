@@ -4,7 +4,6 @@ import (
 	"context"
 	"net/http"
 	"strconv"
-	"strings"
 
 	mgc_http "github.com/MagaluCloud/mgc-sdk-go/internal/http"
 )
@@ -12,6 +11,7 @@ import (
 // ImageList represents the response from listing images.
 // This structure encapsulates the API response format for images.
 type ImageList struct {
+	Meta   Meta    `json:"meta"`
 	Images []Image `json:"images"`
 }
 
@@ -57,7 +57,8 @@ const (
 // ImageService provides operations for managing virtual machine images.
 // This interface allows listing available images with optional filtering.
 type ImageService interface {
-	List(ctx context.Context, opts ImageListOptions) ([]Image, error)
+	List(ctx context.Context, opts ImageListOptions) (*ImageList, error)
+	ListAll(ctx context.Context, opts ImageFilterOptions) ([]Image, error)
 }
 
 // imageService implements the ImageService interface.
@@ -72,14 +73,19 @@ type ImageListOptions struct {
 	Limit            *int
 	Offset           *int
 	Sort             *string
-	Labels           []string
 	AvailabilityZone *string
 }
 
-// List retrieves all images matching the provided options.
+// ImageFilterOptions defines filtering options for ListAll (without pagination)
+type ImageFilterOptions struct {
+	Sort             *string
+	AvailabilityZone *string
+}
+
+// List retrieves images matching the provided options with pagination metadata.
 // This method makes an HTTP request to get the list of images
 // and applies the filters specified in the options.
-func (s *imageService) List(ctx context.Context, opts ImageListOptions) ([]Image, error) {
+func (s *imageService) List(ctx context.Context, opts ImageListOptions) (*ImageList, error) {
 	req, err := s.client.newRequest(ctx, http.MethodGet, "/v1/images", nil)
 	if err != nil {
 		return nil, err
@@ -95,9 +101,6 @@ func (s *imageService) List(ctx context.Context, opts ImageListOptions) ([]Image
 	if opts.Sort != nil {
 		q.Add("_sort", *opts.Sort)
 	}
-	if len(opts.Labels) > 0 {
-		q.Add("_labels", strings.Join(opts.Labels, ","))
-	}
 	if opts.AvailabilityZone != nil {
 		q.Add("availability-zone", *opts.AvailabilityZone)
 	}
@@ -105,10 +108,45 @@ func (s *imageService) List(ctx context.Context, opts ImageListOptions) ([]Image
 
 	response := &ImageList{}
 
-	resp, err := mgc_http.Do(s.client.GetConfig(), ctx, req, response)
+	_, err = mgc_http.Do(s.client.GetConfig(), ctx, req, response)
 	if err != nil {
 		return nil, err
 	}
 
-	return resp.Images, nil
+	return response, nil
+}
+
+// ListAll retrieves all images across all pages with optional filtering.
+// This method automatically handles pagination and returns all results.
+func (s *imageService) ListAll(ctx context.Context, opts ImageFilterOptions) ([]Image, error) {
+	var allImages []Image
+	offset := 0
+	limit := 50
+
+	for {
+		currentOffset := offset
+		currentLimit := limit
+		listOpts := ImageListOptions{
+			Offset:           &currentOffset,
+			Limit:            &currentLimit,
+			Sort:             opts.Sort,
+			AvailabilityZone: opts.AvailabilityZone,
+		}
+
+		response, err := s.List(ctx, listOpts)
+		if err != nil {
+			return nil, err
+		}
+
+		allImages = append(allImages, response.Images...)
+
+		// Check if we've retrieved all results
+		if len(response.Images) < limit {
+			break
+		}
+
+		offset += limit
+	}
+
+	return allImages, nil
 }

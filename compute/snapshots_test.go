@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"testing"
 	"time"
 )
@@ -12,7 +13,7 @@ func TestSnapshotService_List(t *testing.T) {
 	now := time.Now()
 	tests := []struct {
 		name       string
-		opts       ListOptions
+		opts       SnapshotListOptions
 		response   string
 		statusCode int
 		want       int
@@ -21,12 +22,20 @@ func TestSnapshotService_List(t *testing.T) {
 	}{
 		{
 			name: "basic list",
-			opts: ListOptions{},
+			opts: SnapshotListOptions{},
 			response: `{
 				"snapshots": [
 					{"id": "snap1", "name": "test1", "created_at": "` + now.Format(time.RFC3339) + `"},
 					{"id": "snap2", "name": "test2", "created_at": "` + now.Format(time.RFC3339) + `"}
-				]
+				],
+				"meta": {
+					"page": {
+						"offset": 0,
+						"limit": 50,
+						"count": 2,
+						"total": 2
+					}
+				}
 			}`,
 			statusCode: http.StatusOK,
 			want:       2,
@@ -34,14 +43,22 @@ func TestSnapshotService_List(t *testing.T) {
 		},
 		{
 			name: "with pagination",
-			opts: ListOptions{
+			opts: SnapshotListOptions{
 				Limit:  intPtr(1),
 				Offset: intPtr(1),
 			},
 			response: `{
 				"snapshots": [
 					{"id": "snap2", "name": "test2", "created_at": "` + now.Format(time.RFC3339) + `"}
-				]
+				],
+				"meta": {
+					"page": {
+						"offset": 1,
+						"limit": 1,
+						"count": 1,
+						"total": 2
+					}
+				}
 			}`,
 			statusCode: http.StatusOK,
 			want:       1,
@@ -54,8 +71,8 @@ func TestSnapshotService_List(t *testing.T) {
 		},
 		{
 			name: "with expand",
-			opts: ListOptions{
-				Expand: []string{SnapshotImageExpand},
+			opts: SnapshotListOptions{
+				Expand: []SnapshotExpand{SnapshotImageExpand},
 			},
 			response: `{
 				"snapshots": [
@@ -68,13 +85,21 @@ func TestSnapshotService_List(t *testing.T) {
 							"image": {"id": "img1"}
 						}
 					}
-				]
+				],
+				"meta": {
+					"page": {
+						"offset": 0,
+						"limit": 50,
+						"count": 1,
+						"total": 1
+					}
+				}
 			}`,
 			statusCode: http.StatusOK,
 			want:       1,
 			wantErr:    false,
 			checkQuery: func(t *testing.T, r *http.Request) {
-				if r.URL.Query().Get("expand") != SnapshotImageExpand {
+				if r.URL.Query().Get("expand") != string(SnapshotImageExpand) {
 					t.Error("expand parameter not set correctly")
 				}
 			},
@@ -100,8 +125,148 @@ func TestSnapshotService_List(t *testing.T) {
 				t.Errorf("List() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
+			if len(got.Snapshots) != tt.want {
+				t.Errorf("List() got %v snapshots, want %v", len(got.Snapshots), tt.want)
+			}
+			if !tt.wantErr && got.Meta.Page.Count != tt.want {
+				t.Errorf("List() meta count = %v, want %v", got.Meta.Page.Count, tt.want)
+			}
+		})
+	}
+}
+
+func TestSnapshotService_ListAll(t *testing.T) {
+	now := time.Now()
+	tests := []struct {
+		name       string
+		opts       SnapshotFilterOptions
+		responses  []string
+		want       int
+		wantErr    bool
+		checkCalls func(*testing.T, int)
+	}{
+		{
+			name: "single page",
+			opts: SnapshotFilterOptions{},
+			responses: []string{
+				`{
+					"snapshots": [
+						{"id": "snap1", "name": "test1", "created_at": "` + now.Format(time.RFC3339) + `"},
+						{"id": "snap2", "name": "test2", "created_at": "` + now.Format(time.RFC3339) + `"}
+					],
+					"meta": {
+						"page": {
+							"offset": 0,
+							"limit": 50,
+							"count": 2,
+							"total": 2
+						}
+					}
+				}`,
+			},
+			want:    2,
+			wantErr: false,
+		},
+		{
+			name: "multiple pages",
+			opts: SnapshotFilterOptions{},
+			responses: []string{
+				`{
+					"snapshots": [` +
+					generateSnapshotJSON(50, 0, now) + `
+					],
+					"meta": {
+						"page": {
+							"offset": 0,
+							"limit": 50,
+							"count": 50,
+							"total": 75
+						}
+					}
+				}`,
+				`{
+					"snapshots": [` +
+					generateSnapshotJSON(25, 50, now) + `
+					],
+					"meta": {
+						"page": {
+							"offset": 50,
+							"limit": 50,
+							"count": 25,
+							"total": 75
+						}
+					}
+				}`,
+			},
+			want:    75,
+			wantErr: false,
+			checkCalls: func(t *testing.T, calls int) {
+				if calls != 2 {
+					t.Errorf("expected 2 API calls, got %d", calls)
+				}
+			},
+		},
+		{
+			name: "with expand",
+			opts: SnapshotFilterOptions{
+				Expand: []SnapshotExpand{SnapshotImageExpand},
+			},
+			responses: []string{
+				`{
+					"snapshots": [
+						{
+							"id": "snap1",
+							"name": "test1",
+							"created_at": "` + now.Format(time.RFC3339) + `",
+							"instance": {
+								"id": "inst1",
+								"image": {"id": "img1"}
+							}
+						}
+					],
+					"meta": {
+						"page": {
+							"offset": 0,
+							"limit": 50,
+							"count": 1,
+							"total": 1
+						}
+					}
+				}`,
+			},
+			want:    1,
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			callCount := 0
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if callCount >= len(tt.responses) {
+					t.Errorf("unexpected API call #%d", callCount+1)
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusOK)
+				w.Write([]byte(tt.responses[callCount]))
+				callCount++
+			}))
+			defer server.Close()
+
+			client := testClient(server.URL)
+			got, err := client.Snapshots().ListAll(context.Background(), tt.opts)
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ListAll() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
 			if len(got) != tt.want {
-				t.Errorf("List() got %v snapshots, want %v", len(got), tt.want)
+				t.Errorf("ListAll() got %v snapshots, want %v", len(got), tt.want)
+			}
+			if tt.checkCalls != nil {
+				tt.checkCalls(t, callCount)
 			}
 		})
 	}
@@ -174,7 +339,7 @@ func TestSnapshotService_Get(t *testing.T) {
 	tests := []struct {
 		name       string
 		id         string
-		expand     []string
+		expand     []SnapshotExpand
 		response   string
 		statusCode int
 		wantErr    bool
@@ -200,7 +365,7 @@ func TestSnapshotService_Get(t *testing.T) {
 		{
 			name:   "with expand",
 			id:     "snap1",
-			expand: []string{SnapshotImageExpand, SnapshotMachineTypeExpand},
+			expand: []SnapshotExpand{SnapshotImageExpand, SnapshotMachineTypeExpand},
 			response: `{
 				"id": "snap1",
 				"name": "test-snapshot",
@@ -237,6 +402,21 @@ func TestSnapshotService_Get(t *testing.T) {
 			}
 		})
 	}
+}
+
+// Helper function to generate snapshot JSON for testing
+func generateSnapshotJSON(count, startID int, baseTime time.Time) string {
+	if count == 0 {
+		return ""
+	}
+	var result string
+	for i := 0; i < count; i++ {
+		if i > 0 {
+			result += ","
+		}
+		result += `{"id": "snap` + strconv.Itoa(startID+i+1) + `", "name": "test` + strconv.Itoa(startID+i+1) + `", "created_at": "` + baseTime.Format(time.RFC3339) + `"}`
+	}
+	return result
 }
 
 func TestSnapshotService_Delete(t *testing.T) {

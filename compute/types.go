@@ -2,7 +2,6 @@ package compute
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"strconv"
 
@@ -12,8 +11,13 @@ import (
 // Meta contains pagination metadata for API responses.
 // This structure provides information about the current page and total results.
 type Meta struct {
-	Limit  int `json:"limit"`
+	Page Page `json:"page"`
+}
+
+// Page contains pagination information
+type Page struct {
 	Offset int `json:"offset"`
+	Limit  int `json:"limit"`
 	Count  int `json:"count"`
 	Total  int `json:"total"`
 }
@@ -41,7 +45,8 @@ type InstanceTypeList struct {
 // InstanceTypeService provides operations for querying available machine types.
 // This interface allows listing instance types with optional filtering.
 type InstanceTypeService interface {
-	List(ctx context.Context, opts InstanceTypeListOptions) ([]InstanceType, error)
+	List(ctx context.Context, opts InstanceTypeListOptions) (*InstanceTypeList, error)
+	ListAll(ctx context.Context, opts InstanceTypeFilterOptions) ([]InstanceType, error)
 }
 
 // instanceTypeService implements the InstanceTypeService interface.
@@ -59,10 +64,16 @@ type InstanceTypeListOptions struct {
 	AvailabilityZone string  `url:"availability-zone,omitempty"`
 }
 
-// List retrieves all available machine types.
+// InstanceTypeFilterOptions defines filtering options for ListAll (without pagination).
+type InstanceTypeFilterOptions struct {
+	Sort             *string `url:"_sort,omitempty"`
+	AvailabilityZone string  `url:"availability-zone,omitempty"`
+}
+
+// List retrieves instance types with pagination metadata.
 // This method makes an HTTP request to get the list of instance types
 // and applies the filters specified in the options.
-func (s *instanceTypeService) List(ctx context.Context, opts InstanceTypeListOptions) ([]InstanceType, error) {
+func (s *instanceTypeService) List(ctx context.Context, opts InstanceTypeListOptions) (*InstanceTypeList, error) {
 	req, err := s.client.newRequest(ctx, http.MethodGet, "/v1/instance-types", nil)
 	if err != nil {
 		return nil, err
@@ -83,16 +94,46 @@ func (s *instanceTypeService) List(ctx context.Context, opts InstanceTypeListOpt
 	}
 	req.URL.RawQuery = q.Encode()
 
-	var response InstanceTypeList
-	resp, err := mgc_http.Do(s.client.GetConfig(), ctx, req, &response)
+	response := &InstanceTypeList{}
+	_, err = mgc_http.Do(s.client.GetConfig(), ctx, req, response)
 	if err != nil {
 		return nil, err
 	}
 
-	if resp == nil {
-		return nil, fmt.Errorf("empty response")
+	return response, nil
+}
+
+// ListAll retrieves all instance types across all pages with optional filtering.
+// This method automatically handles pagination and returns all results.
+func (s *instanceTypeService) ListAll(ctx context.Context, opts InstanceTypeFilterOptions) ([]InstanceType, error) {
+	var allInstanceTypes []InstanceType
+	offset := 0
+	limit := 50
+
+	for {
+		currentOffset := offset
+		currentLimit := limit
+		listOpts := InstanceTypeListOptions{
+			Offset:           &currentOffset,
+			Limit:            &currentLimit,
+			Sort:             opts.Sort,
+			AvailabilityZone: opts.AvailabilityZone,
+		}
+
+		response, err := s.List(ctx, listOpts)
+		if err != nil {
+			return nil, err
+		}
+
+		allInstanceTypes = append(allInstanceTypes, response.InstanceTypes...)
+
+		// Check if we've retrieved all results
+		if len(response.InstanceTypes) < limit {
+			break
+		}
+
+		offset += limit
 	}
 
-	return response.InstanceTypes, nil
-
+	return allInstanceTypes, nil
 }
