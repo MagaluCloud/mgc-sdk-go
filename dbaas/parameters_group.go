@@ -30,6 +30,12 @@ type (
 		EngineID *string
 	}
 
+	// ParameterGroupFilterOptions provides filtering options for ListAll (without pagination)
+	ParameterGroupFilterOptions struct {
+		Type     *ParameterGroupType
+		EngineID *string
+	}
+
 	// ParameterGroupsResponse represents the API response for multiple parameter groups
 	ParameterGroupsResponse struct {
 		Meta    MetaResponse                   `json:"meta"`
@@ -65,7 +71,8 @@ type (
 
 	// ParameterGroupService defines the interface for parameter group operations
 	ParameterGroupService interface {
-		List(ctx context.Context, opts ListParameterGroupsOptions) ([]ParameterGroupDetailResponse, error)
+		List(ctx context.Context, opts ListParameterGroupsOptions) (*ParameterGroupsResponse, error)
+		ListAll(ctx context.Context, filterOpts ParameterGroupFilterOptions) ([]ParameterGroupDetailResponse, error)
 		Create(ctx context.Context, req ParameterGroupCreateRequest) (*ParameterGroupResponse, error)
 		Get(ctx context.Context, ID string) (*ParameterGroupDetailResponse, error)
 		Update(ctx context.Context, ID string, req ParameterGroupUpdateRequest) (*ParameterGroupDetailResponse, error)
@@ -79,7 +86,7 @@ type (
 )
 
 // List retrieves a list of parameter groups for the tenant.
-func (s *parameterGroupService) List(ctx context.Context, opts ListParameterGroupsOptions) ([]ParameterGroupDetailResponse, error) {
+func (s *parameterGroupService) List(ctx context.Context, opts ListParameterGroupsOptions) (*ParameterGroupsResponse, error) {
 	query := make(url.Values)
 
 	if opts.Offset != nil {
@@ -108,7 +115,40 @@ func (s *parameterGroupService) List(ctx context.Context, opts ListParameterGrou
 		return nil, err
 	}
 
-	return result.Results, nil
+	return result, nil
+}
+
+// ListAll retrieves all parameter groups by fetching all pages with optional filtering
+func (s *parameterGroupService) ListAll(ctx context.Context, filterOpts ParameterGroupFilterOptions) ([]ParameterGroupDetailResponse, error) {
+	var allGroups []ParameterGroupDetailResponse
+	offset := 0
+	limit := 50
+
+	for {
+		currentOffset := offset
+		currentLimit := limit
+		opts := ListParameterGroupsOptions{
+			Offset:   &currentOffset,
+			Limit:    &currentLimit,
+			Type:     filterOpts.Type,
+			EngineID: filterOpts.EngineID,
+		}
+
+		resp, err := s.List(ctx, opts)
+		if err != nil {
+			return nil, err
+		}
+
+		allGroups = append(allGroups, resp.Results...)
+
+		if len(resp.Results) < limit {
+			break
+		}
+
+		offset += limit
+	}
+
+	return allGroups, nil
 }
 
 // CreateParameterGroup creates a new custom parameter group.

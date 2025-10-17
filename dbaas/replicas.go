@@ -14,7 +14,8 @@ import (
 type (
 	// ReplicaService provides methods for managing database replicas
 	ReplicaService interface {
-		List(ctx context.Context, opts ListReplicaOptions) ([]ReplicaDetailResponse, error)
+		List(ctx context.Context, opts ListReplicaOptions) (*ReplicasResponse, error)
+		ListAll(ctx context.Context, opts ReplicaFilterOptions) ([]ReplicaDetailResponse, *MetaResponse, error)
 		Get(ctx context.Context, id string) (*ReplicaDetailResponse, error)
 		Create(ctx context.Context, req ReplicaCreateRequest) (*ReplicaResponse, error)
 		Delete(ctx context.Context, id string) error
@@ -32,6 +33,11 @@ type (
 	ListReplicaOptions struct {
 		Offset   *int
 		Limit    *int
+		SourceID *string
+	}
+
+	// ReplicaFilterOptions provides filtering options for ListAll
+	ReplicaFilterOptions struct {
 		SourceID *string
 	}
 
@@ -84,7 +90,7 @@ func NewReplicaService(client *DBaaSClient) ReplicaService {
 }
 
 // List returns a paginated list of database replicas with optional source_id filter
-func (s *replicaService) List(ctx context.Context, opts ListReplicaOptions) ([]ReplicaDetailResponse, error) {
+func (s *replicaService) List(ctx context.Context, opts ListReplicaOptions) (*ReplicasResponse, error) {
 	query := make(url.Values)
 
 	if opts.Offset != nil {
@@ -97,7 +103,7 @@ func (s *replicaService) List(ctx context.Context, opts ListReplicaOptions) ([]R
 		query.Set("source_id", *opts.SourceID)
 	}
 
-	result, err := mgc_http.ExecuteSimpleRequestWithRespBody[ReplicasResponse](
+	return mgc_http.ExecuteSimpleRequestWithRespBody[ReplicasResponse](
 		ctx,
 		s.client.newRequest,
 		s.client.GetConfig(),
@@ -106,11 +112,48 @@ func (s *replicaService) List(ctx context.Context, opts ListReplicaOptions) ([]R
 		nil,
 		query,
 	)
-	if err != nil {
-		return nil, err
+}
+
+// ListAll retrieves all replicas across all pages with optional filtering
+func (s *replicaService) ListAll(ctx context.Context, opts ReplicaFilterOptions) ([]ReplicaDetailResponse, *MetaResponse, error) {
+	var allResults []ReplicaDetailResponse
+	offset := 0
+	limit := 100
+	var lastMeta *MetaResponse
+
+	for {
+		query := make(url.Values)
+		query.Set("_offset", strconv.Itoa(offset))
+		query.Set("_limit", strconv.Itoa(limit))
+		if opts.SourceID != nil {
+			query.Set("source_id", *opts.SourceID)
+		}
+
+		result, err := mgc_http.ExecuteSimpleRequestWithRespBody[ReplicasResponse](
+			ctx,
+			s.client.newRequest,
+			s.client.GetConfig(),
+			http.MethodGet,
+			"/v2/replicas",
+			nil,
+			query,
+		)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		lastMeta = &result.Meta
+		allResults = append(allResults, result.Results...)
+
+		// Check if we've retrieved all results
+		if len(result.Results) < limit {
+			break
+		}
+
+		offset += limit
 	}
 
-	return result.Results, nil
+	return allResults, lastMeta, nil
 }
 
 // Get retrieves details of a specific replica instance

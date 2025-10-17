@@ -13,7 +13,8 @@ import (
 type (
 	// EngineService provides methods for managing database engines
 	EngineService interface {
-		List(ctx context.Context, opts ListEngineOptions) ([]EngineDetail, error)
+		List(ctx context.Context, opts ListEngineOptions) (*ListEnginesResponse, error)
+		ListAll(ctx context.Context, filterOpts EngineFilterOptions) ([]EngineDetail, error)
 		Get(ctx context.Context, id string) (*EngineDetail, error)
 		ListEngineParameters(ctx context.Context, engineID string, opts ListEngineParametersOptions) ([]EngineParameterDetail, error)
 	}
@@ -65,6 +66,11 @@ type (
 		Status *string
 	}
 
+	// EngineFilterOptions provides filtering options for ListAll (without pagination)
+	EngineFilterOptions struct {
+		Status *string
+	}
+
 	// ListEngineParametersOptions provides options for listing engine parameters
 	ListEngineParametersOptions struct {
 		Offset     *int
@@ -95,7 +101,7 @@ type (
 )
 
 // List returns all available database engines
-func (s *engineService) List(ctx context.Context, opts ListEngineOptions) ([]EngineDetail, error) {
+func (s *engineService) List(ctx context.Context, opts ListEngineOptions) (*ListEnginesResponse, error) {
 	query := make(url.Values)
 
 	if opts.Offset != nil {
@@ -121,7 +127,39 @@ func (s *engineService) List(ctx context.Context, opts ListEngineOptions) ([]Eng
 		return nil, err
 	}
 
-	return result.Results, nil
+	return result, nil
+}
+
+// ListAll retrieves all engines by fetching all pages with optional filtering
+func (s *engineService) ListAll(ctx context.Context, filterOpts EngineFilterOptions) ([]EngineDetail, error) {
+	var allEngines []EngineDetail
+	offset := 0
+	limit := 50
+
+	for {
+		currentOffset := offset
+		currentLimit := limit
+		opts := ListEngineOptions{
+			Offset: &currentOffset,
+			Limit:  &currentLimit,
+			Status: filterOpts.Status,
+		}
+
+		resp, err := s.List(ctx, opts)
+		if err != nil {
+			return nil, err
+		}
+
+		allEngines = append(allEngines, resp.Results...)
+
+		if len(resp.Results) < limit {
+			break
+		}
+
+		offset += limit
+	}
+
+	return allEngines, nil
 }
 
 // Get retrieves detailed information about a specific engine

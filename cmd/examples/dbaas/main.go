@@ -13,14 +13,14 @@ import (
 
 func main() {
 	ExampleListEngines()
+	ExampleListAllEngines()
 	ExampleListInstanceTypes()
+	ExampleListAllInstanceTypes()
 	ExampleListInstances()
-	ExampleCreateInstance()
-	ExampleListEngines()
-	ExampleListInstanceTypes()
-	ExampleListInstances()
+	ExampleListAllInstances()
 	ExampleCreateInstance()
 	ExampleListClusters()
+	ExampleListAllClusters()
 	ExampleCreateCluster()
 	ExampleGetCluster()
 	ExampleUpdateCluster()
@@ -28,7 +28,9 @@ func main() {
 	ExampleGetParameterGroup()
 	ExampleUpdateParameterGroup()
 	ExampleListParametersGroup()
+	ExampleListAllParametersGroup()
 	ExampleListParameters()
+	ExampleListAllParameters()
 	ExampleCreateParameter()
 	ExampleUpdateParameter()
 	ExampleDeleteParameter()
@@ -42,18 +44,44 @@ func ExampleListEngines() {
 	c := client.NewMgcClient(apiToken)
 	dbaasClient := dbaas.New(c)
 
-	engines, err := dbaasClient.Engines().List(context.Background(), dbaas.ListEngineOptions{
+	resp, err := dbaasClient.Engines().List(context.Background(), dbaas.ListEngineOptions{
 		Limit: helpers.IntPtr(10),
 	})
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	fmt.Printf("Found %d database engines:\n", len(engines))
-	for _, engine := range engines {
+	// Print pagination metadata
+	fmt.Printf("Database Engines (Page %d-%d of %d total)\n",
+		resp.Meta.Page.Offset,
+		resp.Meta.Page.Offset+resp.Meta.Page.Count,
+		resp.Meta.Page.Total)
+
+	for _, engine := range resp.Results {
 		fmt.Printf("Engine: %s (ID: %s)\n", engine.Name, engine.ID)
 		fmt.Printf("  Version: %s\n", engine.Version)
 		fmt.Printf("  Status: %s\n", engine.Status)
+	}
+}
+
+func ExampleListAllEngines() {
+	apiToken := os.Getenv("MGC_API_TOKEN")
+	if apiToken == "" {
+		log.Fatal("MGC_API_TOKEN environment variable is not set")
+	}
+	c := client.NewMgcClient(apiToken)
+	dbaasClient := dbaas.New(c)
+
+	// List all engines across all pages
+	engines, err := dbaasClient.Engines().ListAll(context.Background(), dbaas.EngineFilterOptions{})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Printf("Found %d database engines:\n", len(engines))
+	for _, engine := range engines {
+		fmt.Printf("Engine: %s (ID: %s) - Version: %s, Status: %s\n",
+			engine.Name, engine.ID, engine.Version, engine.Status)
 	}
 }
 
@@ -65,21 +93,47 @@ func ExampleListInstanceTypes() {
 	c := client.NewMgcClient(apiToken)
 	dbaasClient := dbaas.New(c)
 
-	instanceTypes, err := dbaasClient.InstanceTypes().List(context.Background(), dbaas.ListInstanceTypeOptions{
+	resp, err := dbaasClient.InstanceTypes().List(context.Background(), dbaas.ListInstanceTypeOptions{
 		Limit: helpers.IntPtr(10),
 	})
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	fmt.Printf("Found %d instance types:\n", len(instanceTypes))
-	for _, instanceType := range instanceTypes {
+	// Print pagination metadata
+	fmt.Printf("Instance Types (Page %d-%d of %d total)\n",
+		resp.Meta.Page.Offset,
+		resp.Meta.Page.Offset+resp.Meta.Page.Count,
+		resp.Meta.Page.Total)
+
+	for _, instanceType := range resp.Results {
 		fmt.Printf("Instance Type: %s (ID: %s)\n", instanceType.Name, instanceType.ID)
 		fmt.Printf("  Label: %s\n", instanceType.Label)
 		fmt.Printf("  VCPU: %s\n", instanceType.VCPU)
 		fmt.Printf("  RAM: %s\n", instanceType.RAM)
 		fmt.Printf("  Family: %s (%s)\n", instanceType.FamilyDescription, instanceType.FamilySlug)
 		fmt.Printf("  Compatible Product: %s\n", instanceType.CompatibleProduct)
+	}
+}
+
+func ExampleListAllInstanceTypes() {
+	apiToken := os.Getenv("MGC_API_TOKEN")
+	if apiToken == "" {
+		log.Fatal("MGC_API_TOKEN environment variable is not set")
+	}
+	c := client.NewMgcClient(apiToken)
+	dbaasClient := dbaas.New(c)
+
+	// List all instance types across all pages
+	instanceTypes, err := dbaasClient.InstanceTypes().ListAll(context.Background(), dbaas.InstanceTypeFilterOptions{})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Printf("Found %d instance types:\n", len(instanceTypes))
+	for _, instanceType := range instanceTypes {
+		fmt.Printf("Instance Type: %s (ID: %s) - VCPU: %s, RAM: %s\n",
+			instanceType.Name, instanceType.ID, instanceType.VCPU, instanceType.RAM)
 	}
 }
 
@@ -91,15 +145,20 @@ func ExampleListInstances() {
 	c := client.NewMgcClient(apiToken)
 	dbaasClient := dbaas.New(c)
 
-	instances, err := dbaasClient.Instances().List(context.Background(), dbaas.ListInstanceOptions{
+	resp, err := dbaasClient.Instances().List(context.Background(), dbaas.ListInstanceOptions{
 		Limit: helpers.IntPtr(10),
 	})
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	fmt.Printf("Found %d database instances:\n", len(instances))
-	for _, instance := range instances {
+	// Print pagination metadata
+	fmt.Printf("Database Instances (Page %d-%d of %d total)\n",
+		resp.Meta.Page.Offset,
+		resp.Meta.Page.Offset+resp.Meta.Page.Count,
+		resp.Meta.Page.Total)
+
+	for _, instance := range resp.Results {
 		fmt.Printf("Instance: %s (ID: %s)\n", instance.Name, instance.ID)
 		fmt.Printf("  Engine ID: %s\n", instance.EngineID)
 		fmt.Printf("  Status: %s\n", instance.Status)
@@ -113,6 +172,27 @@ func ExampleListInstances() {
 				}
 			}
 		}
+	}
+}
+
+func ExampleListAllInstances() {
+	apiToken := os.Getenv("MGC_API_TOKEN")
+	if apiToken == "" {
+		log.Fatal("MGC_API_TOKEN environment variable is not set")
+	}
+	c := client.NewMgcClient(apiToken)
+	dbaasClient := dbaas.New(c)
+
+	// List all instances across all pages
+	instances, err := dbaasClient.Instances().ListAll(context.Background(), dbaas.InstanceFilterOptions{})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Printf("Found %d database instances:\n", len(instances))
+	for _, instance := range instances {
+		fmt.Printf("Instance: %s (ID: %s) - Status: %s, Volume: %d GiB\n",
+			instance.Name, instance.ID, instance.Status, instance.Volume.Size)
 	}
 }
 
@@ -152,15 +232,20 @@ func ExampleListClusters() {
 	c := client.NewMgcClient(apiToken)
 	dbaasClient := dbaas.New(c)
 
-	clusters, err := dbaasClient.Clusters().List(context.Background(), dbaas.ListClustersOptions{
+	resp, err := dbaasClient.Clusters().List(context.Background(), dbaas.ListClustersOptions{
 		Limit: helpers.IntPtr(10),
 	})
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	fmt.Printf("Found %d database clusters:\n", len(clusters))
-	for _, cluster := range clusters {
+	// Print pagination metadata
+	fmt.Printf("Database Clusters (Page %d-%d of %d total)\n",
+		resp.Meta.Page.Offset,
+		resp.Meta.Page.Offset+resp.Meta.Page.Count,
+		resp.Meta.Page.Total)
+
+	for _, cluster := range resp.Results {
 		fmt.Printf("Cluster: %s (ID: %s)\n", cluster.Name, cluster.ID)
 		fmt.Printf("  Engine ID: %s\n", cluster.EngineID)
 		fmt.Printf("  Status: %s\n", cluster.Status)
@@ -176,6 +261,27 @@ func ExampleListClusters() {
 				fmt.Printf("    %s: %s:%s\n", addr.Access, addr.Address, addr.Port)
 			}
 		}
+	}
+}
+
+func ExampleListAllClusters() {
+	apiToken := os.Getenv("MGC_API_TOKEN")
+	if apiToken == "" {
+		log.Fatal("MGC_API_TOKEN environment variable is not set")
+	}
+	c := client.NewMgcClient(apiToken)
+	dbaasClient := dbaas.New(c)
+
+	// List all clusters across all pages
+	clusters, err := dbaasClient.Clusters().ListAll(context.Background(), dbaas.ClusterFilterOptions{})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Printf("Found %d database clusters:\n", len(clusters))
+	for _, cluster := range clusters {
+		fmt.Printf("Cluster: %s (ID: %s) - Status: %s, Retention: %d days\n",
+			cluster.Name, cluster.ID, cluster.Status, cluster.BackupRetentionDays)
 	}
 }
 
@@ -273,19 +379,45 @@ func ExampleListParametersGroup() {
 	c := client.NewMgcClient(apiToken)
 	dbaasClient := dbaas.New(c)
 
-	paramGroups, err := dbaasClient.ParametersGroup().List(context.Background(), dbaas.ListParameterGroupsOptions{
+	resp, err := dbaasClient.ParametersGroup().List(context.Background(), dbaas.ListParameterGroupsOptions{
 		Limit: helpers.IntPtr(10),
 	})
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	fmt.Printf("Found %d parameter groups:\n", len(paramGroups))
-	for _, pg := range paramGroups {
+	// Print pagination metadata
+	fmt.Printf("Parameter Groups (Page %d-%d of %d total)\n",
+		resp.Meta.Page.Offset,
+		resp.Meta.Page.Offset+resp.Meta.Page.Count,
+		resp.Meta.Page.Total)
+
+	for _, pg := range resp.Results {
 		fmt.Printf("Parameter Group: %s (ID: %s)\n", pg.Name, pg.ID)
 		fmt.Printf("  Description: %s\n", *pg.Description)
 		fmt.Printf("  Type: %s\n", pg.Type)
 		fmt.Printf("  Engine ID: %s\n", pg.EngineID)
+	}
+}
+
+func ExampleListAllParametersGroup() {
+	apiToken := os.Getenv("MGC_API_TOKEN")
+	if apiToken == "" {
+		log.Fatal("MGC_API_TOKEN environment variable is not set")
+	}
+	c := client.NewMgcClient(apiToken)
+	dbaasClient := dbaas.New(c)
+
+	// List all parameter groups across all pages
+	paramGroups, err := dbaasClient.ParametersGroup().ListAll(context.Background(), dbaas.ParameterGroupFilterOptions{})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Printf("Found %d parameter groups:\n", len(paramGroups))
+	for _, pg := range paramGroups {
+		fmt.Printf("Parameter Group: %s (ID: %s) - Type: %s, Engine: %s\n",
+			pg.Name, pg.ID, pg.Type, pg.EngineID)
 	}
 }
 
@@ -364,9 +496,36 @@ func ExampleListParameters() {
 	c := client.NewMgcClient(apiToken)
 	dbaasClient := dbaas.New(c)
 
-	params, err := dbaasClient.Parameters().List(context.Background(), dbaas.ListParametersOptions{
+	resp, err := dbaasClient.Parameters().List(context.Background(), dbaas.ListParametersOptions{
 		ParameterGroupID: "88bd17e0-779c-43a5-9695-5cb9f6f918c0",
 		Limit:            helpers.IntPtr(10),
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Print pagination metadata
+	fmt.Printf("Parameters (Page %d-%d of %d total)\n",
+		resp.Meta.Page.Offset,
+		resp.Meta.Page.Offset+resp.Meta.Page.Count,
+		resp.Meta.Page.Total)
+
+	for _, p := range resp.Results {
+		fmt.Printf("Parameter: %s (ID: %s) = %v\n", p.Name, p.ID, p.Value)
+	}
+}
+
+func ExampleListAllParameters() {
+	apiToken := os.Getenv("MGC_API_TOKEN")
+	if apiToken == "" {
+		log.Fatal("MGC_API_TOKEN environment variable is not set")
+	}
+	c := client.NewMgcClient(apiToken)
+	dbaasClient := dbaas.New(c)
+
+	// List all parameters across all pages for a specific parameter group
+	params, err := dbaasClient.Parameters().ListAll(context.Background(), dbaas.ParameterFilterOptions{
+		ParameterGroupID: "88bd17e0-779c-43a5-9695-5cb9f6f918c0",
 	})
 	if err != nil {
 		log.Fatal(err)

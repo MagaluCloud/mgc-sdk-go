@@ -34,6 +34,7 @@ func TestClusterService_List(t *testing.T) {
 		{
 			name: "basic list",
 			response: `{
+				"meta": {"page": {"offset": 0, "limit": 50, "count": 2, "total": 2, "max_limit": 100}},
 				"results": [
 					{
 						"id": "cluster-1",
@@ -84,6 +85,7 @@ func TestClusterService_List(t *testing.T) {
 				ParameterGroupID: helpers.StrPtr("pg-1"),
 			},
 			response: `{
+				"meta": {"page": {"offset": 5, "limit": 10, "count": 1, "total": 1, "max_limit": 100}},
 				"results": [
 					{
 						"id": "cluster-1",
@@ -159,7 +161,10 @@ func TestClusterService_List(t *testing.T) {
 			}
 
 			assertNoError(t, err)
-			assertEqual(t, tt.wantCount, len(result))
+			if result == nil {
+				t.Fatal("expected response, got nil")
+			}
+			assertEqual(t, tt.wantCount, len(result.Results))
 		})
 	}
 }
@@ -623,6 +628,220 @@ func TestClusterService_Stop(t *testing.T) {
 			assertNoError(t, err)
 			assertEqual(t, tt.wantID, result.ID)
 		})
+	}
+}
+
+func TestClusterService_ListAll(t *testing.T) {
+	tests := []struct {
+		name       string
+		response   string
+		statusCode int
+		wantCount  int
+		wantErr    bool
+	}{
+		{
+			name: "single page",
+			response: `{
+				"meta": {"page": {"offset": 0, "limit": 50, "count": 2, "total": 2, "max_limit": 100}},
+				"results": [
+					{"id": "cluster-1", "name": "Cluster 1"},
+					{"id": "cluster-2", "name": "Cluster 2"}
+				]
+			}`,
+			statusCode: http.StatusOK,
+			wantCount:  2,
+		},
+		{
+			name: "empty result",
+			response: `{
+				"meta": {"page": {"offset": 0, "limit": 50, "count": 0, "total": 0, "max_limit": 100}},
+				"results": []
+			}`,
+			statusCode: http.StatusOK,
+			wantCount:  0,
+		},
+		{
+			name:       "server error",
+			response:   `{"error": "internal server error"}`,
+			statusCode: http.StatusInternalServerError,
+			wantErr:    true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				assertEqual(t, "/database/v2/clusters", r.URL.Path)
+
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(tt.statusCode)
+				w.Write([]byte(tt.response))
+			}))
+			defer server.Close()
+
+			client := testClusterClient(server.URL)
+			clusters, err := client.ListAll(context.Background(), ClusterFilterOptions{})
+
+			if tt.wantErr {
+				assertError(t, err)
+				return
+			}
+
+			assertNoError(t, err)
+			assertEqual(t, tt.wantCount, len(clusters))
+		})
+	}
+}
+
+func TestClusterService_ListAll_MultiplePagesWithPagination(t *testing.T) {
+	requestCount := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assertEqual(t, "/database/v2/clusters", r.URL.Path)
+
+		query := r.URL.Query()
+		offset := query.Get("_offset")
+		limit := query.Get("_limit")
+
+		if limit != "50" {
+			t.Errorf("expected limit 50, got %s", limit)
+		}
+
+		requestCount++
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+
+		// Simulate pagination: first page has 50 items, second page has 25
+		switch offset {
+		case "0":
+			// First page: 50 items
+			clusters := make([]string, 50)
+			for i := 0; i < 50; i++ {
+				clusters[i] = fmt.Sprintf(`{"id": "cluster%d", "name": "Cluster%d"}`, i+1, i+1)
+			}
+			response := fmt.Sprintf(`{"meta": {"page": {"offset": 0, "limit": 50, "count": 50, "total": 75, "max_limit": 100}}, "results": [%s]}`,
+				strings.Join(clusters, ","))
+			w.Write([]byte(response))
+		case "50":
+			// Second page: 25 items
+			clusters := make([]string, 25)
+			for i := 0; i < 25; i++ {
+				clusters[i] = fmt.Sprintf(`{"id": "cluster%d", "name": "Cluster%d"}`, i+51, i+51)
+			}
+			response := fmt.Sprintf(`{"meta": {"page": {"offset": 50, "limit": 50, "count": 25, "total": 75, "max_limit": 100}}, "results": [%s]}`,
+				strings.Join(clusters, ","))
+			w.Write([]byte(response))
+		default:
+			t.Errorf("unexpected offset: %s", offset)
+		}
+	}))
+	defer server.Close()
+
+	client := testClusterClient(server.URL)
+	clusters, err := client.ListAll(context.Background(), ClusterFilterOptions{})
+
+	assertNoError(t, err)
+
+	// Should have fetched all 75 clusters across 2 pages
+	assertEqual(t, 75, len(clusters))
+
+	// Should have made exactly 2 requests
+	if requestCount != 2 {
+		t.Errorf("made %d requests, want 2", requestCount)
+	}
+
+	// Verify first and last items
+	if clusters[0].ID != "cluster1" {
+		t.Errorf("first cluster ID: got %s, want cluster1", clusters[0].ID)
+	}
+	if clusters[74].ID != "cluster75" {
+		t.Errorf("last cluster ID: got %s, want cluster75", clusters[74].ID)
+	}
+}
+
+func TestClusterService_ListAll_WithFilters(t *testing.T) {
+	requestCount := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assertEqual(t, "/database/v2/clusters", r.URL.Path)
+
+		query := r.URL.Query()
+
+		// Verify filter parameters are present
+		if query.Get("status") != "ACTIVE" {
+			t.Errorf("expected status=ACTIVE, got %s", query.Get("status"))
+		}
+		if query.Get("engine_id") != "postgres-13" {
+			t.Errorf("expected engine_id=postgres-13, got %s", query.Get("engine_id"))
+		}
+
+		requestCount++
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+
+		// Return 50 items on first page, 25 on second
+		offset := query.Get("_offset")
+		switch offset {
+		case "0":
+			clusters := make([]string, 50)
+			for i := 0; i < 50; i++ {
+				clusters[i] = fmt.Sprintf(`{"id": "cluster%d", "name": "Cluster%d", "status": "ACTIVE", "engine_id": "postgres-13"}`, i+1, i+1)
+			}
+			response := fmt.Sprintf(`{
+				"meta": {
+					"filters": [
+						{"field": "status", "value": "ACTIVE"},
+						{"field": "engine_id", "value": "postgres-13"}
+					],
+					"page": {"offset": 0, "limit": 50, "count": 50, "total": 75, "max_limit": 100}
+				},
+				"results": [%s]
+			}`, strings.Join(clusters, ","))
+			w.Write([]byte(response))
+		case "50":
+			clusters := make([]string, 25)
+			for i := 0; i < 25; i++ {
+				clusters[i] = fmt.Sprintf(`{"id": "cluster%d", "name": "Cluster%d", "status": "ACTIVE", "engine_id": "postgres-13"}`, i+51, i+51)
+			}
+			response := fmt.Sprintf(`{
+				"meta": {
+					"filters": [
+						{"field": "status", "value": "ACTIVE"},
+						{"field": "engine_id", "value": "postgres-13"}
+					],
+					"page": {"offset": 50, "limit": 50, "count": 25, "total": 75, "max_limit": 100}
+				},
+				"results": [%s]
+			}`, strings.Join(clusters, ","))
+			w.Write([]byte(response))
+		default:
+			t.Errorf("unexpected offset: %s", offset)
+		}
+	}))
+	defer server.Close()
+
+	client := testClusterClient(server.URL)
+	clusters, err := client.ListAll(context.Background(), ClusterFilterOptions{
+		Status:   Ptr(ClusterStatusActive),
+		EngineID: helpers.StrPtr("postgres-13"),
+	})
+
+	assertNoError(t, err)
+
+	// Should have fetched all 75 clusters
+	assertEqual(t, 75, len(clusters))
+
+	// Should have made exactly 2 requests
+	if requestCount != 2 {
+		t.Errorf("made %d requests, want 2", requestCount)
+	}
+
+	// Verify all clusters have the filtered status
+	for _, cluster := range clusters {
+		if cluster.Status != ClusterStatusActive {
+			t.Errorf("expected status ACTIVE, got %s", cluster.Status)
+		}
+		if cluster.EngineID != "postgres-13" {
+			t.Errorf("expected engine_id postgres-13, got %s", cluster.EngineID)
+		}
 	}
 }
 

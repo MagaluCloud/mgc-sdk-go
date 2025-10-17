@@ -133,7 +133,11 @@ func TestReplicaService_List(t *testing.T) {
 			}
 
 			assertNoError(t, err)
-			assertEqual(t, tt.wantCount, len(result))
+			assertEqual(t, tt.wantCount, len(result.Results))
+			// Verify metadata is returned
+			if result != nil && tt.wantCount > 0 {
+				assertEqual(t, true, result.Meta.Page.Total >= 0)
+			}
 		})
 	}
 }
@@ -445,6 +449,173 @@ func TestReplicaService_StartStop(t *testing.T) {
 
 			assertNoError(t, err)
 			assertEqual(t, tt.wantID, result.ID)
+		})
+	}
+}
+
+func TestReplicaService_ListAll(t *testing.T) {
+	tests := []struct {
+		name       string
+		opts       ReplicaFilterOptions
+		pages      []string
+		statusCode int
+		wantCount  int
+		wantErr    bool
+	}{
+		{
+			name: "single page",
+			pages: []string{
+				`{
+					"meta": {
+						"page": {"count": 2, "limit": 100, "offset": 0, "total": 2}
+					},
+					"results": [
+						{"id": "rep1", "name": "replica1"},
+						{"id": "rep2", "name": "replica2"}
+					]
+				}`,
+			},
+			statusCode: http.StatusOK,
+			wantCount:  2,
+			wantErr:    false,
+		},
+		{
+			name: "multiple pages",
+			pages: []string{
+				func() string {
+					results := `[`
+					for i := 0; i < 100; i++ {
+						if i > 0 {
+							results += ","
+						}
+						results += fmt.Sprintf(`{"id": "rep%d", "name": "replica%d"}`, i+1, i+1)
+					}
+					results += `]`
+					return fmt.Sprintf(`{
+						"meta": {"page": {"offset": 0, "limit": 100, "count": 100, "total": 250}},
+						"results": %s
+					}`, results)
+				}(),
+				func() string {
+					results := `[`
+					for i := 0; i < 100; i++ {
+						if i > 0 {
+							results += ","
+						}
+						results += fmt.Sprintf(`{"id": "rep%d", "name": "replica%d"}`, i+101, i+101)
+					}
+					results += `]`
+					return fmt.Sprintf(`{
+						"meta": {"page": {"offset": 100, "limit": 100, "count": 100, "total": 250}},
+						"results": %s
+					}`, results)
+				}(),
+				func() string {
+					results := `[`
+					for i := 0; i < 50; i++ {
+						if i > 0 {
+							results += ","
+						}
+						results += fmt.Sprintf(`{"id": "rep%d", "name": "replica%d"}`, i+201, i+201)
+					}
+					results += `]`
+					return fmt.Sprintf(`{
+						"meta": {"page": {"offset": 200, "limit": 100, "count": 50, "total": 250}},
+						"results": %s
+					}`, results)
+				}(),
+			},
+			statusCode: http.StatusOK,
+			wantCount:  250,
+			wantErr:    false,
+		},
+		{
+			name: "empty results",
+			pages: []string{
+				`{
+					"meta": {
+						"page": {"count": 0, "limit": 100, "offset": 0, "total": 0}
+					},
+					"results": []
+				}`,
+			},
+			statusCode: http.StatusOK,
+			wantCount:  0,
+			wantErr:    false,
+		},
+		{
+			name: "with source filter",
+			opts: ReplicaFilterOptions{
+				SourceID: helpers.StrPtr("src1"),
+			},
+			pages: []string{
+				`{
+					"meta": {
+						"filters": [{"field": "source_id", "value": "src1"}],
+						"page": {"count": 1, "limit": 100, "offset": 0, "total": 1}
+					},
+					"results": [
+						{"id": "rep1", "source_id": "src1", "name": "replica1"}
+					]
+				}`,
+			},
+			statusCode: http.StatusOK,
+			wantCount:  1,
+			wantErr:    false,
+		},
+		{
+			name:       "server error",
+			pages:      []string{`{"error": "internal server error"}`},
+			statusCode: http.StatusInternalServerError,
+			wantErr:    true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				assertEqual(t, "/database/v2/replicas", r.URL.Path)
+
+				query := r.URL.Query()
+				if tt.opts.SourceID != nil {
+					assertEqual(t, *tt.opts.SourceID, query.Get("source_id"))
+				}
+
+				// Determine which page to return based on offset
+				offset := query.Get("_offset")
+				currentPage := 0
+				if offset != "" {
+					offsetInt, _ := strconv.Atoi(offset)
+					currentPage = offsetInt / 100
+				}
+
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(tt.statusCode)
+				if currentPage < len(tt.pages) {
+					w.Write([]byte(tt.pages[currentPage]))
+				} else {
+					// Return empty results if we've run out of pages
+					w.Write([]byte(`{"meta": {"page": {"count": 0, "limit": 100, "offset": 0, "total": 0}}, "results": []}`))
+				}
+			}))
+			defer server.Close()
+
+			client := testClient(server.URL)
+			results, meta, err := client.ListAll(context.Background(), tt.opts)
+
+			if tt.wantErr {
+				assertError(t, err)
+				assertEqual(t, true, strings.Contains(err.Error(), strconv.Itoa(tt.statusCode)))
+				return
+			}
+
+			assertNoError(t, err)
+			assertEqual(t, tt.wantCount, len(results))
+
+			// Verify metadata is returned
+			if meta != nil && tt.wantCount > 0 {
+				assertEqual(t, true, meta.Page.Total >= 0)
+			}
 		})
 	}
 }

@@ -204,6 +204,12 @@ type (
 		Type   *SnapshotType   `json:"type,omitempty"`
 		Status *SnapshotStatus `json:"status,omitempty"`
 	}
+
+	// SnapshotFilterOptions provides filtering options for ListAllSnapshots (without pagination)
+	SnapshotFilterOptions struct {
+		Type   *SnapshotType   `json:"type,omitempty"`
+		Status *SnapshotStatus `json:"status,omitempty"`
+	}
 )
 
 // InstanceStatusUpdate represents the status update for an instance
@@ -217,7 +223,8 @@ const (
 type (
 	// InstanceService provides methods for managing database instances
 	InstanceService interface {
-		List(ctx context.Context, opts ListInstanceOptions) ([]InstanceDetail, error)
+		List(ctx context.Context, opts ListInstanceOptions) (*InstancesResponse, error)
+		ListAll(ctx context.Context, filterOpts InstanceFilterOptions) ([]InstanceDetail, error)
 		Get(ctx context.Context, id string, opts GetInstanceOptions) (*InstanceDetail, error)
 		Create(ctx context.Context, req InstanceCreateRequest) (*InstanceResponse, error)
 		Delete(ctx context.Context, id string) error
@@ -225,7 +232,8 @@ type (
 		Resize(ctx context.Context, id string, req InstanceResizeRequest) (*InstanceDetail, error)
 		Start(ctx context.Context, id string) (*InstanceDetail, error)
 		Stop(ctx context.Context, id string) (*InstanceDetail, error)
-		ListSnapshots(ctx context.Context, instanceID string, opts ListSnapshotOptions) ([]SnapshotDetailResponse, error)
+		ListSnapshots(ctx context.Context, instanceID string, opts ListSnapshotOptions) (*SnapshotsResponse, error)
+		ListAllSnapshots(ctx context.Context, instanceID string, filterOpts SnapshotFilterOptions) ([]SnapshotDetailResponse, error)
 		CreateSnapshot(ctx context.Context, instanceID string, req SnapshotCreateRequest) (*SnapshotResponse, error)
 		GetSnapshot(ctx context.Context, instanceID, snapshotID string) (*SnapshotDetailResponse, error)
 		UpdateSnapshot(ctx context.Context, instanceID, snapshotID string, req SnapshotUpdateRequest) (*SnapshotDetailResponse, error)
@@ -242,6 +250,18 @@ type (
 	ListInstanceOptions struct {
 		Offset         *int
 		Limit          *int
+		Status         *InstanceStatus
+		EngineID       *string
+		VolumeSize     *int
+		VolumeSizeGt   *int
+		VolumeSizeGte  *int
+		VolumeSizeLt   *int
+		VolumeSizeLte  *int
+		ExpandedFields []string
+	}
+
+	// InstanceFilterOptions provides filtering options for ListAll (without pagination)
+	InstanceFilterOptions struct {
 		Status         *InstanceStatus
 		EngineID       *string
 		VolumeSize     *int
@@ -296,7 +316,7 @@ type (
 
 // List implements the List method of InstanceService.
 // Returns a paginated list of database instances with optional filters.
-func (s *instanceService) List(ctx context.Context, opts ListInstanceOptions) ([]InstanceDetail, error) {
+func (s *instanceService) List(ctx context.Context, opts ListInstanceOptions) (*InstancesResponse, error) {
 	query := make(url.Values)
 
 	if opts.Offset != nil {
@@ -343,7 +363,46 @@ func (s *instanceService) List(ctx context.Context, opts ListInstanceOptions) ([
 		return nil, err
 	}
 
-	return result.Results, nil
+	return result, nil
+}
+
+// ListAll retrieves all instances by fetching all pages with optional filtering
+func (s *instanceService) ListAll(ctx context.Context, filterOpts InstanceFilterOptions) ([]InstanceDetail, error) {
+	var allInstances []InstanceDetail
+	offset := 0
+	limit := 50
+
+	for {
+		currentOffset := offset
+		currentLimit := limit
+		opts := ListInstanceOptions{
+			Offset:         &currentOffset,
+			Limit:          &currentLimit,
+			Status:         filterOpts.Status,
+			EngineID:       filterOpts.EngineID,
+			VolumeSize:     filterOpts.VolumeSize,
+			VolumeSizeGt:   filterOpts.VolumeSizeGt,
+			VolumeSizeGte:  filterOpts.VolumeSizeGte,
+			VolumeSizeLt:   filterOpts.VolumeSizeLt,
+			VolumeSizeLte:  filterOpts.VolumeSizeLte,
+			ExpandedFields: filterOpts.ExpandedFields,
+		}
+
+		resp, err := s.List(ctx, opts)
+		if err != nil {
+			return nil, err
+		}
+
+		allInstances = append(allInstances, resp.Results...)
+
+		if len(resp.Results) < limit {
+			break
+		}
+
+		offset += limit
+	}
+
+	return allInstances, nil
 }
 
 // Get retrieves details of a specific database instance.
@@ -450,7 +509,7 @@ func (s *instanceService) Stop(ctx context.Context, id string) (*InstanceDetail,
 }
 
 // ListSnapshots returns a list of snapshots for a specific instance.
-func (s *instanceService) ListSnapshots(ctx context.Context, instanceID string, opts ListSnapshotOptions) ([]SnapshotDetailResponse, error) {
+func (s *instanceService) ListSnapshots(ctx context.Context, instanceID string, opts ListSnapshotOptions) (*SnapshotsResponse, error) {
 	query := make(url.Values)
 
 	if opts.Offset != nil {
@@ -479,7 +538,40 @@ func (s *instanceService) ListSnapshots(ctx context.Context, instanceID string, 
 		return nil, err
 	}
 
-	return result.Results, nil
+	return result, nil
+}
+
+// ListAllSnapshots retrieves all snapshots for an instance by fetching all pages with optional filtering
+func (s *instanceService) ListAllSnapshots(ctx context.Context, instanceID string, filterOpts SnapshotFilterOptions) ([]SnapshotDetailResponse, error) {
+	var allSnapshots []SnapshotDetailResponse
+	offset := 0
+	limit := 50
+
+	for {
+		currentOffset := offset
+		currentLimit := limit
+		opts := ListSnapshotOptions{
+			Offset: &currentOffset,
+			Limit:  &currentLimit,
+			Type:   filterOpts.Type,
+			Status: filterOpts.Status,
+		}
+
+		resp, err := s.ListSnapshots(ctx, instanceID, opts)
+		if err != nil {
+			return nil, err
+		}
+
+		allSnapshots = append(allSnapshots, resp.Results...)
+
+		if len(resp.Results) < limit {
+			break
+		}
+
+		offset += limit
+	}
+
+	return allSnapshots, nil
 }
 
 // CreateSnapshot creates a new snapshot for the specified instance.

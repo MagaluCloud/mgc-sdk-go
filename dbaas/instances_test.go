@@ -111,7 +111,7 @@ func TestInstanceService_List(t *testing.T) {
 			}
 
 			assertNoError(t, err)
-			assertEqual(t, tt.wantCount, len(result))
+			assertEqual(t, tt.wantCount, len(result.Results))
 		})
 	}
 }
@@ -183,6 +183,66 @@ func TestInstanceService_Get(t *testing.T) {
 			assertEqual(t, tt.wantID, instance.ID)
 		})
 	}
+}
+
+func TestInstanceService_List_PaginationMetadata(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assertEqual(t, "/database/v2/instances", r.URL.Path)
+		query := r.URL.Query()
+
+		assertEqual(t, "10", query.Get("_limit"))
+		assertEqual(t, "20", query.Get("_offset"))
+
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`{
+			"meta": {
+				"page": {
+					"offset": 20,
+					"limit": 10,
+					"count": 10,
+					"total": 50,
+					"max_limit": 100
+				},
+				"filters": [
+					{"field": "status", "value": "ACTIVE"}
+				]
+			},
+			"results": [
+				{"id": "inst1", "name": "instance1", "status": "ACTIVE"},
+				{"id": "inst2", "name": "instance2", "status": "ACTIVE"}
+			]
+		}`))
+	}))
+	defer server.Close()
+
+	client := testInstanceClient(server.URL)
+	offset := 20
+	limit := 10
+	status := InstanceStatusActive
+	result, err := client.List(context.Background(), ListInstanceOptions{
+		Offset: &offset,
+		Limit:  &limit,
+		Status: &status,
+	})
+
+	assertNoError(t, err)
+
+	// Validate results
+	assertEqual(t, 2, len(result.Results))
+	assertEqual(t, "inst1", result.Results[0].ID)
+	assertEqual(t, "inst2", result.Results[1].ID)
+
+	// Validate pagination metadata
+	assertEqual(t, 20, result.Meta.Page.Offset)
+	assertEqual(t, 10, result.Meta.Page.Limit)
+	assertEqual(t, 10, result.Meta.Page.Count)
+	assertEqual(t, 50, result.Meta.Page.Total)
+	assertEqual(t, 100, result.Meta.Page.MaxLimit)
+
+	// Validate filters metadata
+	assertEqual(t, 1, len(result.Meta.Filters))
+	assertEqual(t, "status", result.Meta.Filters[0].Field)
+	assertEqual(t, "ACTIVE", result.Meta.Filters[0].Value)
 }
 
 func TestInstanceService_Create(t *testing.T) {
@@ -511,13 +571,13 @@ func TestInstanceService_Snapshots(t *testing.T) {
 		defer server.Close()
 
 		client := testInstanceClient(server.URL)
-		snapshots, err := client.ListSnapshots(context.Background(), "inst1", ListSnapshotOptions{
+		result, err := client.ListSnapshots(context.Background(), "inst1", ListSnapshotOptions{
 			Limit: helpers.IntPtr(10),
 			Type:  snapshotTypePtr(SnapshotTypeAutomated),
 		})
 
 		assertNoError(t, err)
-		assertEqual(t, 1, len(snapshots))
+		assertEqual(t, 1, len(result.Results))
 	})
 
 	t.Run("CreateSnapshot", func(t *testing.T) {
@@ -639,4 +699,544 @@ func TestInstanceService_Snapshots(t *testing.T) {
 
 func snapshotTypePtr(SnapshotTypeAutomated SnapshotType) *SnapshotType {
 	return &SnapshotTypeAutomated
+}
+
+func TestInstanceService_ListAll(t *testing.T) {
+	tests := []struct {
+		name       string
+		filterOpts InstanceFilterOptions
+		response   string
+		statusCode int
+		wantCount  int
+		wantErr    bool
+	}{
+		{
+			name: "single page",
+			response: `{
+				"meta": {"page": {"offset": 0, "limit": 50, "count": 2, "total": 2, "max_limit": 100}},
+				"results": [
+					{"id": "inst1", "name": "instance1", "status": "ACTIVE"},
+					{"id": "inst2", "name": "instance2", "status": "ACTIVE"}
+				]
+			}`,
+			statusCode: http.StatusOK,
+			wantCount:  2,
+		},
+		{
+			name: "empty result",
+			response: `{
+				"meta": {"page": {"offset": 0, "limit": 50, "count": 0, "total": 0, "max_limit": 100}},
+				"results": []
+			}`,
+			statusCode: http.StatusOK,
+			wantCount:  0,
+		},
+		{
+			name: "with status filter",
+			filterOpts: InstanceFilterOptions{
+				Status: instanceStatusPtr(InstanceStatusActive),
+			},
+			response: `{
+				"meta": {"page": {"offset": 0, "limit": 50, "count": 1, "total": 1, "max_limit": 100}},
+				"results": [
+					{"id": "inst1", "status": "ACTIVE"}
+				]
+			}`,
+			statusCode: http.StatusOK,
+			wantCount:  1,
+		},
+		{
+			name: "with engine_id filter",
+			filterOpts: InstanceFilterOptions{
+				EngineID: helpers.StrPtr("postgres-16"),
+			},
+			response: `{
+				"meta": {"page": {"offset": 0, "limit": 50, "count": 1, "total": 1, "max_limit": 100}},
+				"results": [
+					{"id": "inst1", "engine_id": "postgres-16"}
+				]
+			}`,
+			statusCode: http.StatusOK,
+			wantCount:  1,
+		},
+		{
+			name: "with volume size filters",
+			filterOpts: InstanceFilterOptions{
+				VolumeSizeGte: helpers.IntPtr(100),
+				VolumeSizeLte: helpers.IntPtr(500),
+			},
+			response: `{
+				"meta": {"page": {"offset": 0, "limit": 50, "count": 2, "total": 2, "max_limit": 100}},
+				"results": [
+					{"id": "inst1", "volume": {"size": 100, "type": "nvme"}},
+					{"id": "inst2", "volume": {"size": 200, "type": "nvme"}}
+				]
+			}`,
+			statusCode: http.StatusOK,
+			wantCount:  2,
+		},
+		{
+			name: "with expanded fields",
+			filterOpts: InstanceFilterOptions{
+				ExpandedFields: []string{"replicas", "parameters"},
+			},
+			response: `{
+				"meta": {"page": {"offset": 0, "limit": 50, "count": 1, "total": 1, "max_limit": 100}},
+				"results": [
+					{"id": "inst1", "replicas": []}
+				]
+			}`,
+			statusCode: http.StatusOK,
+			wantCount:  1,
+		},
+		{
+			name:       "server error",
+			response:   `{"error": "internal server error"}`,
+			statusCode: http.StatusInternalServerError,
+			wantErr:    true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				assertEqual(t, "/database/v2/instances", r.URL.Path)
+
+				query := r.URL.Query()
+
+				// Verify filter parameters
+				if tt.filterOpts.Status != nil {
+					assertEqual(t, string(*tt.filterOpts.Status), query.Get("status"))
+				}
+				if tt.filterOpts.EngineID != nil {
+					assertEqual(t, *tt.filterOpts.EngineID, query.Get("engine_id"))
+				}
+				if tt.filterOpts.VolumeSize != nil {
+					assertEqual(t, strconv.Itoa(*tt.filterOpts.VolumeSize), query.Get("volume.size"))
+				}
+				if tt.filterOpts.VolumeSizeGt != nil {
+					assertEqual(t, strconv.Itoa(*tt.filterOpts.VolumeSizeGt), query.Get("volume.size__gt"))
+				}
+				if tt.filterOpts.VolumeSizeGte != nil {
+					assertEqual(t, strconv.Itoa(*tt.filterOpts.VolumeSizeGte), query.Get("volume.size__gte"))
+				}
+				if tt.filterOpts.VolumeSizeLt != nil {
+					assertEqual(t, strconv.Itoa(*tt.filterOpts.VolumeSizeLt), query.Get("volume.size__lt"))
+				}
+				if tt.filterOpts.VolumeSizeLte != nil {
+					assertEqual(t, strconv.Itoa(*tt.filterOpts.VolumeSizeLte), query.Get("volume.size__lte"))
+				}
+				if len(tt.filterOpts.ExpandedFields) > 0 {
+					assertEqual(t, strings.Join(tt.filterOpts.ExpandedFields, ","), query.Get("_expand"))
+				}
+
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(tt.statusCode)
+				w.Write([]byte(tt.response))
+			}))
+			defer server.Close()
+
+			client := testInstanceClient(server.URL)
+			instances, err := client.ListAll(context.Background(), tt.filterOpts)
+
+			if tt.wantErr {
+				assertError(t, err)
+				return
+			}
+
+			assertNoError(t, err)
+			assertEqual(t, tt.wantCount, len(instances))
+		})
+	}
+}
+
+func TestInstanceService_ListAll_MultiplePagesWithPagination(t *testing.T) {
+	requestCount := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assertEqual(t, "/database/v2/instances", r.URL.Path)
+
+		query := r.URL.Query()
+		offset := query.Get("_offset")
+		limit := query.Get("_limit")
+
+		if limit != "50" {
+			t.Errorf("expected limit 50, got %s", limit)
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+
+		if requestCount == 0 {
+			// First page
+			if offset != "0" {
+				t.Errorf("expected offset 0, got %s", offset)
+			}
+			results := `[`
+			for i := 0; i < 50; i++ {
+				if i > 0 {
+					results += ","
+				}
+				results += fmt.Sprintf(`{"id": "inst-%d", "name": "instance-%d", "status": "ACTIVE"}`, i+1, i+1)
+			}
+			results += `]`
+			response := fmt.Sprintf(`{
+				"meta": {"page": {"offset": 0, "limit": 50, "count": 50, "total": 70, "max_limit": 100}},
+				"results": %s
+			}`, results)
+			w.Write([]byte(response))
+		} else if requestCount == 1 {
+			// Second page
+			if offset != "50" {
+				t.Errorf("expected offset 50, got %s", offset)
+			}
+			results := `[`
+			for i := 0; i < 20; i++ {
+				if i > 0 {
+					results += ","
+				}
+				results += fmt.Sprintf(`{"id": "inst-%d", "name": "instance-%d", "status": "ACTIVE"}`, i+51, i+51)
+			}
+			results += `]`
+			response := fmt.Sprintf(`{
+				"meta": {"page": {"offset": 50, "limit": 50, "count": 20, "total": 70, "max_limit": 100}},
+				"results": %s
+			}`, results)
+			w.Write([]byte(response))
+		}
+
+		requestCount++
+	}))
+	defer server.Close()
+
+	client := testInstanceClient(server.URL)
+	instances, err := client.ListAll(context.Background(), InstanceFilterOptions{})
+
+	assertNoError(t, err)
+	assertEqual(t, 70, len(instances))
+	assertEqual(t, 2, requestCount)
+}
+
+func TestInstanceService_ListAll_WithFilters(t *testing.T) {
+	requestCount := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assertEqual(t, "/database/v2/instances", r.URL.Path)
+
+		query := r.URL.Query()
+
+		// Verify filter parameters are present
+		if query.Get("status") != "ACTIVE" {
+			t.Errorf("expected status=ACTIVE, got %s", query.Get("status"))
+		}
+		if query.Get("engine_id") != "postgres-16" {
+			t.Errorf("expected engine_id=postgres-16, got %s", query.Get("engine_id"))
+		}
+		if query.Get("_expand") != "replicas" {
+			t.Errorf("expected _expand=replicas, got %s", query.Get("_expand"))
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+
+		if requestCount == 0 {
+			// First page with 50 results
+			results := `[`
+			for i := 0; i < 50; i++ {
+				if i > 0 {
+					results += ","
+				}
+				results += fmt.Sprintf(`{"id": "inst-%d", "status": "ACTIVE", "engine_id": "postgres-16", "replicas": []}`, i+1)
+			}
+			results += `]`
+			response := fmt.Sprintf(`{
+				"meta": {"page": {"offset": 0, "limit": 50, "count": 50, "total": 55, "max_limit": 100}},
+				"results": %s
+			}`, results)
+			w.Write([]byte(response))
+		} else if requestCount == 1 {
+			// Second page with 5 results
+			results := `[`
+			for i := 0; i < 5; i++ {
+				if i > 0 {
+					results += ","
+				}
+				results += fmt.Sprintf(`{"id": "inst-%d", "status": "ACTIVE", "engine_id": "postgres-16", "replicas": []}`, i+51)
+			}
+			results += `]`
+			response := fmt.Sprintf(`{
+				"meta": {"page": {"offset": 50, "limit": 50, "count": 5, "total": 55, "max_limit": 100}},
+				"results": %s
+			}`, results)
+			w.Write([]byte(response))
+		}
+
+		requestCount++
+	}))
+	defer server.Close()
+
+	client := testInstanceClient(server.URL)
+	instances, err := client.ListAll(context.Background(), InstanceFilterOptions{
+		Status:         instanceStatusPtr(InstanceStatusActive),
+		EngineID:       helpers.StrPtr("postgres-16"),
+		ExpandedFields: []string{"replicas"},
+	})
+
+	assertNoError(t, err)
+	assertEqual(t, 55, len(instances))
+	assertEqual(t, 2, requestCount)
+
+	// Verify all instances have the correct status
+	for _, inst := range instances {
+		assertEqual(t, InstanceStatusActive, inst.Status)
+	}
+}
+
+func TestInstanceService_ListAllSnapshots(t *testing.T) {
+	tests := []struct {
+		name       string
+		instanceID string
+		filterOpts SnapshotFilterOptions
+		response   string
+		statusCode int
+		wantCount  int
+		wantErr    bool
+	}{
+		{
+			name:       "single page",
+			instanceID: "inst-123",
+			response: `{
+				"meta": {"page": {"offset": 0, "limit": 50, "count": 2, "total": 2, "max_limit": 100}},
+				"results": [
+					{"id": "snap1", "name": "snapshot1", "status": "AVAILABLE", "type": "ON_DEMAND"},
+					{"id": "snap2", "name": "snapshot2", "status": "AVAILABLE", "type": "AUTOMATED"}
+				]
+			}`,
+			statusCode: http.StatusOK,
+			wantCount:  2,
+		},
+		{
+			name:       "empty result",
+			instanceID: "inst-123",
+			response: `{
+				"meta": {"page": {"offset": 0, "limit": 50, "count": 0, "total": 0, "max_limit": 100}},
+				"results": []
+			}`,
+			statusCode: http.StatusOK,
+			wantCount:  0,
+		},
+		{
+			name:       "with type filter",
+			instanceID: "inst-123",
+			filterOpts: SnapshotFilterOptions{
+				Type: snapshotTypePtr(SnapshotTypeOnDemand),
+			},
+			response: `{
+				"meta": {"page": {"offset": 0, "limit": 50, "count": 1, "total": 1, "max_limit": 100}},
+				"results": [
+					{"id": "snap1", "type": "ON_DEMAND", "status": "AVAILABLE"}
+				]
+			}`,
+			statusCode: http.StatusOK,
+			wantCount:  1,
+		},
+		{
+			name:       "with status filter",
+			instanceID: "inst-123",
+			filterOpts: SnapshotFilterOptions{
+				Status: snapshotStatusPtr(SnapshotStatusAvailable),
+			},
+			response: `{
+				"meta": {"page": {"offset": 0, "limit": 50, "count": 2, "total": 2, "max_limit": 100}},
+				"results": [
+					{"id": "snap1", "status": "AVAILABLE"},
+					{"id": "snap2", "status": "AVAILABLE"}
+				]
+			}`,
+			statusCode: http.StatusOK,
+			wantCount:  2,
+		},
+		{
+			name:       "server error",
+			instanceID: "inst-123",
+			response:   `{"error": "internal server error"}`,
+			statusCode: http.StatusInternalServerError,
+			wantErr:    true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				assertEqual(t, fmt.Sprintf("/database/v2/instances/%s/snapshots", tt.instanceID), r.URL.Path)
+
+				query := r.URL.Query()
+
+				// Verify filter parameters
+				if tt.filterOpts.Type != nil {
+					assertEqual(t, string(*tt.filterOpts.Type), query.Get("type"))
+				}
+				if tt.filterOpts.Status != nil {
+					assertEqual(t, string(*tt.filterOpts.Status), query.Get("status"))
+				}
+
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(tt.statusCode)
+				w.Write([]byte(tt.response))
+			}))
+			defer server.Close()
+
+			client := testInstanceClient(server.URL)
+			snapshots, err := client.ListAllSnapshots(context.Background(), tt.instanceID, tt.filterOpts)
+
+			if tt.wantErr {
+				assertError(t, err)
+				return
+			}
+
+			assertNoError(t, err)
+			assertEqual(t, tt.wantCount, len(snapshots))
+		})
+	}
+}
+
+func TestInstanceService_ListAllSnapshots_MultiplePagesWithPagination(t *testing.T) {
+	instanceID := "inst-123"
+	requestCount := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assertEqual(t, fmt.Sprintf("/database/v2/instances/%s/snapshots", instanceID), r.URL.Path)
+
+		query := r.URL.Query()
+		offset := query.Get("_offset")
+		limit := query.Get("_limit")
+
+		if limit != "50" {
+			t.Errorf("expected limit 50, got %s", limit)
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+
+		if requestCount == 0 {
+			// First page
+			if offset != "0" {
+				t.Errorf("expected offset 0, got %s", offset)
+			}
+			results := `[`
+			for i := 0; i < 50; i++ {
+				if i > 0 {
+					results += ","
+				}
+				results += fmt.Sprintf(`{"id": "snap-%d", "name": "snapshot-%d", "status": "AVAILABLE", "type": "AUTOMATED"}`, i+1, i+1)
+			}
+			results += `]`
+			response := fmt.Sprintf(`{
+				"meta": {"page": {"offset": 0, "limit": 50, "count": 50, "total": 75, "max_limit": 100}},
+				"results": %s
+			}`, results)
+			w.Write([]byte(response))
+		} else if requestCount == 1 {
+			// Second page
+			if offset != "50" {
+				t.Errorf("expected offset 50, got %s", offset)
+			}
+			results := `[`
+			for i := 0; i < 25; i++ {
+				if i > 0 {
+					results += ","
+				}
+				results += fmt.Sprintf(`{"id": "snap-%d", "name": "snapshot-%d", "status": "AVAILABLE", "type": "AUTOMATED"}`, i+51, i+51)
+			}
+			results += `]`
+			response := fmt.Sprintf(`{
+				"meta": {"page": {"offset": 50, "limit": 50, "count": 25, "total": 75, "max_limit": 100}},
+				"results": %s
+			}`, results)
+			w.Write([]byte(response))
+		}
+
+		requestCount++
+	}))
+	defer server.Close()
+
+	client := testInstanceClient(server.URL)
+	snapshots, err := client.ListAllSnapshots(context.Background(), instanceID, SnapshotFilterOptions{})
+
+	assertNoError(t, err)
+	assertEqual(t, 75, len(snapshots))
+	assertEqual(t, 2, requestCount)
+}
+
+func TestInstanceService_ListAllSnapshots_WithFilters(t *testing.T) {
+	instanceID := "inst-123"
+	requestCount := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assertEqual(t, fmt.Sprintf("/database/v2/instances/%s/snapshots", instanceID), r.URL.Path)
+
+		query := r.URL.Query()
+
+		// Verify filter parameters are present
+		if query.Get("type") != "ON_DEMAND" {
+			t.Errorf("expected type=ON_DEMAND, got %s", query.Get("type"))
+		}
+		if query.Get("status") != "AVAILABLE" {
+			t.Errorf("expected status=AVAILABLE, got %s", query.Get("status"))
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+
+		if requestCount == 0 {
+			// First page with 50 results
+			results := `[`
+			for i := 0; i < 50; i++ {
+				if i > 0 {
+					results += ","
+				}
+				results += fmt.Sprintf(`{"id": "snap-%d", "status": "AVAILABLE", "type": "ON_DEMAND"}`, i+1)
+			}
+			results += `]`
+			response := fmt.Sprintf(`{
+				"meta": {"page": {"offset": 0, "limit": 50, "count": 50, "total": 60, "max_limit": 100}},
+				"results": %s
+			}`, results)
+			w.Write([]byte(response))
+		} else if requestCount == 1 {
+			// Second page with 10 results
+			results := `[`
+			for i := 0; i < 10; i++ {
+				if i > 0 {
+					results += ","
+				}
+				results += fmt.Sprintf(`{"id": "snap-%d", "status": "AVAILABLE", "type": "ON_DEMAND"}`, i+51)
+			}
+			results += `]`
+			response := fmt.Sprintf(`{
+				"meta": {"page": {"offset": 50, "limit": 50, "count": 10, "total": 60, "max_limit": 100}},
+				"results": %s
+			}`, results)
+			w.Write([]byte(response))
+		}
+
+		requestCount++
+	}))
+	defer server.Close()
+
+	client := testInstanceClient(server.URL)
+	snapshots, err := client.ListAllSnapshots(context.Background(), instanceID, SnapshotFilterOptions{
+		Type:   snapshotTypePtr(SnapshotTypeOnDemand),
+		Status: snapshotStatusPtr(SnapshotStatusAvailable),
+	})
+
+	assertNoError(t, err)
+	assertEqual(t, 60, len(snapshots))
+	assertEqual(t, 2, requestCount)
+
+	// Verify all snapshots have the correct type and status
+	for _, snap := range snapshots {
+		assertEqual(t, SnapshotTypeOnDemand, snap.Type)
+		assertEqual(t, SnapshotStatusAvailable, snap.Status)
+	}
+}
+
+func snapshotStatusPtr(status SnapshotStatus) *SnapshotStatus {
+	return &status
 }
