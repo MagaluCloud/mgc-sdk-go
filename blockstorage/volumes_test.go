@@ -618,7 +618,7 @@ func TestVolumeService_ListAll(t *testing.T) {
 			defer server.Close()
 
 			client := testClient(server.URL)
-			volumes, err := client.ListAll(context.Background(), nil)
+			volumes, err := client.ListAll(context.Background(), VolumeFilterOptions{})
 
 			if tt.wantErr {
 				assertError(t, err)
@@ -675,7 +675,7 @@ func TestVolumeService_ListAll_MultiplePagesWithPagination(t *testing.T) {
 	defer server.Close()
 
 	client := testClient(server.URL)
-	volumes, err := client.ListAll(context.Background(), nil)
+	volumes, err := client.ListAll(context.Background(), VolumeFilterOptions{})
 
 	assertNoError(t, err)
 
@@ -754,7 +754,9 @@ func TestVolumeService_ListAll_WithExpand(t *testing.T) {
 	defer server.Close()
 
 	client := testClient(server.URL)
-	volumes, err := client.ListAll(context.Background(), []VolumeExpand{VolumeTypeExpand, VolumeAttachExpand})
+	volumes, err := client.ListAll(context.Background(), VolumeFilterOptions{
+		Expand: []VolumeExpand{VolumeTypeExpand, VolumeAttachExpand},
+	})
 
 	assertNoError(t, err)
 

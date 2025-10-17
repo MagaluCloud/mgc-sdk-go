@@ -56,11 +56,19 @@ type ListVolumeTypesOptions struct {
 	Sort             *string
 }
 
+// VolumeTypeFilterOptions provides filtering options for ListAll (without pagination)
+type VolumeTypeFilterOptions struct {
+	AvailabilityZone string
+	Name             string
+	AllowsEncryption *bool
+	Sort             *string
+}
+
 // VolumeTypeService provides operations for managing volume types.
 // This interface allows listing available volume types with optional filtering.
 type VolumeTypeService interface {
 	List(ctx context.Context, opts ListVolumeTypesOptions) (*ListVolumeTypesResponse, error)
-	ListAll(ctx context.Context) ([]VolumeType, error)
+	ListAll(ctx context.Context, filterOpts VolumeTypeFilterOptions) ([]VolumeType, error)
 }
 
 // volumeTypeService implements the VolumeTypeService interface.
@@ -113,9 +121,9 @@ func (s *volumeTypeService) List(ctx context.Context, opts ListVolumeTypesOption
 	return resp, nil
 }
 
-// ListAll retrieves all volume types by fetching all pages.
+// ListAll retrieves all volume types by fetching all pages with optional filtering.
 // This method repeatedly calls List to get all available volume types.
-func (s *volumeTypeService) ListAll(ctx context.Context) ([]VolumeType, error) {
+func (s *volumeTypeService) ListAll(ctx context.Context, filterOpts VolumeTypeFilterOptions) ([]VolumeType, error) {
 	var allTypes []VolumeType
 	offset := 0
 	limit := 50
@@ -124,8 +132,12 @@ func (s *volumeTypeService) ListAll(ctx context.Context) ([]VolumeType, error) {
 		currentOffset := offset
 		currentLimit := limit
 		opts := ListVolumeTypesOptions{
-			Offset: &currentOffset,
-			Limit:  &currentLimit,
+			Offset:           &currentOffset,
+			Limit:            &currentLimit,
+			AvailabilityZone: filterOpts.AvailabilityZone,
+			Name:             filterOpts.Name,
+			AllowsEncryption: filterOpts.AllowsEncryption,
+			Sort:             filterOpts.Sort,
 		}
 
 		resp, err := s.List(ctx, opts)

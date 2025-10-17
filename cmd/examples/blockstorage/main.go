@@ -15,7 +15,9 @@ import (
 
 func main() {
 	ExampleListVolumeTypes()
+	ExampleListAllVolumeTypes()
 	ExampleListVolumes()
+	ExampleListAllVolumes()
 	id := ExampleCreateVolume()
 	ExampleGetVolume(id)
 	ExampleManageVolume(id)
@@ -94,7 +96,9 @@ func ExampleListAllVolumes() {
 	blockClient := blockstorage.New(c)
 
 	// List all volumes (fetches all pages automatically)
-	volumes, err := blockClient.Volumes().ListAll(context.Background(), []blockstorage.VolumeExpand{})
+	volumes, err := blockClient.Volumes().ListAll(context.Background(), blockstorage.VolumeFilterOptions{
+		Expand: []blockstorage.VolumeExpand{blockstorage.VolumeTypeExpand, blockstorage.VolumeAttachExpand},
+	})
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -275,8 +279,8 @@ func ExampleListAllVolumeTypes() {
 	c := client.NewMgcClient(apiToken)
 	blockClient := blockstorage.New(c)
 
-	// List all volume types
-	volumeTypes, err := blockClient.VolumeTypes().ListAll(context.Background())
+	// List all volume types (fetches all pages automatically)
+	volumeTypes, err := blockClient.VolumeTypes().ListAll(context.Background(), blockstorage.VolumeTypeFilterOptions{})
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -285,12 +289,8 @@ func ExampleListAllVolumeTypes() {
 
 	// Print volume type details
 	for _, vt := range volumeTypes {
-		fmt.Printf("Volume Type: %s (ID: %s)\n", vt.Name, vt.ID)
-		fmt.Printf("  Disk Type: %s\n", vt.DiskType)
-		fmt.Printf("  Status: %s\n", vt.Status)
-		fmt.Printf("  IOPS: Read=%d, Write=%d, Total=%d\n", vt.IOPS.Read, vt.IOPS.Write, vt.IOPS.Total)
-		fmt.Printf("  Availability Zones: %v\n", vt.AvailabilityZones)
-		fmt.Printf("  Allows Encryption: %v\n", vt.AllowsEncryption)
+		fmt.Printf("Volume Type: %s (ID: %s) - Disk: %s, Status: %s\n",
+			vt.Name, vt.ID, vt.DiskType, vt.Status)
 	}
 }
 
@@ -354,8 +354,8 @@ func ExampleSchedulers(volumeID string) {
 		fmt.Printf("Volume %s attached to scheduler %s\n", volumeID, schedulerID)
 	}
 
-	// List schedulers with expansion
-	schedulerList, err := blockClient.Schedulers().List(ctx, blockstorage.SchedulerListOptions{
+	// List schedulers with expansion (paginated)
+	schedulerResp, err := blockClient.Schedulers().List(ctx, blockstorage.SchedulerListOptions{
 		Limit:  helpers.IntPtr(10),
 		Offset: helpers.IntPtr(0),
 		Expand: []blockstorage.ExpandSchedulers{blockstorage.ExpandSchedulersVolume},
@@ -365,8 +365,11 @@ func ExampleSchedulers(volumeID string) {
 		return
 	}
 
-	fmt.Printf("\nFound %d schedulers:\n", len(schedulerList.Schedulers))
-	for _, sched := range schedulerList.Schedulers {
+	fmt.Printf("\nSchedulers (Page %d-%d of %d total):\n",
+		schedulerResp.Meta.Page.Offset,
+		schedulerResp.Meta.Page.Offset+schedulerResp.Meta.Page.Count,
+		schedulerResp.Meta.Page.Total)
+	for _, sched := range schedulerResp.Schedulers {
 		fmt.Printf("  Scheduler: %s (ID: %s)\n", sched.Name, sched.ID)
 		fmt.Printf("    State: %s\n", sched.State)
 		fmt.Printf("    Attached Volumes: %d\n", len(sched.Volumes))

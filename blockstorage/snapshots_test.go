@@ -468,7 +468,7 @@ func TestSnapshotService_ListAll(t *testing.T) {
 			defer server.Close()
 
 			client := testClientSnaphots(server.URL)
-			snapshots, err := client.ListAll(context.Background(), nil)
+			snapshots, err := client.ListAll(context.Background(), SnapshotFilterOptions{})
 
 			if tt.wantErr {
 				if err == nil {
@@ -549,7 +549,9 @@ func TestSnapshotService_ListAll_WithExpand(t *testing.T) {
 	defer server.Close()
 
 	client := testClientSnaphots(server.URL)
-	snapshots, err := client.ListAll(context.Background(), []string{SnapshotVolumeExpand})
+	snapshots, err := client.ListAll(context.Background(), SnapshotFilterOptions{
+		Expand: []string{SnapshotVolumeExpand},
+	})
 
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
@@ -573,7 +575,7 @@ func TestSnapshotService_ListAll_NewRequestError(t *testing.T) {
 
 	client := testClientSnaphots("http://dummy-url")
 
-	_, err := client.ListAll(ctx, nil)
+	_, err := client.ListAll(ctx, SnapshotFilterOptions{})
 
 	if err == nil {
 		t.Error("expected error due to canceled context, got nil")

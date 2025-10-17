@@ -293,7 +293,7 @@ func TestVolumeTypeService_ListAll(t *testing.T) {
 			defer server.Close()
 
 			client := testClientTypes(server.URL)
-			types, err := client.ListAll(context.Background())
+			types, err := client.ListAll(context.Background(), VolumeTypeFilterOptions{})
 
 			if tt.wantErr {
 				if err == nil {
@@ -360,7 +360,7 @@ func TestVolumeTypeService_ListAll_MultiplePagesWithPagination(t *testing.T) {
 	defer server.Close()
 
 	client := testClientTypes(server.URL)
-	types, err := client.ListAll(context.Background())
+	types, err := client.ListAll(context.Background(), VolumeTypeFilterOptions{})
 
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
@@ -383,6 +383,101 @@ func TestVolumeTypeService_ListAll_MultiplePagesWithPagination(t *testing.T) {
 	}
 	if types[74].ID != "type75" {
 		t.Errorf("last type ID: got %s, want type75", types[74].ID)
+	}
+}
+
+func TestVolumeTypeService_ListAll_WithFilters(t *testing.T) {
+	requestCount := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/volume/v1/volume-types" {
+			t.Errorf("unexpected path: %s", r.URL.Path)
+		}
+
+		query := r.URL.Query()
+
+		// Verify filter parameters are present
+		if query.Get("availability-zone") != "zone-a" {
+			t.Errorf("expected availability-zone=zone-a, got %s", query.Get("availability-zone"))
+		}
+		if query.Get("allows-encryption") != "true" {
+			t.Errorf("expected allows-encryption=true, got %s", query.Get("allows-encryption"))
+		}
+		if query.Get("_sort") != "name:asc" {
+			t.Errorf("expected _sort=name:asc, got %s", query.Get("_sort"))
+		}
+
+		requestCount++
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+
+		// Return 50 items on first page, 25 on second
+		offset := query.Get("_offset")
+		switch offset {
+		case "0":
+			types := make([]string, 50)
+			for i := 0; i < 50; i++ {
+				types[i] = fmt.Sprintf(`{"id": "type%d", "name": "Type%d", "availability_zones": ["zone-a"], "allows_encryption": true}`, i+1, i+1)
+			}
+			response := fmt.Sprintf(`{
+				"meta": {
+					"filters": [
+						{"field": "availability-zone", "value": "zone-a"},
+						{"field": "allows-encryption", "value": "true"}
+					],
+					"page": {"offset": 0, "limit": 50, "count": 50, "total": 75, "max_limit": 100}
+				},
+				"types": [%s]
+			}`, strings.Join(types, ","))
+			w.Write([]byte(response))
+		case "50":
+			types := make([]string, 25)
+			for i := 0; i < 25; i++ {
+				types[i] = fmt.Sprintf(`{"id": "type%d", "name": "Type%d", "availability_zones": ["zone-a"], "allows_encryption": true}`, i+51, i+51)
+			}
+			response := fmt.Sprintf(`{
+				"meta": {
+					"filters": [
+						{"field": "availability-zone", "value": "zone-a"},
+						{"field": "allows-encryption", "value": "true"}
+					],
+					"page": {"offset": 50, "limit": 50, "count": 25, "total": 75, "max_limit": 100}
+				},
+				"types": [%s]
+			}`, strings.Join(types, ","))
+			w.Write([]byte(response))
+		default:
+			t.Errorf("unexpected offset: %s", offset)
+		}
+	}))
+	defer server.Close()
+
+	client := testClientTypes(server.URL)
+	types, err := client.ListAll(context.Background(), VolumeTypeFilterOptions{
+		AvailabilityZone: "zone-a",
+		AllowsEncryption: helpers.BoolPtr(true),
+		Sort:             helpers.StrPtr("name:asc"),
+	})
+
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+		return
+	}
+
+	// Should have fetched all 75 types
+	if len(types) != 75 {
+		t.Errorf("expected 75 types, got %d", len(types))
+	}
+
+	// Should have made exactly 2 requests
+	if requestCount != 2 {
+		t.Errorf("made %d requests, want 2", requestCount)
+	}
+
+	// Verify all types have the filtered properties
+	for _, vt := range types {
+		if vt.AllowsEncryption != true {
+			t.Errorf("expected allows_encryption true, got %v", vt.AllowsEncryption)
+		}
 	}
 }
 

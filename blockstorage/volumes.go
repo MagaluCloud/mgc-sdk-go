@@ -126,6 +126,12 @@ type ListOptions struct {
 	Expand []VolumeExpand
 }
 
+// VolumeFilterOptions provides filtering options for ListAll (without pagination)
+type VolumeFilterOptions struct {
+	Sort   *string
+	Expand []VolumeExpand
+}
+
 // VolumeStateV1 represents the possible states of a volume.
 // The state indicates the lifecycle stage of the volume.
 type VolumeStateV1 string
@@ -158,7 +164,7 @@ const (
 // This interface provides methods for managing block storage volumes.
 type VolumeService interface {
 	List(ctx context.Context, opts ListOptions) (*ListVolumesResponse, error)
-	ListAll(ctx context.Context, expand []VolumeExpand) ([]Volume, error)
+	ListAll(ctx context.Context, filterOpts VolumeFilterOptions) ([]Volume, error)
 	Create(ctx context.Context, req CreateVolumeRequest) (string, error)
 	Get(ctx context.Context, id string, expand []SnapshotExpand) (*Volume, error)
 	Delete(ctx context.Context, id string) error
@@ -212,9 +218,9 @@ func (s *volumeService) List(ctx context.Context, opts ListOptions) (*ListVolume
 	return result, nil
 }
 
-// ListAll retrieves all volumes by fetching all pages.
+// ListAll retrieves all volumes by fetching all pages with optional filtering.
 // This method repeatedly calls List to get all available volumes.
-func (s *volumeService) ListAll(ctx context.Context, expand []VolumeExpand) ([]Volume, error) {
+func (s *volumeService) ListAll(ctx context.Context, filterOpts VolumeFilterOptions) ([]Volume, error) {
 	var allVolumes []Volume
 	offset := 0
 	limit := 50
@@ -225,7 +231,8 @@ func (s *volumeService) ListAll(ctx context.Context, expand []VolumeExpand) ([]V
 		opts := ListOptions{
 			Offset: &currentOffset,
 			Limit:  &currentLimit,
-			Expand: expand,
+			Sort:   filterOpts.Sort,
+			Expand: filterOpts.Expand,
 		}
 
 		resp, err := s.List(ctx, opts)
