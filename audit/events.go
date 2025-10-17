@@ -29,11 +29,8 @@ type Event struct {
 	Data        json.RawMessage                `json:"data"`
 }
 
-// ListEventsParams defines parameters for listing audit events.
-// All fields are optional and allow filtering results in different ways.
-type ListEventsParams struct {
-	Limit       *int              `url:"_limit,omitempty"`
-	Offset      *int              `url:"_offset,omitempty"`
+// EventFilterParams defines filtering parameters for ListAll (without pagination).
+type EventFilterParams struct {
 	ID          *string           `url:"id,omitempty"`
 	SourceLike  *string           `url:"source__like,omitempty"`
 	Time        *time.Time        `url:"time,omitempty"`
@@ -44,26 +41,19 @@ type ListEventsParams struct {
 	Data        map[string]string `url:"data,omitempty"`
 }
 
-// PaginatedMeta contains metadata about the paginated response.
-// Provides information about pagination and result counting.
-type PaginatedMeta struct {
-	Limit  int `json:"limit,omitempty"`
-	Offset int `json:"offset,omitempty"`
-	Count  int `json:"count"`
-	Total  int `json:"total"`
-}
-
-// PaginatedResponse represents a generic paginated response.
-// Used to encapsulate paginated results of different types.
-type PaginatedResponse[T any] struct {
-	Meta    PaginatedMeta `json:"meta"`
-	Results []T           `json:"results"`
+// ListEventsParams defines parameters for listing audit events.
+// It extends EventFilterParams by adding pagination fields.
+type ListEventsParams struct {
+	EventFilterParams
+	Limit  *int `url:"_limit,omitempty"`
+	Offset *int `url:"_offset,omitempty"`
 }
 
 // EventService defines the interface for audit event operations.
 // This interface allows listing events with different filters and pagination options.
 type EventService interface {
-	List(ctx context.Context, params *ListEventsParams) ([]Event, error)
+	List(ctx context.Context, params *ListEventsParams) (*PaginatedResponse[Event], error)
+	ListAll(ctx context.Context, params *EventFilterParams) ([]Event, error)
 }
 
 // eventService implements the EventService interface.
@@ -72,10 +62,10 @@ type eventService struct {
 	client *AuditClient
 }
 
-// List implements the List method of the EventService interface.
+// List retrieves audit events with pagination metadata.
 // This method makes an HTTP request to get the list of audit events
 // and applies the filters specified in the parameters.
-func (s *eventService) List(ctx context.Context, params *ListEventsParams) ([]Event, error) {
+func (s *eventService) List(ctx context.Context, params *ListEventsParams) (*PaginatedResponse[Event], error) {
 	query := make(url.Values)
 
 	if params != nil {
@@ -120,5 +110,42 @@ func (s *eventService) List(ctx context.Context, params *ListEventsParams) ([]Ev
 	if err != nil {
 		return nil, err
 	}
-	return result.Results, nil
+	return result, nil
+}
+
+// ListAll retrieves all audit events across all pages with optional filtering.
+// This method automatically handles pagination and returns all results.
+func (s *eventService) ListAll(ctx context.Context, params *EventFilterParams) ([]Event, error) {
+	var allEvents []Event
+	offset := 0
+	limit := 50
+
+	for {
+		currentOffset := offset
+		currentLimit := limit
+		listParams := &ListEventsParams{
+			Offset: &currentOffset,
+			Limit:  &currentLimit,
+		}
+
+		if params != nil {
+			listParams.EventFilterParams = *params
+		}
+
+		response, err := s.List(ctx, listParams)
+		if err != nil {
+			return nil, err
+		}
+
+		allEvents = append(allEvents, response.Results...)
+
+		// Check if we've retrieved all results
+		if len(response.Results) < limit {
+			break
+		}
+
+		offset += limit
+	}
+
+	return allEvents, nil
 }

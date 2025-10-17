@@ -25,15 +25,17 @@ func ExampleListEvents() {
 	eventsClient := audit.New(c)
 
 	eventsList, err := eventsClient.Events().List(context.Background(), &audit.ListEventsParams{
-		Limit:    helpers.IntPtr(1),
-		TypeLike: helpers.StrPtr("cloud.magalu.block-storage.snapshot.create"),
+		Limit: helpers.IntPtr(1),
+		EventFilterParams: audit.EventFilterParams{
+			TypeLike: helpers.StrPtr("cloud.magalu.block-storage.snapshot.create"),
+		},
 	})
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	fmt.Printf("Found %d events:\n", len(eventsList))
-	for _, event := range eventsList {
+	fmt.Printf("Found %d events:\n", len(eventsList.Results))
+	for _, event := range eventsList.Results {
 		fmt.Printf("Event: %s\n", event.ID)
 		fmt.Printf("  Type: %s\n", event.Type)
 		fmt.Printf("  Source: %s\n", event.Source)
@@ -62,8 +64,8 @@ func ExampleListEventTypes() {
 		log.Fatal(err)
 	}
 
-	fmt.Printf("\nFound %d event types:\n", len(types))
-	for _, eventType := range types {
+	fmt.Printf("\nFound %d event types:\n", len(types.Results))
+	for _, eventType := range types.Results {
 		fmt.Printf("Event Type: %s\n", eventType.Type)
 	}
 }

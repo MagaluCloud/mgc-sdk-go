@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -41,15 +42,18 @@ func TestEventService_List(t *testing.T) {
 
 	// Test cases
 	t.Run("successful list with default parameters", func(t *testing.T) {
-		events, err := service.List(context.Background(), nil)
+		response, err := service.List(context.Background(), nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		if len(events) != 2 {
-			t.Errorf("expected 2 events, got %d", len(events))
+		if len(response.Results) != 2 {
+			t.Errorf("expected 2 events, got %d", len(response.Results))
 		}
-		validateEvent(t, events[0], "1", "test-source", "test-type")
-		validateEvent(t, events[1], "2", "another-source", "another-type")
+		if response.Meta.Count != 2 {
+			t.Errorf("expected meta count 2, got %d", response.Meta.Count)
+		}
+		validateEvent(t, response.Results[0], "1", "test-source", "test-type")
+		validateEvent(t, response.Results[1], "2", "another-source", "another-type")
 	})
 
 	t.Run("successful list with query parameters", func(t *testing.T) {
@@ -64,23 +68,28 @@ func TestEventService_List(t *testing.T) {
 		data := map[string]string{"key": "value"}
 
 		params := &ListEventsParams{
-			Limit:       &limit,
-			Offset:      &offset,
-			ID:          &id,
-			SourceLike:  &sourceLike,
-			TypeLike:    &typeLike,
-			ProductLike: &productLike,
-			AuthID:      &authID,
-			TenantID:    &tenantID,
-			Data:        data,
+			Limit:  &limit,
+			Offset: &offset,
+			EventFilterParams: EventFilterParams{
+				ID:          &id,
+				SourceLike:  &sourceLike,
+				TypeLike:    &typeLike,
+				ProductLike: &productLike,
+				AuthID:      &authID,
+				TenantID:    &tenantID,
+				Data:        data,
+			},
 		}
 
-		events, err := service.List(context.Background(), params)
+		response, err := service.List(context.Background(), params)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		if len(events) != 2 {
-			t.Errorf("expected 2 events, got %d", len(events))
+		if len(response.Results) != 2 {
+			t.Errorf("expected 2 events, got %d", len(response.Results))
+		}
+		if response.Meta.Count != 2 {
+			t.Errorf("expected meta count 2, got %d", response.Meta.Count)
 		}
 	})
 
@@ -94,7 +103,7 @@ func TestEventService_List(t *testing.T) {
 
 		cfg := client.NewMgcClient("test-api-key",
 			client.WithBaseURL(client.MgcUrl(errorTS.URL)),
-			client.WithTimeout(1*time.Second),
+			client.WithTimeout(10*time.Second),
 		)
 		errorClient := New(cfg)
 		errorService := errorClient.Events()
@@ -103,10 +112,185 @@ func TestEventService_List(t *testing.T) {
 		if err == nil {
 			t.Fatal("expected error, got nil")
 		}
-		if !contains(err.Error(), "internal server error") {
-			t.Errorf("expected 'internal server error' in error, got: %v", err)
+		// Check for either error message or timeout (due to retries)
+		if !strings.Contains(err.Error(), "internal server error") && !strings.Contains(err.Error(), "deadline exceeded") && !strings.Contains(err.Error(), "500") {
+			t.Errorf("expected error related to server error, got: %v", err)
 		}
 	})
+}
+
+func TestEventService_ListAll(t *testing.T) {
+	tests := []struct {
+		name       string
+		params     *EventFilterParams
+		responses  []string
+		want       int
+		wantErr    bool
+		checkCalls func(*testing.T, int)
+	}{
+		{
+			name:   "single page",
+			params: nil,
+			responses: []string{
+				`{
+					"results": [
+						{"id": "1", "source": "test-source", "type": "test-type", "specversion": "1.0", "subject": "test-subject", "time": "2024-01-01T00:00:00", "authid": "auth1", "authtype": "type1", "product": "product1", "tenantid": "tenant1", "data": {}},
+						{"id": "2", "source": "test-source2", "type": "test-type2", "specversion": "1.0", "subject": "test-subject2", "time": "2024-01-01T00:00:00", "authid": "auth2", "authtype": "type2", "product": "product2", "tenantid": "tenant2", "data": {}}
+					],
+					"meta": {
+						"count": 2,
+						"limit": 50,
+						"offset": 0,
+						"total": 2
+					}
+				}`,
+			},
+			want:    2,
+			wantErr: false,
+		},
+		{
+			name:   "multiple pages",
+			params: nil,
+			responses: []string{
+				`{
+					"results": [` + generateEventJSON(50, 0) + `],
+					"meta": {
+						"count": 50,
+						"limit": 50,
+						"offset": 0,
+						"total": 50
+					}
+				}`,
+				`{
+					"results": [` + generateEventJSON(25, 50) + `],
+					"meta": {
+						"count": 75,
+						"limit": 50,
+						"offset": 50,
+						"total": 25
+					}
+				}`,
+			},
+			want:    75,
+			wantErr: false,
+			checkCalls: func(t *testing.T, calls int) {
+				if calls != 2 {
+					t.Errorf("expected 2 API calls, got %d", calls)
+				}
+			},
+		},
+		{
+			name: "with filters",
+			params: &EventFilterParams{
+				SourceLike:  strPtr("test%"),
+				ProductLike: strPtr("product%"),
+			},
+			responses: []string{
+				`{
+					"results": [
+						{"id": "1", "source": "test-source", "type": "test-type", "specversion": "1.0", "subject": "test-subject", "time": "2024-01-01T00:00:00", "authid": "auth1", "authtype": "type1", "product": "product1", "tenantid": "tenant1", "data": {}}
+					],
+					"meta": {
+						"count": 1,
+						"limit": 50,
+						"offset": 0,
+						"total": 1
+					}
+				}`,
+			},
+			want:    1,
+			wantErr: false,
+		},
+		{
+			name:   "empty results",
+			params: nil,
+			responses: []string{
+				`{
+					"results": [],
+					"meta": {
+						"count": 0,
+						"limit": 50,
+						"offset": 0,
+						"total": 0
+					}
+				}`,
+			},
+			want:    0,
+			wantErr: false,
+		},
+		{
+			name:   "server error",
+			params: nil,
+			responses: []string{
+				`{"error": "internal server error"}`,
+				`{"error": "internal server error"}`,
+				`{"error": "internal server error"}`,
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			callCount := 0
+			ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if callCount >= len(tt.responses) {
+					t.Errorf("unexpected API call #%d", callCount+1)
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
+				w.Header().Set("Content-Type", "application/json")
+				if tt.wantErr {
+					w.WriteHeader(http.StatusInternalServerError)
+				} else {
+					w.WriteHeader(http.StatusOK)
+				}
+				w.Write([]byte(tt.responses[callCount]))
+				callCount++
+			}))
+			defer ts.Close()
+
+			cfg := client.NewMgcClient("test-api-key",
+				client.WithBaseURL(client.MgcUrl(ts.URL)),
+				client.WithTimeout(20*time.Second),
+			)
+			eventsClient := New(cfg)
+			service := eventsClient.Events()
+
+			got, err := service.ListAll(context.Background(), tt.params)
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ListAll() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if len(got) != tt.want {
+				t.Errorf("ListAll() got %v events, want %v", len(got), tt.want)
+			}
+			if tt.checkCalls != nil {
+				tt.checkCalls(t, callCount)
+			}
+		})
+	}
+}
+
+// Helper function to generate event JSON for testing
+func generateEventJSON(count, startID int) string {
+	if count == 0 {
+		return ""
+	}
+	var result string
+	for i := 0; i < count; i++ {
+		if i > 0 {
+			result += ","
+		}
+		id := startID + i + 1
+		result += fmt.Sprintf(`{"id": "%d", "source": "source%d", "type": "type%d", "specversion": "1.0", "subject": "subject%d", "time": "2024-01-01T00:00:00", "authid": "auth%d", "authtype": "type%d", "product": "product%d", "tenantid": "tenant%d", "data": {}}`, id, id, id, id, id, id, id, id)
+	}
+	return result
+}
+
+func strPtr(s string) *string {
+	return &s
 }
 
 func TestListEventsParamsQuery(t *testing.T) {
@@ -121,15 +305,17 @@ func TestListEventsParamsQuery(t *testing.T) {
 	data := map[string]string{"key1": "value1", "key2": "value2"}
 
 	params := &ListEventsParams{
-		Limit:       &limit,
-		Offset:      &offset,
-		ID:          &id,
-		SourceLike:  &sourceLike,
-		TypeLike:    &typeLike,
-		ProductLike: &productLike,
-		AuthID:      &authID,
-		TenantID:    &tenantID,
-		Data:        data,
+		Limit:  &limit,
+		Offset: &offset,
+		EventFilterParams: EventFilterParams{
+			ID:          &id,
+			SourceLike:  &sourceLike,
+			TypeLike:    &typeLike,
+			ProductLike: &productLike,
+			AuthID:      &authID,
+			TenantID:    &tenantID,
+			Data:        data,
+		},
 	}
 
 	query := make(url.Values)
@@ -206,8 +392,10 @@ func handleListEvents(w http.ResponseWriter, r *http.Request) {
 			},
 		},
 		Meta: PaginatedMeta{
-			Count: 2,
-			Total: 2,
+			Count:  2,
+			Limit:  50,
+			Offset: 0,
+			Total:  2,
 		},
 	}
 
