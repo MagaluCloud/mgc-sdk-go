@@ -467,7 +467,7 @@ func TestReplicaService_ListAll(t *testing.T) {
 			pages: []string{
 				`{
 					"meta": {
-						"page": {"count": 2, "limit": 100, "offset": 0, "total": 2}
+						"page": {"count": 2, "limit": 25, "offset": 0, "total": 2}
 					},
 					"results": [
 						{"id": "rep1", "name": "replica1"},
@@ -484,7 +484,7 @@ func TestReplicaService_ListAll(t *testing.T) {
 			pages: []string{
 				func() string {
 					results := `[`
-					for i := 0; i < 100; i++ {
+					for i := 0; i < 25; i++ {
 						if i > 0 {
 							results += ","
 						}
@@ -492,41 +492,41 @@ func TestReplicaService_ListAll(t *testing.T) {
 					}
 					results += `]`
 					return fmt.Sprintf(`{
-						"meta": {"page": {"offset": 0, "limit": 100, "count": 100, "total": 250}},
+						"meta": {"page": {"offset": 0, "limit": 25, "count": 25, "total": 60}},
 						"results": %s
 					}`, results)
 				}(),
 				func() string {
 					results := `[`
-					for i := 0; i < 100; i++ {
+					for i := 0; i < 25; i++ {
 						if i > 0 {
 							results += ","
 						}
-						results += fmt.Sprintf(`{"id": "rep%d", "name": "replica%d"}`, i+101, i+101)
+						results += fmt.Sprintf(`{"id": "rep%d", "name": "replica%d"}`, i+26, i+26)
 					}
 					results += `]`
 					return fmt.Sprintf(`{
-						"meta": {"page": {"offset": 100, "limit": 100, "count": 100, "total": 250}},
+						"meta": {"page": {"offset": 25, "limit": 25, "count": 25, "total": 60}},
 						"results": %s
 					}`, results)
 				}(),
 				func() string {
 					results := `[`
-					for i := 0; i < 50; i++ {
+					for i := 0; i < 10; i++ {
 						if i > 0 {
 							results += ","
 						}
-						results += fmt.Sprintf(`{"id": "rep%d", "name": "replica%d"}`, i+201, i+201)
+						results += fmt.Sprintf(`{"id": "rep%d", "name": "replica%d"}`, i+51, i+51)
 					}
 					results += `]`
 					return fmt.Sprintf(`{
-						"meta": {"page": {"offset": 200, "limit": 100, "count": 50, "total": 250}},
+						"meta": {"page": {"offset": 50, "limit": 25, "count": 10, "total": 60}},
 						"results": %s
 					}`, results)
 				}(),
 			},
 			statusCode: http.StatusOK,
-			wantCount:  250,
+			wantCount:  60,
 			wantErr:    false,
 		},
 		{
@@ -534,7 +534,7 @@ func TestReplicaService_ListAll(t *testing.T) {
 			pages: []string{
 				`{
 					"meta": {
-						"page": {"count": 0, "limit": 100, "offset": 0, "total": 0}
+						"page": {"count": 0, "limit": 25, "offset": 0, "total": 0}
 					},
 					"results": []
 				}`,
@@ -552,7 +552,7 @@ func TestReplicaService_ListAll(t *testing.T) {
 				`{
 					"meta": {
 						"filters": [{"field": "source_id", "value": "src1"}],
-						"page": {"count": 1, "limit": 100, "offset": 0, "total": 1}
+						"page": {"count": 1, "limit": 25, "offset": 0, "total": 1}
 					},
 					"results": [
 						{"id": "rep1", "source_id": "src1", "name": "replica1"}
@@ -586,7 +586,7 @@ func TestReplicaService_ListAll(t *testing.T) {
 				currentPage := 0
 				if offset != "" {
 					offsetInt, _ := strconv.Atoi(offset)
-					currentPage = offsetInt / 100
+					currentPage = offsetInt / 25
 				}
 
 				w.Header().Set("Content-Type", "application/json")
@@ -595,13 +595,13 @@ func TestReplicaService_ListAll(t *testing.T) {
 					w.Write([]byte(tt.pages[currentPage]))
 				} else {
 					// Return empty results if we've run out of pages
-					w.Write([]byte(`{"meta": {"page": {"count": 0, "limit": 100, "offset": 0, "total": 0}}, "results": []}`))
+					w.Write([]byte(`{"meta": {"page": {"count": 0, "limit": 25, "offset": 0, "total": 0}}, "results": []}`))
 				}
 			}))
 			defer server.Close()
 
 			client := testClient(server.URL)
-			results, meta, err := client.ListAll(context.Background(), tt.opts)
+			results, err := client.ListAll(context.Background(), tt.opts)
 
 			if tt.wantErr {
 				assertError(t, err)
@@ -612,10 +612,6 @@ func TestReplicaService_ListAll(t *testing.T) {
 			assertNoError(t, err)
 			assertEqual(t, tt.wantCount, len(results))
 
-			// Verify metadata is returned
-			if meta != nil && tt.wantCount > 0 {
-				assertEqual(t, true, meta.Page.Total >= 0)
-			}
 		})
 	}
 }

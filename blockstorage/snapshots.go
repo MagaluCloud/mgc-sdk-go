@@ -99,13 +99,13 @@ type SnaphotListOptions struct {
 	Limit  *int
 	Offset *int
 	Sort   *string
-	Expand []string
+	Expand []SnapshotExpand
 }
 
 // SnapshotFilterOptions provides filtering options for ListAll (without pagination)
 type SnapshotFilterOptions struct {
 	Sort   *string
-	Expand []string
+	Expand []SnapshotExpand
 }
 
 // SnapshotService provides operations for managing volume snapshots.
@@ -114,7 +114,7 @@ type SnapshotService interface {
 	List(ctx context.Context, opts SnaphotListOptions) (*ListSnapshotsResponse, error)
 	ListAll(ctx context.Context, filterOpts SnapshotFilterOptions) ([]Snapshot, error)
 	Create(ctx context.Context, req CreateSnapshotRequest) (string, error)
-	Get(ctx context.Context, id string, expand []string) (*Snapshot, error)
+	Get(ctx context.Context, id string, expand []SnapshotExpand) (*Snapshot, error)
 	Delete(ctx context.Context, id string) error
 	Rename(ctx context.Context, id string, newName string) error
 }

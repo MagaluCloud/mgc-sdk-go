@@ -101,7 +101,7 @@ func (s *instanceTypeService) List(ctx context.Context, opts ListInstanceTypeOpt
 func (s *instanceTypeService) ListAll(ctx context.Context, filterOpts InstanceTypeFilterOptions) ([]InstanceType, error) {
 	var allInstanceTypes []InstanceType
 	offset := 0
-	limit := 50
+	limit := 25
 
 	for {
 		currentOffset := offset

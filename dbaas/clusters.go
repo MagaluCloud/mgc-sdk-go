@@ -237,7 +237,7 @@ func (s *clusterService) List(ctx context.Context, opts ListClustersOptions) (*C
 func (s *clusterService) ListAll(ctx context.Context, filterOpts ClusterFilterOptions) ([]ClusterDetailResponse, error) {
 	var allClusters []ClusterDetailResponse
 	offset := 0
-	limit := 50
+	limit := 25
 
 	for {
 		currentOffset := offset
