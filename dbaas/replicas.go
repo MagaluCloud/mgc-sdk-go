@@ -15,7 +15,7 @@ type (
 	// ReplicaService provides methods for managing database replicas
 	ReplicaService interface {
 		List(ctx context.Context, opts ListReplicaOptions) (*ReplicasResponse, error)
-		ListAll(ctx context.Context, opts ReplicaFilterOptions) ([]ReplicaDetailResponse, *MetaResponse, error)
+		ListAll(ctx context.Context, opts ReplicaFilterOptions) ([]ReplicaDetailResponse, error)
 		Get(ctx context.Context, id string) (*ReplicaDetailResponse, error)
 		Create(ctx context.Context, req ReplicaCreateRequest) (*ReplicaResponse, error)
 		Delete(ctx context.Context, id string) error
@@ -115,45 +115,35 @@ func (s *replicaService) List(ctx context.Context, opts ListReplicaOptions) (*Re
 }
 
 // ListAll retrieves all replicas across all pages with optional filtering
-func (s *replicaService) ListAll(ctx context.Context, opts ReplicaFilterOptions) ([]ReplicaDetailResponse, *MetaResponse, error) {
+func (s *replicaService) ListAll(ctx context.Context, opts ReplicaFilterOptions) ([]ReplicaDetailResponse, error) {
 	var allResults []ReplicaDetailResponse
 	offset := 0
 	limit := 100
-	var lastMeta *MetaResponse
 
 	for {
-		query := make(url.Values)
-		query.Set("_offset", strconv.Itoa(offset))
-		query.Set("_limit", strconv.Itoa(limit))
-		if opts.SourceID != nil {
-			query.Set("source_id", *opts.SourceID)
+		currentOffset := offset
+		currentLimit := limit
+		listOpts := ListReplicaOptions{
+			Offset:   &currentOffset,
+			Limit:    &currentLimit,
+			SourceID: opts.SourceID,
 		}
 
-		result, err := mgc_http.ExecuteSimpleRequestWithRespBody[ReplicasResponse](
-			ctx,
-			s.client.newRequest,
-			s.client.GetConfig(),
-			http.MethodGet,
-			"/v2/replicas",
-			nil,
-			query,
-		)
+		resp, err := s.List(ctx, listOpts)
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 
-		lastMeta = &result.Meta
-		allResults = append(allResults, result.Results...)
+		allResults = append(allResults, resp.Results...)
 
-		// Check if we've retrieved all results
-		if len(result.Results) < limit {
+		if len(resp.Results) < limit {
 			break
 		}
 
 		offset += limit
 	}
 
-	return allResults, lastMeta, nil
+	return allResults, nil
 }
 
 // Get retrieves details of a specific replica instance

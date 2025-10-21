@@ -601,7 +601,7 @@ func TestReplicaService_ListAll(t *testing.T) {
 			defer server.Close()
 
 			client := testClient(server.URL)
-			results, meta, err := client.ListAll(context.Background(), tt.opts)
+			results, err := client.ListAll(context.Background(), tt.opts)
 
 			if tt.wantErr {
 				assertError(t, err)
@@ -612,10 +612,6 @@ func TestReplicaService_ListAll(t *testing.T) {
 			assertNoError(t, err)
 			assertEqual(t, tt.wantCount, len(results))
 
-			// Verify metadata is returned
-			if meta != nil && tt.wantCount > 0 {
-				assertEqual(t, true, meta.Page.Total >= 0)
-			}
 		})
 	}
 }
