@@ -118,7 +118,7 @@ func (s *replicaService) List(ctx context.Context, opts ListReplicaOptions) (*Re
 func (s *replicaService) ListAll(ctx context.Context, opts ReplicaFilterOptions) ([]ReplicaDetailResponse, error) {
 	var allResults []ReplicaDetailResponse
 	offset := 0
-	limit := 100
+	limit := 25
 
 	for {
 		currentOffset := offset

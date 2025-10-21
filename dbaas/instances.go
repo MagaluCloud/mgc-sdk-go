@@ -370,7 +370,7 @@ func (s *instanceService) List(ctx context.Context, opts ListInstanceOptions) (*
 func (s *instanceService) ListAll(ctx context.Context, filterOpts InstanceFilterOptions) ([]InstanceDetail, error) {
 	var allInstances []InstanceDetail
 	offset := 0
-	limit := 50
+	limit := 25
 
 	for {
 		currentOffset := offset
@@ -545,7 +545,7 @@ func (s *instanceService) ListSnapshots(ctx context.Context, instanceID string, 
 func (s *instanceService) ListAllSnapshots(ctx context.Context, instanceID string, filterOpts SnapshotFilterOptions) ([]SnapshotDetailResponse, error) {
 	var allSnapshots []SnapshotDetailResponse
 	offset := 0
-	limit := 50
+	limit := 25
 
 	for {
 		currentOffset := offset

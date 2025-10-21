@@ -93,7 +93,7 @@ func (s *parameterService) List(ctx context.Context, opts ListParametersOptions)
 func (s *parameterService) ListAll(ctx context.Context, filterOpts ParameterFilterOptions) ([]ParameterDetailResponse, error) {
 	var allParameters []ParameterDetailResponse
 	offset := 0
-	limit := 50
+	limit := 25
 
 	for {
 		currentOffset := offset

@@ -193,7 +193,7 @@ func TestParameterService_ListAll(t *testing.T) {
 			},
 			pages: []string{
 				`{
-					"meta": {"page": {"offset": 0, "limit": 50, "count": 2, "total": 2}},
+					"meta": {"page": {"offset": 0, "limit": 25, "count": 2, "total": 2}},
 					"results": [
 						{"id": "p1", "name": "param1", "value": 1},
 						{"id": "p2", "name": "param2", "value": 2}
@@ -218,7 +218,7 @@ func TestParameterService_ListAll(t *testing.T) {
 					}
 					results += `]`
 					return fmt.Sprintf(`{
-						"meta": {"page": {"offset": 0, "limit": 50, "count": 50, "total": 75}},
+						"meta": {"page": {"offset": 0, "limit": 25, "count": 50, "total": 75}},
 						"results": %s
 					}`, results)
 				}(),
@@ -232,7 +232,7 @@ func TestParameterService_ListAll(t *testing.T) {
 					}
 					results += `]`
 					return fmt.Sprintf(`{
-						"meta": {"page": {"offset": 50, "limit": 50, "count": 25, "total": 75}},
+						"meta": {"page": {"offset": 50, "limit": 25, "count": 25, "total": 75}},
 						"results": %s
 					}`, results)
 				}(),
@@ -246,7 +246,7 @@ func TestParameterService_ListAll(t *testing.T) {
 			},
 			pages: []string{
 				`{
-					"meta": {"page": {"offset": 0, "limit": 50, "count": 0, "total": 0}},
+					"meta": {"page": {"offset": 0, "limit": 25, "count": 0, "total": 0}},
 					"results": []
 				}`,
 			},
@@ -266,7 +266,7 @@ func TestParameterService_ListAll(t *testing.T) {
 					w.Write([]byte(tt.pages[requestCount]))
 					requestCount++
 				} else {
-					w.Write([]byte(`{"meta": {"page": {"offset": 0, "limit": 50, "count": 0, "total": 0}}, "results": []}`))
+					w.Write([]byte(`{"meta": {"page": {"offset": 0, "limit": 25, "count": 0, "total": 0}}, "results": []}`))
 				}
 			}))
 			defer server.Close()

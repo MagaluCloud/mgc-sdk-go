@@ -669,7 +669,7 @@ func TestParameterGroupService_ListAll(t *testing.T) {
 			filterOpts: ParameterGroupFilterOptions{},
 			pages: []string{
 				`{
-					"meta": {"page": {"offset": 0, "limit": 50, "count": 3, "total": 3}},
+					"meta": {"page": {"offset": 0, "limit": 25, "count": 3, "total": 3}},
 					"results": [
 						{"id": "pg1", "name": "group1", "type": "USER", "engine_id": "eng1"},
 						{"id": "pg2", "name": "group2", "type": "SYSTEM", "engine_id": "eng1"},
@@ -695,12 +695,12 @@ func TestParameterGroupService_ListAll(t *testing.T) {
 					}
 					results += `]`
 					return `{
-						"meta": {"page": {"offset": 0, "limit": 50, "count": 50, "total": 60}},
+						"meta": {"page": {"offset": 0, "limit": 25, "count": 50, "total": 60}},
 						"results": ` + results + `
 					}`
 				}(),
 				`{
-					"meta": {"page": {"offset": 50, "limit": 50, "count": 10, "total": 60}},
+					"meta": {"page": {"offset": 50, "limit": 25, "count": 10, "total": 60}},
 					"results": [
 						{"id": "pg50", "name": "group50", "type": "USER", "engine_id": "eng1"},
 						{"id": "pg51", "name": "group51", "type": "USER", "engine_id": "eng1"},
@@ -724,7 +724,7 @@ func TestParameterGroupService_ListAll(t *testing.T) {
 			},
 			pages: []string{
 				`{
-					"meta": {"page": {"offset": 0, "limit": 50, "count": 1, "total": 1}},
+					"meta": {"page": {"offset": 0, "limit": 25, "count": 1, "total": 1}},
 					"results": [
 						{"id": "pg1", "name": "group1", "type": "USER", "engine_id": "eng2"}
 					]
@@ -737,7 +737,7 @@ func TestParameterGroupService_ListAll(t *testing.T) {
 			filterOpts: ParameterGroupFilterOptions{},
 			pages: []string{
 				`{
-					"meta": {"page": {"offset": 0, "limit": 50, "count": 0, "total": 0}},
+					"meta": {"page": {"offset": 0, "limit": 25, "count": 0, "total": 0}},
 					"results": []
 				}`,
 			},
@@ -755,7 +755,7 @@ func TestParameterGroupService_ListAll(t *testing.T) {
 					w.Write([]byte(tt.pages[requestCount]))
 					requestCount++
 				} else {
-					w.Write([]byte(`{"meta": {"page": {"offset": 0, "limit": 50, "count": 0, "total": 0}}, "results": []}`))
+					w.Write([]byte(`{"meta": {"page": {"offset": 0, "limit": 25, "count": 0, "total": 0}}, "results": []}`))
 				}
 			}))
 			defer server.Close()

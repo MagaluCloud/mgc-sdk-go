@@ -642,7 +642,7 @@ func TestClusterService_ListAll(t *testing.T) {
 		{
 			name: "single page",
 			response: `{
-				"meta": {"page": {"offset": 0, "limit": 50, "count": 2, "total": 2, "max_limit": 100}},
+				"meta": {"page": {"offset": 0, "limit": 25, "count": 2, "total": 2, "max_limit": 100}},
 				"results": [
 					{"id": "cluster-1", "name": "Cluster 1"},
 					{"id": "cluster-2", "name": "Cluster 2"}
@@ -654,7 +654,7 @@ func TestClusterService_ListAll(t *testing.T) {
 		{
 			name: "empty result",
 			response: `{
-				"meta": {"page": {"offset": 0, "limit": 50, "count": 0, "total": 0, "max_limit": 100}},
+				"meta": {"page": {"offset": 0, "limit": 25, "count": 0, "total": 0, "max_limit": 100}},
 				"results": []
 			}`,
 			statusCode: http.StatusOK,
@@ -702,33 +702,46 @@ func TestClusterService_ListAll_MultiplePagesWithPagination(t *testing.T) {
 		offset := query.Get("_offset")
 		limit := query.Get("_limit")
 
-		if limit != "50" {
-			t.Errorf("expected limit 50, got %s", limit)
+		if limit != "25" {
+			t.Errorf("expected limit 25, got %s", limit)
 		}
 
 		requestCount++
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 
-		// Simulate pagination: first page has 50 items, second page has 25
+		// Simulate pagination with limit 25: three data pages then an empty page to stop
 		switch offset {
 		case "0":
-			// First page: 50 items
-			clusters := make([]string, 50)
-			for i := 0; i < 50; i++ {
+			// First page: 25 items
+			clusters := make([]string, 25)
+			for i := 0; i < 25; i++ {
 				clusters[i] = fmt.Sprintf(`{"id": "cluster%d", "name": "Cluster%d"}`, i+1, i+1)
 			}
-			response := fmt.Sprintf(`{"meta": {"page": {"offset": 0, "limit": 50, "count": 50, "total": 75, "max_limit": 100}}, "results": [%s]}`,
+			response := fmt.Sprintf(`{"meta": {"page": {"offset": 0, "limit": 25, "count": 25, "total": 75, "max_limit": 100}}, "results": [%s]}`,
+				strings.Join(clusters, ","))
+			w.Write([]byte(response))
+		case "25":
+			// Second page: 25 items
+			clusters := make([]string, 25)
+			for i := 0; i < 25; i++ {
+				clusters[i] = fmt.Sprintf(`{"id": "cluster%d", "name": "Cluster%d"}`, i+26, i+26)
+			}
+			response := fmt.Sprintf(`{"meta": {"page": {"offset": 25, "limit": 25, "count": 25, "total": 75, "max_limit": 100}}, "results": [%s]}`,
 				strings.Join(clusters, ","))
 			w.Write([]byte(response))
 		case "50":
-			// Second page: 25 items
+			// Third page: 25 items
 			clusters := make([]string, 25)
 			for i := 0; i < 25; i++ {
 				clusters[i] = fmt.Sprintf(`{"id": "cluster%d", "name": "Cluster%d"}`, i+51, i+51)
 			}
-			response := fmt.Sprintf(`{"meta": {"page": {"offset": 50, "limit": 50, "count": 25, "total": 75, "max_limit": 100}}, "results": [%s]}`,
+			response := fmt.Sprintf(`{"meta": {"page": {"offset": 50, "limit": 25, "count": 25, "total": 75, "max_limit": 100}}, "results": [%s]}`,
 				strings.Join(clusters, ","))
+			w.Write([]byte(response))
+		case "75":
+			// Final empty page to stop iteration
+			response := `{"meta": {"page": {"offset": 75, "limit": 25, "count": 0, "total": 75, "max_limit": 100}}, "results": []}`
 			w.Write([]byte(response))
 		default:
 			t.Errorf("unexpected offset: %s", offset)
@@ -744,9 +757,9 @@ func TestClusterService_ListAll_MultiplePagesWithPagination(t *testing.T) {
 	// Should have fetched all 75 clusters across 2 pages
 	assertEqual(t, 75, len(clusters))
 
-	// Should have made exactly 2 requests
-	if requestCount != 2 {
-		t.Errorf("made %d requests, want 2", requestCount)
+	// Should have made exactly 4 requests (3 pages with data + 1 empty page)
+	if requestCount != 4 {
+		t.Errorf("made %d requests, want 4", requestCount)
 	}
 
 	// Verify first and last items
@@ -777,12 +790,12 @@ func TestClusterService_ListAll_WithFilters(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 
-		// Return 50 items on first page, 25 on second
+		// Return 25 items on first three pages, then empty page
 		offset := query.Get("_offset")
 		switch offset {
 		case "0":
-			clusters := make([]string, 50)
-			for i := 0; i < 50; i++ {
+			clusters := make([]string, 25)
+			for i := 0; i < 25; i++ {
 				clusters[i] = fmt.Sprintf(`{"id": "cluster%d", "name": "Cluster%d", "status": "ACTIVE", "engine_id": "postgres-13"}`, i+1, i+1)
 			}
 			response := fmt.Sprintf(`{
@@ -791,7 +804,23 @@ func TestClusterService_ListAll_WithFilters(t *testing.T) {
 						{"field": "status", "value": "ACTIVE"},
 						{"field": "engine_id", "value": "postgres-13"}
 					],
-					"page": {"offset": 0, "limit": 50, "count": 50, "total": 75, "max_limit": 100}
+					"page": {"offset": 0, "limit": 25, "count": 25, "total": 75, "max_limit": 100}
+				},
+				"results": [%s]
+			}`, strings.Join(clusters, ","))
+			w.Write([]byte(response))
+		case "25":
+			clusters := make([]string, 25)
+			for i := 0; i < 25; i++ {
+				clusters[i] = fmt.Sprintf(`{"id": "cluster%d", "name": "Cluster%d", "status": "ACTIVE", "engine_id": "postgres-13"}`, i+26, i+26)
+			}
+			response := fmt.Sprintf(`{
+				"meta": {
+					"filters": [
+						{"field": "status", "value": "ACTIVE"},
+						{"field": "engine_id", "value": "postgres-13"}
+					],
+					"page": {"offset": 25, "limit": 25, "count": 25, "total": 75, "max_limit": 100}
 				},
 				"results": [%s]
 			}`, strings.Join(clusters, ","))
@@ -807,10 +836,22 @@ func TestClusterService_ListAll_WithFilters(t *testing.T) {
 						{"field": "status", "value": "ACTIVE"},
 						{"field": "engine_id", "value": "postgres-13"}
 					],
-					"page": {"offset": 50, "limit": 50, "count": 25, "total": 75, "max_limit": 100}
+					"page": {"offset": 50, "limit": 25, "count": 25, "total": 75, "max_limit": 100}
 				},
-				"results": [%s]
+					"results": [%s]
 			}`, strings.Join(clusters, ","))
+			w.Write([]byte(response))
+		case "75":
+			response := `{
+				"meta": {
+					"filters": [
+						{"field": "status", "value": "ACTIVE"},
+						{"field": "engine_id", "value": "postgres-13"}
+					],
+					"page": {"offset": 75, "limit": 25, "count": 0, "total": 75, "max_limit": 100}
+				},
+				"results": []
+			}`
 			w.Write([]byte(response))
 		default:
 			t.Errorf("unexpected offset: %s", offset)
@@ -829,9 +870,9 @@ func TestClusterService_ListAll_WithFilters(t *testing.T) {
 	// Should have fetched all 75 clusters
 	assertEqual(t, 75, len(clusters))
 
-	// Should have made exactly 2 requests
-	if requestCount != 2 {
-		t.Errorf("made %d requests, want 2", requestCount)
+	// Should have made exactly 4 requests (3 pages with data + 1 empty page)
+	if requestCount != 4 {
+		t.Errorf("made %d requests, want 4", requestCount)
 	}
 
 	// Verify all clusters have the filtered status

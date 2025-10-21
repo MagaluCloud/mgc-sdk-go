@@ -122,7 +122,7 @@ func (s *parameterGroupService) List(ctx context.Context, opts ListParameterGrou
 func (s *parameterGroupService) ListAll(ctx context.Context, filterOpts ParameterGroupFilterOptions) ([]ParameterGroupDetailResponse, error) {
 	var allGroups []ParameterGroupDetailResponse
 	offset := 0
-	limit := 50
+	limit := 25
 
 	for {
 		currentOffset := offset

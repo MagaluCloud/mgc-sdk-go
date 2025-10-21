@@ -134,7 +134,7 @@ func (s *engineService) List(ctx context.Context, opts ListEngineOptions) (*List
 func (s *engineService) ListAll(ctx context.Context, filterOpts EngineFilterOptions) ([]EngineDetail, error) {
 	var allEngines []EngineDetail
 	offset := 0
-	limit := 50
+	limit := 25
 
 	for {
 		currentOffset := offset
