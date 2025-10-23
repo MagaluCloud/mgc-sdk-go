@@ -18,15 +18,15 @@ type EventType struct {
 
 // EventTypeFilterParams defines filtering parameters for ListAll (without pagination).
 type EventTypeFilterParams struct {
-	TenantID *string `url:"X-Tenant-ID,omitempty"`
+	TenantID *string `json:"X-Tenant-ID,omitempty"`
 }
 
 // ListEventTypesParams defines parameters for listing event types.
 // It extends EventTypeFilterParams by adding pagination fields.
 type ListEventTypesParams struct {
 	EventTypeFilterParams
-	Limit  *int `url:"_limit,omitempty"`
-	Offset *int `url:"_offset,omitempty"`
+	Limit  *int `json:"_limit,omitempty"`
+	Offset *int `json:"_offset,omitempty"`
 }
 
 // PaginatedMeta contains metadata about the paginated response.

@@ -31,22 +31,22 @@ type Event struct {
 
 // EventFilterParams defines filtering parameters for ListAll (without pagination).
 type EventFilterParams struct {
-	ID          *string           `url:"id,omitempty"`
-	SourceLike  *string           `url:"source__like,omitempty"`
-	Time        *time.Time        `url:"time,omitempty"`
-	TypeLike    *string           `url:"type__like,omitempty"`
-	ProductLike *string           `url:"product__like,omitempty"`
-	AuthID      *string           `url:"authid,omitempty"`
-	TenantID    *string           `url:"X-Tenant-ID,omitempty"`
-	Data        map[string]string `url:"data,omitempty"`
+	ID          *string           `json:"id,omitempty"`
+	SourceLike  *string           `json:"source__like,omitempty"`
+	Time        *time.Time        `json:"time,omitempty"`
+	TypeLike    *string           `json:"type__like,omitempty"`
+	ProductLike *string           `json:"product__like,omitempty"`
+	AuthID      *string           `json:"authid,omitempty"`
+	TenantID    *string           `json:"X-Tenant-ID,omitempty"`
+	Data        map[string]string `json:"data,omitempty"`
 }
 
 // ListEventsParams defines parameters for listing audit events.
 // It extends EventFilterParams by adding pagination fields.
 type ListEventsParams struct {
 	EventFilterParams
-	Limit  *int `url:"_limit,omitempty"`
-	Offset *int `url:"_offset,omitempty"`
+	Limit  *int `json:"_limit,omitempty"`
+	Offset *int `json:"_offset,omitempty"`
 }
 
 // EventService defines the interface for audit event operations.

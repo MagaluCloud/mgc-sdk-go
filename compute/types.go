@@ -58,16 +58,16 @@ type instanceTypeService struct {
 // InstanceTypeListOptions defines parameters for filtering and pagination of machine type lists.
 // All fields are optional and allow controlling the listing behavior.
 type InstanceTypeListOptions struct {
-	Limit            *int    `url:"_limit,omitempty"`
-	Offset           *int    `url:"_offset,omitempty"`
-	Sort             *string `url:"_sort,omitempty"`
-	AvailabilityZone string  `url:"availability-zone,omitempty"`
+	Limit            *int    `json:"_limit,omitempty"`
+	Offset           *int    `json:"_offset,omitempty"`
+	Sort             *string `json:"_sort,omitempty"`
+	AvailabilityZone string  `json:"availability-zone,omitempty"`
 }
 
 // InstanceTypeFilterOptions defines filtering options for ListAll (without pagination).
 type InstanceTypeFilterOptions struct {
-	Sort             *string `url:"_sort,omitempty"`
-	AvailabilityZone string  `url:"availability-zone,omitempty"`
+	Sort             *string `json:"_sort,omitempty"`
+	AvailabilityZone string  `json:"availability-zone,omitempty"`
 }
 
 // List retrieves instance types with pagination metadata.
