@@ -205,7 +205,7 @@ func TestWithMinioClientOption(t *testing.T) {
 
 	mockMinioClient := client1.minioClient
 
-	client2, err := New(core, "admin", "admin", WithEndpoint(BrNe1), WithMinioClient(mockMinioClient))
+	client2, err := New(core, "admin", "admin", WithEndpoint(BrNe1), WithMinioClientInterface(mockMinioClient))
 	if err != nil {
 		t.Fatalf("failed to create second client: %v", err)
 	}
