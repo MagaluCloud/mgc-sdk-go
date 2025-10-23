@@ -30,3 +30,16 @@ coverage.txt
 docs/output/*
 docs/source/*
 !docs/source/.keep
+
+# Example executables
+cmd/examples/**/objectstorage-example
+cmd/examples/**/objectstorage-example-*
+cmd/examples/**/*.exe
+cmd/examples/objectstorage/objectstorage
+cmd/examples/objectstorage/lock-example/lock-example
+cmd/examples/objectstorage/policy-example/policy-example
+cmd/examples/objectstorage/main
+cmd/examples/objectstorage/lock-example/main
+cmd/examples/objectstorage/policy-example/main
+
+coverage.html

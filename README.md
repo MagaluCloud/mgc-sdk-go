@@ -37,6 +37,9 @@ go get github.com/MagaluCloud/mgc-sdk-go
   - Snapshots
   - Volume Types
   - Schedulers
+- Object Storage
+  - Buckets
+  - Objects
 - SSH Keys
 - Availability Zones
 - Audit
@@ -133,12 +136,312 @@ sshClient := sshkeys.New(core, sshkeys.WithGlobalBasePath("custom-endpoint"))
 mgc-sdk-go/
 ├── client/         # Base client implementation and configuration
 ├── compute/        # Compute service API (instances, images, machine types)
+├── objectstorage/  # Object Storage service API (buckets, objects)
 ├── helpers/        # Utility functions
 ├── internal/       # Internal packages
 └── cmd/            # Examples
 ```
 
 ## Usage Examples
+
+### Object Storage Usage
+
+The Object Storage service provides an interface for managing buckets and objects in MagaluCloud Object Storage.
+
+#### Endpoint Configuration
+
+By default, the client uses the **BR-SE1 (Brazil Southeast 1)** endpoint. You can override this using the `WithEndpoint()` option to connect to a different region:
+
+- `BrSe1`: Brazil Southeast 1 (default)
+- `BrNe1`: Brazil Northeast 1
+
+#### Creating a Client
+
+##### Default Endpoint (BR-SE1)
+
+```go
+import (
+    "context"
+    "time"
+
+    "github.com/MagaluCloud/mgc-sdk-go/client"
+    "github.com/MagaluCloud/mgc-sdk-go/objectstorage"
+)
+
+apiToken := os.Getenv("MGC_API_TOKEN")
+c := client.NewMgcClient(apiToken)
+
+accessKey := os.Getenv("MGC_OBJECT_STORAGE_ACCESS_KEY")
+secretKey := os.Getenv("MGC_OBJECT_STORAGE_SECRET_KEY")
+
+// Uses BR-SE1 by default
+osClient, err := objectstorage.New(c, accessKey, secretKey)
+```
+
+##### Custom Region Configuration (BR-NE1)
+
+```go
+// To use a different region, pass the WithEndpoint option
+osClient, err := objectstorage.New(c, accessKey, secretKey,
+    objectstorage.WithEndpoint(objectstorage.BrNe1))
+```
+
+#### Bucket Operations
+
+##### Listing Buckets
+
+```go
+buckets, err := osClient.Buckets().List(context.Background(), objectstorage.BucketListOptions{})
+for _, bucket := range buckets {
+    fmt.Printf("Bucket: %s (Created: %s)\n", bucket.Name, bucket.CreationDate)
+}
+```
+
+##### Creating a Bucket
+
+```go
+err := osClient.Buckets().Create(context.Background(), "my-bucket")
+```
+
+##### Checking if a Bucket Exists
+
+```go
+exists, err := osClient.Buckets().Exists(context.Background(), "my-bucket")
+if exists {
+    fmt.Println("Bucket exists")
+}
+```
+
+##### Deleting a Bucket
+
+```go
+err := osClient.Buckets().Delete(context.Background(), "my-bucket")
+```
+
+##### Bucket Policies
+
+Get the policy of a bucket:
+
+```go
+policy, err := osClient.Buckets().GetPolicy(context.Background(), "my-bucket")
+if policy != nil {
+    fmt.Printf("Policy: %+v\n", policy)
+}
+```
+
+Set a bucket policy:
+
+```go
+policy := &objectstorage.Policy{
+    Version: "2012-10-17",
+    Statement: []objectstorage.Statement{
+        {
+            Effect:   "Allow",
+            Action:   "s3:GetObject",
+            Resource: "arn:aws:s3:::my-bucket/*",
+        },
+    },
+}
+err := osClient.Buckets().SetPolicy(context.Background(), "my-bucket", policy)
+```
+
+Delete a bucket policy:
+
+```go
+err := osClient.Buckets().DeletePolicy(context.Background(), "my-bucket")
+```
+
+##### Bucket Locking
+
+Lock a bucket (enables Object Lock):
+
+```go
+err := osClient.Buckets().LockBucket(context.Background(), "my-bucket")
+```
+
+Unlock a bucket (disables Object Lock):
+
+```go
+err := osClient.Buckets().UnlockBucket(context.Background(), "my-bucket")
+```
+
+Check bucket lock status:
+
+```go
+locked, err := osClient.Buckets().GetBucketLockStatus(context.Background(), "my-bucket")
+if locked {
+    fmt.Println("Bucket is locked")
+}
+```
+
+##### CORS Configuration
+
+Set CORS configuration:
+
+```go
+corsConfig := &objectstorage.CORSConfiguration{
+    CORSRules: []objectstorage.CORSRule{
+        {
+            AllowedOrigins: []string{"https://example.com"},
+            AllowedMethods: []string{"GET", "PUT"},
+            AllowedHeaders: []string{"*"},
+            MaxAgeSeconds:  3600,
+        },
+    },
+}
+err := osClient.Buckets().SetCORS(context.Background(), "my-bucket", corsConfig)
+```
+
+Get CORS configuration:
+
+```go
+corsConfig, err := osClient.Buckets().GetCORS(context.Background(), "my-bucket")
+if corsConfig != nil {
+    fmt.Printf("CORS Rules: %+v\n", corsConfig.CORSRules)
+}
+```
+
+Delete CORS configuration:
+
+```go
+err := osClient.Buckets().DeleteCORS(context.Background(), "my-bucket")
+```
+
+##### Versioning
+
+Enable versioning:
+
+```go
+err := osClient.Buckets().EnableVersioning(context.Background(), "my-bucket")
+```
+
+Suspend versioning:
+
+```go
+err := osClient.Buckets().SuspendVersioning(context.Background(), "my-bucket")
+```
+
+Get versioning status:
+
+```go
+status, err := osClient.Buckets().GetVersioningStatus(context.Background(), "my-bucket")
+fmt.Printf("Versioning Status: %s\n", status.Status)
+```
+
+#### Object Operations
+
+##### Uploading an Object
+
+```go
+data := []byte("Hello, World!")
+err := osClient.Objects().Upload(context.Background(), "my-bucket", "hello.txt", data, "text/plain")
+```
+
+##### Downloading an Object
+
+```go
+data, err := osClient.Objects().Download(context.Background(), "my-bucket", "hello.txt", nil)
+fmt.Printf("Downloaded: %s\n", string(data))
+```
+
+Download a specific version:
+
+```go
+opts := &objectstorage.DownloadOptions{VersionID: "version-id"}
+data, err := osClient.Objects().Download(context.Background(), "my-bucket", "hello.txt", opts)
+```
+
+##### Streaming Downloads
+
+```go
+reader, err := osClient.Objects().DownloadStream(context.Background(), "my-bucket", "large-file.mp4", nil)
+if err == nil {
+    defer reader.Close()
+    // Process the stream
+    io.Copy(os.Stdout, reader)
+}
+```
+
+##### Listing Objects
+
+List objects with pagination:
+
+```go
+opts := objectstorage.ObjectListOptions{
+    Limit:  intPtr(10),
+    Offset: intPtr(0),
+    Prefix: "folder/",
+}
+objects, err := osClient.Objects().List(context.Background(), "my-bucket", opts)
+for _, obj := range objects {
+    fmt.Printf("Object: %s (Size: %d)\n", obj.Key, obj.Size)
+}
+```
+
+List all objects (without pagination):
+
+```go
+opts := objectstorage.ObjectFilterOptions{Prefix: "documents/"}
+objects, err := osClient.Objects().ListAll(context.Background(), "my-bucket", opts)
+fmt.Printf("Total objects: %d\n", len(objects))
+```
+
+##### Deleting an Object
+
+```go
+err := osClient.Objects().Delete(context.Background(), "my-bucket", "hello.txt", nil)
+```
+
+Delete a specific version:
+
+```go
+opts := &objectstorage.DeleteOptions{VersionID: "version-id"}
+err := osClient.Objects().Delete(context.Background(), "my-bucket", "hello.txt", opts)
+```
+
+##### Getting Object Metadata
+
+```go
+metadata, err := osClient.Objects().Metadata(context.Background(), "my-bucket", "hello.txt")
+if metadata != nil {
+    fmt.Printf("Size: %d, Content-Type: %s\n", metadata.Size, metadata.ContentType)
+}
+```
+
+##### Object Locking
+
+Lock an object with retention:
+
+```go
+retainUntil := time.Now().Add(24 * time.Hour)
+err := osClient.Objects().LockObject(context.Background(), "my-bucket", "important.txt", retainUntil)
+```
+
+Unlock an object:
+
+```go
+err := osClient.Objects().UnlockObject(context.Background(), "my-bucket", "important.txt")
+```
+
+Check object lock status:
+
+```go
+locked, err := osClient.Objects().GetObjectLockStatus(context.Background(), "my-bucket", "important.txt")
+if locked {
+    fmt.Println("Object is locked")
+}
+```
+
+##### Versioning
+
+List versions of an object:
+
+```go
+versions, err := osClient.Objects().ListVersions(context.Background(), "my-bucket", "hello.txt", nil)
+for _, version := range versions {
+    fmt.Printf("Version: %s (Size: %d)\n", version.VersionID, version.Size)
+}
+```
 
 ### Initializing the Client
 
