@@ -12,7 +12,7 @@ import (
 // It encapsulates functionality to access buckets and objects using MinIO as the backend.
 type ObjectStorageClient struct {
 	*client.CoreClient
-	minioClient *minio.Client
+	minioClient minioClientInterface
 	endpoint    Endpoint
 }
 
@@ -29,6 +29,13 @@ func WithEndpoint(endpoint Endpoint) ClientOption {
 
 // WithMinioClient sets a custom MinIO client.
 func WithMinioClient(minioClient *minio.Client) ClientOption {
+	return func(c *ObjectStorageClient) {
+		c.minioClient = minioClient
+	}
+}
+
+// WithMinioClientInterface sets a custom MinIO client interface (for testing).
+func WithMinioClientInterface(minioClient minioClientInterface) ClientOption {
 	return func(c *ObjectStorageClient) {
 		c.minioClient = minioClient
 	}

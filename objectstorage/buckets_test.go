@@ -407,6 +407,32 @@ func TestBucketServiceSetPolicy_ValidParameters(t *testing.T) {
 	}
 }
 
+func TestBucketServiceSetPolicy_UnmarshalablePolicy(t *testing.T) {
+	t.Parallel()
+
+	core := client.NewMgcClient("test-token")
+	osClient, _ := New(core, "minioadmin", "minioadmin")
+	svc := osClient.Buckets()
+
+	// Create a policy with a channel (which can't be marshaled to JSON)
+	policy := &Policy{
+		Version: "2012-10-17",
+		Statement: []Statement{
+			{
+				Effect:   "Allow",
+				Action:   make(chan int), // channels can't be marshaled
+				Resource: "arn:aws:s3:::test-bucket/*",
+			},
+		},
+	}
+
+	err := svc.SetPolicy(context.Background(), "test-bucket", policy)
+
+	if err == nil {
+		t.Error("SetPolicy() expected error for unmarshalable policy, got nil")
+	}
+}
+
 func TestBucketServiceEnableVersioning_ValidParameters(t *testing.T) {
 	t.Parallel()
 
@@ -555,6 +581,25 @@ func TestMarshalPolicy(t *testing.T) {
 			t.Errorf("unmarshalPolicy() len(Statement) = %d, want 2", len(result.Statement))
 		}
 	})
+
+	t.Run("policy with unmarshalable value", func(t *testing.T) {
+		// Create a policy with a channel (which can't be marshaled to JSON)
+		policy := &Policy{
+			Version: "2012-10-17",
+			Statement: []Statement{
+				{
+					Effect:   "Allow",
+					Action:   make(chan int), // channels can't be marshaled
+					Resource: "arn:aws:s3:::bucket/*",
+				},
+			},
+		}
+
+		_, err := marshalPolicy(policy)
+		if err == nil {
+			t.Error("marshalPolicy() expected error for unmarshalable value, got nil")
+		}
+	})
 }
 
 func TestUnmarshalPolicy(t *testing.T) {
@@ -574,6 +619,18 @@ func TestUnmarshalPolicy(t *testing.T) {
 
 	if len(policy.Statement) != 1 {
 		t.Errorf("unmarshalPolicy() len(Statement) = %d, want 1", len(policy.Statement))
+	}
+}
+
+func TestUnmarshalPolicy_InvalidJSON(t *testing.T) {
+	t.Parallel()
+
+	invalidJSON := `{"Version":"2012-10-17","Statement":[invalid json}`
+
+	var policy Policy
+	err := unmarshalPolicy(invalidJSON, &policy)
+	if err == nil {
+		t.Error("unmarshalPolicy() expected error for invalid JSON, got nil")
 	}
 }
 
