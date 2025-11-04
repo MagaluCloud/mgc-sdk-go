@@ -10,7 +10,7 @@ import (
 func TestBucketServiceCreate_InvalidBucketName(t *testing.T) {
 	t.Parallel()
 
-	core := client.NewMgcClient("test-token")
+	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Buckets()
 
@@ -28,7 +28,7 @@ func TestBucketServiceCreate_InvalidBucketName(t *testing.T) {
 func TestBucketServiceExists_InvalidBucketName(t *testing.T) {
 	t.Parallel()
 
-	core := client.NewMgcClient("test-token")
+	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Buckets()
 
@@ -46,7 +46,7 @@ func TestBucketServiceExists_InvalidBucketName(t *testing.T) {
 func TestBucketServiceDelete_InvalidBucketName(t *testing.T) {
 	t.Parallel()
 
-	core := client.NewMgcClient("test-token")
+	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Buckets()
 
@@ -64,7 +64,7 @@ func TestBucketServiceDelete_InvalidBucketName(t *testing.T) {
 func TestBucketServiceGetPolicy_InvalidBucketName(t *testing.T) {
 	t.Parallel()
 
-	core := client.NewMgcClient("test-token")
+	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Buckets()
 
@@ -82,7 +82,7 @@ func TestBucketServiceGetPolicy_InvalidBucketName(t *testing.T) {
 func TestBucketServiceList(t *testing.T) {
 	t.Parallel()
 
-	core := client.NewMgcClient("test-token")
+	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Buckets()
 
@@ -96,7 +96,7 @@ func TestBucketServiceList(t *testing.T) {
 func TestBucketServiceListWithOptions(t *testing.T) {
 	t.Parallel()
 
-	core := client.NewMgcClient("test-token")
+	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Buckets()
 
@@ -131,7 +131,7 @@ func TestBucketServiceListWithOptions(t *testing.T) {
 func TestBucketServiceGetPolicy(t *testing.T) {
 	t.Parallel()
 
-	core := client.NewMgcClient("test-token")
+	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Buckets()
 
@@ -145,7 +145,7 @@ func TestBucketServiceGetPolicy(t *testing.T) {
 func TestBucketServiceSetPolicy_InvalidBucketName(t *testing.T) {
 	t.Parallel()
 
-	core := client.NewMgcClient("test-token")
+	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Buckets()
 
@@ -174,7 +174,7 @@ func TestBucketServiceSetPolicy_InvalidBucketName(t *testing.T) {
 func TestBucketServiceSetPolicy_NilPolicy(t *testing.T) {
 	t.Parallel()
 
-	core := client.NewMgcClient("test-token")
+	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Buckets()
 
@@ -192,7 +192,7 @@ func TestBucketServiceSetPolicy_NilPolicy(t *testing.T) {
 func TestBucketServiceSetPolicy_EmptyStatements(t *testing.T) {
 	t.Parallel()
 
-	core := client.NewMgcClient("test-token")
+	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Buckets()
 
@@ -215,7 +215,7 @@ func TestBucketServiceSetPolicy_EmptyStatements(t *testing.T) {
 func TestBucketServiceDeletePolicy_InvalidBucketName(t *testing.T) {
 	t.Parallel()
 
-	core := client.NewMgcClient("test-token")
+	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Buckets()
 
@@ -233,7 +233,7 @@ func TestBucketServiceDeletePolicy_InvalidBucketName(t *testing.T) {
 func TestBucketServiceLockBucket_InvalidBucketName(t *testing.T) {
 	t.Parallel()
 
-	core := client.NewMgcClient("test-token")
+	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Buckets()
 
@@ -251,7 +251,7 @@ func TestBucketServiceLockBucket_InvalidBucketName(t *testing.T) {
 func TestBucketServiceUnlockBucket_InvalidBucketName(t *testing.T) {
 	t.Parallel()
 
-	core := client.NewMgcClient("test-token")
+	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Buckets()
 
@@ -269,7 +269,7 @@ func TestBucketServiceUnlockBucket_InvalidBucketName(t *testing.T) {
 func TestBucketServiceGetBucketLockStatus_InvalidBucketName(t *testing.T) {
 	t.Parallel()
 
-	core := client.NewMgcClient("test-token")
+	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Buckets()
 
@@ -287,7 +287,7 @@ func TestBucketServiceGetBucketLockStatus_InvalidBucketName(t *testing.T) {
 func TestBucketServiceGetBucketLockStatus(t *testing.T) {
 	t.Parallel()
 
-	core := client.NewMgcClient("test-token")
+	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Buckets()
 
@@ -301,7 +301,7 @@ func TestBucketServiceGetBucketLockStatus(t *testing.T) {
 func TestBucketServiceLockBucket_ValidParameters(t *testing.T) {
 	t.Parallel()
 
-	core := client.NewMgcClient("test-token")
+	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Buckets()
 
@@ -315,7 +315,7 @@ func TestBucketServiceLockBucket_ValidParameters(t *testing.T) {
 func TestBucketServiceUnlockBucket_ValidParameters(t *testing.T) {
 	t.Parallel()
 
-	core := client.NewMgcClient("test-token")
+	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Buckets()
 
@@ -329,7 +329,7 @@ func TestBucketServiceUnlockBucket_ValidParameters(t *testing.T) {
 func TestBucketServiceCreate_ValidParameters(t *testing.T) {
 	t.Parallel()
 
-	core := client.NewMgcClient("test-token")
+	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Buckets()
 
@@ -343,7 +343,7 @@ func TestBucketServiceCreate_ValidParameters(t *testing.T) {
 func TestBucketServiceExists_ValidParameters(t *testing.T) {
 	t.Parallel()
 
-	core := client.NewMgcClient("test-token")
+	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Buckets()
 
@@ -357,7 +357,7 @@ func TestBucketServiceExists_ValidParameters(t *testing.T) {
 func TestBucketServiceDelete_ValidParameters(t *testing.T) {
 	t.Parallel()
 
-	core := client.NewMgcClient("test-token")
+	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Buckets()
 
@@ -371,7 +371,7 @@ func TestBucketServiceDelete_ValidParameters(t *testing.T) {
 func TestBucketServiceDeletePolicy_ValidParameters(t *testing.T) {
 	t.Parallel()
 
-	core := client.NewMgcClient("test-token")
+	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Buckets()
 
@@ -385,7 +385,7 @@ func TestBucketServiceDeletePolicy_ValidParameters(t *testing.T) {
 func TestBucketServiceSetPolicy_ValidParameters(t *testing.T) {
 	t.Parallel()
 
-	core := client.NewMgcClient("test-token")
+	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Buckets()
 
@@ -410,7 +410,7 @@ func TestBucketServiceSetPolicy_ValidParameters(t *testing.T) {
 func TestBucketServiceSetPolicy_UnmarshalablePolicy(t *testing.T) {
 	t.Parallel()
 
-	core := client.NewMgcClient("test-token")
+	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Buckets()
 
@@ -436,7 +436,7 @@ func TestBucketServiceSetPolicy_UnmarshalablePolicy(t *testing.T) {
 func TestBucketServiceEnableVersioning_ValidParameters(t *testing.T) {
 	t.Parallel()
 
-	core := client.NewMgcClient("test-token")
+	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Buckets()
 
@@ -450,7 +450,7 @@ func TestBucketServiceEnableVersioning_ValidParameters(t *testing.T) {
 func TestBucketServiceSuspendVersioning_ValidParameters(t *testing.T) {
 	t.Parallel()
 
-	core := client.NewMgcClient("test-token")
+	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Buckets()
 
@@ -464,7 +464,7 @@ func TestBucketServiceSuspendVersioning_ValidParameters(t *testing.T) {
 func TestBucketServiceDeleteCORS_ValidParameters(t *testing.T) {
 	t.Parallel()
 
-	core := client.NewMgcClient("test-token")
+	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Buckets()
 
@@ -478,7 +478,7 @@ func TestBucketServiceDeleteCORS_ValidParameters(t *testing.T) {
 func TestBucketServiceSetCORS_ValidParameters(t *testing.T) {
 	t.Parallel()
 
-	core := client.NewMgcClient("test-token")
+	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Buckets()
 
@@ -752,7 +752,7 @@ func TestBucketLockStatusBool(t *testing.T) {
 func TestBucketServiceSetCORS_InvalidBucketName(t *testing.T) {
 	t.Parallel()
 
-	core := client.NewMgcClient("test-token")
+	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Buckets()
 
@@ -781,7 +781,7 @@ func TestBucketServiceSetCORS_InvalidBucketName(t *testing.T) {
 func TestBucketServiceSetCORS_NilConfig(t *testing.T) {
 	t.Parallel()
 
-	core := client.NewMgcClient("test-token")
+	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Buckets()
 
@@ -799,7 +799,7 @@ func TestBucketServiceSetCORS_NilConfig(t *testing.T) {
 func TestBucketServiceSetCORS_EmptyRules(t *testing.T) {
 	t.Parallel()
 
-	core := client.NewMgcClient("test-token")
+	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Buckets()
 
@@ -821,7 +821,7 @@ func TestBucketServiceSetCORS_EmptyRules(t *testing.T) {
 func TestBucketServiceGetCORS_InvalidBucketName(t *testing.T) {
 	t.Parallel()
 
-	core := client.NewMgcClient("test-token")
+	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Buckets()
 
@@ -839,7 +839,7 @@ func TestBucketServiceGetCORS_InvalidBucketName(t *testing.T) {
 func TestBucketServiceGetCORS(t *testing.T) {
 	t.Parallel()
 
-	core := client.NewMgcClient("test-token")
+	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Buckets()
 
@@ -853,7 +853,7 @@ func TestBucketServiceGetCORS(t *testing.T) {
 func TestBucketServiceDeleteCORS_InvalidBucketName(t *testing.T) {
 	t.Parallel()
 
-	core := client.NewMgcClient("test-token")
+	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Buckets()
 
@@ -924,7 +924,7 @@ func TestCORSConfiguration(t *testing.T) {
 func TestBucketServiceEnableVersioning_InvalidBucketName(t *testing.T) {
 	t.Parallel()
 
-	core := client.NewMgcClient("test-token")
+	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Buckets()
 
@@ -942,7 +942,7 @@ func TestBucketServiceEnableVersioning_InvalidBucketName(t *testing.T) {
 func TestBucketServiceSuspendVersioning_InvalidBucketName(t *testing.T) {
 	t.Parallel()
 
-	core := client.NewMgcClient("test-token")
+	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Buckets()
 
@@ -960,7 +960,7 @@ func TestBucketServiceSuspendVersioning_InvalidBucketName(t *testing.T) {
 func TestBucketServiceGetVersioningStatus_InvalidBucketName(t *testing.T) {
 	t.Parallel()
 
-	core := client.NewMgcClient("test-token")
+	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Buckets()
 
@@ -978,7 +978,7 @@ func TestBucketServiceGetVersioningStatus_InvalidBucketName(t *testing.T) {
 func TestBucketServiceGetVersioningStatus(t *testing.T) {
 	t.Parallel()
 
-	core := client.NewMgcClient("test-token")
+	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Buckets()
 

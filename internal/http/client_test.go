@@ -27,7 +27,7 @@ type mockRequest struct {
 }
 
 func TestCoreClient_NewRequest(t *testing.T) {
-	ct := client.NewMgcClient("test-api-key")
+	ct := client.NewMgcClient(client.WithAPIKey("test-api-key"))
 
 	tests := []struct {
 		name     string
@@ -84,7 +84,7 @@ func TestCoreClient_NewRequest(t *testing.T) {
 }
 
 func TestCoreClient_NewRequest_CustomHeaders(t *testing.T) {
-	ct := client.NewMgcClient("test-api-key", client.WithCustomHeader("X-Custom-Header", "custom-value"))
+	ct := client.NewMgcClient(client.WithAPIKey("test-api-key"), client.WithCustomHeader("X-Custom-Header", "custom-value"))
 
 	req, err := NewRequest[any](ct.GetConfig(), context.Background(), http.MethodGet, "/test", nil)
 	if err != nil {
@@ -207,7 +207,7 @@ func TestCoreClient_Do(t *testing.T) {
 			server := tt.setupServer()
 			defer server.Close()
 
-			client := client.NewMgcClient("test-api-key",
+			client := client.NewMgcClient(client.WithAPIKey("test-api-key"),
 				client.WithBaseURL(client.MgcUrl(server.URL)),
 				client.WithTimeout(10*time.Second),
 				client.WithRetryConfig(3,
@@ -243,7 +243,7 @@ func TestRetryLogic(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := client.NewMgcClient("test-api-key",
+	client := client.NewMgcClient(client.WithAPIKey("test-api-key"),
 		client.WithBaseURL(client.MgcUrl(server.URL)),
 		client.WithRetryConfig(3, 100*time.Millisecond, 1*time.Second, 2.0))
 
@@ -273,7 +273,7 @@ func TestRequestHeaders(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := client.NewMgcClient("test-api-key", client.WithBaseURL(client.MgcUrl(server.URL)))
+	client := client.NewMgcClient(client.WithAPIKey("test-api-key"), client.WithBaseURL(client.MgcUrl(server.URL)))
 	req, _ := NewRequest[any](client.GetConfig(), context.Background(), http.MethodGet, "/test", nil)
 	_, err := Do[any](client.GetConfig(), context.Background(), req, nil)
 	if err != nil {
@@ -305,7 +305,7 @@ func TestResponseStatusCodes(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := client.NewMgcClient("test-api-key",
+			client := client.NewMgcClient(client.WithAPIKey("test-api-key"),
 				client.WithBaseURL(client.MgcUrl(server.URL)),
 				client.WithRetryConfig(
 					2,
@@ -357,7 +357,7 @@ func TestNewRequest_ErrorCases(t *testing.T) {
 		},
 	}
 
-	client := client.NewMgcClient("test-api-key")
+	client := client.NewMgcClient(client.WithAPIKey("test-api-key"))
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			_, err := NewRequest(client.GetConfig(), context.Background(), tt.method, tt.path, &tt.body)
@@ -380,7 +380,7 @@ func TestClient_InvalidConfiguration(t *testing.T) {
 		{
 			name: "nil http client",
 			setupFunc: func() *client.CoreClient {
-				return client.NewMgcClient("test-api-key", func(c *client.Config) {
+				return client.NewMgcClient(client.WithAPIKey("test-api-key"), func(c *client.Config) {
 					c.HTTPClient = nil
 				})
 			},
@@ -395,7 +395,7 @@ func TestClient_InvalidConfiguration(t *testing.T) {
 		{
 			name: "invalid base URL",
 			setupFunc: func() *client.CoreClient {
-				return client.NewMgcClient("test-api-key", func(c *client.Config) {
+				return client.NewMgcClient(client.WithAPIKey("test-api-key"), func(c *client.Config) {
 					c.BaseURL = client.MgcUrl("http://invalid\x7f.com")
 				})
 			},
@@ -409,7 +409,7 @@ func TestClient_InvalidConfiguration(t *testing.T) {
 		{
 			name: "zero timeout",
 			setupFunc: func() *client.CoreClient {
-				return client.NewMgcClient("test-api-key", func(c *client.Config) {
+				return client.NewMgcClient(client.WithAPIKey("test-api-key"), func(c *client.Config) {
 					c.Timeout = 0
 				})
 			},
@@ -473,7 +473,7 @@ func TestResponseError_Handling(t *testing.T) {
 			server := tt.setupServer()
 			defer server.Close()
 
-			client := client.NewMgcClient("test-api-key", client.WithBaseURL(client.MgcUrl(server.URL)))
+			client := client.NewMgcClient(client.WithAPIKey("test-api-key"), client.WithBaseURL(client.MgcUrl(server.URL)))
 			req, _ := NewRequest[any](client.GetConfig(), context.Background(), http.MethodGet, "/test", nil)
 			var response any
 			_, err := Do(client.GetConfig(), context.Background(), req, &response)
@@ -494,7 +494,7 @@ func TestMaxRetryAttemptsReached(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := client.NewMgcClient("test-api-key",
+	client := client.NewMgcClient(client.WithAPIKey("test-api-key"),
 		client.WithBaseURL(client.MgcUrl(server.URL)),
 		client.WithRetryConfig(maxAttempts, 10*time.Millisecond, 50*time.Millisecond, 1.5))
 
@@ -532,7 +532,7 @@ func TestRequestIDHandling(t *testing.T) {
 	}))
 	defer server.Close()
 
-	ct := client.NewMgcClient("test-api-key", client.WithBaseURL(client.MgcUrl(server.URL)))
+	ct := client.NewMgcClient(client.WithAPIKey("test-api-key"), client.WithBaseURL(client.MgcUrl(server.URL)))
 
 	ctx := context.WithValue(context.Background(), client.RequestIDKey, requestIDValue)
 	req, err := NewRequest[any](ct.GetConfig(), ctx, http.MethodGet, "/test", nil)
@@ -597,7 +597,7 @@ func TestRequestIDHandling_TableDriven(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ct := client.NewMgcClient("test-api-key")
+			ct := client.NewMgcClient(client.WithAPIKey("test-api-key"))
 			ctx := context.Background()
 			if tt.requestIDValue != nil {
 				ctx = context.WithValue(ctx, client.RequestIDKey, tt.requestIDValue)
@@ -631,7 +631,7 @@ func TestRequestID_Retries(t *testing.T) {
 	}))
 	defer server.Close()
 
-	ct := client.NewMgcClient("test-api-key",
+	ct := client.NewMgcClient(client.WithAPIKey("test-api-key"),
 		client.WithBaseURL(client.MgcUrl(server.URL)),
 		client.WithRetryConfig(3, 10*time.Millisecond, 50*time.Millisecond, 1.5))
 
@@ -660,7 +660,7 @@ func TestConcurrentRequests_DifferentRequestIDs(t *testing.T) {
 	}))
 	defer server.Close()
 
-	ct := client.NewMgcClient("test-api-key", client.WithBaseURL(client.MgcUrl(server.URL)))
+	ct := client.NewMgcClient(client.WithAPIKey("test-api-key"), client.WithBaseURL(client.MgcUrl(server.URL)))
 	var wg sync.WaitGroup
 
 	for i := range 5 {
@@ -705,7 +705,7 @@ func TestExecuteSimpleRequestWithRespBody(t *testing.T) {
 		}))
 		defer ts.Close()
 
-		core := client.NewMgcClient("test-api-key", client.WithBaseURL(client.MgcUrl(ts.URL)), client.WithTimeout(1*time.Second), client.WithRetryConfig(5, 100*time.Millisecond, 500*time.Millisecond, 1.5))
+		core := client.NewMgcClient(client.WithAPIKey("test-api-key"), client.WithBaseURL(client.MgcUrl(ts.URL)), client.WithTimeout(1*time.Second), client.WithRetryConfig(5, 100*time.Millisecond, 500*time.Millisecond, 1.5))
 
 		cfg := core.GetConfig()
 
@@ -760,7 +760,7 @@ func TestExecuteSimpleRequestWithRespBody(t *testing.T) {
 		}))
 		defer ts.Close()
 
-		core := client.NewMgcClient("test-api-key", client.WithBaseURL(client.MgcUrl(ts.URL)), client.WithTimeout(1*time.Second), client.WithRetryConfig(5, 100*time.Millisecond, 500*time.Millisecond, 1.5))
+		core := client.NewMgcClient(client.WithAPIKey("test-api-key"), client.WithBaseURL(client.MgcUrl(ts.URL)), client.WithTimeout(1*time.Second), client.WithRetryConfig(5, 100*time.Millisecond, 500*time.Millisecond, 1.5))
 
 		cfg := core.GetConfig()
 
@@ -1192,7 +1192,7 @@ func TestRetryError_Type(t *testing.T) {
 	}))
 	defer server.Close()
 
-	ct := client.NewMgcClient("test-api-key",
+	ct := client.NewMgcClient(client.WithAPIKey("test-api-key"),
 		client.WithBaseURL(client.MgcUrl(server.URL)),
 		client.WithRetryConfig(3, 10*time.Millisecond, 50*time.Millisecond, 1.5))
 
@@ -1348,7 +1348,7 @@ func TestRetryPreservesRequestBody(t *testing.T) {
 	}))
 	defer server.Close()
 
-	ct := client.NewMgcClient("test-api-key",
+	ct := client.NewMgcClient(client.WithAPIKey("test-api-key"),
 		client.WithBaseURL(client.MgcUrl(server.URL)),
 		client.WithRetryConfig(3, 10*time.Millisecond, 50*time.Millisecond, 1.5))
 
@@ -1395,7 +1395,7 @@ func TestNewRequest_Authentication(t *testing.T) {
 		{
 			name: "only with api-key: the request should use only api-key",
 			setupClient: func() *client.Config {
-				return client.NewMgcClient("test-api-key").GetConfig()
+				return client.NewMgcClient(client.WithAPIKey("test-api-key")).GetConfig()
 			},
 			wantErr: false,
 			checkHeaders: func(t *testing.T, req *http.Request) {
@@ -1412,7 +1412,7 @@ func TestNewRequest_Authentication(t *testing.T) {
 		{
 			name: "only with jwt: the request should use only jwt",
 			setupClient: func() *client.Config {
-				cfg := client.NewMgcClient("").GetConfig()
+				cfg := client.NewMgcClient(client.WithJWToken("test-jwt-token")).GetConfig()
 				cfg.JWToken = "test-jwt-token"
 				cfg.APIKey = ""
 				return cfg
@@ -1432,7 +1432,7 @@ func TestNewRequest_Authentication(t *testing.T) {
 		{
 			name: "with api-key and jwt: the request should use only api-key",
 			setupClient: func() *client.Config {
-				cfg := client.NewMgcClient("test-api-key").GetConfig()
+				cfg := client.NewMgcClient(client.WithAPIKey("test-api-key")).GetConfig()
 				cfg.JWToken = "test-jwt-token"
 				return cfg
 			},
@@ -1446,20 +1446,6 @@ func TestNewRequest_Authentication(t *testing.T) {
 				if authHeader != "" {
 					t.Errorf("expected empty Authorization header when api-key is present, got '%s'", authHeader)
 				}
-			},
-		},
-		{
-			name: "without either: should return the error 'no authentication token provided'",
-			setupClient: func() *client.Config {
-				cfg := client.NewMgcClient("").GetConfig()
-				cfg.APIKey = ""
-				cfg.JWToken = ""
-				return cfg
-			},
-			wantErr: true,
-			errMsg:  "no authentication token provided",
-			checkHeaders: func(*testing.T, *http.Request) {
-				// Should not reach here as error should be returned before
 			},
 		},
 	}

@@ -64,12 +64,8 @@ func NewRequest[T any](c *client.Config, ctx context.Context, method, path strin
 		"apiKey", "redacted",
 		"userAgent", c.UserAgent)
 
-	if c.JWToken == "" && c.APIKey == "" {
-		return nil, fmt.Errorf("no authentication token provided")
-	}
-
-	if c.JWToken != "" && c.APIKey == "" {
-		req.Header.Set("Authorization", "Bearer "+c.JWToken)
+	if c.JWToken != "" {
+		req.Header.Set("Authorization", c.JWToken)
 	}
 	if c.APIKey != "" {
 		req.Header.Set("X-API-Key", c.APIKey)

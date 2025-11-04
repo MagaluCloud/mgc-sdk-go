@@ -771,7 +771,7 @@ func TestInstanceService_Concurrent(t *testing.T) {
 // Helper functions
 func testClient(baseURL string) *VirtualMachineClient {
 	httpClient := &http.Client{}
-	core := client.NewMgcClient("test-api",
+	core := client.NewMgcClient(client.WithAPIKey("test-api-key"),
 		client.WithBaseURL(client.MgcUrl(baseURL)),
 		client.WithHTTPClient(httpClient))
 	return New(core)

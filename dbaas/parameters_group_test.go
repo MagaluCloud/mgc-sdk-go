@@ -581,7 +581,7 @@ func paramGroupTypePtr(t ParameterGroupType) *ParameterGroupType {
 
 func testClientParamerts(baseURL string) ParameterGroupService {
 	httpClient := &http.Client{}
-	core := client.NewMgcClient("test-api",
+	core := client.NewMgcClient(client.WithAPIKey("test-api-key"),
 		client.WithBaseURL(client.MgcUrl(baseURL)),
 		client.WithHTTPClient(httpClient))
 	return &parameterGroupService{New(core)}

@@ -13,7 +13,7 @@ import (
 func TestObjectServiceUpload_InvalidBucketName(t *testing.T) {
 	t.Parallel()
 
-	core := client.NewMgcClient("test-token")
+	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Objects()
 
@@ -31,7 +31,7 @@ func TestObjectServiceUpload_InvalidBucketName(t *testing.T) {
 func TestObjectServiceUpload_InvalidObjectKey(t *testing.T) {
 	t.Parallel()
 
-	core := client.NewMgcClient("test-token")
+	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Objects()
 
@@ -49,7 +49,7 @@ func TestObjectServiceUpload_InvalidObjectKey(t *testing.T) {
 func TestObjectServiceUpload_EmptyData(t *testing.T) {
 	t.Parallel()
 
-	core := client.NewMgcClient("test-token")
+	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Objects()
 
@@ -67,7 +67,7 @@ func TestObjectServiceUpload_EmptyData(t *testing.T) {
 func TestObjectServiceUpload_ValidParameters(t *testing.T) {
 	t.Parallel()
 
-	core := client.NewMgcClient("test-token")
+	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Objects()
 
@@ -82,7 +82,7 @@ func TestObjectServiceUpload_ValidParameters(t *testing.T) {
 func TestObjectServiceDownload_ValidParameters(t *testing.T) {
 	t.Parallel()
 
-	core := client.NewMgcClient("test-token")
+	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Objects()
 
@@ -96,7 +96,7 @@ func TestObjectServiceDownload_ValidParameters(t *testing.T) {
 func TestObjectServiceDownload_WithOptions(t *testing.T) {
 	t.Parallel()
 
-	core := client.NewMgcClient("test-token")
+	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Objects()
 
@@ -130,7 +130,7 @@ func TestObjectServiceDownload_WithOptions(t *testing.T) {
 func TestObjectServiceDownloadStream_WithOptions(t *testing.T) {
 	t.Parallel()
 
-	core := client.NewMgcClient("test-token")
+	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Objects()
 
@@ -163,7 +163,7 @@ func TestObjectServiceDownloadStream_WithOptions(t *testing.T) {
 func TestObjectServiceDownload_InvalidBucketName(t *testing.T) {
 	t.Parallel()
 
-	core := client.NewMgcClient("test-token")
+	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Objects()
 
@@ -181,7 +181,7 @@ func TestObjectServiceDownload_InvalidBucketName(t *testing.T) {
 func TestObjectServiceDownload_InvalidObjectKey(t *testing.T) {
 	t.Parallel()
 
-	core := client.NewMgcClient("test-token")
+	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Objects()
 
@@ -199,7 +199,7 @@ func TestObjectServiceDownload_InvalidObjectKey(t *testing.T) {
 func TestObjectServiceDownloadStream_ValidParameters(t *testing.T) {
 	t.Parallel()
 
-	core := client.NewMgcClient("test-token")
+	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Objects()
 
@@ -219,7 +219,7 @@ func TestObjectServiceDownloadStream_ValidParameters(t *testing.T) {
 func TestObjectServiceDownloadStream_InvalidBucketName(t *testing.T) {
 	t.Parallel()
 
-	core := client.NewMgcClient("test-token")
+	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Objects()
 
@@ -237,7 +237,7 @@ func TestObjectServiceDownloadStream_InvalidBucketName(t *testing.T) {
 func TestObjectServiceDownloadStream_InvalidObjectKey(t *testing.T) {
 	t.Parallel()
 
-	core := client.NewMgcClient("test-token")
+	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Objects()
 
@@ -294,7 +294,7 @@ func TestObjectServiceList(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			core := client.NewMgcClient("test-token")
+			core := client.NewMgcClient()
 			osClient, _ := New(core, "minioadmin", "minioadmin")
 			svc := osClient.Objects()
 
@@ -340,7 +340,7 @@ func TestObjectServiceListAll(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			core := client.NewMgcClient("test-token")
+			core := client.NewMgcClient()
 			osClient, _ := New(core, "minioadmin", "minioadmin")
 			svc := osClient.Objects()
 
@@ -384,7 +384,7 @@ func TestObjectServiceDelete(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			core := client.NewMgcClient("test-token")
+			core := client.NewMgcClient()
 			osClient, _ := New(core, "minioadmin", "minioadmin")
 			svc := osClient.Objects()
 
@@ -400,7 +400,7 @@ func TestObjectServiceDelete(t *testing.T) {
 func TestObjectServiceListAllWithOptions(t *testing.T) {
 	t.Parallel()
 
-	core := client.NewMgcClient("test-token")
+	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Objects()
 
@@ -445,7 +445,7 @@ func TestObjectServiceListAllWithOptions(t *testing.T) {
 func TestObjectServiceListWithOptions(t *testing.T) {
 	t.Parallel()
 
-	core := client.NewMgcClient("test-token")
+	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Objects()
 
@@ -558,7 +558,7 @@ func TestObjectServiceMetadata(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			core := client.NewMgcClient("test-token")
+			core := client.NewMgcClient()
 			osClient, _ := New(core, "minioadmin", "minioadmin")
 			svc := osClient.Objects()
 
@@ -574,7 +574,7 @@ func TestObjectServiceMetadata(t *testing.T) {
 func TestObjectServiceMetadata_ValidParameters(t *testing.T) {
 	t.Parallel()
 
-	core := client.NewMgcClient("test-token")
+	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Objects()
 
@@ -588,7 +588,7 @@ func TestObjectServiceMetadata_ValidParameters(t *testing.T) {
 func TestObjectServiceMetadata_WithVersionID(t *testing.T) {
 	t.Parallel()
 
-	core := client.NewMgcClient("test-token")
+	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Objects()
 
@@ -604,7 +604,7 @@ func TestObjectServiceMetadata_WithVersionID(t *testing.T) {
 func TestObjectServiceLockObject_InvalidBucketName(t *testing.T) {
 	t.Parallel()
 
-	core := client.NewMgcClient("test-token")
+	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Objects()
 
@@ -622,7 +622,7 @@ func TestObjectServiceLockObject_InvalidBucketName(t *testing.T) {
 func TestObjectServiceLockObject_InvalidObjectKey(t *testing.T) {
 	t.Parallel()
 
-	core := client.NewMgcClient("test-token")
+	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Objects()
 
@@ -640,7 +640,7 @@ func TestObjectServiceLockObject_InvalidObjectKey(t *testing.T) {
 func TestObjectServiceLockObject_ZeroRetentionDate(t *testing.T) {
 	t.Parallel()
 
-	core := client.NewMgcClient("test-token")
+	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Objects()
 
@@ -658,7 +658,7 @@ func TestObjectServiceLockObject_ZeroRetentionDate(t *testing.T) {
 func TestObjectServiceUnlockObject_InvalidBucketName(t *testing.T) {
 	t.Parallel()
 
-	core := client.NewMgcClient("test-token")
+	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Objects()
 
@@ -676,7 +676,7 @@ func TestObjectServiceUnlockObject_InvalidBucketName(t *testing.T) {
 func TestObjectServiceUnlockObject_InvalidObjectKey(t *testing.T) {
 	t.Parallel()
 
-	core := client.NewMgcClient("test-token")
+	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Objects()
 
@@ -694,7 +694,7 @@ func TestObjectServiceUnlockObject_InvalidObjectKey(t *testing.T) {
 func TestObjectServiceGetObjectLockStatus_InvalidBucketName(t *testing.T) {
 	t.Parallel()
 
-	core := client.NewMgcClient("test-token")
+	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Objects()
 
@@ -712,7 +712,7 @@ func TestObjectServiceGetObjectLockStatus_InvalidBucketName(t *testing.T) {
 func TestObjectServiceGetObjectLockStatus_InvalidObjectKey(t *testing.T) {
 	t.Parallel()
 
-	core := client.NewMgcClient("test-token")
+	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Objects()
 
@@ -730,7 +730,7 @@ func TestObjectServiceGetObjectLockStatus_InvalidObjectKey(t *testing.T) {
 func TestObjectServiceGetObjectLockStatus(t *testing.T) {
 	t.Parallel()
 
-	core := client.NewMgcClient("test-token")
+	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Objects()
 
@@ -746,7 +746,7 @@ func TestObjectServiceGetObjectLockStatus(t *testing.T) {
 func TestObjectServiceListVersions_InvalidBucketName(t *testing.T) {
 	t.Parallel()
 
-	core := client.NewMgcClient("test-token")
+	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Objects()
 
@@ -764,7 +764,7 @@ func TestObjectServiceListVersions_InvalidBucketName(t *testing.T) {
 func TestObjectServiceListVersions_InvalidObjectKey(t *testing.T) {
 	t.Parallel()
 
-	core := client.NewMgcClient("test-token")
+	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Objects()
 
@@ -782,7 +782,7 @@ func TestObjectServiceListVersions_InvalidObjectKey(t *testing.T) {
 func TestObjectServiceListVersions(t *testing.T) {
 	t.Parallel()
 
-	core := client.NewMgcClient("test-token")
+	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Objects()
 
@@ -796,7 +796,7 @@ func TestObjectServiceListVersions(t *testing.T) {
 func TestObjectServiceListVersionsWithOptions(t *testing.T) {
 	t.Parallel()
 
-	core := client.NewMgcClient("test-token")
+	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Objects()
 
@@ -856,7 +856,7 @@ func TestObjectServiceListVersionsWithOptions(t *testing.T) {
 func TestObjectServiceLockObject_ValidParameters(t *testing.T) {
 	t.Parallel()
 
-	core := client.NewMgcClient("test-token")
+	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Objects()
 
@@ -871,7 +871,7 @@ func TestObjectServiceLockObject_ValidParameters(t *testing.T) {
 func TestObjectServiceUnlockObject_ValidParameters(t *testing.T) {
 	t.Parallel()
 
-	core := client.NewMgcClient("test-token")
+	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Objects()
 
@@ -885,7 +885,7 @@ func TestObjectServiceUnlockObject_ValidParameters(t *testing.T) {
 func TestObjectServiceDownload_WithVersionID(t *testing.T) {
 	t.Parallel()
 
-	core := client.NewMgcClient("test-token")
+	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Objects()
 
@@ -901,7 +901,7 @@ func TestObjectServiceDownload_WithVersionID(t *testing.T) {
 func TestObjectServiceDownloadStream_WithVersionID(t *testing.T) {
 	t.Parallel()
 
-	core := client.NewMgcClient("test-token")
+	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Objects()
 
@@ -917,7 +917,7 @@ func TestObjectServiceDownloadStream_WithVersionID(t *testing.T) {
 func TestObjectServiceDelete_WithVersionID(t *testing.T) {
 	t.Parallel()
 
-	core := client.NewMgcClient("test-token")
+	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Objects()
 
@@ -933,7 +933,7 @@ func TestObjectServiceDelete_WithVersionID(t *testing.T) {
 func TestObjectServiceDelete_WithEmptyVersionID(t *testing.T) {
 	t.Parallel()
 
-	core := client.NewMgcClient("test-token")
+	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Objects()
 

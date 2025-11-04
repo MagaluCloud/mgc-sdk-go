@@ -41,6 +41,18 @@ func WithAPIKey(key string) Option {
 	}
 }
 
+// WithJWToken sets the JWToken for authentication.
+// This option allows specifying a custom JWToken for authentication.
+func WithJWToken(token string) Option {
+	return func(c *Config) {
+		if strings.HasPrefix(token, "Bearer ") {
+			c.JWToken = token
+		} else {
+			c.JWToken = "Bearer " + token
+		}
+	}
+}
+
 // WithBaseURL sets the base URL for API requests.
 // This option allows specifying a custom endpoint for the API.
 func WithBaseURL(url MgcUrl) Option {
@@ -54,14 +66,6 @@ func WithBaseURL(url MgcUrl) Option {
 func WithUserAgent(ua string) Option {
 	return func(c *Config) {
 		c.UserAgent = ua
-	}
-}
-
-// WithJWToken sets the JWToken for authentication.
-// This option allows specifying a custom JWToken for authentication.
-func WithJWToken(token string) Option {
-	return func(c *Config) {
-		c.JWToken, _ = strings.CutPrefix(token, "Bearer ")
 	}
 }
 

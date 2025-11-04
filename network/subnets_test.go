@@ -258,7 +258,7 @@ func TestSubnetService_Update(t *testing.T) {
 
 func testSubnetClient(baseURL string) SubnetService {
 	httpClient := &http.Client{}
-	core := client.NewMgcClient("test-api",
+	core := client.NewMgcClient(client.WithAPIKey("test-api-key"),
 		client.WithBaseURL(client.MgcUrl(baseURL)),
 		client.WithHTTPClient(httpClient))
 	return New(core).Subnets()

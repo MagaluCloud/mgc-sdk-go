@@ -257,7 +257,7 @@ func TestNewWithInvalidEndpoint(t *testing.T) {
 }
 
 func createMockCoreClient() *client.CoreClient {
-	return client.NewMgcClient("mock-api-token")
+	return client.NewMgcClient()
 }
 
 func TestParseEndpoint(t *testing.T) {

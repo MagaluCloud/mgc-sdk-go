@@ -23,7 +23,7 @@ func ExampleListSSHKeys() {
 	if apiToken == "" {
 		log.Fatal("MGC_API_TOKEN environment variable is not set")
 	}
-	c := client.NewMgcClient(apiToken)
+	c := client.NewMgcClient(client.WithAPIKey(apiToken))
 	sshClient := sshkeys.New(c)
 
 	keys, err := sshClient.Keys().List(context.Background(), sshkeys.ListOptions{
@@ -45,7 +45,7 @@ func ExampleCreateSSHKey() string {
 	if apiToken == "" {
 		log.Fatal("MGC_API_TOKEN environment variable is not set")
 	}
-	c := client.NewMgcClient(apiToken)
+	c := client.NewMgcClient(client.WithAPIKey(apiToken))
 	sshClient := sshkeys.New(c)
 
 	key, err := sshClient.Keys().Create(context.Background(), sshkeys.CreateSSHKeyRequest{
@@ -65,7 +65,7 @@ func ExampleGetSSHKey(id string) {
 	if apiToken == "" {
 		log.Fatal("MGC_API_TOKEN environment variable is not set")
 	}
-	c := client.NewMgcClient(apiToken)
+	c := client.NewMgcClient(client.WithAPIKey(apiToken))
 	sshClient := sshkeys.New(c)
 
 	key, err := sshClient.Keys().Get(context.Background(), id)
@@ -84,7 +84,7 @@ func ExampleDeleteSSHKey(id string) {
 	if apiToken == "" {
 		log.Fatal("MGC_API_TOKEN environment variable is not set")
 	}
-	c := client.NewMgcClient(apiToken)
+	c := client.NewMgcClient(client.WithAPIKey(apiToken))
 	sshClient := sshkeys.New(c)
 
 	key, err := sshClient.Keys().Delete(context.Background(), id)

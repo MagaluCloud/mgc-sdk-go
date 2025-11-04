@@ -24,7 +24,7 @@ func main() {
 		log.Fatal("MGC_API_TOKEN environment variable is not set")
 	}
 
-	c := client.NewMgcClient(apiToken, client.WithBaseURL(client.BrSe1), client.WithRetryConfig(15, 2*time.Second, 60*time.Second, 2.0))
+	c := client.NewMgcClient(client.WithAPIKey(apiToken), client.WithBaseURL(client.BrSe1), client.WithRetryConfig(15, 2*time.Second, 60*time.Second, 2.0))
 	k8sClient := kubernetes.New(c)
 
 	idComNodePool := "87438b90-0af6-4b41-bb3c-b3f9a69617de"

@@ -10,7 +10,7 @@ import (
 
 func newTestCoreClient() *client.CoreClient {
 	httpClient := &http.Client{}
-	return client.NewMgcClient("test-api", client.WithBaseURL(client.MgcUrl("http://test-api.com")), client.WithHTTPClient(httpClient))
+	return client.NewMgcClient(client.WithAPIKey("test-api-key"), client.WithBaseURL(client.MgcUrl("http://test-api.com")), client.WithHTTPClient(httpClient))
 }
 
 func TestNew(t *testing.T) {

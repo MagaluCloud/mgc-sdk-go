@@ -27,7 +27,7 @@ func main() {
 
 	wg := sync.WaitGroup{}
 
-	c := client.NewMgcClient(apiToken, client.WithRetryConfig(15, 2*time.Second, 60*time.Second, 2.0))
+	c := client.NewMgcClient(client.WithAPIKey(apiToken), client.WithRetryConfig(15, 2*time.Second, 60*time.Second, 2.0))
 	k8sClient := kubernetes.New(c)
 
 	deleteAllClusters(k8sClient)

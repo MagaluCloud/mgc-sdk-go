@@ -169,7 +169,7 @@ import (
 )
 
 apiToken := os.Getenv("MGC_API_TOKEN")
-c := client.NewMgcClient(apiToken)
+c := client.NewMgcClient(client.WithAPIKey(apiToken))
 
 accessKey := os.Getenv("MGC_OBJECT_STORAGE_ACCESS_KEY")
 secretKey := os.Getenv("MGC_OBJECT_STORAGE_SECRET_KEY")
@@ -452,7 +452,7 @@ import (
 )
 
 apiToken := os.Getenv("MGC_API_TOKEN")
-c := client.NewMgcClient(apiToken)
+c := client.NewMgcClient(client.WithAPIKey(apiToken))
 computeClient := compute.New(c)
 ```
 

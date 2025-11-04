@@ -584,7 +584,7 @@ func TestSnapshotService_ListAll_NewRequestError(t *testing.T) {
 
 func testClientSnaphots(baseURL string) SnapshotService {
 	httpClient := &http.Client{}
-	core := client.NewMgcClient("test-api",
+	core := client.NewMgcClient(client.WithAPIKey("test-api-key"),
 		client.WithBaseURL(client.MgcUrl(baseURL)),
 		client.WithHTTPClient(httpClient))
 	return New(core).Snapshots()

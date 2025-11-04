@@ -895,7 +895,7 @@ func TestVPCService_CreateSubnet_AdditionalCases(t *testing.T) {
 
 func testVPCClient(baseURL string) VPCService {
 	httpClient := &http.Client{}
-	core := client.NewMgcClient("test-api",
+	core := client.NewMgcClient(client.WithAPIKey("test-api-key"),
 		client.WithBaseURL(client.MgcUrl(baseURL)),
 		client.WithHTTPClient(httpClient))
 	return New(core).VPCs()

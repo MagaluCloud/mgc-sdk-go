@@ -32,7 +32,7 @@ func TestEventTypeService(t *testing.T) {
 	defer ts.Close()
 
 	// Configure client with test server URL
-	cfg := client.NewMgcClient("test-api-key",
+	cfg := client.NewMgcClient(client.WithAPIKey("test-api-key"),
 		client.WithBaseURL(client.MgcUrl(ts.URL)),
 		client.WithTimeout(20*time.Second),
 	)
@@ -89,7 +89,7 @@ func TestEventTypeService(t *testing.T) {
 			}))
 			defer errorTs.Close()
 
-			cfg := client.NewMgcClient("test-api-key",
+			cfg := client.NewMgcClient(client.WithAPIKey("test-api-key"),
 				client.WithBaseURL(client.MgcUrl(errorTs.URL)),
 				client.WithTimeout(10*time.Second),
 			)
@@ -234,7 +234,7 @@ func TestEventTypeService_ListAll(t *testing.T) {
 			}))
 			defer ts.Close()
 
-			cfg := client.NewMgcClient("test-api-key",
+			cfg := client.NewMgcClient(client.WithAPIKey("test-api-key"),
 				client.WithBaseURL(client.MgcUrl(ts.URL)),
 				client.WithTimeout(20*time.Second),
 			)

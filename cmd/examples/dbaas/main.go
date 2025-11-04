@@ -41,7 +41,7 @@ func ExampleListEngines() {
 	if apiToken == "" {
 		log.Fatal("MGC_API_TOKEN environment variable is not set")
 	}
-	c := client.NewMgcClient(apiToken)
+	c := client.NewMgcClient(client.WithAPIKey(apiToken))
 	dbaasClient := dbaas.New(c)
 
 	resp, err := dbaasClient.Engines().List(context.Background(), dbaas.ListEngineOptions{
@@ -69,7 +69,7 @@ func ExampleListAllEngines() {
 	if apiToken == "" {
 		log.Fatal("MGC_API_TOKEN environment variable is not set")
 	}
-	c := client.NewMgcClient(apiToken)
+	c := client.NewMgcClient(client.WithAPIKey(apiToken))
 	dbaasClient := dbaas.New(c)
 
 	// List all engines across all pages
@@ -90,7 +90,7 @@ func ExampleListInstanceTypes() {
 	if apiToken == "" {
 		log.Fatal("MGC_API_TOKEN environment variable is not set")
 	}
-	c := client.NewMgcClient(apiToken)
+	c := client.NewMgcClient(client.WithAPIKey(apiToken))
 	dbaasClient := dbaas.New(c)
 
 	resp, err := dbaasClient.InstanceTypes().List(context.Background(), dbaas.ListInstanceTypeOptions{
@@ -121,7 +121,7 @@ func ExampleListAllInstanceTypes() {
 	if apiToken == "" {
 		log.Fatal("MGC_API_TOKEN environment variable is not set")
 	}
-	c := client.NewMgcClient(apiToken)
+	c := client.NewMgcClient(client.WithAPIKey(apiToken))
 	dbaasClient := dbaas.New(c)
 
 	// List all instance types across all pages
@@ -142,7 +142,7 @@ func ExampleListInstances() {
 	if apiToken == "" {
 		log.Fatal("MGC_API_TOKEN environment variable is not set")
 	}
-	c := client.NewMgcClient(apiToken)
+	c := client.NewMgcClient(client.WithAPIKey(apiToken))
 	dbaasClient := dbaas.New(c)
 
 	resp, err := dbaasClient.Instances().List(context.Background(), dbaas.ListInstanceOptions{
@@ -180,7 +180,7 @@ func ExampleListAllInstances() {
 	if apiToken == "" {
 		log.Fatal("MGC_API_TOKEN environment variable is not set")
 	}
-	c := client.NewMgcClient(apiToken)
+	c := client.NewMgcClient(client.WithAPIKey(apiToken))
 	dbaasClient := dbaas.New(c)
 
 	// List all instances across all pages
@@ -201,7 +201,7 @@ func ExampleCreateInstance() {
 	if apiToken == "" {
 		log.Fatal("MGC_API_TOKEN environment variable is not set")
 	}
-	c := client.NewMgcClient(apiToken)
+	c := client.NewMgcClient(client.WithAPIKey(apiToken))
 	dbaasClient := dbaas.New(c)
 
 	// Create a new database instance
@@ -229,7 +229,7 @@ func ExampleListClusters() {
 	if apiToken == "" {
 		log.Fatal("MGC_API_TOKEN environment variable is not set")
 	}
-	c := client.NewMgcClient(apiToken)
+	c := client.NewMgcClient(client.WithAPIKey(apiToken))
 	dbaasClient := dbaas.New(c)
 
 	resp, err := dbaasClient.Clusters().List(context.Background(), dbaas.ListClustersOptions{
@@ -269,7 +269,7 @@ func ExampleListAllClusters() {
 	if apiToken == "" {
 		log.Fatal("MGC_API_TOKEN environment variable is not set")
 	}
-	c := client.NewMgcClient(apiToken)
+	c := client.NewMgcClient(client.WithAPIKey(apiToken))
 	dbaasClient := dbaas.New(c)
 
 	// List all clusters across all pages
@@ -290,7 +290,7 @@ func ExampleCreateCluster() {
 	if apiToken == "" {
 		log.Fatal("MGC_API_TOKEN environment variable is not set")
 	}
-	c := client.NewMgcClient(apiToken)
+	c := client.NewMgcClient(client.WithAPIKey(apiToken))
 	dbaasClient := dbaas.New(c)
 
 	// Create a new database cluster
@@ -324,7 +324,7 @@ func ExampleGetCluster() {
 	if apiToken == "" {
 		log.Fatal("MGC_API_TOKEN environment variable is not set")
 	}
-	c := client.NewMgcClient(apiToken)
+	c := client.NewMgcClient(client.WithAPIKey(apiToken))
 	dbaasClient := dbaas.New(c)
 
 	clusterID := "your-cluster-id" // Replace with actual cluster ID
@@ -348,7 +348,7 @@ func ExampleUpdateCluster() {
 	if apiToken == "" {
 		log.Fatal("MGC_API_TOKEN environment variable is not set")
 	}
-	c := client.NewMgcClient(apiToken)
+	c := client.NewMgcClient(client.WithAPIKey(apiToken))
 	dbaasClient := dbaas.New(c)
 
 	clusterID := "your-cluster-id" // Replace with actual cluster ID
@@ -376,7 +376,7 @@ func ExampleListParametersGroup() {
 	if apiToken == "" {
 		log.Fatal("MGC_API_TOKEN environment variable is not set")
 	}
-	c := client.NewMgcClient(apiToken)
+	c := client.NewMgcClient(client.WithAPIKey(apiToken))
 	dbaasClient := dbaas.New(c)
 
 	resp, err := dbaasClient.ParametersGroup().List(context.Background(), dbaas.ListParameterGroupsOptions{
@@ -405,7 +405,7 @@ func ExampleListAllParametersGroup() {
 	if apiToken == "" {
 		log.Fatal("MGC_API_TOKEN environment variable is not set")
 	}
-	c := client.NewMgcClient(apiToken)
+	c := client.NewMgcClient(client.WithAPIKey(apiToken))
 	dbaasClient := dbaas.New(c)
 
 	// List all parameter groups across all pages
@@ -426,7 +426,7 @@ func ExampleCreateParameterGroup() {
 	if apiToken == "" {
 		log.Fatal("MGC_API_TOKEN environment variable is not set")
 	}
-	c := client.NewMgcClient(apiToken)
+	c := client.NewMgcClient(client.WithAPIKey(apiToken))
 	dbaasClient := dbaas.New(c)
 
 	description := "Custom parameter group for MySQL production databases"
@@ -448,7 +448,7 @@ func ExampleGetParameterGroup() {
 	if apiToken == "" {
 		log.Fatal("MGC_API_TOKEN environment variable is not set")
 	}
-	c := client.NewMgcClient(apiToken)
+	c := client.NewMgcClient(client.WithAPIKey(apiToken))
 	dbaasClient := dbaas.New(c)
 
 	paramGroupID := "your-parameter-group-id" // Replace with actual parameter group ID
@@ -468,7 +468,7 @@ func ExampleUpdateParameterGroup() {
 	if apiToken == "" {
 		log.Fatal("MGC_API_TOKEN environment variable is not set")
 	}
-	c := client.NewMgcClient(apiToken)
+	c := client.NewMgcClient(client.WithAPIKey(apiToken))
 	dbaasClient := dbaas.New(c)
 
 	paramGroupID := "your-parameter-group-id" // Replace with actual parameter group ID
@@ -493,7 +493,7 @@ func ExampleListParameters() {
 	if apiToken == "" {
 		log.Fatal("MGC_API_TOKEN environment variable is not set")
 	}
-	c := client.NewMgcClient(apiToken)
+	c := client.NewMgcClient(client.WithAPIKey(apiToken))
 	dbaasClient := dbaas.New(c)
 
 	resp, err := dbaasClient.Parameters().List(context.Background(), dbaas.ListParametersOptions{
@@ -520,7 +520,7 @@ func ExampleListAllParameters() {
 	if apiToken == "" {
 		log.Fatal("MGC_API_TOKEN environment variable is not set")
 	}
-	c := client.NewMgcClient(apiToken)
+	c := client.NewMgcClient(client.WithAPIKey(apiToken))
 	dbaasClient := dbaas.New(c)
 
 	// List all parameters across all pages for a specific parameter group
@@ -542,7 +542,7 @@ func ExampleCreateParameter() {
 	if apiToken == "" {
 		log.Fatal("MGC_API_TOKEN environment variable is not set")
 	}
-	c := client.NewMgcClient(apiToken)
+	c := client.NewMgcClient(client.WithAPIKey(apiToken))
 	dbaasClient := dbaas.New(c)
 
 	created, err := dbaasClient.Parameters().Create(context.Background(),
@@ -564,7 +564,7 @@ func ExampleUpdateParameter() {
 	if apiToken == "" {
 		log.Fatal("MGC_API_TOKEN environment variable is not set")
 	}
-	c := client.NewMgcClient(apiToken)
+	c := client.NewMgcClient(client.WithAPIKey(apiToken))
 	dbaasClient := dbaas.New(c)
 
 	updated, err := dbaasClient.Parameters().Update(context.Background(),
@@ -586,7 +586,7 @@ func ExampleDeleteParameter() {
 	if apiToken == "" {
 		log.Fatal("MGC_API_TOKEN environment variable is not set")
 	}
-	c := client.NewMgcClient(apiToken)
+	c := client.NewMgcClient(client.WithAPIKey(apiToken))
 	dbaasClient := dbaas.New(c)
 
 	err := dbaasClient.Parameters().Delete(context.Background(),

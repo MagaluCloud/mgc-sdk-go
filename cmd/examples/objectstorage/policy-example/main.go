@@ -54,7 +54,7 @@ func main() {
 	fmt.Printf("   Object: %s\n\n", testObjectKey)
 
 	// Initialize the client
-	coreClient := client.NewMgcClient(apiToken)
+	coreClient := client.NewMgcClient(client.WithAPIKey(apiToken))
 
 	// Create Object Storage client with selected region
 	var opts []objectstorage.ClientOption

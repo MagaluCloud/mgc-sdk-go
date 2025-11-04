@@ -33,7 +33,7 @@ func ExampleRenameAndRetypeInstance(id string) {
 	if apiToken == "" {
 		log.Fatal("MGC_API_TOKEN environment variable is not set")
 	}
-	c := client.NewMgcClient(apiToken)
+	c := client.NewMgcClient(client.WithAPIKey(apiToken))
 	computeClient := compute.New(c)
 	ctx := context.Background()
 	// Rename the instance
@@ -62,7 +62,7 @@ func ExampleListInstances() string {
 	if apiToken == "" {
 		log.Fatal("MGC_API_TOKEN environment variable is not set")
 	}
-	c := client.NewMgcClient(apiToken)
+	c := client.NewMgcClient(client.WithAPIKey(apiToken))
 	computeClient := compute.New(c)
 
 	// List instances with pagination and sorting
@@ -119,7 +119,7 @@ func ExampleCreateInstance() string {
 	if apiToken == "" {
 		log.Fatal("MGC_API_TOKEN environment variable is not set")
 	}
-	c := client.NewMgcClient(apiToken)
+	c := client.NewMgcClient(client.WithAPIKey(apiToken))
 	computeClient := compute.New(c)
 
 	// Create a new instance
@@ -158,7 +158,7 @@ func ExampleGetInstance(id string) {
 	if apiToken == "" {
 		log.Fatal("MGC_API_TOKEN environment variable is not set")
 	}
-	c := client.NewMgcClient(apiToken)
+	c := client.NewMgcClient(client.WithAPIKey(apiToken))
 	computeClient := compute.New(c)
 	ctx := context.Background()
 
@@ -208,7 +208,7 @@ func ExampleDeleteInstance(id string) {
 	if apiToken == "" {
 		log.Fatal("MGC_API_TOKEN environment variable is not set")
 	}
-	c := client.NewMgcClient(apiToken)
+	c := client.NewMgcClient(client.WithAPIKey(apiToken))
 	computeClient := compute.New(c)
 
 	// Delete instance and its public IP
@@ -240,7 +240,7 @@ func readAuthFile() string {
 func ExampleListImagesWithJWT() {
 	accessToken := readAuthFile()
 
-	c := client.NewMgcClient("", client.WithJWToken(accessToken))
+	c := client.NewMgcClient(client.WithJWToken(accessToken))
 	computeClient := compute.New(c)
 
 	// List images
@@ -262,7 +262,7 @@ func ExampleListImagesWithJWT() {
 	}
 }
 func ExampleListImagesWithJWTAndAPIKey() {
-	c := client.NewMgcClient("057dca55-6115-API-KEY-f03f8e1adbb2", client.WithJWToken("Bearer JWTokenn"))
+	c := client.NewMgcClient(client.WithAPIKey("057dca55-6115-API-KEY-f03f8e1adbb2"), client.WithJWToken("Bearer JWTokenn"))
 	computeClient := compute.New(c)
 
 	// List images
@@ -280,7 +280,7 @@ func ExampleListMachineTypes() {
 		log.Fatal("MGC_API_TOKEN environment variable is not set")
 	}
 
-	c := client.NewMgcClient(apiToken)
+	c := client.NewMgcClient(client.WithAPIKey(apiToken))
 	computeClient := compute.New(c)
 
 	// List machine types
@@ -307,7 +307,7 @@ func ExampleListImages() {
 		log.Fatal("MGC_API_TOKEN environment variable is not set")
 	}
 
-	c := client.NewMgcClient(apiToken)
+	c := client.NewMgcClient(client.WithAPIKey(apiToken))
 	computeClient := compute.New(c)
 
 	// List images
@@ -336,7 +336,7 @@ func ExampleInitLog(id string) {
 	if apiToken == "" {
 		log.Fatal("MGC_API_TOKEN environment variable is not set")
 	}
-	c := client.NewMgcClient(apiToken)
+	c := client.NewMgcClient(client.WithAPIKey(apiToken))
 	computeClient := compute.New(c)
 	ctx := context.Background()
 
@@ -355,7 +355,7 @@ func awaitRunningCompleted(id string) {
 	if apiToken == "" {
 		log.Fatal("MGC_API_TOKEN environment variable is not set")
 	}
-	c := client.NewMgcClient(apiToken)
+	c := client.NewMgcClient(client.WithAPIKey(apiToken))
 	computeClient := compute.New(c)
 	ctx := context.Background()
 

@@ -50,7 +50,7 @@ func createNetworkClient() *network.NetworkClient {
 	if apiToken == "" {
 		log.Fatal("MGC_API_TOKEN environment variable is not set")
 	}
-	c := client.NewMgcClient(apiToken)
+	c := client.NewMgcClient(client.WithAPIKey(apiToken))
 	return network.New(c)
 }
 
