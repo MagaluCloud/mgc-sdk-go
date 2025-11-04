@@ -73,3 +73,24 @@ func TestCoreClient_GetConfig(t *testing.T) {
 		t.Errorf("expected Timeout %v, got %v", expectedTimeout, config.Timeout)
 	}
 }
+
+func TestCoreClient_GetConfig_WithJWToken(t *testing.T) {
+	expectedJWToken := "test-jwt-token"
+	expectedTimeout := 5 * time.Second
+
+	client := NewMgcClient("",
+		WithJWToken(expectedJWToken),
+		WithTimeout(expectedTimeout))
+
+	config := client.GetConfig()
+
+	if config == nil {
+		t.Fatal("expected non-nil config")
+	}
+	if config.JWToken != expectedJWToken {
+		t.Errorf("expected JWToken %s, got %s", expectedJWToken, config.JWToken)
+	}
+	if config.Timeout != expectedTimeout {
+		t.Errorf("expected Timeout %v, got %v", expectedTimeout, config.Timeout)
+	}
+}

@@ -1383,3 +1383,116 @@ func TestRetryPreservesRequestBody(t *testing.T) {
 		}
 	}
 }
+
+func TestNewRequest_Authentication(t *testing.T) {
+	tests := []struct {
+		name         string
+		setupClient  func() *client.Config
+		wantErr      bool
+		errMsg       string
+		checkHeaders func(*testing.T, *http.Request)
+	}{
+		{
+			name: "only with api-key: the request should use only api-key",
+			setupClient: func() *client.Config {
+				return client.NewMgcClient("test-api-key").GetConfig()
+			},
+			wantErr: false,
+			checkHeaders: func(t *testing.T, req *http.Request) {
+				apiKey := req.Header.Get("X-API-Key")
+				authHeader := req.Header.Get("Authorization")
+				if apiKey != "test-api-key" {
+					t.Errorf("expected X-API-Key = 'test-api-key', got '%s'", apiKey)
+				}
+				if authHeader != "" {
+					t.Errorf("expected empty Authorization header, got '%s'", authHeader)
+				}
+			},
+		},
+		{
+			name: "only with jwt: the request should use only jwt",
+			setupClient: func() *client.Config {
+				cfg := client.NewMgcClient("").GetConfig()
+				cfg.JWToken = "test-jwt-token"
+				cfg.APIKey = ""
+				return cfg
+			},
+			wantErr: false,
+			checkHeaders: func(t *testing.T, req *http.Request) {
+				authHeader := req.Header.Get("Authorization")
+				apiKey := req.Header.Get("X-API-Key")
+				if authHeader != "Bearer test-jwt-token" {
+					t.Errorf("expected Authorization = 'Bearer test-jwt-token', got '%s'", authHeader)
+				}
+				if apiKey != "" {
+					t.Errorf("expected empty X-API-Key header, got '%s'", apiKey)
+				}
+			},
+		},
+		{
+			name: "with api-key and jwt: the request should use only api-key",
+			setupClient: func() *client.Config {
+				cfg := client.NewMgcClient("test-api-key").GetConfig()
+				cfg.JWToken = "test-jwt-token"
+				return cfg
+			},
+			wantErr: false,
+			checkHeaders: func(t *testing.T, req *http.Request) {
+				apiKey := req.Header.Get("X-API-Key")
+				authHeader := req.Header.Get("Authorization")
+				if apiKey != "test-api-key" {
+					t.Errorf("expected X-API-Key = 'test-api-key', got '%s'", apiKey)
+				}
+				if authHeader != "" {
+					t.Errorf("expected empty Authorization header when api-key is present, got '%s'", authHeader)
+				}
+			},
+		},
+		{
+			name: "without either: should return the error 'no authentication token provided'",
+			setupClient: func() *client.Config {
+				cfg := client.NewMgcClient("").GetConfig()
+				cfg.APIKey = ""
+				cfg.JWToken = ""
+				return cfg
+			},
+			wantErr: true,
+			errMsg:  "no authentication token provided",
+			checkHeaders: func(*testing.T, *http.Request) {
+				// Should not reach here as error should be returned before
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := tt.setupClient()
+			req, err := NewRequest[any](cfg, context.Background(), http.MethodGet, "/test", nil)
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("NewRequest() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			if tt.wantErr {
+				if err == nil {
+					t.Error("expected error, got nil")
+					return
+				}
+				if !strings.Contains(err.Error(), tt.errMsg) {
+					t.Errorf("expected error containing '%s', got '%s'", tt.errMsg, err.Error())
+				}
+				return
+			}
+
+			if err != nil {
+				t.Errorf("NewRequest() error = %v, did not expect error", err)
+				return
+			}
+
+			if tt.checkHeaders != nil {
+				tt.checkHeaders(t, req)
+			}
+		})
+	}
+}

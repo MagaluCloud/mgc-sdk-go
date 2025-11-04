@@ -35,6 +35,7 @@ func NewMgcClient(apiKey string, opts ...Option) *CoreClient {
 		HTTPClient:  http.DefaultClient,
 		Logger:      slog.Default(),
 		APIKey:      apiKey,
+		JWToken:     "",
 		UserAgent:   DefaultUserAgent,
 		BaseURL:     BrSe1,
 		Timeout:     DefaultTimeout,

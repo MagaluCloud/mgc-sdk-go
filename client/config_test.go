@@ -19,6 +19,17 @@ func TestWithAPIKey(t *testing.T) {
 	}
 }
 
+func TestWithJWToken(t *testing.T) {
+	config := &Config{}
+	jwt := "test-jwt-token"
+
+	WithJWToken(jwt)(config)
+
+	if config.JWToken != jwt {
+		t.Errorf("Expected JWToken to be %s, got %s", jwt, config.JWToken)
+	}
+}
+
 func TestWithBaseURL(t *testing.T) {
 	config := &Config{}
 	url := MgcUrl("https://api.example.com")

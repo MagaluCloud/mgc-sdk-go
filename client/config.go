@@ -3,6 +3,7 @@ package client
 import (
 	"log/slog"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -17,6 +18,7 @@ type RetryConfig struct {
 // Config contains all configuration options for the client.
 type Config struct {
 	APIKey        string
+	JWToken       string
 	BaseURL       MgcUrl
 	UserAgent     string
 	Logger        *slog.Logger
@@ -52,6 +54,14 @@ func WithBaseURL(url MgcUrl) Option {
 func WithUserAgent(ua string) Option {
 	return func(c *Config) {
 		c.UserAgent = ua
+	}
+}
+
+// WithJWToken sets the JWToken for authentication.
+// This option allows specifying a custom JWToken for authentication.
+func WithJWToken(token string) Option {
+	return func(c *Config) {
+		c.JWToken, _ = strings.CutPrefix(token, "Bearer ")
 	}
 }
 

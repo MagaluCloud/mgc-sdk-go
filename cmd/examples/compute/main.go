@@ -8,11 +8,14 @@ import (
 
 	"github.com/MagaluCloud/mgc-sdk-go/client"
 	"github.com/MagaluCloud/mgc-sdk-go/compute"
+	"gopkg.in/yaml.v3"
 )
 
 func main() {
-	ExampleListMachineTypes()
-	ExampleListImages()
+	// ExampleListMachineTypes()
+	// ExampleListImages()
+	ExampleListImagesWithJWT()
+	ExampleListImagesWithJWTAndAPIKey()
 	// id := "" // comment and uncomment to run the examples
 	// // id := ExampleCreateInstance() // uncomment to create a new instance
 	// // id := ExampleListInstances() // uncomment to list instances and get the id of the last instance
@@ -217,6 +220,60 @@ func ExampleDeleteInstance(id string) {
 }
 */
 
+type AuthFile struct {
+	AccessToken string `yaml:"access_token"`
+}
+
+func readAuthFile() string {
+	authFile, err := os.ReadFile(os.ExpandEnv("$HOME/.config/mgc/default/auth.yaml"))
+	if err != nil {
+		log.Fatal(err)
+	}
+	var auth AuthFile
+	err = yaml.Unmarshal(authFile, &auth)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return auth.AccessToken
+}
+
+func ExampleListImagesWithJWT() {
+	accessToken := readAuthFile()
+
+	c := client.NewMgcClient("", client.WithJWToken(accessToken))
+	computeClient := compute.New(c)
+
+	// List images
+	imagesResp, err := computeClient.Images().List(context.Background(), compute.ImageListOptions{})
+	if err != nil {
+		log.Println("If receive 401 error, run `mgc auth login` to login and try again")
+		log.Fatal(err)
+	}
+	// Print image details
+	for _, image := range imagesResp.Images {
+		fmt.Printf("Image: %s (ID: %s)\n", image.Name, image.ID)
+		fmt.Printf("  Status: %s\n", image.Status)
+		fmt.Printf("  Version: %s\n", *image.Version)
+		fmt.Printf("  Platform: %s\n", *image.Platform)
+		fmt.Printf("  Release At: %s\n", *image.ReleaseAt)
+		fmt.Printf("  End Standard Support At: %s\n", *image.EndStandardSupportAt)
+		fmt.Printf("  End Life At: %s\n", *image.EndLifeAt)
+		fmt.Printf("  Minimum Requirements: %d VCPUs, %d RAM, %d Disk\n", image.MinimumRequirements.VCPU, image.MinimumRequirements.RAM, image.MinimumRequirements.Disk)
+	}
+}
+func ExampleListImagesWithJWTAndAPIKey() {
+	c := client.NewMgcClient("057dca55-6115-API-KEY-f03f8e1adbb2", client.WithJWToken("Bearer JWTokenn"))
+	computeClient := compute.New(c)
+
+	// List images
+	_, err := computeClient.Images().List(context.Background(), compute.ImageListOptions{})
+	if err != nil {
+		log.Println("Successfully authenticated with API Key and ignored JWT authentication")
+		log.Fatal(err)
+	}
+}
+
+/*
 func ExampleListMachineTypes() {
 	apiToken := os.Getenv("MGC_API_TOKEN")
 	if apiToken == "" {
@@ -242,7 +299,8 @@ func ExampleListMachineTypes() {
 		fmt.Printf("  Status: %s\n", mt.Status)
 	}
 }
-
+*/
+/*
 func ExampleListImages() {
 	apiToken := os.Getenv("MGC_API_TOKEN")
 	if apiToken == "" {
@@ -269,6 +327,7 @@ func ExampleListImages() {
 		fmt.Printf("  Minimum Requirements: %d VCPUs, %d RAM, %d Disk\n", image.MinimumRequirements.VCPU, image.MinimumRequirements.RAM, image.MinimumRequirements.Disk)
 	}
 }
+*/
 
 /*
 func ExampleInitLog(id string) {
