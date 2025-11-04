@@ -24,6 +24,7 @@ func TestNew(t *testing.T) {
 			name:    "valid client creation",
 			opts:    []Option{WithAPIKey("test-api-key")},
 			wantErr: false,
+			apiKey:  "test-api-key",
 		},
 		{
 			name: "client with custom options",
@@ -33,6 +34,7 @@ func TestNew(t *testing.T) {
 				WithAPIKey("test-api-key"),
 			},
 			wantErr: false,
+			apiKey:  "test-api-key",
 		},
 	}
 
@@ -74,7 +76,7 @@ func TestCoreClient_GetConfig(t *testing.T) {
 }
 
 func TestCoreClient_GetConfig_WithJWToken(t *testing.T) {
-	expectedJWToken := "test-jwt-token"
+	expectedJWToken := "Bearer test-jwt-token"
 	expectedTimeout := 5 * time.Second
 
 	client := NewMgcClient(WithJWToken(expectedJWToken),

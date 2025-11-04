@@ -92,7 +92,7 @@ func TestKubernetesClient_NewRequest(t *testing.T) {
 			t.Errorf("URL esperada: %s, obtida: %s", expectedURL, req.URL.String())
 		}
 
-		if req.Header.Get("X-API-Key") != "test-token" {
+		if req.Header.Get("X-API-Key") != "test-api-key" {
 			t.Error("Header X-API-Key ausente ou incorreto")
 		}
 	})

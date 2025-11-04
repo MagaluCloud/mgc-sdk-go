@@ -1413,7 +1413,7 @@ func TestNewRequest_Authentication(t *testing.T) {
 			name: "only with jwt: the request should use only jwt",
 			setupClient: func() *client.Config {
 				cfg := client.NewMgcClient(client.WithJWToken("test-jwt-token")).GetConfig()
-				cfg.JWToken = "test-jwt-token"
+				cfg.JWToken = "Bearer test-jwt-token"
 				cfg.APIKey = ""
 				return cfg
 			},
@@ -1430,10 +1430,10 @@ func TestNewRequest_Authentication(t *testing.T) {
 			},
 		},
 		{
-			name: "with api-key and jwt: the request should use only api-key",
+			name: "with api-key and jwt: the request should use both",
 			setupClient: func() *client.Config {
 				cfg := client.NewMgcClient(client.WithAPIKey("test-api-key")).GetConfig()
-				cfg.JWToken = "test-jwt-token"
+				cfg.JWToken = "Bearer test-jwt-token"
 				return cfg
 			},
 			wantErr: false,
@@ -1443,7 +1443,7 @@ func TestNewRequest_Authentication(t *testing.T) {
 				if apiKey != "test-api-key" {
 					t.Errorf("expected X-API-Key = 'test-api-key', got '%s'", apiKey)
 				}
-				if authHeader != "" {
+				if authHeader != "Bearer test-jwt-token" {
 					t.Errorf("expected empty Authorization header when api-key is present, got '%s'", authHeader)
 				}
 			},
