@@ -21,7 +21,7 @@ func ExampleListEvents() {
 	if apiToken == "" {
 		log.Fatal("MGC_API_TOKEN environment variable is not set")
 	}
-	c := client.NewMgcClient(apiToken)
+	c := client.NewMgcClient(client.WithAPIKey(apiToken))
 	eventsClient := audit.New(c)
 
 	eventsList, err := eventsClient.Events().List(context.Background(), &audit.ListEventsParams{
@@ -54,7 +54,7 @@ func ExampleListEventTypes() {
 	if apiToken == "" {
 		log.Fatal("MGC_API_TOKEN environment variable is not set")
 	}
-	c := client.NewMgcClient(apiToken)
+	c := client.NewMgcClient(client.WithAPIKey(apiToken))
 	eventsClient := audit.New(c)
 
 	types, err := eventsClient.EventTypes().List(context.Background(), &audit.ListEventTypesParams{

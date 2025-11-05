@@ -56,7 +56,7 @@ func main() {
 	fmt.Println()
 
 	// Create MagaluCloud client
-	c := client.NewMgcClient(apiToken)
+	c := client.NewMgcClient(client.WithAPIKey(apiToken))
 
 	// Create Object Storage client with selected region
 	var opts []objectstorage.ClientOption

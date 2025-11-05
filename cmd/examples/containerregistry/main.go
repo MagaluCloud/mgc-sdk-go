@@ -19,7 +19,7 @@ func main() {
 	if apiToken == "" {
 		log.Fatal("MGC_API_TOKEN environment variable is not set")
 	}
-	c := client.NewMgcClient(apiToken, client.WithBaseURL(client.BrSe1), client.WithLogger(slog.New(slog.NewJSONHandler(os.Stdout, nil))))
+	c := client.NewMgcClient(client.WithAPIKey(apiToken), client.WithBaseURL(client.BrSe1), client.WithLogger(slog.New(slog.NewJSONHandler(os.Stdout, nil))))
 
 	getCredentials(c)
 	resetPassword(c)

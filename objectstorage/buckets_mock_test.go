@@ -26,7 +26,7 @@ func TestBucketServiceList_WithMockSuccess(t *testing.T) {
 		objects:      make(map[string]*mockObject),
 	}
 
-	core := client.NewMgcClient("test-token")
+	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin", WithMinioClientInterface(mock))
 	svc := osClient.Buckets()
 
@@ -64,7 +64,7 @@ func TestBucketServiceGetPolicy_WithMockSuccess(t *testing.T) {
 		objects:      make(map[string]*mockObject),
 	}
 
-	core := client.NewMgcClient("test-token")
+	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin", WithMinioClientInterface(mock))
 	svc := osClient.Buckets()
 
@@ -98,7 +98,7 @@ func TestBucketServiceGetPolicy_EmptyPolicy(t *testing.T) {
 		objects:      make(map[string]*mockObject),
 	}
 
-	core := client.NewMgcClient("test-token")
+	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin", WithMinioClientInterface(mock))
 	svc := osClient.Buckets()
 
@@ -124,7 +124,7 @@ func TestBucketServiceGetPolicy_InvalidJSON(t *testing.T) {
 		objects:      make(map[string]*mockObject),
 	}
 
-	core := client.NewMgcClient("test-token")
+	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin", WithMinioClientInterface(mock))
 	svc := osClient.Buckets()
 
@@ -155,7 +155,7 @@ func TestBucketServiceGetBucketLockStatus_Locked(t *testing.T) {
 		objects: make(map[string]*mockObject),
 	}
 
-	core := client.NewMgcClient("test-token")
+	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin", WithMinioClientInterface(mock))
 	svc := osClient.Buckets()
 
@@ -181,7 +181,7 @@ func TestBucketServiceGetBucketLockStatus_Unlocked(t *testing.T) {
 		objects:      make(map[string]*mockObject),
 	}
 
-	core := client.NewMgcClient("test-token")
+	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin", WithMinioClientInterface(mock))
 	svc := osClient.Buckets()
 
@@ -212,7 +212,7 @@ func TestBucketServiceGetBucketLockStatus_PartialConfig(t *testing.T) {
 		objects: make(map[string]*mockObject),
 	}
 
-	core := client.NewMgcClient("test-token")
+	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin", WithMinioClientInterface(mock))
 	svc := osClient.Buckets()
 
@@ -248,7 +248,7 @@ func TestBucketServiceGetCORS_WithMockSuccess(t *testing.T) {
 		objects: make(map[string]*mockObject),
 	}
 
-	core := client.NewMgcClient("test-token")
+	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin", WithMinioClientInterface(mock))
 	svc := osClient.Buckets()
 
@@ -291,7 +291,7 @@ func TestBucketServiceGetCORS_NilConfig(t *testing.T) {
 		objects:      make(map[string]*mockObject),
 	}
 
-	core := client.NewMgcClient("test-token")
+	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin", WithMinioClientInterface(mock))
 	svc := osClient.Buckets()
 
@@ -319,7 +319,7 @@ func TestBucketServiceGetCORS_EmptyRules(t *testing.T) {
 		objects: make(map[string]*mockObject),
 	}
 
-	core := client.NewMgcClient("test-token")
+	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin", WithMinioClientInterface(mock))
 	svc := osClient.Buckets()
 
@@ -361,7 +361,7 @@ func TestBucketServiceGetCORS_MultipleRules(t *testing.T) {
 		objects: make(map[string]*mockObject),
 	}
 
-	core := client.NewMgcClient("test-token")
+	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin", WithMinioClientInterface(mock))
 	svc := osClient.Buckets()
 
@@ -408,7 +408,7 @@ func TestBucketServiceGetVersioningStatus_Enabled(t *testing.T) {
 		objects: make(map[string]*mockObject),
 	}
 
-	core := client.NewMgcClient("test-token")
+	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin", WithMinioClientInterface(mock))
 	svc := osClient.Buckets()
 
@@ -440,7 +440,7 @@ func TestBucketServiceGetVersioningStatus_Suspended(t *testing.T) {
 		objects: make(map[string]*mockObject),
 	}
 
-	core := client.NewMgcClient("test-token")
+	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin", WithMinioClientInterface(mock))
 	svc := osClient.Buckets()
 
@@ -472,7 +472,7 @@ func TestBucketServiceGetVersioningStatus_Off(t *testing.T) {
 		objects: make(map[string]*mockObject),
 	}
 
-	core := client.NewMgcClient("test-token")
+	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin", WithMinioClientInterface(mock))
 	svc := osClient.Buckets()
 

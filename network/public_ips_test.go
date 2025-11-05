@@ -329,7 +329,7 @@ func TestPublicIPService_AttachDetach(t *testing.T) {
 
 func testPublicIPClient(baseURL string) PublicIPService {
 	httpClient := &http.Client{}
-	core := client.NewMgcClient("test-api",
+	core := client.NewMgcClient(client.WithAPIKey("test-api-key"),
 		client.WithBaseURL(client.MgcUrl(baseURL)),
 		client.WithHTTPClient(httpClient))
 	return New(core).PublicIPs()

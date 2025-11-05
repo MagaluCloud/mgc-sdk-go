@@ -33,7 +33,7 @@ func TestService(t *testing.T) {
 			}))
 			defer ts.Close()
 
-			cfg := client.NewMgcClient("test-api-key",
+			cfg := client.NewMgcClient(client.WithAPIKey("test-api-key"),
 				client.WithTimeout(20*time.Second),
 			)
 			c := New(cfg, WithGlobalBasePath(client.MgcUrl(ts.URL)))
@@ -69,7 +69,7 @@ func TestService(t *testing.T) {
 			}))
 			defer ts.Close()
 
-			cfg := client.NewMgcClient("test-api-key",
+			cfg := client.NewMgcClient(client.WithAPIKey("test-api-key"),
 				client.WithTimeout(20*time.Second),
 			)
 			c := New(cfg, WithGlobalBasePath(client.MgcUrl(ts.URL)))
@@ -111,7 +111,7 @@ func TestService(t *testing.T) {
 			}))
 			defer ts.Close()
 
-			cfg := client.NewMgcClient("test-api-key",
+			cfg := client.NewMgcClient(client.WithAPIKey("test-api-key"),
 				client.WithTimeout(20*time.Second),
 			)
 			c := New(cfg, WithGlobalBasePath(client.MgcUrl(ts.URL)))
@@ -150,7 +150,7 @@ func TestService(t *testing.T) {
 			}))
 			defer ts.Close()
 
-			cfg := client.NewMgcClient("test-api-key",
+			cfg := client.NewMgcClient(client.WithAPIKey("test-api-key"),
 				client.WithTimeout(20*time.Second),
 			)
 			c := New(cfg, WithGlobalBasePath(client.MgcUrl(ts.URL)))
@@ -172,7 +172,7 @@ func TestService(t *testing.T) {
 			}))
 			defer ts.Close()
 
-			cfg := client.NewMgcClient("test-api-key",
+			cfg := client.NewMgcClient(client.WithAPIKey("test-api-key"),
 				client.WithTimeout(1*time.Millisecond), // Very short timeout to trigger error
 			)
 			c := New(cfg, WithGlobalBasePath(client.MgcUrl(ts.URL)))

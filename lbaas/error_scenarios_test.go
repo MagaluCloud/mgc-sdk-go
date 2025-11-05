@@ -19,7 +19,7 @@ func TestNetworkErrorScenarios(t *testing.T) {
 		t.Parallel()
 		// Usa uma porta que não está sendo usada
 		httpClient := &http.Client{}
-		core := client.NewMgcClient("test-api",
+		core := client.NewMgcClient(client.WithAPIKey("test-api-key"),
 			client.WithBaseURL(client.MgcUrl("http://localhost:9999")),
 			client.WithHTTPClient(httpClient))
 		lbClient := New(core).NetworkLoadBalancers()
@@ -41,7 +41,7 @@ func TestNetworkErrorScenarios(t *testing.T) {
 		httpClient := &http.Client{
 			Timeout: 100 * time.Millisecond, // Timeout muito baixo
 		}
-		core := client.NewMgcClient("test-api",
+		core := client.NewMgcClient(client.WithAPIKey("test-api-key"),
 			client.WithBaseURL(client.MgcUrl(server.URL)),
 			client.WithHTTPClient(httpClient))
 		lbClient := New(core).NetworkLoadBalancers()
@@ -269,7 +269,7 @@ func TestConnectionErrorScenarios(t *testing.T) {
 	t.Run("dns resolution failure", func(t *testing.T) {
 		t.Parallel()
 		httpClient := &http.Client{}
-		core := client.NewMgcClient("test-api",
+		core := client.NewMgcClient(client.WithAPIKey("test-api-key"),
 			client.WithBaseURL(client.MgcUrl("http://non-existent-domain-12345.com")),
 			client.WithHTTPClient(httpClient))
 		lbClient := New(core).NetworkLoadBalancers()

@@ -38,7 +38,7 @@ func assertNoError(t *testing.T, err error) {
 
 func testClient(baseURL string) ReplicaService {
 	httpClient := &http.Client{}
-	core := client.NewMgcClient("test-api",
+	core := client.NewMgcClient(client.WithAPIKey("test-api-key"),
 		client.WithBaseURL(client.MgcUrl(baseURL)),
 		client.WithHTTPClient(httpClient))
 	return NewReplicaService(New(core))

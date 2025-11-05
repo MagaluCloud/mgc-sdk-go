@@ -22,24 +22,25 @@ func TestNew(t *testing.T) {
 	}{
 		{
 			name:    "valid client creation",
-			apiKey:  "test-api-key",
-			opts:    nil,
+			opts:    []Option{WithAPIKey("test-api-key")},
 			wantErr: false,
+			apiKey:  "test-api-key",
 		},
 		{
-			name:   "client with custom options",
-			apiKey: "test-api-key",
+			name: "client with custom options",
 			opts: []Option{
 				WithBaseURL(BrNe1),
 				WithTimeout(5 * time.Second),
+				WithAPIKey("test-api-key"),
 			},
 			wantErr: false,
+			apiKey:  "test-api-key",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			client := NewMgcClient(tt.apiKey, tt.opts...)
+			client := NewMgcClient(tt.opts...)
 			if client == nil {
 				t.Error("expected non-nil client")
 				return
@@ -56,7 +57,7 @@ func TestCoreClient_GetConfig(t *testing.T) {
 	expectedAPIKey := "test-api-key"
 	expectedTimeout := 5 * time.Second
 
-	client := NewMgcClient(expectedAPIKey,
+	client := NewMgcClient(WithAPIKey(expectedAPIKey),
 		WithTimeout(expectedTimeout))
 
 	// Act
@@ -68,6 +69,26 @@ func TestCoreClient_GetConfig(t *testing.T) {
 	}
 	if config.APIKey != expectedAPIKey {
 		t.Errorf("expected APIKey %s, got %s", expectedAPIKey, config.APIKey)
+	}
+	if config.Timeout != expectedTimeout {
+		t.Errorf("expected Timeout %v, got %v", expectedTimeout, config.Timeout)
+	}
+}
+
+func TestCoreClient_GetConfig_WithJWToken(t *testing.T) {
+	expectedJWToken := "Bearer test-jwt-token"
+	expectedTimeout := 5 * time.Second
+
+	client := NewMgcClient(WithJWToken(expectedJWToken),
+		WithTimeout(expectedTimeout))
+
+	config := client.GetConfig()
+
+	if config == nil {
+		t.Fatal("expected non-nil config")
+	}
+	if config.JWToken != expectedJWToken {
+		t.Errorf("expected JWToken %s, got %s", expectedJWToken, config.JWToken)
 	}
 	if config.Timeout != expectedTimeout {
 		t.Errorf("expected Timeout %v, got %v", expectedTimeout, config.Timeout)

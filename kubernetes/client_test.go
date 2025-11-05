@@ -18,7 +18,7 @@ func TestNewKubernetesClient(t *testing.T) {
 	}{
 		{
 			name:    "valid core client",
-			core:    client.NewMgcClient("test-token"),
+			core:    client.NewMgcClient(client.WithAPIKey("test-api-key")),
 			wantNil: false,
 		},
 		{
@@ -39,7 +39,7 @@ func TestNewKubernetesClient(t *testing.T) {
 }
 
 func TestKubernetesClient_Services(t *testing.T) {
-	core := client.NewMgcClient("test-token",
+	core := client.NewMgcClient(client.WithAPIKey("test-api-key"),
 		client.WithHTTPClient(&http.Client{}),
 		client.WithBaseURL("https://api.test.com"))
 
@@ -75,7 +75,7 @@ func TestKubernetesClient_Services(t *testing.T) {
 }
 
 func TestKubernetesClient_NewRequest(t *testing.T) {
-	core := client.NewMgcClient("test-token",
+	core := client.NewMgcClient(client.WithAPIKey("test-api-key"),
 		client.WithBaseURL("https://api.test.com"),
 		client.WithHTTPClient(&http.Client{}),
 	)
@@ -92,7 +92,7 @@ func TestKubernetesClient_NewRequest(t *testing.T) {
 			t.Errorf("URL esperada: %s, obtida: %s", expectedURL, req.URL.String())
 		}
 
-		if req.Header.Get("X-API-Key") != "test-token" {
+		if req.Header.Get("X-API-Key") != "test-api-key" {
 			t.Error("Header X-API-Key ausente ou incorreto")
 		}
 	})
@@ -106,7 +106,7 @@ func TestKubernetesClient_NewRequest(t *testing.T) {
 }
 
 func TestKubernetesClient_RequestIDPropagation(t *testing.T) {
-	core := client.NewMgcClient("test-token")
+	core := client.NewMgcClient(client.WithAPIKey("test-api-key"))
 	k8sClient := New(core)
 
 	ctx := context.WithValue(context.Background(), client.RequestIDKey, "test-request-123")
@@ -122,7 +122,7 @@ func TestKubernetesClient_RequestIDPropagation(t *testing.T) {
 }
 
 func TestKubernetesClient_RetryConfiguration(t *testing.T) {
-	core := client.NewMgcClient("test-token",
+	core := client.NewMgcClient(client.WithAPIKey("test-api-key"),
 		client.WithRetryConfig(3, 1*time.Second, 10*time.Second, 2.0),
 	)
 	k8sClient := New(core)
@@ -133,7 +133,7 @@ func TestKubernetesClient_RetryConfiguration(t *testing.T) {
 }
 
 func TestKubernetesClient_DefaultBasePath(t *testing.T) {
-	core := client.NewMgcClient("test-token",
+	core := client.NewMgcClient(client.WithAPIKey("test-api-key"),
 		client.WithBaseURL("https://api.test.com"),
 	)
 	k8sClient := New(core)
@@ -150,7 +150,7 @@ func TestKubernetesClient_DefaultBasePath(t *testing.T) {
 }
 
 func TestNewKubernetesClient_WithOptions(t *testing.T) {
-	core := client.NewMgcClient("test-token",
+	core := client.NewMgcClient(client.WithAPIKey("test-api-key"),
 		client.WithBaseURL("https://api.test.com"),
 		client.WithHTTPClient(&http.Client{}),
 	)

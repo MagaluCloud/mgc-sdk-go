@@ -8,7 +8,7 @@ import (
 )
 
 func testClient(baseURL string) *KubernetesClient {
-	core := client.NewMgcClient("test-token",
+	core := client.NewMgcClient(client.WithJWToken("test-token"),
 		client.WithBaseURL(client.MgcUrl(baseURL)),
 		client.WithHTTPClient(&http.Client{Timeout: 1 * time.Second}),
 	)

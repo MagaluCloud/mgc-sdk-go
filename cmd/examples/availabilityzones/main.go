@@ -19,7 +19,7 @@ func ExampleListAvailabilityZones() {
 	if apiToken == "" {
 		log.Fatal("MGC_API_TOKEN environment variable is not set")
 	}
-	c := client.NewMgcClient(apiToken)
+	c := client.NewMgcClient(client.WithAPIKey(apiToken))
 	azClient := availabilityzones.New(c)
 
 	response, err := azClient.AvailabilityZones().List(context.Background(), availabilityzones.ListOptions{

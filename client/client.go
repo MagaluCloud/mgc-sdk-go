@@ -30,11 +30,12 @@ type CoreClient struct {
 
 // NewMgcClient creates a new instance of CoreClient with the specified API key and options.
 // The client is configured with sensible defaults and can be customized using the provided options.
-func NewMgcClient(apiKey string, opts ...Option) *CoreClient {
+func NewMgcClient(opts ...Option) *CoreClient {
 	cfg := &Config{
 		HTTPClient:  http.DefaultClient,
 		Logger:      slog.Default(),
-		APIKey:      apiKey,
+		APIKey:      "",
+		JWToken:     "",
 		UserAgent:   DefaultUserAgent,
 		BaseURL:     BrSe1,
 		Timeout:     DefaultTimeout,

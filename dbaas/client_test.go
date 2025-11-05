@@ -15,7 +15,7 @@ func TestNew(t *testing.T) {
 	}{
 		{
 			name:    "valid core client",
-			core:    client.NewMgcClient("test-token"),
+			core:    client.NewMgcClient(client.WithAPIKey("test-api-key")),
 			wantNil: false,
 		},
 		{
@@ -36,7 +36,7 @@ func TestNew(t *testing.T) {
 }
 
 func TestDBaaSClient_Services(t *testing.T) {
-	core := client.NewMgcClient("test-token",
+	core := client.NewMgcClient(client.WithAPIKey("test-api-key"),
 		client.WithHTTPClient(&http.Client{}),
 		client.WithBaseURL("https://api.test.com"))
 

@@ -45,7 +45,7 @@ func assertNoError(t *testing.T, err error) {
 
 func testLoadBalancerClient(baseURL string) NetworkLoadBalancerService {
 	httpClient := &http.Client{}
-	core := client.NewMgcClient("test-api",
+	core := client.NewMgcClient(client.WithAPIKey("test-api-key"),
 		client.WithBaseURL(client.MgcUrl(baseURL)),
 		client.WithHTTPClient(httpClient))
 	return New(core).NetworkLoadBalancers()

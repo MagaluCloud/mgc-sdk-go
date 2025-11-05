@@ -309,7 +309,7 @@ func TestRuleService_Delete(t *testing.T) {
 
 func testRulesClient(baseURL string) RuleService {
 	httpClient := &http.Client{}
-	core := client.NewMgcClient("test-api",
+	core := client.NewMgcClient(client.WithAPIKey("test-api-key"),
 		client.WithBaseURL(client.MgcUrl(baseURL)),
 		client.WithHTTPClient(httpClient))
 	return New(core).Rules()

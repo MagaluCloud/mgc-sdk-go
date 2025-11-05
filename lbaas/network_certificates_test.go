@@ -15,7 +15,7 @@ import (
 
 func testCertificateClient(baseURL string) NetworkCertificateService {
 	httpClient := &http.Client{}
-	core := client.NewMgcClient("test-api",
+	core := client.NewMgcClient(client.WithAPIKey("test-api-key"),
 		client.WithBaseURL(client.MgcUrl(baseURL)),
 		client.WithHTTPClient(httpClient))
 	return New(core).NetworkCertificates()
@@ -603,7 +603,7 @@ func TestNetworkCertificateService_Create_NewRequestError(t *testing.T) {
 
 	// Criar um cliente com URL base inválida para forçar erro no newRequest
 	httpClient := &http.Client{}
-	core := client.NewMgcClient("test-api",
+	core := client.NewMgcClient(client.WithAPIKey("test-api-key"),
 		client.WithBaseURL(client.MgcUrl("://invalid-url")), // URL malformada
 		client.WithHTTPClient(httpClient))
 

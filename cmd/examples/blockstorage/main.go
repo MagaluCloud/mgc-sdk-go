@@ -31,7 +31,7 @@ func ExampleGetVolume(id string) {
 	if apiToken == "" {
 		log.Fatal("MGC_API_TOKEN environment variable is not set")
 	}
-	c := client.NewMgcClient(apiToken)
+	c := client.NewMgcClient(client.WithAPIKey(apiToken))
 	blockClient := blockstorage.New(c)
 
 	volume, err := blockClient.Volumes().Get(context.Background(), id, []string{blockstorage.VolumeTypeExpand, blockstorage.VolumeAttachExpand})
@@ -48,7 +48,7 @@ func ExampleListVolumes() {
 	if apiToken == "" {
 		log.Fatal("MGC_API_TOKEN environment variable is not set")
 	}
-	c := client.NewMgcClient(apiToken)
+	c := client.NewMgcClient(client.WithAPIKey(apiToken))
 	blockClient := blockstorage.New(c)
 
 	// List volumes with pagination and expansion (paginated)
@@ -92,7 +92,7 @@ func ExampleListAllVolumes() {
 	if apiToken == "" {
 		log.Fatal("MGC_API_TOKEN environment variable is not set")
 	}
-	c := client.NewMgcClient(apiToken)
+	c := client.NewMgcClient(client.WithAPIKey(apiToken))
 	blockClient := blockstorage.New(c)
 
 	// List all volumes (fetches all pages automatically)
@@ -117,7 +117,7 @@ func ExampleCreateVolume() string {
 	if apiToken == "" {
 		log.Fatal("MGC_API_TOKEN environment variable is not set")
 	}
-	c := client.NewMgcClient(apiToken)
+	c := client.NewMgcClient(client.WithAPIKey(apiToken))
 	blockClient := blockstorage.New(c)
 
 	// Create a new volume
@@ -148,7 +148,7 @@ func ExampleManageVolume(id string) {
 	if apiToken == "" {
 		log.Fatal("MGC_API_TOKEN environment variable is not set")
 	}
-	c := client.NewMgcClient(apiToken)
+	c := client.NewMgcClient(client.WithAPIKey(apiToken))
 	blockClient := blockstorage.New(c)
 	ctx := context.Background()
 
@@ -192,7 +192,7 @@ func ExampleVolumeAttachments(volumeID string) {
 	if apiToken == "" {
 		log.Fatal("MGC_API_TOKEN environment variable is not set")
 	}
-	c := client.NewMgcClient(apiToken)
+	c := client.NewMgcClient(client.WithAPIKey(apiToken))
 	blockClient := blockstorage.New(c)
 	ctx := context.Background()
 
@@ -230,7 +230,7 @@ func ExampleDeleteVolume(id string) {
 	if apiToken == "" {
 		log.Fatal("MGC_API_TOKEN environment variable is not set")
 	}
-	c := client.NewMgcClient(apiToken)
+	c := client.NewMgcClient(client.WithAPIKey(apiToken))
 	blockClient := blockstorage.New(c)
 
 	if err := blockClient.Volumes().Delete(context.Background(), id); err != nil {
@@ -245,7 +245,7 @@ func ExampleListVolumeTypes() {
 	if apiToken == "" {
 		log.Fatal("MGC_API_TOKEN environment variable is not set")
 	}
-	c := client.NewMgcClient(apiToken)
+	c := client.NewMgcClient(client.WithAPIKey(apiToken))
 	blockClient := blockstorage.New(c)
 
 	// List volume types (paginated)
@@ -276,7 +276,7 @@ func ExampleListAllVolumeTypes() {
 	if apiToken == "" {
 		log.Fatal("MGC_API_TOKEN environment variable is not set")
 	}
-	c := client.NewMgcClient(apiToken)
+	c := client.NewMgcClient(client.WithAPIKey(apiToken))
 	blockClient := blockstorage.New(c)
 
 	// List all volume types (fetches all pages automatically)
@@ -299,7 +299,7 @@ func ExampleSchedulers(volumeID string) {
 	if apiToken == "" {
 		log.Fatal("MGC_API_TOKEN environment variable is not set")
 	}
-	c := client.NewMgcClient(apiToken)
+	c := client.NewMgcClient(client.WithAPIKey(apiToken))
 	blockClient := blockstorage.New(c)
 	ctx := context.Background()
 

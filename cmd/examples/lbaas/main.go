@@ -101,7 +101,7 @@ func initializeClient() (*client.CoreClient, error) {
 
 	// Create the core client with configuration
 	coreClient := client.NewMgcClient(
-		apiKey,
+		client.WithAPIKey(apiKey),
 		client.WithBaseURL(client.BrNe1),
 	)
 
