@@ -11,6 +11,8 @@ const (
 
 	// BrNe1 is the Brazil Northeast 1 region endpoint.
 	BrNe1 Endpoint = "https://br-ne1.magaluobjects.com"
+
+	BrMgl1 Endpoint = "br-se-1.magaluobjects.com"
 )
 
 // String returns the string representation of the endpoint.
