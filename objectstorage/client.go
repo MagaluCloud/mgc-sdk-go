@@ -94,9 +94,10 @@ func New(core *client.CoreClient, accessKey string, secretKey string, opts ...Cl
 		if err != nil {
 			return nil, err
 		}
-
 		osClient.minioClient = minioClient
 	}
+
+	osClient.minioClient.SetAppInfo("wrapper", core.GetConfig().UserAgent)
 
 	return osClient, nil
 }
