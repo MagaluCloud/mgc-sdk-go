@@ -219,6 +219,56 @@ func TestWithMinioClientOption(t *testing.T) {
 	}
 }
 
+func TestNewSetsAppInfo(t *testing.T) {
+	t.Parallel()
+
+	core := createMockCoreClient()
+	mockMinio := newMockMinioClient()
+
+	_, err := New(core, "minioadmin", "minioadmin", WithMinioClientInterface(mockMinio))
+	if err != nil {
+		t.Fatalf("failed to create client: %v", err)
+	}
+
+	if mockMinio.setAppInfoCalls != 1 {
+		t.Fatalf("expected SetAppInfo to be called once, got %d", mockMinio.setAppInfoCalls)
+	}
+
+	if mockMinio.lastAppName != "wrapper" {
+		t.Errorf("expected app name 'wrapper', got %q", mockMinio.lastAppName)
+	}
+
+	expectedVersion := core.GetConfig().UserAgent
+	if mockMinio.lastAppVersion != expectedVersion {
+		t.Errorf("expected app version %q, got %q", expectedVersion, mockMinio.lastAppVersion)
+	}
+}
+
+func TestNewSetsAppInfoWithCustomUserAgent(t *testing.T) {
+	t.Parallel()
+
+	customUA := "custom-agent/1.0"
+	core := client.NewMgcClient(client.WithUserAgent(customUA))
+	mockMinio := newMockMinioClient()
+
+	_, err := New(core, "minioadmin", "minioadmin", WithMinioClientInterface(mockMinio))
+	if err != nil {
+		t.Fatalf("failed to create client: %v", err)
+	}
+
+	if mockMinio.setAppInfoCalls != 1 {
+		t.Fatalf("expected SetAppInfo to be called once, got %d", mockMinio.setAppInfoCalls)
+	}
+
+	if mockMinio.lastAppName != "wrapper" {
+		t.Errorf("expected app name 'wrapper', got %q", mockMinio.lastAppName)
+	}
+
+	if mockMinio.lastAppVersion != customUA {
+		t.Errorf("expected app version %q, got %q", customUA, mockMinio.lastAppVersion)
+	}
+}
+
 func TestNewWithEndpointDeprecated(t *testing.T) {
 	t.Parallel()
 

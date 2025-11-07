@@ -33,6 +33,9 @@ type mockMinioClient struct {
 	statObjectFunc         func(ctx context.Context, bucketName string, objectName string, opts minio.StatObjectOptions) (minio.ObjectInfo, error)
 	putObjectRetentionFunc func(ctx context.Context, bucketName string, objectName string, opts minio.PutObjectRetentionOptions) error
 	getObjectRetentionFunc func(ctx context.Context, bucketName string, objectName string, versionID string) (*minio.RetentionMode, *time.Time, error)
+	setAppInfoCalls        int
+	lastAppName            string
+	lastAppVersion         string
 }
 
 type mockBucket struct {
@@ -400,4 +403,10 @@ func (m *mockMinioClient) GetObjectRetention(ctx context.Context, bucketName str
 	}
 
 	return obj.retention.mode, obj.retention.retainUntilDate, nil
+}
+
+func (m *mockMinioClient) SetAppInfo(appName string, appVersion string) {
+	m.setAppInfoCalls++
+	m.lastAppName = appName
+	m.lastAppVersion = appVersion
 }
