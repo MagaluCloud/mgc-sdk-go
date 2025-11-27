@@ -67,6 +67,12 @@ type UpdateProxyCacheRequest struct {
 	Description  *string `json:"description"`
 }
 
+// GetProxyCacheRequest represents the response for retrieving a proxy-cache.
+type GetProxyCacheResponse struct {
+	ProxyCache
+	Description string `json:"description"`
+}
+
 // ProxyCachesService provides operations for managing proxy-caches.
 // This interface allows creating, listing, deleting, and managing proxy-caches.
 type ProxyCachesService interface {
@@ -75,6 +81,7 @@ type ProxyCachesService interface {
 	Create(ctx context.Context, req CreateProxyCacheRequest) (*CreateProxyCacheResponse, error)
 	Delete(ctx context.Context, id string) error
 	Update(ctx context.Context, id string, req UpdateProxyCacheRequest) (*ProxyCache, error)
+	Get(ctx context.Context, id string) (*GetProxyCacheResponse, error)
 }
 
 // proxyCachesService implements the ProxyCachesService interface.
@@ -201,4 +208,18 @@ func (s *proxyCachesService) Update(ctx context.Context, id string, req UpdatePr
 	}
 
 	return result, nil
+}
+
+// Get retrieves a specific proxy-cache.
+// This method makes a HTTP request to get detailed informations about a proxy-cache.
+func (s *proxyCachesService) Get(ctx context.Context, id string) (*GetProxyCacheResponse, error) {
+	return mgc_http.ExecuteSimpleRequestWithRespBody[GetProxyCacheResponse](
+		ctx,
+		s.client.newRequest,
+		s.client.GetConfig(),
+		http.MethodGet,
+		fmt.Sprintf("/v0/proxy-caches/%s", id),
+		nil,
+		nil,
+	)
 }
