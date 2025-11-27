@@ -60,3 +60,8 @@ func (c *ContainerRegistryClient) Repositories() RepositoriesService {
 func (c *ContainerRegistryClient) Images() ImagesService {
 	return &imagesService{client: c}
 }
+
+// ProxyCaches returns a service for managing proxy-caches
+func (c *ContainerRegistryClient) ProxyCaches() ProxyCachesService {
+	return &proxyCachesService{client: c}
+}
