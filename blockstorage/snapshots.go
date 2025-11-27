@@ -63,6 +63,11 @@ type RenameSnapshotRequest struct {
 	Name string `json:"name"`
 }
 
+// CopySnapshotRequest represents the request to copy a snapshot
+type CopySnapshotRequest struct {
+	DestinationRegion string `json:"destination_region"`
+}
+
 // SnapshotStateV1 represents the possible states of a snapshot.
 // The state indicates the lifecycle stage of the snapshot.
 type SnapshotStateV1 string
@@ -117,6 +122,7 @@ type SnapshotService interface {
 	Get(ctx context.Context, id string, expand []SnapshotExpand) (*Snapshot, error)
 	Delete(ctx context.Context, id string) error
 	Rename(ctx context.Context, id string, newName string) error
+	Copy(ctx context.Context, id string, destinationRegion string) error
 }
 
 // snapshotService implements the SnapshotService interface.
@@ -257,6 +263,20 @@ func (s *snapshotService) Rename(ctx context.Context, id string, newName string)
 		http.MethodPatch,
 		fmt.Sprintf("/v1/snapshots/%s/rename", id),
 		RenameSnapshotRequest{Name: newName},
+		nil,
+	)
+}
+
+// Copy copies the snapshot to another region
+// This method makes a HTTP request to copy an existing snapshot from one region to another.
+func (s *snapshotService) Copy(ctx context.Context, id string, destinationRegion string) error {
+	return mgc_http.ExecuteSimpleRequest(
+		ctx,
+		s.client.newRequest,
+		s.client.GetConfig(),
+		http.MethodPost,
+		fmt.Sprintf("/v1/snapshots/%s/copy", id),
+		CopySnapshotRequest{DestinationRegion: destinationRegion},
 		nil,
 	)
 }
