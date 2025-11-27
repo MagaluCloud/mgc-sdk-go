@@ -2,6 +2,7 @@ package containerregistry
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -62,6 +63,7 @@ type ProxyCachesService interface {
 	List(ctx context.Context, opts ProxyCacheListOptions) (*ListProxyCachesResponse, error)
 	ListAll(ctx context.Context, opts ProxyCacheListAllOptions) ([]ProxyCache, error)
 	Create(ctx context.Context, req CreateProxyCacheRequest) (*CreateProxyCacheResponse, error)
+	Delete(ctx context.Context, id string) error
 }
 
 // proxyCachesService implements the ProxyCachesService interface.
@@ -71,7 +73,7 @@ type proxyCachesService struct {
 }
 
 // List returns a paginated list of proxy-caches.
-// This method makes an HTTP request to get the list of proxy-caches and applies the filters specified in the options.
+// This method makes a HTTP request to get the list of proxy-caches and applies the filters specified in the options.
 func (s *proxyCachesService) List(ctx context.Context, opts ProxyCacheListOptions) (*ListProxyCachesResponse, error) {
 	q := url.Values{}
 
@@ -137,7 +139,7 @@ func (s *proxyCachesService) ListAll(ctx context.Context, opts ProxyCacheListAll
 }
 
 // Create provisions a new proxy-cache.
-// This method makes an HTTP request to create a new proxy-cache and returns the ID and name of the created proxy-cache.
+// This method makes a HTTP request to create a new proxy-cache and returns the ID and name of the created proxy-cache.
 func (s *proxyCachesService) Create(ctx context.Context, req CreateProxyCacheRequest) (*CreateProxyCacheResponse, error) {
 	result, err := mgc_http.ExecuteSimpleRequestWithRespBody[CreateProxyCacheResponse](
 		ctx,
@@ -154,4 +156,18 @@ func (s *proxyCachesService) Create(ctx context.Context, req CreateProxyCacheReq
 	}
 
 	return result, nil
+}
+
+// Delete removes a proxy-cache.
+// This method makes a HTTP request to delete a proxy-cache permanently.
+func (s *proxyCachesService) Delete(ctx context.Context, id string) error {
+	return mgc_http.ExecuteSimpleRequest(
+		ctx,
+		s.client.newRequest,
+		s.client.GetConfig(),
+		http.MethodDelete,
+		fmt.Sprintf("/v0/proxy-caches/%s", id),
+		nil,
+		nil,
+	)
 }
