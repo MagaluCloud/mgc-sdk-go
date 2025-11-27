@@ -18,12 +18,17 @@ func main() {
 	ExampleListAllVolumeTypes()
 	ExampleListVolumes()
 	ExampleListAllVolumes()
-	id := ExampleCreateVolume()
-	ExampleGetVolume(id)
-	ExampleManageVolume(id)
-	ExampleVolumeAttachments(id)
-	ExampleSchedulers(id)
-	ExampleDeleteVolume(id)
+	volumeID := ExampleCreateVolume()
+	ExampleGetVolume(volumeID)
+	ExampleManageVolume(volumeID)
+	ExampleVolumeAttachments(volumeID)
+	ExampleSchedulers(volumeID)
+
+	snapshotID := ExampleCreateSnapshot(volumeID)
+	ExampleCopySnapshot(snapshotID)
+
+	ExampleDeleteSnapshot(snapshotID)
+	ExampleDeleteVolume(volumeID)
 }
 
 func ExampleGetVolume(id string) {
@@ -399,4 +404,85 @@ func ExampleSchedulers(volumeID string) {
 	} else {
 		fmt.Printf("Scheduler %s deleted successfully\n", schedulerID)
 	}
+}
+
+func ExampleCreateSnapshot(volumeID string) string {
+	apiToken := os.Getenv("MGC_API_TOKEN")
+	if apiToken == "" {
+		log.Fatal("MGC_API_TOKEN environment variable is not set")
+	}
+
+	c := client.NewMgcClient(client.WithAPIKey(apiToken))
+	blockClient := blockstorage.New(c)
+
+	// Create a new snapshot
+	createReq := blockstorage.CreateSnapshotRequest{
+		Name:        "my-test-snapshot",
+		Volume:      &blockstorage.IDOrName{ID: &volumeID},
+		Description: helpers.StrPtr("Test"),
+		Type:        helpers.StrPtr("instant"),
+	}
+
+	id, err := blockClient.Snapshots().Create(context.Background(), createReq)
+
+	if err != nil {
+		var httpError *client.HTTPError
+		if errors.As(err, &httpError) {
+			fmt.Printf("Status %s\n", httpError.Status)
+			fmt.Printf("Error body: %s\n", string(httpError.Body))
+		}
+
+		log.Fatal("Failed to create snapshot")
+	}
+
+	fmt.Printf("Created snapshot with ID: %s\n", id)
+	return id
+}
+
+func ExampleCopySnapshot(id string) {
+	apiToken := os.Getenv("MGC_API_TOKEN")
+	if apiToken == "" {
+		log.Fatal("MGC_API_TOKEN environment variable is not set")
+	}
+
+	c := client.NewMgcClient(client.WithAPIKey(apiToken))
+	blockClient := blockstorage.New(c)
+
+	err := blockClient.Snapshots().Copy(context.Background(), id, "br-ne1")
+
+	if err != nil {
+		var httpError *client.HTTPError
+		if errors.As(err, &httpError) {
+			fmt.Printf("Status %s\n", httpError.Status)
+			fmt.Printf("Error body: %s\n", string(httpError.Body))
+		}
+
+		log.Fatal("Failed to copy snapshot")
+	}
+
+	fmt.Printf("Copied snapshot with ID: %s\n", id)
+}
+
+func ExampleDeleteSnapshot(id string) {
+	apiToken := os.Getenv("MGC_API_TOKEN")
+	if apiToken == "" {
+		log.Fatal("MGC_API_TOKEN environment variable is not set")
+	}
+
+	c := client.NewMgcClient(client.WithAPIKey(apiToken))
+	blockClient := blockstorage.New(c)
+
+	err := blockClient.Snapshots().Delete(context.Background(), id)
+
+	if err != nil {
+		var httpError *client.HTTPError
+		if errors.As(err, &httpError) {
+			fmt.Printf("Status %s\n", httpError.Status)
+			fmt.Printf("Error body: %s\n", string(httpError.Body))
+		}
+
+		log.Fatal("Failed to delete snapshot")
+	}
+
+	fmt.Printf("Deleted snapshot with ID: %s\n", id)
 }

@@ -582,6 +582,77 @@ func TestSnapshotService_ListAll_NewRequestError(t *testing.T) {
 	}
 }
 
+func TestSnapshotService_Copy(t *testing.T) {
+	tests := []struct {
+		name              string
+		id                string
+		destinationRegion string
+		statusCode        int
+		response          string
+		wantErr           bool
+	}{
+		{
+			name:              "successful copy",
+			id:                "snap1",
+			destinationRegion: "br-se1",
+			statusCode:        http.StatusOK,
+		},
+		{
+			name:              "invalid id",
+			id:                "snap1",
+			destinationRegion: "br-se1",
+			statusCode:        http.StatusNotFound,
+			wantErr:           true,
+		},
+		{
+			name:              "invalid destination region",
+			id:                "snap1",
+			destinationRegion: "br-invalid",
+			statusCode:        http.StatusBadRequest,
+			wantErr:           true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				expectedPath := fmt.Sprintf("/volume/v1/snapshots/%s/copy", tt.id)
+				if r.URL.Path != expectedPath {
+					t.Errorf("unexpected path: %s", r.URL.Path)
+				}
+
+				var req CopySnapshotRequest
+				if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+					t.Errorf("error decoding request: %v", err)
+				}
+
+				if req.DestinationRegion != tt.destinationRegion {
+					t.Errorf("got destination region %q, want %q", req.DestinationRegion, tt.destinationRegion)
+				}
+
+				w.WriteHeader(tt.statusCode)
+				w.Write([]byte(tt.response))
+			}))
+			defer server.Close()
+
+			client := testClientSnaphots(server.URL)
+			err := client.Copy(context.Background(), tt.id, tt.destinationRegion)
+
+			if tt.wantErr {
+				if err == nil {
+					t.Fatal("expected error, got nil")
+				}
+				assertEqual(t, true, strings.Contains(err.Error(), strconv.Itoa(tt.statusCode)))
+				return
+			}
+
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+		})
+	}
+}
+
 func testClientSnaphots(baseURL string) SnapshotService {
 	httpClient := &http.Client{}
 	core := client.NewMgcClient(client.WithAPIKey("test-api-key"),
