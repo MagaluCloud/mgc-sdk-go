@@ -36,10 +36,16 @@ type ProxyCacheListOptions struct {
 	Sort   *string
 }
 
+// ProxyCacheListAllOptions provides options for ListAll (without pagination)
+type ProxyCacheListAllOptions struct {
+	Sort *string
+}
+
 // ProxyCachesService provides operations for managing proxy-caches.
 // This interface allows creating, listing, deleting, and managing proxy-caches.
 type ProxyCachesService interface {
 	List(ctx context.Context, opts ProxyCacheListOptions) (*ListProxyCachesResponse, error)
+	ListAll(ctx context.Context, opts ProxyCacheListAllOptions) ([]ProxyCache, error)
 }
 
 // proxyCachesService implements the ProxyCachesService interface.
@@ -80,4 +86,38 @@ func (s *proxyCachesService) List(ctx context.Context, opts ProxyCacheListOption
 	}
 
 	return result, nil
+}
+
+// ListAll retrieves all proxy-caches by fetching all pages with optional filtering
+func (s *proxyCachesService) ListAll(ctx context.Context, opts ProxyCacheListAllOptions) ([]ProxyCache, error) {
+	var allProxyCaches []ProxyCache
+	offset := 0
+	limit := 50
+
+	for {
+		currentOffset := offset
+		currentLimit := limit
+
+		opts := ProxyCacheListOptions{
+			Offset: &currentOffset,
+			Limit:  &currentLimit,
+			Sort:   opts.Sort,
+		}
+
+		resp, err := s.List(ctx, opts)
+
+		if err != nil {
+			return nil, err
+		}
+
+		allProxyCaches = append(allProxyCaches, resp.Results...)
+
+		if len(resp.Results) < limit {
+			break
+		}
+
+		offset += limit
+	}
+
+	return allProxyCaches, nil
 }
