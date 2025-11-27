@@ -41,11 +41,27 @@ type ProxyCacheListAllOptions struct {
 	Sort *string
 }
 
+// CreateProxyCacheRequest represents the request to create a new proxy-cache.
+type CreateProxyCacheRequest struct {
+	Name         string  `json:"name"`
+	Provider     string  `json:"provider"`
+	URL          string  `json:"url"`
+	AccessKey    *string `json:"access_key"`
+	AccessSecret *string `json:"access_secret"`
+	Description  *string `json:"description"`
+}
+
+type CreateProxyCacheResponse struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+}
+
 // ProxyCachesService provides operations for managing proxy-caches.
 // This interface allows creating, listing, deleting, and managing proxy-caches.
 type ProxyCachesService interface {
 	List(ctx context.Context, opts ProxyCacheListOptions) (*ListProxyCachesResponse, error)
 	ListAll(ctx context.Context, opts ProxyCacheListAllOptions) ([]ProxyCache, error)
+	Create(ctx context.Context, req CreateProxyCacheRequest) (*CreateProxyCacheResponse, error)
 }
 
 // proxyCachesService implements the ProxyCachesService interface.
@@ -69,14 +85,12 @@ func (s *proxyCachesService) List(ctx context.Context, opts ProxyCacheListOption
 		q.Add("_sort", *opts.Sort)
 	}
 
-	path := "/v0/proxy-caches"
-
 	result, err := mgc_http.ExecuteSimpleRequestWithRespBody[ListProxyCachesResponse](
 		ctx,
 		s.client.newRequest,
 		s.client.GetConfig(),
 		http.MethodGet,
-		path,
+		"/v0/proxy-caches",
 		nil,
 		q,
 	)
@@ -120,4 +134,24 @@ func (s *proxyCachesService) ListAll(ctx context.Context, opts ProxyCacheListAll
 	}
 
 	return allProxyCaches, nil
+}
+
+// Create provisions a new proxy-cache.
+// This method makes an HTTP request to create a new proxy-cache and returns the ID and name of the created proxy-cache.
+func (s *proxyCachesService) Create(ctx context.Context, req CreateProxyCacheRequest) (*CreateProxyCacheResponse, error) {
+	result, err := mgc_http.ExecuteSimpleRequestWithRespBody[CreateProxyCacheResponse](
+		ctx,
+		s.client.newRequest,
+		s.client.GetConfig(),
+		http.MethodPost,
+		"/v0/proxy-caches",
+		req,
+		nil,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
 }
