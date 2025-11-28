@@ -798,6 +798,94 @@ func TestProxyCachesService_Update(t *testing.T) {
 	}
 }
 
+func TestProxyCachesService_ListStatus(t *testing.T) {
+	tests := []struct {
+		name         string
+		proxyCacheID string
+		response     string
+		statusCode   int
+		want         *ListProxyCacheStatusResponse
+		wantErr      bool
+	}{
+		{
+			name:         "successful list proxy-cache status",
+			proxyCacheID: "id-1",
+			response: `{
+				"message": "Registry is healthy and reachable",
+				"status": "healthy"
+			}`,
+			statusCode: http.StatusOK,
+			want: &ListProxyCacheStatusResponse{
+				Message: "Registry is healthy and reachable",
+				Status:  "healthy",
+			},
+			wantErr: false,
+		},
+		{
+			name:         "proxy-cache not found",
+			proxyCacheID: "id-invalid",
+			response:     `{"error": "proxy-cache not found"}`,
+			statusCode:   http.StatusNotFound,
+			want:         nil,
+			wantErr:      true,
+		},
+		{
+			name:         "malformed response",
+			proxyCacheID: "id-1",
+			response:     `{"message": "broken"`,
+			statusCode:   http.StatusOK,
+			want:         nil,
+			wantErr:      true,
+		},
+		{
+			name:         "server error",
+			proxyCacheID: "id-1",
+			response:     `{"error": "internal server error"}`,
+			statusCode:   http.StatusInternalServerError,
+			want:         nil,
+			wantErr:      true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.URL.Path != fmt.Sprintf("/container-registry/v0/proxy-caches/%s/status", tt.proxyCacheID) {
+					t.Errorf("unexpected path: %s", r.URL.Path)
+				}
+
+				if r.Method != http.MethodGet {
+					t.Errorf("expected GET method, got %s", r.Method)
+				}
+
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(tt.statusCode)
+				w.Write([]byte(tt.response))
+			}))
+
+			defer server.Close()
+
+			client := testClient(server.URL)
+			got, err := client.ProxyCaches().ListStatus(context.Background(), tt.proxyCacheID)
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Get() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			if !tt.wantErr && got != nil {
+				if got.Message != tt.want.Message {
+					t.Errorf("Get() got message %v, want %v", got.Message, tt.want.Message)
+				}
+
+				if got.Status != tt.want.Status {
+					t.Errorf("Get() got status %v, want %v", got.Status, tt.want.Status)
+				}
+			}
+		})
+	}
+}
+
 // Helper function to generate proxy-caches JSON array for testing pagination
 func generateProxyCachesJSONArray(count int) string {
 	var repositories []string

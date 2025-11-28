@@ -47,6 +47,7 @@ func main() {
 	listAllProxyCaches(containerRegistryClient)
 	updateProxyCache(containerRegistryClient, id)
 	getProxyCache(containerRegistryClient, id)
+	listProxyCacheStatus(containerRegistryClient, id)
 	deleteProxyCache(containerRegistryClient, id)
 }
 
@@ -324,4 +325,22 @@ func getProxyCache(crClient *containerregistry.ContainerRegistryClient, id strin
 	fmt.Printf("URL: %s\n", resp.URL)
 	fmt.Printf("Created at: %s\n", resp.CreatedAt)
 	fmt.Printf("Updated at: %s\n", resp.UpdatedAt)
+}
+
+func listProxyCacheStatus(crClient *containerregistry.ContainerRegistryClient, id string) {
+	resp, err := crClient.ProxyCaches().ListStatus(context.Background(), id)
+
+	if err != nil {
+		var httpError *client.HTTPError
+		if errors.As(err, &httpError) {
+			fmt.Printf("Status %s\n", httpError.Status)
+			fmt.Printf("Error body: %s\n", string(httpError.Body))
+		}
+
+		log.Fatal("Failed to list proxy-cache status")
+	}
+
+	// Print proxy-cache status
+	fmt.Printf("Message: %s\n", resp.Message)
+	fmt.Printf("Status: %s\n", resp.Status)
 }

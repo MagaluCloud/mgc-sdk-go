@@ -72,6 +72,12 @@ type GetProxyCacheResponse struct {
 	Description string `json:"description"`
 }
 
+// ListProxyCacheStatusResponse represents the response of a proxy-cache status.
+type ListProxyCacheStatusResponse struct {
+	Message string `json:"message"`
+	Status  string `json:"status"`
+}
+
 // ProxyCachesService provides operations for managing proxy-caches.
 // This interface allows creating, listing, deleting, and managing proxy-caches.
 type ProxyCachesService interface {
@@ -81,6 +87,7 @@ type ProxyCachesService interface {
 	Delete(ctx context.Context, id string) error
 	Update(ctx context.Context, id string, req UpdateProxyCacheRequest) (*ProxyCache, error)
 	Get(ctx context.Context, id string) (*GetProxyCacheResponse, error)
+	ListStatus(ctx context.Context, id string) (*ListProxyCacheStatusResponse, error)
 }
 
 // proxyCachesService implements the ProxyCachesService interface.
@@ -221,4 +228,24 @@ func (s *proxyCachesService) Get(ctx context.Context, id string) (*GetProxyCache
 		nil,
 		nil,
 	)
+}
+
+// ListStatus returns the status of a proxy-cache.
+// This method makes a HTTP request to get the status of a proxy-cache.
+func (s *proxyCachesService) ListStatus(ctx context.Context, id string) (*ListProxyCacheStatusResponse, error) {
+	result, err := mgc_http.ExecuteSimpleRequestWithRespBody[ListProxyCacheStatusResponse](
+		ctx,
+		s.client.newRequest,
+		s.client.GetConfig(),
+		http.MethodGet,
+		fmt.Sprintf("/v0/proxy-caches/%s/status", id),
+		nil,
+		nil,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
 }
