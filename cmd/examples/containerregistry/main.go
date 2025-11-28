@@ -49,6 +49,8 @@ func main() {
 	getProxyCache(containerRegistryClient, id)
 	listProxyCacheStatus(containerRegistryClient, id)
 	deleteProxyCache(containerRegistryClient, id)
+
+	createProxyCacheStatus(containerRegistryClient)
 }
 
 func getCredentials(c *client.CoreClient) {
@@ -341,6 +343,29 @@ func listProxyCacheStatus(crClient *containerregistry.ContainerRegistryClient, i
 	}
 
 	// Print proxy-cache status
+	fmt.Printf("Message: %s\n", resp.Message)
+	fmt.Printf("Status: %s\n", resp.Status)
+}
+
+func createProxyCacheStatus(crClient *containerregistry.ContainerRegistryClient) {
+	resp, err := crClient.ProxyCaches().CreateStatus(context.Background(), containerregistry.CreateProxyCacheStatusRequest{
+		Provider:     "docker-hub",
+		URL:          "https://hub.docker.com/repositories",
+		AccessKey:    "test@gmail.com",
+		AccessSecret: "test.123",
+	})
+
+	if err != nil {
+		var httpError *client.HTTPError
+		if errors.As(err, &httpError) {
+			fmt.Printf("Status %s\n", httpError.Status)
+			fmt.Printf("Error body: %s\n", string(httpError.Body))
+		}
+
+		log.Fatal("Failed to validate the credentials")
+	}
+
+	// Print validation
 	fmt.Printf("Message: %s\n", resp.Message)
 	fmt.Printf("Status: %s\n", resp.Status)
 }

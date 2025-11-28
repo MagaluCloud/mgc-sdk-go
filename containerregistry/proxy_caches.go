@@ -78,6 +78,20 @@ type ListProxyCacheStatusResponse struct {
 	Status  string `json:"status"`
 }
 
+// CreateProxyCacheStatusRequest represents the request to validate the credentials.
+type CreateProxyCacheStatusRequest struct {
+	Provider     string `json:"provider"`
+	URL          string `json:"url"`
+	AccessKey    string `json:"access_key"`
+	AccessSecret string `json:"access_secret"`
+}
+
+// CreateProxyCacheStatusResponse represents the response of credentials validation.
+type CreateProxyCacheStatusResponse struct {
+	Message string `json:"message"`
+	Status  string `json:"status"`
+}
+
 // ProxyCachesService provides operations for managing proxy-caches.
 // This interface allows creating, listing, deleting, and managing proxy-caches.
 type ProxyCachesService interface {
@@ -88,6 +102,7 @@ type ProxyCachesService interface {
 	Update(ctx context.Context, id string, req UpdateProxyCacheRequest) (*ProxyCache, error)
 	Get(ctx context.Context, id string) (*GetProxyCacheResponse, error)
 	ListStatus(ctx context.Context, id string) (*ListProxyCacheStatusResponse, error)
+	CreateStatus(ctx context.Context, req CreateProxyCacheStatusRequest) (*CreateProxyCacheStatusResponse, error)
 }
 
 // proxyCachesService implements the ProxyCachesService interface.
@@ -240,6 +255,26 @@ func (s *proxyCachesService) ListStatus(ctx context.Context, id string) (*ListPr
 		http.MethodGet,
 		fmt.Sprintf("/v0/proxy-caches/%s/status", id),
 		nil,
+		nil,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+// CreateStatus validates the provided credentials and endpoint information .
+// This method makes a HTTP request to validates the provided credentials and endpoint information.
+func (s *proxyCachesService) CreateStatus(ctx context.Context, req CreateProxyCacheStatusRequest) (*CreateProxyCacheStatusResponse, error) {
+	result, err := mgc_http.ExecuteSimpleRequestWithRespBody[CreateProxyCacheStatusResponse](
+		ctx,
+		s.client.newRequest,
+		s.client.GetConfig(),
+		http.MethodPost,
+		"/v0/proxy-caches/status",
+		req,
 		nil,
 	)
 

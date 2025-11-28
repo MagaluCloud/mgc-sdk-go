@@ -886,6 +886,145 @@ func TestProxyCachesService_ListStatus(t *testing.T) {
 	}
 }
 
+func TestProxyCachesService_CreateStatus(t *testing.T) {
+	tests := []struct {
+		name       string
+		request    CreateProxyCacheStatusRequest
+		response   string
+		statusCode int
+		want       *CreateProxyCacheStatusResponse
+		wantErr    bool
+	}{
+		{
+			name: "successful creation of proxy-cache status",
+			request: CreateProxyCacheStatusRequest{
+				Provider:     "docker-hub",
+				URL:          "https://hub.docker.com/repositories",
+				AccessKey:    "test@gmail.com",
+				AccessSecret: "teste.123",
+			},
+			response: `{
+				"message": "Proxy cache credentials are valid.",
+				"status": "valid"
+			}`,
+			statusCode: http.StatusOK,
+			want: &CreateProxyCacheStatusResponse{
+				Message: "Proxy cache credentials are valid.",
+				Status:  "valid",
+			},
+			wantErr: false,
+		},
+		{
+			name: "missing provider",
+			request: CreateProxyCacheStatusRequest{
+				URL:          "https://hub.docker.com/repositories",
+				AccessKey:    "test@gmail.com",
+				AccessSecret: "teste.123",
+			},
+			response:   `{"error": "provider required"}`,
+			statusCode: http.StatusBadRequest,
+			wantErr:    true,
+		},
+		{
+			name: "missing url",
+			request: CreateProxyCacheStatusRequest{
+				Provider:     "docker-hub",
+				AccessKey:    "test@gmail.com",
+				AccessSecret: "teste.123",
+			},
+			response:   `{"error": "url required"}`,
+			statusCode: http.StatusBadRequest,
+			wantErr:    true,
+		},
+		{
+			name: "missing access key",
+			request: CreateProxyCacheStatusRequest{
+				Provider:     "docker-hub",
+				URL:          "https://hub.docker.com/repositories",
+				AccessSecret: "teste.123",
+			},
+			response:   `{"error": "access key required"}`,
+			statusCode: http.StatusBadRequest,
+			wantErr:    true,
+		},
+		{
+			name: "missing access secret",
+			request: CreateProxyCacheStatusRequest{
+				Provider:  "docker-hub",
+				URL:       "https://hub.docker.com/repositories",
+				AccessKey: "test@gmail.com",
+			},
+			response:   `{"error": "access secret required"}`,
+			statusCode: http.StatusBadRequest,
+			wantErr:    true,
+		},
+		{
+			name: "malformed response",
+			request: CreateProxyCacheStatusRequest{
+				Provider:     "docker-hub",
+				URL:          "https://hub.docker.com/repositories",
+				AccessKey:    "test@gmail.com",
+				AccessSecret: "teste.123",
+			},
+			response:   `{"message": "broken"`,
+			statusCode: http.StatusOK,
+			want:       nil,
+			wantErr:    true,
+		},
+		{
+			name: "server error",
+			request: CreateProxyCacheStatusRequest{
+				Provider:     "docker-hub",
+				URL:          "https://hub.docker.com/repositories",
+				AccessKey:    "test@gmail.com",
+				AccessSecret: "teste.123",
+			},
+			response:   `{"error": "internal server error"}`,
+			statusCode: http.StatusInternalServerError,
+			want:       nil,
+			wantErr:    true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.URL.Path != "/container-registry/v0/proxy-caches/status" {
+					t.Errorf("unexpected path: %s", r.URL.Path)
+				}
+
+				if r.Method != http.MethodPost {
+					t.Errorf("expected POST method, got %s", r.Method)
+				}
+
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(tt.statusCode)
+				w.Write([]byte(tt.response))
+			}))
+
+			defer server.Close()
+
+			client := testClient(server.URL)
+			got, err := client.ProxyCaches().CreateStatus(context.Background(), tt.request)
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Get() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			if !tt.wantErr && got != nil {
+				if got.Message != tt.want.Message {
+					t.Errorf("Get() got message %v, want %v", got.Message, tt.want.Message)
+				}
+
+				if got.Status != tt.want.Status {
+					t.Errorf("Get() got status %v, want %v", got.Status, tt.want.Status)
+				}
+			}
+		})
+	}
+}
+
 // Helper function to generate proxy-caches JSON array for testing pagination
 func generateProxyCachesJSONArray(count int) string {
 	var repositories []string
