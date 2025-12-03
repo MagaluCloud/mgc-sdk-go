@@ -723,6 +723,7 @@ func getPortDetails(networkClient *network.NetworkClient, portID string) {
 	fmt.Printf("  Name: %s\n", *port.Name)
 	fmt.Printf("  VPC ID: %s\n", *port.VPCID)
 	fmt.Printf("  Security Groups: %v\n", *port.SecurityGroups)
+	fmt.Printf("  IP Spoofing Guard: %t\n", *port.IPSpoofingGuard)
 	if port.IPAddress != nil {
 		fmt.Println("  IP Addresses:")
 		for _, ip := range *port.IPAddress {

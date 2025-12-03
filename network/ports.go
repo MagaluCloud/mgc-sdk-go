@@ -37,6 +37,7 @@ type (
 		CreatedAt             *utils.LocalDateTimeWithoutZone `json:"created_at,omitempty"`
 		Updated               *utils.LocalDateTimeWithoutZone `json:"updated,omitempty"`
 		Network               *PortNetworkResponse            `json:"network,omitempty"`
+		IPSpoofingGuard       *bool                           `json:"ip_spoofing_guard,omitempty"`
 	}
 
 	// PortNetworkResponse represents the AvailabilityZone associated with a port

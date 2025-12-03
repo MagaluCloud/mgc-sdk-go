@@ -125,14 +125,16 @@ func TestPortService_Get(t *testing.T) {
 				"vpc_id": "vpc1",
 				"security_groups": ["sg1", "sg2"],
 				"public_ip": [{"public_ip_id": "ip1", "public_ip": "203.0.113.5"}],
-				"ip_address": [{"ip_address": "10.0.0.2", "subnet_id": "subnet1"}]
+				"ip_address": [{"ip_address": "10.0.0.2", "subnet_id": "subnet1"}],
+				"ip_spoofing_guard": true
 			}`,
 			statusCode: http.StatusOK,
 			want: &PortResponse{
-				ID:             helpers.StrPtr("port1"),
-				Name:           helpers.StrPtr("test-port"),
-				VPCID:          helpers.StrPtr("vpc1"),
-				SecurityGroups: &[]string{"sg1", "sg2"},
+				ID:              helpers.StrPtr("port1"),
+				Name:            helpers.StrPtr("test-port"),
+				VPCID:           helpers.StrPtr("vpc1"),
+				SecurityGroups:  &[]string{"sg1", "sg2"},
+				IPSpoofingGuard: helpers.BoolPtr(true),
 				PublicIP: &[]PublicIpResponsePort{
 					{
 						PublicIPID: helpers.StrPtr("ip1"),
@@ -193,6 +195,7 @@ func TestPortService_Get(t *testing.T) {
 			assertEqual(t, len(*tt.want.SecurityGroups), len(*port.SecurityGroups))
 			assertEqual(t, len(*tt.want.PublicIP), len(*port.PublicIP))
 			assertEqual(t, len(*tt.want.IPAddress), len(*port.IPAddress))
+			assertEqual(t, *tt.want.IPSpoofingGuard, *port.IPSpoofingGuard)
 		})
 	}
 }
