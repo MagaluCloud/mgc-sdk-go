@@ -22,6 +22,12 @@ type NewRequestFunc func(ctx context.Context, method, path string, body any) (*h
 // NewRequest creates a new HTTP request with the given method, path, and body.
 // It returns the request and an error if the request creation fails.
 func NewRequest[T any](c *client.Config, ctx context.Context, method, path string, body *T) (*http.Request, error) {
+
+	// Force RFC 9110
+	if method == http.MethodGet {
+		body = nil
+	}
+
 	c.Logger.Debug("creating new request",
 		"method", method,
 		"path", path,
