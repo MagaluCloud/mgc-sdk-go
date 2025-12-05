@@ -193,7 +193,7 @@ func TestMemberService_Delete(t *testing.T) {
 	}
 }
 
-func TestMemberService_GetGrants(t *testing.T) {
+func TestMemberGrantsService_Get(t *testing.T) {
 	tests := []struct {
 		name       string
 		uuid       string
@@ -236,7 +236,7 @@ func TestMemberService_GetGrants(t *testing.T) {
 			defer server.Close()
 
 			client := testClient(server.URL)
-			result, err := client.Members().Grants(context.Background(), tt.uuid)
+			result, err := client.Members().Grants().Get(context.Background(), tt.uuid)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetGrants() error = %v, wantErr %v", err, tt.wantErr)
@@ -252,7 +252,7 @@ func TestMemberService_GetGrants(t *testing.T) {
 	}
 }
 
-func TestMemberService_AddGrants(t *testing.T) {
+func TestMemberGrantsService_Add(t *testing.T) {
 	tests := []struct {
 		name       string
 		uuid       string
@@ -298,7 +298,7 @@ func TestMemberService_AddGrants(t *testing.T) {
 			defer server.Close()
 
 			client := testClient(server.URL)
-			err := client.Members().AddGrants(context.Background(), tt.uuid, tt.request)
+			err := client.Members().Grants().Add(context.Background(), tt.uuid, tt.request)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("AddGrants() error = %v, wantErr %v", err, tt.wantErr)
@@ -307,7 +307,7 @@ func TestMemberService_AddGrants(t *testing.T) {
 	}
 }
 
-func TestMemberService_BatchUpdate(t *testing.T) {
+func TestMemberGrantsService_BatchUpdate(t *testing.T) {
 	tests := []struct {
 		name       string
 		request    BatchUpdateMembers
@@ -344,7 +344,7 @@ func TestMemberService_BatchUpdate(t *testing.T) {
 			defer server.Close()
 
 			client := testClient(server.URL)
-			err := client.Members().BatchUpdate(context.Background(), tt.request)
+			err := client.Members().Grants().BatchUpdate(context.Background(), tt.request)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("BatchUpdate() error = %v, wantErr %v", err, tt.wantErr)
