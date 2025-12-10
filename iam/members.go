@@ -23,13 +23,23 @@ type MemberService interface {
 	List(ctx context.Context, email *string) ([]Member, error)
 	Create(ctx context.Context, req CreateMember) (*Member, error)
 	Delete(ctx context.Context, uuid string) error
-	Grants(ctx context.Context, uuid string) (*Privileges, error)
-	AddGrants(ctx context.Context, uuid string, req EditGrant) error
+	Grants() MemberGrantsService
+}
+
+// MemberGrantsService provides methods for managing member grants
+type MemberGrantsService interface {
+	Get(ctx context.Context, uuid string) (*Privileges, error)
+	Add(ctx context.Context, uuid string, req EditGrant) error
 	BatchUpdate(ctx context.Context, req BatchUpdateMembers) error
 }
 
 // memberService implements the MemberService interface
 type memberService struct {
+	client *IAMClient
+}
+
+// memberGrantsService implements the MemberGrantsService interface
+type memberGrantsService struct {
 	client *IAMClient
 }
 
@@ -85,8 +95,13 @@ func (s *memberService) Delete(ctx context.Context, uuid string) error {
 	)
 }
 
-// GetGrants retrieves the grants (roles and permissions) for a member
-func (s *memberService) Grants(ctx context.Context, uuid string) (*Privileges, error) {
+// Grants returns a service for managing member grants
+func (s *memberService) Grants() MemberGrantsService {
+	return &memberGrantsService{client: s.client}
+}
+
+// Get retrieves the grants (roles and permissions) for a member
+func (s *memberGrantsService) Get(ctx context.Context, uuid string) (*Privileges, error) {
 	if uuid == "" {
 		return nil, &client.ValidationError{Field: "uuid", Message: utils.CannotBeEmpty}
 	}
@@ -102,8 +117,8 @@ func (s *memberService) Grants(ctx context.Context, uuid string) (*Privileges, e
 	)
 }
 
-// AddGrants adds or removes grants (roles/permissions) for a member
-func (s *memberService) AddGrants(ctx context.Context, uuid string, req EditGrant) error {
+// Add adds or removes grants (roles/permissions) for a member
+func (s *memberGrantsService) Add(ctx context.Context, uuid string, req EditGrant) error {
 	if uuid == "" {
 		return &client.ValidationError{Field: "uuid", Message: utils.CannotBeEmpty}
 	}
@@ -120,7 +135,7 @@ func (s *memberService) AddGrants(ctx context.Context, uuid string, req EditGran
 }
 
 // BatchUpdate updates multiple members in batch
-func (s *memberService) BatchUpdate(ctx context.Context, req BatchUpdateMembers) error {
+func (s *memberGrantsService) BatchUpdate(ctx context.Context, req BatchUpdateMembers) error {
 	return mgc_http.ExecuteSimpleRequest(
 		ctx,
 		s.client.newRequest,

@@ -140,7 +140,7 @@ func ExampleGetMemberGrants(iamClient *iam.IAMClient, memberUUID string) {
 	ctx := context.Background()
 
 	fmt.Println("\n=== Obtendo Grants do Membro ===")
-	grants, err := iamClient.Members().Grants(ctx, memberUUID)
+	grants, err := iamClient.Members().Grants().Get(ctx, memberUUID)
 	if err != nil {
 		log.Printf("Erro ao obter grants: %v", err)
 		return
@@ -160,7 +160,7 @@ func ExampleAddMemberGrants(iamClient *iam.IAMClient, memberUUID string) {
 		Roles:     []string{"admin"},
 	}
 
-	err := iamClient.Members().AddGrants(ctx, memberUUID, addGrant)
+	err := iamClient.Members().Grants().Add(ctx, memberUUID, addGrant)
 	if err != nil {
 		log.Printf("Erro ao adicionar grants: %v", err)
 		return
@@ -175,7 +175,7 @@ func ExampleAddMemberGrants(iamClient *iam.IAMClient, memberUUID string) {
 		Roles:     []string{"viewer"},
 	}
 
-	err = iamClient.Members().AddGrants(ctx, memberUUID, removeGrant)
+	err = iamClient.Members().Grants().Add(ctx, memberUUID, removeGrant)
 	if err != nil {
 		log.Printf("Erro ao remover grants: %v", err)
 		return
@@ -196,7 +196,7 @@ func ExampleBatchUpdateMembers(iamClient *iam.IAMClient) {
 		PermissionNames: []string{"read:instances"},
 	}
 
-	err := iamClient.Members().BatchUpdate(ctx, batchReq)
+	err := iamClient.Members().Grants().BatchUpdate(ctx, batchReq)
 	if err != nil {
 		log.Printf("Erro na atualização em lote: %v", err)
 		return
