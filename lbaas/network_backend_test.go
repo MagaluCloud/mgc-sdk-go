@@ -615,7 +615,7 @@ func TestNetworkBackendService_Update(t *testing.T) {
 			lbID:      "lb-123",
 			backendID: "backend-123",
 			request: UpdateNetworkBackendRequest{
-				PanicThreshold: floatPtr(50.0),
+				PanicThreshold: intPtr(50),
 			},
 			response:   `{"id": "backend-123"}`,
 			statusCode: http.StatusOK,
@@ -640,7 +640,7 @@ func TestNetworkBackendService_Update(t *testing.T) {
 			backendID: "backend-123",
 			request: UpdateNetworkBackendRequest{
 				HealthCheckID:                       stringPtr("hc-789"),
-				PanicThreshold:                      floatPtr(75.0),
+				PanicThreshold:                      intPtr(75),
 				CloseConnectionsOnHostHealthFailure: boolPtr(true),
 			},
 			response:   `{"id": "backend-123"}`,
@@ -653,7 +653,7 @@ func TestNetworkBackendService_Update(t *testing.T) {
 			lbID:      "lb-123",
 			backendID: "invalid",
 			request: UpdateNetworkBackendRequest{
-				PanicThreshold: floatPtr(50.0),
+				PanicThreshold: intPtr(50),
 			},
 			response:   `{"error": "backend not found"}`,
 			statusCode: http.StatusNotFound,
@@ -664,7 +664,7 @@ func TestNetworkBackendService_Update(t *testing.T) {
 			lbID:      "lb-123",
 			backendID: "backend-123",
 			request: UpdateNetworkBackendRequest{
-				PanicThreshold: floatPtr(-10.0),
+				PanicThreshold: intPtr(-10),
 			},
 			response:   `{"error": "invalid panic threshold"}`,
 			statusCode: http.StatusBadRequest,
@@ -675,7 +675,7 @@ func TestNetworkBackendService_Update(t *testing.T) {
 			lbID:      "lb-123",
 			backendID: "backend-123",
 			request: UpdateNetworkBackendRequest{
-				PanicThreshold: floatPtr(50.0),
+				PanicThreshold: intPtr(50),
 			},
 			response:   `{"error": "unauthorized"}`,
 			statusCode: http.StatusUnauthorized,
@@ -886,7 +886,7 @@ func TestNetworkBackendService_Update_NewRequestError(t *testing.T) {
 	client := testBackendClient("http://dummy-url")
 
 	req := UpdateNetworkBackendRequest{
-		PanicThreshold: floatPtr(50.0),
+		PanicThreshold: intPtr(50),
 	}
 
 	_, err := client.Update(ctx, "lb-123", "backend-123", req)
