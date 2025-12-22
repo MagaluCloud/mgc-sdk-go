@@ -125,11 +125,23 @@ func runE2ETest(ctx context.Context, osClient *objectstorage.ObjectStorageClient
 	testDeleteBucketPolicy(ctx, osClient)
 	pause()
 
-	// Step 12: Delete object
+	// Step 12: Set bucket CORS
+	testSetBucketCORS(ctx, osClient)
+	pause()
+
+	// Step 13: Get bucket CORS
+	testGetBucketCORS(ctx, osClient)
+	pause()
+
+	// Step 14: Delete bucket CORS
+	testDeleteBucketCORS(ctx, osClient)
+	pause()
+
+	// Step 15: Delete object
 	testDeleteObject(ctx, osClient)
 	pause()
 
-	// Step 13: Delete bucket
+	// Step 16: Delete bucket
 	testDeleteBucket(ctx, osClient)
 	pause()
 
@@ -145,7 +157,7 @@ func testListBuckets(ctx context.Context, osClient *objectstorage.ObjectStorageC
 	fmt.Println("📝 Test 1: List All Buckets")
 	fmt.Println("─────────────────────────────────────────────────────────────")
 
-	buckets, err := osClient.Buckets().List(ctx, objectstorage.BucketListOptions{})
+	buckets, err := osClient.Buckets().List(ctx)
 	if err != nil {
 		fmt.Printf("❌ Failed: %v\n\n", err)
 		return
@@ -364,8 +376,69 @@ func testDeleteBucketPolicy(ctx context.Context, osClient *objectstorage.ObjectS
 	fmt.Printf("✅ Bucket policy deleted successfully\n\n")
 }
 
+func testSetBucketCORS(ctx context.Context, osClient *objectstorage.ObjectStorageClient) {
+	fmt.Println("📝 Test 12: Set Bucket CORS")
+	fmt.Println("─────────────────────────────────────────────────────────────")
+
+	cors := &objectstorage.CORSConfiguration{
+		CORSRules: []objectstorage.CORSRule{
+			{
+				AllowedOrigins: []string{"*"},
+				AllowedMethods: []string{"GET"},
+			},
+		},
+	}
+
+	err := osClient.Buckets().SetCORS(ctx, testBucketName, cors)
+	if err != nil {
+		fmt.Printf("❌ Failed: %v\n\n", err)
+		return
+	}
+
+	fmt.Printf("✅ Bucket CORS set successfully\n\n")
+}
+
+func testGetBucketCORS(ctx context.Context, osClient *objectstorage.ObjectStorageClient) {
+	fmt.Println("📝 Test 13: Get Bucket CORS")
+	fmt.Println("─────────────────────────────────────────────────────────────")
+
+	corsResult, err := osClient.Buckets().GetCORS(ctx, testBucketName)
+	if err != nil {
+		fmt.Printf("❌ Failed: %v\n\n", err)
+		return
+	}
+
+	if corsResult == nil {
+		fmt.Printf("⚠️  No CORS set on bucket\n\n")
+		return
+	}
+
+	fmt.Printf("✅ Bucket CORS retrieved:\n")
+
+	for _, rule := range corsResult.CORSRules {
+		fmt.Printf("   Allowed Headers: %q\n", rule.AllowedHeaders)
+		fmt.Printf("   Allowed Methods: %q\n", rule.AllowedMethods)
+		fmt.Printf("   Allowed Origins: %q\n", rule.AllowedOrigins)
+		fmt.Printf("   Expose Headers: %q\n", rule.ExposeHeaders)
+		fmt.Printf("   Max Age Seconds: %d\n", rule.MaxAgeSeconds)
+	}
+}
+
+func testDeleteBucketCORS(ctx context.Context, osClient *objectstorage.ObjectStorageClient) {
+	fmt.Println("📝 Test 14: Delete Bucket CORS")
+	fmt.Println("─────────────────────────────────────────────────────────────")
+
+	err := osClient.Buckets().DeleteCORS(ctx, testBucketName)
+	if err != nil {
+		fmt.Printf("❌ Failed: %v\n\n", err)
+		return
+	}
+
+	fmt.Printf("✅ Bucket cors deleted successfully\n\n")
+}
+
 func testDeleteObject(ctx context.Context, osClient *objectstorage.ObjectStorageClient) {
-	fmt.Println("📝 Test 12: Delete Object")
+	fmt.Println("📝 Test 15: Delete Object")
 	fmt.Println("─────────────────────────────────────────────────────────────")
 
 	err := osClient.Objects().Delete(ctx, testBucketName, testObjectKey, nil)
@@ -378,7 +451,7 @@ func testDeleteObject(ctx context.Context, osClient *objectstorage.ObjectStorage
 }
 
 func testDeleteBucket(ctx context.Context, osClient *objectstorage.ObjectStorageClient) {
-	fmt.Println("📝 Test 13: Delete Bucket")
+	fmt.Println("📝 Test 16: Delete Bucket")
 	fmt.Println("─────────────────────────────────────────────────────────────")
 
 	err := osClient.Buckets().Delete(ctx, testBucketName)

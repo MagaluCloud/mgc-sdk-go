@@ -30,7 +30,7 @@ func TestBucketServiceList_WithMockSuccess(t *testing.T) {
 	osClient, _ := New(core, "minioadmin", "minioadmin", WithMinioClientInterface(mock))
 	svc := osClient.Buckets()
 
-	buckets, err := svc.List(context.Background(), BucketListOptions{})
+	buckets, err := svc.List(context.Background())
 	if err != nil {
 		t.Fatalf("List() error = %v", err)
 	}
