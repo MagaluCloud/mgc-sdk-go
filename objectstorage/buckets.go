@@ -11,7 +11,7 @@ import (
 // BucketService provides operations for managing buckets.
 type BucketService interface {
 	Create(ctx context.Context, bucketName string) error
-	List(ctx context.Context, opts BucketListOptions) ([]Bucket, error)
+	List(ctx context.Context) ([]Bucket, error)
 	Exists(ctx context.Context, bucketName string) (bool, error)
 	Delete(ctx context.Context, bucketName string) error
 	GetPolicy(ctx context.Context, bucketName string) (*Policy, error)
@@ -43,7 +43,7 @@ func (s *bucketService) Create(ctx context.Context, bucketName string) error {
 }
 
 // List retrieves all buckets.
-func (s *bucketService) List(ctx context.Context, opts BucketListOptions) ([]Bucket, error) {
+func (s *bucketService) List(ctx context.Context) ([]Bucket, error) {
 	buckets, err := s.client.minioClient.ListBuckets(ctx)
 	if err != nil {
 		return nil, err

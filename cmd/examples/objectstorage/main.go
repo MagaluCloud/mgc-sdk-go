@@ -157,7 +157,7 @@ func testListBuckets(ctx context.Context, osClient *objectstorage.ObjectStorageC
 	fmt.Println("📝 Test 1: List All Buckets")
 	fmt.Println("─────────────────────────────────────────────────────────────")
 
-	buckets, err := osClient.Buckets().List(ctx, objectstorage.BucketListOptions{})
+	buckets, err := osClient.Buckets().List(ctx)
 	if err != nil {
 		fmt.Printf("❌ Failed: %v\n\n", err)
 		return

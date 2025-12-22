@@ -86,45 +86,10 @@ func TestBucketServiceList(t *testing.T) {
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Buckets()
 
-	_, err := svc.List(context.Background(), BucketListOptions{})
+	_, err := svc.List(context.Background())
 
 	if err == nil {
 		t.Error("List() expected error due to no connection, got nil")
-	}
-}
-
-func TestBucketServiceListWithOptions(t *testing.T) {
-	t.Parallel()
-
-	core := client.NewMgcClient()
-	osClient, _ := New(core, "minioadmin", "minioadmin")
-	svc := osClient.Buckets()
-
-	// Test with Limit
-	limit := 10
-	_, err := svc.List(context.Background(), BucketListOptions{
-		Limit: &limit,
-	})
-	if err == nil {
-		t.Error("List() with Limit expected error due to no connection, got nil")
-	}
-
-	// Test with Offset
-	offset := 5
-	_, err = svc.List(context.Background(), BucketListOptions{
-		Offset: &offset,
-	})
-	if err == nil {
-		t.Error("List() with Offset expected error due to no connection, got nil")
-	}
-
-	// Test with both Limit and Offset
-	_, err = svc.List(context.Background(), BucketListOptions{
-		Limit:  &limit,
-		Offset: &offset,
-	})
-	if err == nil {
-		t.Error("List() with Limit and Offset expected error due to no connection, got nil")
 	}
 }
 
