@@ -202,7 +202,7 @@ func TestBucketServiceLockBucket_InvalidBucketName(t *testing.T) {
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Buckets()
 
-	err := svc.LockBucket(context.Background(), "")
+	err := svc.LockBucket(context.Background(), "", 1, "days")
 
 	if err == nil {
 		t.Error("LockBucket() expected error for empty bucket name, got nil")
@@ -270,7 +270,7 @@ func TestBucketServiceLockBucket_ValidParameters(t *testing.T) {
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Buckets()
 
-	err := svc.LockBucket(context.Background(), "test-bucket")
+	err := svc.LockBucket(context.Background(), "test-bucket", 1, "days")
 
 	if err == nil {
 		t.Error("LockBucket() expected error due to no connection, got nil")
@@ -1007,5 +1007,37 @@ func TestObjectVersion(t *testing.T) {
 
 	if version.IsDeleteMarker {
 		t.Error("ObjectVersion.IsDeleteMarker expected false, got true")
+	}
+}
+
+func TestBucketServiceBucketLockConfig_ValidParameters(t *testing.T) {
+	t.Parallel()
+
+	core := client.NewMgcClient()
+	osClient, _ := New(core, "minioadmin", "minioadmin")
+	svc := osClient.Buckets()
+
+	_, err := svc.GetBucketLockConfig(context.Background(), "test-bucket")
+
+	if err == nil {
+		t.Error("GetBucketLockConfig() expected error due to no connection, got nil")
+	}
+}
+
+func TestBucketServiceGetBucketLockConfig_InvalidBucketName(t *testing.T) {
+	t.Parallel()
+
+	core := client.NewMgcClient()
+	osClient, _ := New(core, "minioadmin", "minioadmin")
+	svc := osClient.Buckets()
+
+	_, err := svc.GetBucketLockConfig(context.Background(), "")
+
+	if err == nil {
+		t.Error("GetBucketLockConfig() expected error for empty bucket name, got nil")
+	}
+
+	if _, ok := err.(*InvalidBucketNameError); !ok {
+		t.Errorf("GetBucketLockConfig() expected InvalidBucketNameError, got %T", err)
 	}
 }
