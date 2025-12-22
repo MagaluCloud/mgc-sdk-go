@@ -2,6 +2,7 @@ package objectstorage
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	"github.com/MagaluCloud/mgc-sdk-go/client"
@@ -210,6 +211,24 @@ func TestBucketServiceLockBucket_InvalidBucketName(t *testing.T) {
 
 	if _, ok := err.(*InvalidBucketNameError); !ok {
 		t.Errorf("LockBucket() expected InvalidBucketNameError, got %T", err)
+	}
+}
+
+func TestBucketServiceLockBucket_InvalidUnit(t *testing.T) {
+	t.Parallel()
+
+	core := client.NewMgcClient()
+	osClient, _ := New(core, "minioadmin", "minioadmin")
+	svc := osClient.Buckets()
+
+	err := svc.LockBucket(context.Background(), "name", 1, "test")
+
+	if err == nil {
+		t.Error("LockBucket() expected error for invalid unit, got nil")
+	}
+
+	if !strings.Contains(err.Error(), "(expected 'days' or 'years')") {
+		t.Errorf("LockBucket() expected invalid unit, got %T", err)
 	}
 }
 
