@@ -256,7 +256,7 @@ func (s *bucketService) DeleteCORS(ctx context.Context, bucketName string) error
 	}
 
 	// Set empty CORS config to delete
-	return s.client.minioClient.SetBucketCors(ctx, bucketName, &cors.Config{})
+	return s.client.minioClient.SetBucketCors(ctx, bucketName, nil)
 }
 
 // EnableVersioning enables versioning for a bucket.
