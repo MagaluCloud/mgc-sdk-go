@@ -30,6 +30,7 @@ type mockMinioClient struct {
 	getObjectFunc          func(ctx context.Context, bucketName string, objectName string, opts minio.GetObjectOptions) (*minio.Object, error)
 	listObjectsFunc        func(ctx context.Context, bucketName string, opts minio.ListObjectsOptions) <-chan minio.ObjectInfo
 	removeObjectFunc       func(ctx context.Context, bucketName string, objectName string, opts minio.RemoveObjectOptions) error
+	removeObjectsFunc      func(ctx context.Context, bucketName string, objectKeys <-chan minio.ObjectInfo, opts minio.RemoveObjectsOptions) <-chan minio.RemoveObjectError
 	statObjectFunc         func(ctx context.Context, bucketName string, objectName string, opts minio.StatObjectOptions) (minio.ObjectInfo, error)
 	putObjectRetentionFunc func(ctx context.Context, bucketName string, objectName string, opts minio.PutObjectRetentionOptions) error
 	getObjectRetentionFunc func(ctx context.Context, bucketName string, objectName string, versionID string) (*minio.RetentionMode, *time.Time, error)
@@ -335,6 +336,23 @@ func (m *mockMinioClient) RemoveObject(ctx context.Context, bucketName string, o
 		return nil
 	}
 	delete(bucket.objects, objectName)
+	return nil
+}
+
+// RemoveObjects mocks the MinIO RemoveObjects method
+func (m *mockMinioClient) RemoveObjects(ctx context.Context, bucketName string, objectKeys <-chan minio.ObjectInfo, opts minio.RemoveObjectsOptions) <-chan minio.RemoveObjectError {
+	if m.removeObjectsFunc != nil {
+		return m.removeObjectsFunc(ctx, bucketName, objectKeys, opts)
+	}
+
+	for obj := range objectKeys {
+		bucket, exists := m.buckets[obj.Key]
+		if !exists {
+			return nil
+		}
+		delete(bucket.objects, obj.Key)
+	}
+
 	return nil
 }
 
