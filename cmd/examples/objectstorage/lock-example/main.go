@@ -84,7 +84,7 @@ func main() {
 	// Step 2: Lock the bucket
 	fmt.Println("📍 Step 2: Enable Object Lock on bucket")
 	fmt.Printf("   Locking bucket '%s'...\n", testBucketName)
-	err = osClient.Buckets().LockBucket(ctx, testBucketName)
+	err = osClient.Buckets().LockBucket(ctx, testBucketName, 1, "days")
 	if err != nil {
 		fmt.Printf("   ❌ Failed to lock bucket: %v\n", err)
 	} else {
@@ -108,8 +108,24 @@ func main() {
 	fmt.Println()
 	pause()
 
-	// Step 4: Upload an object
-	fmt.Println("📍 Step 4: Upload object to locked bucket")
+	// Step 4: Check bucket lock config
+	fmt.Println("📍 Step 4: Check bucket lock config")
+	config, err := osClient.Buckets().GetBucketLockConfig(ctx, testBucketName)
+	if err != nil {
+		fmt.Printf("   ❌ Failed to get bucket lock config: %v\n", err)
+	} else {
+		fmt.Println("   Status:", config.Status)
+		if config.Status == "Locked" {
+			fmt.Println("   Mode:", *config.Mode)
+			fmt.Println("   Validity:", *config.Validity)
+			fmt.Println("   Unit:", *config.Unit)
+		}
+	}
+	fmt.Println()
+	pause()
+
+	// Step 5: Upload an object
+	fmt.Println("📍 Step 5: Upload object to locked bucket")
 	fmt.Printf("   Uploading '%s'...\n", testObjectKey)
 	err = osClient.Objects().Upload(ctx, testBucketName, testObjectKey, []byte(testObjectData), "text/plain")
 	if err != nil {
@@ -120,8 +136,8 @@ func main() {
 	fmt.Println()
 	pause()
 
-	// Step 5: Lock the object with retention period
-	fmt.Println("📍 Step 5: Apply retention lock to object")
+	// Step 6: Lock the object with retention period
+	fmt.Println("📍 Step 6: Apply retention lock to object")
 	retentionDays := 7
 	retainUntil := time.Now().UTC().AddDate(0, 0, retentionDays)
 	fmt.Printf("   Locking object for %d days (until %s)...\n", retentionDays, retainUntil.Format("2006-01-02 15:04:05"))
@@ -134,8 +150,8 @@ func main() {
 	fmt.Println()
 	pause()
 
-	// Step 6: Check object lock status
-	fmt.Println("📍 Step 6: Check object lock status")
+	// Step 7: Check object lock status
+	fmt.Println("📍 Step 7: Check object lock status")
 	objIsLocked, err := osClient.Objects().GetObjectLockStatus(ctx, testBucketName, testObjectKey)
 	if err != nil {
 		fmt.Printf("   ❌ Failed to get object lock status: %v\n", err)
@@ -152,8 +168,8 @@ func main() {
 	fmt.Println()
 	pause()
 
-	// Step 7: Try to delete the locked object (should fail)
-	fmt.Println("📍 Step 7: Attempt to delete locked object (should fail)")
+	// Step 8: Try to delete the locked object (should fail)
+	fmt.Println("📍 Step 8: Attempt to delete locked object (should fail)")
 	fmt.Printf("   Attempting to delete '%s'...\n", testObjectKey)
 	err = osClient.Objects().Delete(ctx, testBucketName, testObjectKey, nil)
 	if err != nil {
@@ -164,8 +180,8 @@ func main() {
 	fmt.Println()
 	pause()
 
-	// Step 8: Download the object to verify it still exists
-	fmt.Println("📍 Step 8: Download object to verify it's still protected")
+	// Step 9: Download the object to verify it still exists
+	fmt.Println("📍 Step 9: Download object to verify it's still protected")
 	fmt.Printf("   Downloading '%s'...\n", testObjectKey)
 	data, err := osClient.Objects().Download(ctx, testBucketName, testObjectKey, nil)
 	if err != nil {
@@ -177,8 +193,8 @@ func main() {
 	fmt.Println()
 	pause()
 
-	// Step 9: Get object metadata
-	fmt.Println("📍 Step 9: Get object metadata")
+	// Step 10: Get object metadata
+	fmt.Println("📍 Step 10: Get object metadata")
 	fmt.Printf("   Retrieving metadata for '%s'...\n", testObjectKey)
 	metadata, err := osClient.Objects().Metadata(ctx, testBucketName, testObjectKey)
 	if err != nil {
@@ -195,8 +211,8 @@ func main() {
 	fmt.Println()
 	pause()
 
-	// Step 10: Unlock the object (requires governance bypass)
-	fmt.Println("📍 Step 10: Unlock object (remove retention)")
+	// Step 11: Unlock the object (requires governance bypass)
+	fmt.Println("📍 Step 11: Unlock object (remove retention)")
 	fmt.Printf("   Unlocking '%s'...\n", testObjectKey)
 	err = osClient.Objects().UnlockObject(ctx, testBucketName, testObjectKey)
 	if err != nil {
@@ -207,8 +223,8 @@ func main() {
 	fmt.Println()
 	pause()
 
-	// Step 11: Verify object is unlocked
-	fmt.Println("📍 Step 11: Verify object is now unlocked")
+	// Step 12: Verify object is unlocked
+	fmt.Println("📍 Step 12: Verify object is now unlocked")
 	objIsLocked, err = osClient.Objects().GetObjectLockStatus(ctx, testBucketName, testObjectKey)
 	if err != nil {
 		fmt.Printf("   ❌ Failed to get object lock status: %v\n", err)
@@ -222,8 +238,8 @@ func main() {
 	fmt.Println()
 	pause()
 
-	// Step 12: Delete the object (should succeed now)
-	fmt.Println("📍 Step 12: Delete unlocked object")
+	// Step 13: Delete the object (should succeed now)
+	fmt.Println("📍 Step 13: Delete unlocked object")
 	fmt.Printf("   Deleting '%s'...\n", testObjectKey)
 	err = osClient.Objects().Delete(ctx, testBucketName, testObjectKey, nil)
 	if err != nil {
@@ -234,8 +250,8 @@ func main() {
 	fmt.Println()
 	pause()
 
-	// Step 13: Unlock the bucket
-	fmt.Println("📍 Step 13: Disable Object Lock on bucket")
+	// Step 14: Unlock the bucket
+	fmt.Println("📍 Step 14: Disable Object Lock on bucket")
 	fmt.Printf("   Unlocking bucket '%s'...\n", testBucketName)
 	err = osClient.Buckets().UnlockBucket(ctx, testBucketName)
 	if err != nil {
@@ -246,8 +262,8 @@ func main() {
 	fmt.Println()
 	pause()
 
-	// Step 14: Verify bucket is unlocked
-	fmt.Println("📍 Step 14: Verify bucket is now unlocked")
+	// Step 15: Verify bucket is unlocked
+	fmt.Println("📍 Step 15: Verify bucket is now unlocked")
 	isLocked, err = osClient.Buckets().GetBucketLockStatus(ctx, testBucketName)
 	if err != nil {
 		fmt.Printf("   ❌ Failed to get bucket lock status: %v\n", err)
@@ -261,8 +277,8 @@ func main() {
 	fmt.Println()
 	pause()
 
-	// Step 15: Clean up - delete the bucket
-	fmt.Println("📍 Step 15: Clean up - delete bucket")
+	// Step 16: Clean up - delete the bucket
+	fmt.Println("📍 Step 16: Clean up - delete bucket")
 	fmt.Printf("   Deleting bucket '%s'...\n", testBucketName)
 	err = osClient.Buckets().Delete(ctx, testBucketName)
 	if err != nil {
