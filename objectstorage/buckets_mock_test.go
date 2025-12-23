@@ -515,27 +515,27 @@ func TestBucketServiceGetBucketLockConfig_WithMockSuccessAndLocked(t *testing.T)
 
 	config, err := svc.GetBucketLockConfig(context.Background(), "test-bucket")
 	if err != nil {
-		t.Fatalf("GetCORS() error = %v", err)
+		t.Fatalf("GetBucketLockConfig() error = %v", err)
 	}
 
 	if config == nil {
-		t.Fatal("GetCORS() returned nil")
+		t.Fatal("GetBucketLockConfig() returned nil")
 	}
 
 	if config.Status != "Locked" {
-		t.Errorf("GetCORS() Status = %s, want Locked", config.Status)
+		t.Errorf("GetBucketLockConfig() Status = %s, want Locked", config.Status)
 	}
 
 	if *config.Validity != 2 {
-		t.Errorf("GetCORS() Validity = %d, want 2", *config.Validity)
+		t.Errorf("GetBucketLockConfig() Validity = %d, want 2", *config.Validity)
 	}
 
 	if *config.Unit != "DAYS" {
-		t.Errorf("GetCORS() Unit = %d, want DAYS", config.Unit)
+		t.Errorf("GetBucketLockConfig() Unit = %d, want DAYS", config.Unit)
 	}
 
 	if *config.Mode != "COMPLIANCE" {
-		t.Errorf("GetCORS() Mode = %d, want COMPLIANCE", config.Mode)
+		t.Errorf("GetBucketLockConfig() Mode = %d, want COMPLIANCE", config.Mode)
 	}
 }
 
@@ -560,26 +560,26 @@ func TestBucketServiceGetBucketLockConfig_WithMockSuccessAndUnlocked(t *testing.
 
 	config, err := svc.GetBucketLockConfig(context.Background(), "test-bucket")
 	if err != nil {
-		t.Fatalf("GetCORS() error = %v", err)
+		t.Fatalf("GetBucketLockConfigs() error = %v", err)
 	}
 
 	if config == nil {
-		t.Fatal("GetCORS() returned nil")
+		t.Fatal("GetBucketLockConfigs() returned nil")
 	}
 
 	if config.Status != "Unlocked" {
-		t.Errorf("GetCORS() Status = %s, want Unlocked", config.Status)
+		t.Errorf("GetBucketLockConfigs() Status = %s, want Unlocked", config.Status)
 	}
 
 	if config.Validity != nil {
-		t.Errorf("GetCORS() Validity = %d, want nil", *config.Validity)
+		t.Errorf("GetBucketLockConfigs() Validity = %d, want nil", *config.Validity)
 	}
 
 	if config.Unit != nil {
-		t.Errorf("GetCORS() Unit = %d, want nil", config.Unit)
+		t.Errorf("GetBucketLockConfigs() Unit = %d, want nil", config.Unit)
 	}
 
 	if config.Mode != nil {
-		t.Errorf("GetCORS() Mode = %d, want nil", config.Mode)
+		t.Errorf("GetBucketLockConfigs() Mode = %d, want nil", config.Mode)
 	}
 }
