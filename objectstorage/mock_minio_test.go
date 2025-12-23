@@ -2,6 +2,7 @@ package objectstorage
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"time"
 
@@ -340,20 +341,41 @@ func (m *mockMinioClient) RemoveObject(ctx context.Context, bucketName string, o
 }
 
 // RemoveObjects mocks the MinIO RemoveObjects method
-func (m *mockMinioClient) RemoveObjects(ctx context.Context, bucketName string, objectKeys <-chan minio.ObjectInfo, opts minio.RemoveObjectsOptions) <-chan minio.RemoveObjectError {
-	if m.removeObjectsFunc != nil {
-		return m.removeObjectsFunc(ctx, bucketName, objectKeys, opts)
-	}
+func (m *mockMinioClient) RemoveObjects(
+	ctx context.Context,
+	bucketName string,
+	objectKeys <-chan minio.ObjectInfo,
+	opts minio.RemoveObjectsOptions,
+) <-chan minio.RemoveObjectError {
 
-	for obj := range objectKeys {
-		bucket, exists := m.buckets[obj.Key]
+	errCh := make(chan minio.RemoveObjectError)
+
+	go func() {
+		defer close(errCh)
+
+		bucket, exists := m.buckets[bucketName]
 		if !exists {
-			return nil
+			errCh <- minio.RemoveObjectError{
+				ObjectName: bucketName,
+				Err:        fmt.Errorf("bucket not found"),
+			}
+			return
 		}
-		delete(bucket.objects, obj.Key)
-	}
 
-	return nil
+		for obj := range objectKeys {
+			if _, exists := bucket.objects[obj.Key]; !exists {
+				errCh <- minio.RemoveObjectError{
+					ObjectName: obj.Key,
+					Err:        fmt.Errorf("object not found"),
+				}
+				continue
+			}
+
+			delete(bucket.objects, obj.Key)
+		}
+	}()
+
+	return errCh
 }
 
 // StatObject mocks the MinIO StatObject method

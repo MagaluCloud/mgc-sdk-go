@@ -504,7 +504,7 @@ func TestBucketServiceDelete_WithObjects(t *testing.T) {
 				lastModified: time.Now(),
 			},
 			"test/file.txt": {
-				key:          "file.txt",
+				key:          "test/file.txt",
 				size:         180,
 				lastModified: time.Now(),
 			},
