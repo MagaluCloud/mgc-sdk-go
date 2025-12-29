@@ -490,9 +490,102 @@ func TestBucketServiceGetVersioningStatus_Off(t *testing.T) {
 	}
 }
 
-func TestBucketServiceDelete_WithObjects(t *testing.T) {
+func TestBucketServiceGetBucketLockConfig_WithMockSuccessAndLocked(t *testing.T) {
 	t.Parallel()
 
+	validity := uint(2)
+	unit := (minio.ValidityUnit)("DAYS")
+	mode := (minio.RetentionMode)("COMPLIANCE")
+
+	mock := newMockMinioClient()
+	mock.buckets["test-bucket"] = &mockBucket{
+		name:         "test-bucket",
+		creationDate: time.Now(),
+		lockConfig: &mockLockConfig{
+			objectLock: "locked",
+			validity:   &validity,
+			unit:       &unit,
+			mode:       &mode,
+		},
+	}
+
+	core := client.NewMgcClient()
+	osClient, _ := New(core, "minioadmin", "minioadmin", WithMinioClientInterface(mock))
+	svc := osClient.Buckets()
+
+	config, err := svc.GetBucketLockConfig(context.Background(), "test-bucket")
+	if err != nil {
+		t.Fatalf("GetBucketLockConfig() error = %v", err)
+	}
+
+	if config == nil {
+		t.Fatal("GetBucketLockConfig() returned nil")
+	}
+
+	if config.Status != "Locked" {
+		t.Errorf("GetBucketLockConfig() Status = %s, want Locked", config.Status)
+	}
+
+	if *config.Validity != 2 {
+		t.Errorf("GetBucketLockConfig() Validity = %d, want 2", *config.Validity)
+	}
+
+	if *config.Unit != "DAYS" {
+		t.Errorf("GetBucketLockConfig() Unit = %d, want DAYS", config.Unit)
+	}
+
+	if *config.Mode != "COMPLIANCE" {
+		t.Errorf("GetBucketLockConfig() Mode = %d, want COMPLIANCE", config.Mode)
+	}
+}
+
+func TestBucketServiceGetBucketLockConfig_WithMockSuccessAndUnlocked(t *testing.T) {
+	t.Parallel()
+
+	mock := newMockMinioClient()
+	mock.buckets["test-bucket"] = &mockBucket{
+		name:         "test-bucket",
+		creationDate: time.Now(),
+		lockConfig: &mockLockConfig{
+			objectLock: "unlocked",
+			validity:   nil,
+			unit:       nil,
+			mode:       nil,
+		},
+	}
+
+	core := client.NewMgcClient()
+	osClient, _ := New(core, "minioadmin", "minioadmin", WithMinioClientInterface(mock))
+	svc := osClient.Buckets()
+
+	config, err := svc.GetBucketLockConfig(context.Background(), "test-bucket")
+	if err != nil {
+		t.Fatalf("GetBucketLockConfigs() error = %v", err)
+	}
+
+	if config == nil {
+		t.Fatal("GetBucketLockConfigs() returned nil")
+	}
+
+	if config.Status != "Unlocked" {
+		t.Errorf("GetBucketLockConfigs() Status = %s, want Unlocked", config.Status)
+	}
+
+	if config.Validity != nil {
+		t.Errorf("GetBucketLockConfigs() Validity = %d, want nil", *config.Validity)
+	}
+
+	if config.Unit != nil {
+		t.Errorf("GetBucketLockConfigs() Unit = %d, want nil", config.Unit)
+	}
+
+	if config.Mode != nil {
+		t.Errorf("GetBucketLockConfigs() Mode = %d, want nil", config.Mode)
+	}
+}
+
+func TestBucketServiceDelete_WithObjects(t *testing.T) {
+	t.Parallel()
 	mock := newMockMinioClient()
 	mock.buckets["test-bucket"] = &mockBucket{
 		name:         "test-bucket",
@@ -514,7 +607,6 @@ func TestBucketServiceDelete_WithObjects(t *testing.T) {
 	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin", WithMinioClientInterface(mock))
 	svc := osClient.Buckets()
-
 	err := svc.Delete(context.Background(), "test-bucket", true)
 	if err != nil {
 		t.Fatalf("Delete() error = %v", err)

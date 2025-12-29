@@ -3,10 +3,19 @@ package objectstorage
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"strings"
 
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/cors"
 )
+
+type LockConfig struct {
+	Status   string
+	Mode     *string
+	Validity *uint
+	Unit     *string
+}
 
 // BucketService provides operations for managing buckets.
 type BucketService interface {
@@ -17,9 +26,10 @@ type BucketService interface {
 	GetPolicy(ctx context.Context, bucketName string) (*Policy, error)
 	SetPolicy(ctx context.Context, bucketName string, policy *Policy) error
 	DeletePolicy(ctx context.Context, bucketName string) error
-	LockBucket(ctx context.Context, bucketName string) error
+	LockBucket(ctx context.Context, bucketName string, validity uint, unit string) error
 	UnlockBucket(ctx context.Context, bucketName string) error
 	GetBucketLockStatus(ctx context.Context, bucketName string) (bool, error)
+	GetBucketLockConfig(ctx context.Context, bucketName string) (*LockConfig, error)
 	SetCORS(ctx context.Context, bucketName string, corsConfig *CORSConfiguration) error
 	GetCORS(ctx context.Context, bucketName string) (*CORSConfiguration, error)
 	DeleteCORS(ctx context.Context, bucketName string) error
@@ -152,17 +162,29 @@ func unmarshalPolicy(policyStr string, policy *Policy) error {
 }
 
 // LockBucket enables Object Lock for a bucket.
-func (s *bucketService) LockBucket(ctx context.Context, bucketName string) error {
+func (s *bucketService) LockBucket(ctx context.Context, bucketName string, validity uint, unit string) error {
 	if bucketName == "" {
 		return &InvalidBucketNameError{Name: bucketName}
 	}
 
 	// Use COMPLIANCE mode as the default retention mode for bucket locking
 	complianceMode := minio.Compliance
-	validity := uint(1)
-	unit := minio.Days
 
-	return s.client.minioClient.SetObjectLockConfig(ctx, bucketName, &complianceMode, &validity, &unit)
+	lowerUnit := strings.ToLower(unit)
+
+	switch lowerUnit {
+	case "days", "years":
+		break
+	default:
+		return fmt.Errorf("invalid unit: %s (expected 'days' or 'years')", unit)
+	}
+
+	minioUnit := minio.Days
+	if lowerUnit == "years" {
+		minioUnit = minio.Years
+	}
+
+	return s.client.minioClient.SetObjectLockConfig(ctx, bucketName, &complianceMode, &validity, &minioUnit)
 }
 
 // UnlockBucket disables Object Lock for a bucket by removing the configuration.
@@ -190,6 +212,42 @@ func (s *bucketService) GetBucketLockStatus(ctx context.Context, bucketName stri
 	isLocked := objectLock != "" && mode != nil && validity != nil && unit != nil
 
 	return isLocked, nil
+}
+
+// GetBucketLockConfig retrieves the lock config of a bucket.
+func (s *bucketService) GetBucketLockConfig(ctx context.Context, bucketName string) (*LockConfig, error) {
+	if bucketName == "" {
+		return nil, &InvalidBucketNameError{Name: bucketName}
+	}
+
+	objectLock, mode, validity, unit, err := s.client.minioClient.GetObjectLockConfig(ctx, bucketName)
+	if err != nil {
+		return nil, err
+	}
+
+	// Bucket is locked if objectLock string is not empty and mode is set
+	isLocked := objectLock != "" && mode != nil && validity != nil && unit != nil
+
+	status := "Unlocked"
+	if isLocked {
+		status = "Locked"
+	}
+
+	config := LockConfig{
+		Status:   status,
+		Validity: validity,
+	}
+
+	if mode != nil {
+		stringMode := mode.String()
+		config.Mode = &stringMode
+	}
+
+	if unit != nil {
+		config.Unit = (*string)(unit)
+	}
+
+	return &config, nil
 }
 
 // SetCORS sets the CORS configuration for a bucket.
