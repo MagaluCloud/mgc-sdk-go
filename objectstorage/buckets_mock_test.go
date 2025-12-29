@@ -583,3 +583,36 @@ func TestBucketServiceGetBucketLockConfig_WithMockSuccessAndUnlocked(t *testing.
 		t.Errorf("GetBucketLockConfigs() Mode = %d, want nil", config.Mode)
 	}
 }
+
+func TestBucketServiceDelete_WithObjects(t *testing.T) {
+	t.Parallel()
+	mock := newMockMinioClient()
+	mock.buckets["test-bucket"] = &mockBucket{
+		name:         "test-bucket",
+		creationDate: time.Now(),
+		objects: map[string]*mockObject{
+			"file.txt": {
+				key:          "file.txt",
+				size:         180,
+				lastModified: time.Now(),
+			},
+			"test/file.txt": {
+				key:          "test/file.txt",
+				size:         180,
+				lastModified: time.Now(),
+			},
+		},
+	}
+
+	core := client.NewMgcClient()
+	osClient, _ := New(core, "minioadmin", "minioadmin", WithMinioClientInterface(mock))
+	svc := osClient.Buckets()
+	err := svc.Delete(context.Background(), "test-bucket", true)
+	if err != nil {
+		t.Fatalf("Delete() error = %v", err)
+	}
+
+	if _, exists := mock.buckets["test-bucket"]; exists {
+		t.Fatalf("expected bucket to be deleted, but it still exists")
+	}
+}
