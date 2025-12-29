@@ -3,7 +3,6 @@ package objectstorage
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/cors"
@@ -77,23 +76,7 @@ func (s *bucketService) Delete(ctx context.Context, bucketName string, recursive
 	}
 
 	if recursive {
-		objects, err := s.client.Objects().ListAll(ctx, bucketName, ObjectFilterOptions{})
-		if err != nil {
-			return fmt.Errorf("error to get all objects: %w", err)
-		}
-
-		if len(objects) != 0 {
-			objectKeys := []string{}
-
-			for _, object := range objects {
-				objectKeys = append(objectKeys, object.Key)
-			}
-
-			err = s.client.Objects().DeleteMany(ctx, bucketName, objectKeys, minio.RemoveObjectsOptions{})
-			if err != nil {
-				return fmt.Errorf("error to delete the objects: %w", err)
-			}
-		}
+		ctx = WithForceDelete(ctx)
 	}
 
 	return s.client.minioClient.RemoveBucket(ctx, bucketName)

@@ -3,9 +3,7 @@ package objectstorage
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"io"
-	"strings"
 	"time"
 
 	"github.com/minio/minio-go/v7"
@@ -20,7 +18,6 @@ type ObjectService interface {
 	ListAll(ctx context.Context, bucketName string, opts ObjectFilterOptions) ([]Object, error)
 	ListVersions(ctx context.Context, bucketName string, objectKey string, opts *ListVersionsOptions) ([]ObjectVersion, error)
 	Delete(ctx context.Context, bucketName string, objectKey string, opts *DeleteOptions) error
-	DeleteMany(ctx context.Context, bucketName string, objectKeys []string, opts minio.RemoveObjectsOptions) error
 	Metadata(ctx context.Context, bucketName string, objectKey string) (*Object, error)
 	LockObject(ctx context.Context, bucketName string, objectKey string, retainUntilDate time.Time) error
 	UnlockObject(ctx context.Context, bucketName string, objectKey string) error
@@ -197,47 +194,6 @@ func (s *objectService) Delete(ctx context.Context, bucketName string, objectKey
 	}
 
 	return s.client.minioClient.RemoveObject(ctx, bucketName, objectKey, removeOpts)
-}
-
-// DeleteMany removes objects from a bucket.
-func (s *objectService) DeleteMany(ctx context.Context, bucketName string, objectKeys []string, opts minio.RemoveObjectsOptions) error {
-	if bucketName == "" {
-		return &InvalidBucketNameError{Name: bucketName}
-	}
-
-	if len(objectKeys) == 0 {
-		return &InvalidObjectKeyError{Key: ""}
-	}
-
-	objectsCh := make(chan minio.ObjectInfo)
-
-	go func() {
-		defer close(objectsCh)
-
-		for _, key := range objectKeys {
-			if key == "" {
-				continue
-			}
-
-			objectsCh <- minio.ObjectInfo{
-				Key: key,
-			}
-		}
-	}()
-
-	errorCh := s.client.minioClient.RemoveObjects(ctx, bucketName, objectsCh, opts)
-
-	var errs []string
-
-	for err := range errorCh {
-		errs = append(errs, fmt.Sprintf("%s: %v", err.ObjectName, err.Err))
-	}
-
-	if len(errs) > 0 {
-		return fmt.Errorf("failed to delete some objects: %s", strings.Join(errs, "; "))
-	}
-
-	return nil
 }
 
 // Metadata returns metadata about an object.

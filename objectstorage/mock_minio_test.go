@@ -2,7 +2,6 @@ package objectstorage
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"time"
 
@@ -31,7 +30,6 @@ type mockMinioClient struct {
 	getObjectFunc          func(ctx context.Context, bucketName string, objectName string, opts minio.GetObjectOptions) (*minio.Object, error)
 	listObjectsFunc        func(ctx context.Context, bucketName string, opts minio.ListObjectsOptions) <-chan minio.ObjectInfo
 	removeObjectFunc       func(ctx context.Context, bucketName string, objectName string, opts minio.RemoveObjectOptions) error
-	removeObjectsFunc      func(ctx context.Context, bucketName string, objectKeys <-chan minio.ObjectInfo, opts minio.RemoveObjectsOptions) <-chan minio.RemoveObjectError
 	statObjectFunc         func(ctx context.Context, bucketName string, objectName string, opts minio.StatObjectOptions) (minio.ObjectInfo, error)
 	putObjectRetentionFunc func(ctx context.Context, bucketName string, objectName string, opts minio.PutObjectRetentionOptions) error
 	getObjectRetentionFunc func(ctx context.Context, bucketName string, objectName string, versionID string) (*minio.RetentionMode, *time.Time, error)
@@ -338,44 +336,6 @@ func (m *mockMinioClient) RemoveObject(ctx context.Context, bucketName string, o
 	}
 	delete(bucket.objects, objectName)
 	return nil
-}
-
-// RemoveObjects mocks the MinIO RemoveObjects method
-func (m *mockMinioClient) RemoveObjects(
-	ctx context.Context,
-	bucketName string,
-	objectKeys <-chan minio.ObjectInfo,
-	opts minio.RemoveObjectsOptions,
-) <-chan minio.RemoveObjectError {
-
-	errCh := make(chan minio.RemoveObjectError)
-
-	go func() {
-		defer close(errCh)
-
-		bucket, exists := m.buckets[bucketName]
-		if !exists {
-			errCh <- minio.RemoveObjectError{
-				ObjectName: bucketName,
-				Err:        fmt.Errorf("bucket not found"),
-			}
-			return
-		}
-
-		for obj := range objectKeys {
-			if _, exists := bucket.objects[obj.Key]; !exists {
-				errCh <- minio.RemoveObjectError{
-					ObjectName: obj.Key,
-					Err:        fmt.Errorf("object not found"),
-				}
-				continue
-			}
-
-			delete(bucket.objects, obj.Key)
-		}
-	}()
-
-	return errCh
 }
 
 // StatObject mocks the MinIO StatObject method
