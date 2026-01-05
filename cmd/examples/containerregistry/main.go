@@ -349,10 +349,8 @@ func listProxyCacheStatus(crClient *containerregistry.ContainerRegistryClient, i
 
 func createProxyCacheStatus(crClient *containerregistry.ContainerRegistryClient) {
 	resp, err := crClient.ProxyCaches().CreateStatus(context.Background(), containerregistry.CreateProxyCacheStatusRequest{
-		Provider:     "docker-hub",
-		URL:          "https://hub.docker.com/repositories",
-		AccessKey:    "test@gmail.com",
-		AccessSecret: "test.123",
+		Provider: "docker-hub",
+		URL:      "https://hub.docker.com/repositories",
 	})
 
 	if err != nil {

@@ -40,12 +40,10 @@ type ProxyCacheListAllOptions struct {
 }
 
 type CreateProxyCacheRequest struct {
-	Name         string  `json:"name"`
-	Provider     string  `json:"provider"`
-	URL          string  `json:"url"`
-	AccessKey    *string `json:"access_key"`
-	AccessSecret *string `json:"access_secret"`
-	Description  *string `json:"description"`
+	Name        string  `json:"name"`
+	Provider    string  `json:"provider"`
+	URL         string  `json:"url"`
+	Description *string `json:"description"`
 }
 
 type CreateProxyCacheResponse struct {
@@ -54,11 +52,9 @@ type CreateProxyCacheResponse struct {
 }
 
 type UpdateProxyCacheRequest struct {
-	Name         *string `json:"name"`
-	URL          *string `json:"url"`
-	AccessKey    *string `json:"access_key"`
-	AccessSecret *string `json:"access_secret"`
-	Description  *string `json:"description"`
+	Name        *string `json:"name"`
+	URL         *string `json:"url"`
+	Description *string `json:"description"`
 }
 
 type GetProxyCacheResponse struct {
@@ -72,10 +68,8 @@ type ListProxyCacheStatusResponse struct {
 }
 
 type CreateProxyCacheStatusRequest struct {
-	Provider     string `json:"provider"`
-	URL          string `json:"url"`
-	AccessKey    string `json:"access_key"`
-	AccessSecret string `json:"access_secret"`
+	Provider string `json:"provider"`
+	URL      string `json:"url"`
 }
 
 type CreateProxyCacheStatusResponse struct {

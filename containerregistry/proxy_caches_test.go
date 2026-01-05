@@ -898,10 +898,8 @@ func TestProxyCachesService_CreateStatus(t *testing.T) {
 		{
 			name: "successful creation of proxy-cache status",
 			request: CreateProxyCacheStatusRequest{
-				Provider:     "docker-hub",
-				URL:          "https://hub.docker.com/repositories",
-				AccessKey:    "test@gmail.com",
-				AccessSecret: "teste.123",
+				Provider: "docker-hub",
+				URL:      "https://hub.docker.com/repositories",
 			},
 			response: `{
 				"message": "Proxy cache credentials are valid.",
@@ -917,9 +915,7 @@ func TestProxyCachesService_CreateStatus(t *testing.T) {
 		{
 			name: "missing provider",
 			request: CreateProxyCacheStatusRequest{
-				URL:          "https://hub.docker.com/repositories",
-				AccessKey:    "test@gmail.com",
-				AccessSecret: "teste.123",
+				URL: "https://hub.docker.com/repositories",
 			},
 			response:   `{"error": "provider required"}`,
 			statusCode: http.StatusBadRequest,
@@ -928,43 +924,17 @@ func TestProxyCachesService_CreateStatus(t *testing.T) {
 		{
 			name: "missing url",
 			request: CreateProxyCacheStatusRequest{
-				Provider:     "docker-hub",
-				AccessKey:    "test@gmail.com",
-				AccessSecret: "teste.123",
+				Provider: "docker-hub",
 			},
 			response:   `{"error": "url required"}`,
 			statusCode: http.StatusBadRequest,
 			wantErr:    true,
 		},
 		{
-			name: "missing access key",
-			request: CreateProxyCacheStatusRequest{
-				Provider:     "docker-hub",
-				URL:          "https://hub.docker.com/repositories",
-				AccessSecret: "teste.123",
-			},
-			response:   `{"error": "access key required"}`,
-			statusCode: http.StatusBadRequest,
-			wantErr:    true,
-		},
-		{
-			name: "missing access secret",
-			request: CreateProxyCacheStatusRequest{
-				Provider:  "docker-hub",
-				URL:       "https://hub.docker.com/repositories",
-				AccessKey: "test@gmail.com",
-			},
-			response:   `{"error": "access secret required"}`,
-			statusCode: http.StatusBadRequest,
-			wantErr:    true,
-		},
-		{
 			name: "malformed response",
 			request: CreateProxyCacheStatusRequest{
-				Provider:     "docker-hub",
-				URL:          "https://hub.docker.com/repositories",
-				AccessKey:    "test@gmail.com",
-				AccessSecret: "teste.123",
+				Provider: "docker-hub",
+				URL:      "https://hub.docker.com/repositories",
 			},
 			response:   `{"message": "broken"`,
 			statusCode: http.StatusOK,
@@ -974,10 +944,8 @@ func TestProxyCachesService_CreateStatus(t *testing.T) {
 		{
 			name: "server error",
 			request: CreateProxyCacheStatusRequest{
-				Provider:     "docker-hub",
-				URL:          "https://hub.docker.com/repositories",
-				AccessKey:    "test@gmail.com",
-				AccessSecret: "teste.123",
+				Provider: "docker-hub",
+				URL:      "https://hub.docker.com/repositories",
 			},
 			response:   `{"error": "internal server error"}`,
 			statusCode: http.StatusInternalServerError,
