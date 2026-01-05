@@ -22,7 +22,7 @@ type BucketService interface {
 	Create(ctx context.Context, bucketName string) error
 	List(ctx context.Context) ([]Bucket, error)
 	Exists(ctx context.Context, bucketName string) (bool, error)
-	Delete(ctx context.Context, bucketName string) error
+	Delete(ctx context.Context, bucketName string, recursive bool) error
 	GetPolicy(ctx context.Context, bucketName string) (*Policy, error)
 	SetPolicy(ctx context.Context, bucketName string, policy *Policy) error
 	DeletePolicy(ctx context.Context, bucketName string) error
@@ -80,9 +80,13 @@ func (s *bucketService) Exists(ctx context.Context, bucketName string) (bool, er
 }
 
 // Delete deletes a bucket.
-func (s *bucketService) Delete(ctx context.Context, bucketName string) error {
+func (s *bucketService) Delete(ctx context.Context, bucketName string, recursive bool) error {
 	if bucketName == "" {
 		return &InvalidBucketNameError{Name: bucketName}
+	}
+
+	if recursive {
+		ctx = WithForceDelete(ctx)
 	}
 
 	return s.client.minioClient.RemoveBucket(ctx, bucketName)

@@ -1,6 +1,7 @@
 package objectstorage
 
 import (
+	"net/http"
 	"strings"
 
 	"github.com/MagaluCloud/mgc-sdk-go/client"
@@ -90,6 +91,9 @@ func New(core *client.CoreClient, accessKey string, secretKey string, opts ...Cl
 		minioClient, err := minio.New(minioEndpoint, &minio.Options{
 			Creds:  credentials.NewStaticV4(accessKey, secretKey, ""),
 			Secure: true,
+			Transport: &forceDeleteTransport{
+				base: http.DefaultTransport,
+			},
 		})
 		if err != nil {
 			return nil, err

@@ -51,7 +51,7 @@ func TestBucketServiceDelete_InvalidBucketName(t *testing.T) {
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Buckets()
 
-	err := svc.Delete(context.Background(), "")
+	err := svc.Delete(context.Background(), "", false)
 
 	if err == nil {
 		t.Error("Delete() expected error for empty bucket name, got nil")
@@ -345,7 +345,21 @@ func TestBucketServiceDelete_ValidParameters(t *testing.T) {
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Buckets()
 
-	err := svc.Delete(context.Background(), "test-bucket")
+	err := svc.Delete(context.Background(), "test-bucket", false)
+
+	if err == nil {
+		t.Error("Delete() expected error due to no connection, got nil")
+	}
+}
+
+func TestBucketServiceDelete_ValidParametersWithRecursive(t *testing.T) {
+	t.Parallel()
+
+	core := client.NewMgcClient()
+	osClient, _ := New(core, "minioadmin", "minioadmin")
+	svc := osClient.Buckets()
+
+	err := svc.Delete(context.Background(), "test-bucket", true)
 
 	if err == nil {
 		t.Error("Delete() expected error due to no connection, got nil")

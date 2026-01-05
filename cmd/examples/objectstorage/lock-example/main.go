@@ -280,7 +280,7 @@ func main() {
 	// Step 16: Clean up - delete the bucket
 	fmt.Println("📍 Step 16: Clean up - delete bucket")
 	fmt.Printf("   Deleting bucket '%s'...\n", testBucketName)
-	err = osClient.Buckets().Delete(ctx, testBucketName)
+	err = osClient.Buckets().Delete(ctx, testBucketName, false)
 	if err != nil {
 		fmt.Printf("   ❌ Failed to delete bucket: %v\n", err)
 	} else {

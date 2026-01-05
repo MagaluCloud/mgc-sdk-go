@@ -454,7 +454,7 @@ func testDeleteBucket(ctx context.Context, osClient *objectstorage.ObjectStorage
 	fmt.Println("📝 Test 16: Delete Bucket")
 	fmt.Println("─────────────────────────────────────────────────────────────")
 
-	err := osClient.Buckets().Delete(ctx, testBucketName)
+	err := osClient.Buckets().Delete(ctx, testBucketName, true)
 	if err != nil {
 		fmt.Printf("❌ Failed: %v\n\n", err)
 		fmt.Printf("   Note: Bucket may not be empty or may not exist\n\n")
