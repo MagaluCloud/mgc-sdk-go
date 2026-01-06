@@ -84,11 +84,6 @@ type (
 	}
 )
 
-// NewReplicaService creates a new replica service instance
-func NewReplicaService(client *DBaaSClient) ReplicaService {
-	return &replicaService{client: client}
-}
-
 // List returns a paginated list of database replicas with optional source_id filter
 func (s *replicaService) List(ctx context.Context, opts ListReplicaOptions) (*ReplicasResponse, error) {
 	query := make(url.Values)
