@@ -41,7 +41,7 @@ func testClient(baseURL string) ReplicaService {
 	core := client.NewMgcClient(client.WithAPIKey("test-api-key"),
 		client.WithBaseURL(client.MgcUrl(baseURL)),
 		client.WithHTTPClient(httpClient))
-	return NewReplicaService(New(core))
+	return New(core).Replicas()
 }
 
 func TestReplicaService_List(t *testing.T) {
