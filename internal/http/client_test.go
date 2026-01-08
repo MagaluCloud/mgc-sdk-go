@@ -507,7 +507,7 @@ func TestMaxRetryAttemptsReached(t *testing.T) {
 
 	expectedMsgs := []string{
 		"max retry attempts reached",
-		"HTTP error: 503",
+		"HTTP error:\n Status: 503 Service Unavailable\n Body:",
 	}
 
 	for _, msg := range expectedMsgs {
@@ -779,7 +779,7 @@ func TestExecuteSimpleRequestWithRespBody(t *testing.T) {
 		if err == nil {
 			t.Fatal("Expected error, got nil")
 		}
-		if want := "max retry attempts reached: HTTP error: 500 500 Internal Server Error"; err.Error() != want {
+		if want := "max retry attempts reached: \nHTTP error:\n Status: 500 Internal Server Error\n Body: "; err.Error() != want {
 			t.Errorf("Unexpected error message:\nGot: %v\nWant: %v", err.Error(), want)
 		}
 	})
@@ -912,7 +912,7 @@ func TestExecuteSimpleRequest(t *testing.T) {
 		if err == nil {
 			t.Fatal("Expected error, got nil")
 		}
-		if want := "HTTP error: 400 400 Bad Request"; err.Error() != want {
+		if want := "\nHTTP error:\n Status: 400 Bad Request\n Body: "; err.Error() != want {
 			t.Errorf("Unexpected error message:\nGot: %v\nWant: %v", err.Error(), want)
 		}
 	})
@@ -1218,7 +1218,7 @@ func TestRetryError_Type(t *testing.T) {
 		t.Errorf("Expected 3 attempts, got %d", attempts)
 	}
 
-	expectedErrMsg := "max retry attempts reached: HTTP error: 503 503 Service Unavailable"
+	expectedErrMsg := "max retry attempts reached: \nHTTP error:\n Status: 503 Service Unavailable\n Body: "
 	if retryErr.Error() != expectedErrMsg {
 		t.Errorf("Expected error message %q, got %q", expectedErrMsg, retryErr.Error())
 	}
