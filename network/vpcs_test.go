@@ -339,6 +339,7 @@ func TestVPCService_CreatePort(t *testing.T) {
 				HasPIP:         helpers.BoolPtr(true),
 				Subnets:        &[]string{"subnet1"},
 				SecurityGroups: &[]string{"sg1"},
+				IPAddress:      helpers.StrPtr("172.18.10.155"),
 			},
 			opts: PortCreateOptions{
 				Zone: helpers.StrPtr("zone1"),
@@ -362,7 +363,6 @@ func TestVPCService_CreatePort(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

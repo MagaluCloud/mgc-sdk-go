@@ -43,6 +43,9 @@ func main() {
 
 	fmt.Println("\n=== NAT Gateway Examples ===")
 	demoNATGatewayOperations(networkClient)
+
+	fmt.Println("\n=== Private IP Examples ===")
+	demoPrivateIPOperations(networkClient)
 }
 
 func createNetworkClient() *network.NetworkClient {
@@ -165,7 +168,8 @@ func createSubnet(networkClient *network.NetworkClient, vpcID string) string {
 
 	createReq := network.SubnetCreateRequest{
 		Name:        "example-subnet",
-		CIDRBlock:   "192.168.1.0/24",
+		CIDRBlock:   "172.18.106.0/24",
+		IPVersion:   4,
 		Description: helpers.StrPtr("Subnet created via SDK example"),
 	}
 
@@ -558,7 +562,7 @@ func demoPublicIPOperations(networkClient *network.NetworkClient) {
 	vpcID := createVPC(networkClient)
 	defer cleanupVPC(networkClient, vpcID)
 
-	portID := createPort(networkClient, vpcID, "test-port-for-pip", true)
+	portID := createPort(networkClient, vpcID, "test-port-for-pip", true, nil, nil)
 
 	listPublicIPs(networkClient)
 
@@ -673,7 +677,7 @@ func demoPortOperations(networkClient *network.NetworkClient) {
 	sgID := createSecurityGroup(networkClient)
 	defer deleteSecurityGroup(networkClient, sgID)
 
-	portID := createPort(networkClient, vpcID, "example-port", false)
+	portID := createPort(networkClient, vpcID, "example-port", false, nil, nil)
 
 	getPortDetails(networkClient, portID)
 
@@ -687,7 +691,7 @@ func demoPortOperations(networkClient *network.NetworkClient) {
 	updatePort(networkClient, portID)
 }
 
-func createPort(networkClient *network.NetworkClient, vpcID, name string, hasPIP bool) string {
+func createPort(networkClient *network.NetworkClient, vpcID, name string, hasPIP bool, ipAddress *string, subnets *[]string) string {
 	ctx, cancel := getContext()
 	defer cancel()
 
@@ -695,6 +699,14 @@ func createPort(networkClient *network.NetworkClient, vpcID, name string, hasPIP
 		Name:   name,
 		HasPIP: helpers.BoolPtr(hasPIP),
 		HasSG:  helpers.BoolPtr(true),
+	}
+
+	if ipAddress != nil {
+		portReq.IPAddress = ipAddress
+	}
+
+	if subnets != nil {
+		portReq.Subnets = subnets
 	}
 
 	options := network.PortCreateOptions{
@@ -891,4 +903,17 @@ func updatePort(networkClient *network.NetworkClient, portID string) {
 	}
 
 	fmt.Printf("Port %s updated successfully\n", portID)
+}
+
+func demoPrivateIPOperations(networkClient *network.NetworkClient) {
+	vpcID := createVPC(networkClient)
+	defer cleanupVPC(networkClient, vpcID)
+
+	subnetID := createSubnet(networkClient, vpcID)
+
+	subnets := []string{subnetID}
+
+	ipAddress := "172.18.106.10"
+
+	createPort(networkClient, vpcID, "port-example", false, &ipAddress, &subnets)
 }

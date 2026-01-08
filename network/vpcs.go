@@ -76,6 +76,7 @@ type (
 		HasSG          *bool     `json:"has_sg,omitempty"`
 		Subnets        *[]string `json:"subnets,omitempty"`
 		SecurityGroups *[]string `json:"security_groups_id,omitempty"`
+		IPAddress      *string   `json:"ip_address,omitempty"`
 	}
 
 	// PortCreateOptions represents additional options for port creation

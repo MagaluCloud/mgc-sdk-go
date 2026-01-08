@@ -163,7 +163,12 @@ func Do[T any](c *client.Config, ctx context.Context, req *http.Request, v *T) (
 		}
 
 		if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
-			lastError = client.NewHTTPError(resp)
+			httpError := client.NewHTTPError(resp)
+
+			lastError = fmt.Errorf(
+				"\nHTTP error:\n Status: %s\n Body: %s", httpError.Status, httpError.Body,
+			)
+
 			if !retry.ShouldRetry(resp.StatusCode) {
 				return nil, lastError
 			}
