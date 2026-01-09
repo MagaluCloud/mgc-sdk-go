@@ -19,6 +19,8 @@ func main() {
 	ExampleListInstances()
 	ExampleListAllInstances()
 	ExampleCreateInstance()
+	ExampleUpdateInstance()
+	ExampleGetInstance()
 	ExampleListClusters()
 	ExampleListAllClusters()
 	ExampleCreateCluster()
@@ -208,20 +210,80 @@ func ExampleCreateInstance() {
 	instance, err := dbaasClient.Instances().Create(context.Background(), dbaas.InstanceCreateRequest{
 		Name:           "example-db-instance",
 		EngineID:       helpers.StrPtr("063f3994-b6c2-4c37-96c9-bab8d82d36f7"), // Replace with actual engine ID
-		InstanceTypeID: helpers.StrPtr("8bbe8e01-40c8-4d2b-80e8-189debc44b1c"), // Replace with actual instance type ID
+		InstanceTypeID: helpers.StrPtr("6111d89a-3bc0-41e6-98c2-fb23bfa5a56a"), // Replace with actual instance type ID
 		User:           "dbadmin",
 		Password:       "YourStrongPassword123!",
 		Volume: dbaas.InstanceVolumeRequest{
 			Size: 20, // Size in GiB
 			Type: "CLOUD_NVME15K",
 		},
-		BackupStartAt: helpers.StrPtr("02:00"), // Start backup at 2 AM
+		BackupStartAt:     helpers.StrPtr("02:00"), // Start backup at 2 AM
+		DeletionProtected: helpers.BoolPtr(true),
 	})
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	fmt.Printf("Successfully created database instance with ID: %s\n", instance.ID)
+}
+
+func ExampleUpdateInstance() {
+	apiToken := os.Getenv("MGC_API_TOKEN")
+	if apiToken == "" {
+		log.Fatal("MGC_API_TOKEN environment variable is not set")
+	}
+	c := client.NewMgcClient(client.WithAPIKey(apiToken))
+	dbaasClient := dbaas.New(c)
+
+	instanceId := "your-instance-id"
+
+	// Create a new database instance
+	instance, err := dbaasClient.Instances().Update(
+		context.Background(),
+		instanceId,
+		dbaas.DatabaseInstanceUpdateRequest{
+			DeletionProtected: helpers.BoolPtr(true),
+		},
+	)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Printf("Successfully updating database instance with ID: %s\n", instance.ID)
+}
+
+func ExampleGetInstance() {
+	apiToken := os.Getenv("MGC_API_TOKEN")
+	if apiToken == "" {
+		log.Fatal("MGC_API_TOKEN environment variable is not set")
+	}
+	c := client.NewMgcClient(client.WithAPIKey(apiToken))
+	dbaasClient := dbaas.New(c)
+
+	instanceId := "your-instance-id"
+
+	// Create a new database instance
+	instance, err := dbaasClient.Instances().Get(
+		context.Background(),
+		instanceId,
+		dbaas.GetInstanceOptions{},
+	)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Printf("ID: %s\n", instance.ID)
+	fmt.Printf("Status: %s\n", instance.Status)
+	fmt.Printf("Volume: %d GiB\n", instance.Volume.Size)
+	fmt.Printf("Name: %s\n", instance.Name)
+	fmt.Printf("Engine ID: %s\n", instance.EngineID)
+	fmt.Printf("Instance Type ID: %s\n", instance.InstanceTypeID)
+	fmt.Printf("Deletion Protected: %v\n", instance.DeletionProtected)
+	fmt.Printf("Generation: %s\n", instance.Generation)
+	fmt.Printf("Parameter Group ID: %s\n", instance.ParameterGroupID)
+	fmt.Printf("Availability Zone: %s\n", instance.AvailabilityZone)
+	fmt.Printf("Backup Retention Days: %d\n", instance.BackupRetentionDays)
+	fmt.Printf("Backup Start at: %s\n", instance.BackupStartAt)
 }
 
 func ExampleListClusters() {
@@ -311,6 +373,7 @@ func ExampleCreateCluster() {
 		// ParameterGroupID:    &paramGroupID,
 		BackupRetentionDays: &backupRetention,
 		BackupStartAt:       helpers.StrPtr("03:00"), // Start backup at 3 AM
+		DeletionProtected:   helpers.BoolPtr(true),
 	})
 	if err != nil {
 		log.Fatal(err)
@@ -341,6 +404,7 @@ func ExampleGetCluster() {
 	fmt.Printf("  Volume Size: %d GiB\n", cluster.Volume.Size)
 	fmt.Printf("  Created At: %s\n", cluster.CreatedAt)
 	fmt.Printf("  Apply Parameters Pending: %v\n", cluster.ApplyParametersPending)
+	fmt.Printf("  Deletion Protected: %v\n", cluster.DeletionProtected)
 }
 
 func ExampleUpdateCluster() {
@@ -359,6 +423,7 @@ func ExampleUpdateCluster() {
 		ParameterGroupID:    &newParamGroupID,
 		BackupRetentionDays: &newBackupRetention,
 		BackupStartAt:       helpers.StrPtr("04:30"),
+		DeletionProtected:   helpers.BoolPtr(true),
 	})
 	if err != nil {
 		log.Fatal(err)
@@ -368,6 +433,7 @@ func ExampleUpdateCluster() {
 	fmt.Printf("  New Parameter Group ID: %s\n", updatedCluster.ParameterGroupID)
 	fmt.Printf("  New Backup Retention: %d days\n", updatedCluster.BackupRetentionDays)
 	fmt.Printf("  New Backup Start Time: %s\n", updatedCluster.BackupStartAt)
+	fmt.Printf("  New Deletion Protected: %v\n", updatedCluster.DeletionProtected)
 }
 
 // Example for parameter groups

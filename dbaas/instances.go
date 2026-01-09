@@ -121,6 +121,7 @@ type (
 		AvailabilityZone    *string               `json:"availability_zone,omitempty"`
 		BackupStartAt       *string               `json:"backup_start_at,omitempty"`
 		BackupRetentionDays *int                  `json:"backup_retention_days,omitempty"`
+		DeletionProtected   *bool                 `json:"deletion_protected,omitempty"`
 	}
 
 	// InstanceResizeRequest represents the request payload for resizing an instance
@@ -134,6 +135,7 @@ type (
 		BackupRetentionDays *int    `json:"backup_retention_days,omitempty"`
 		BackupStartAt       *string `json:"backup_start_at,omitempty"`
 		ParameterGroupID    *string `json:"parameter_group_id,omitempty"`
+		DeletionProtected   *bool   `json:"deletion_protected,omitempty"`
 	}
 
 	// ReplicaAddressResponse represents a replica address
@@ -311,6 +313,7 @@ type (
 		FinishedAt             *string                 `json:"finished_at,omitempty"`
 		MaintenanceScheduledAt *string                 `json:"maintenance_scheduled_at,omitempty"`
 		Replicas               []ReplicaDetailResponse `json:"replicas,omitempty"`
+		DeletionProtected      bool                    `json:"deletion_protected"`
 	}
 )
 
