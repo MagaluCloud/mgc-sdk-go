@@ -373,6 +373,7 @@ func ExampleCreateCluster() {
 		// ParameterGroupID:    &paramGroupID,
 		BackupRetentionDays: &backupRetention,
 		BackupStartAt:       helpers.StrPtr("03:00"), // Start backup at 3 AM
+		DeletionProtected:   helpers.BoolPtr(true),
 	})
 	if err != nil {
 		log.Fatal(err)
@@ -403,6 +404,7 @@ func ExampleGetCluster() {
 	fmt.Printf("  Volume Size: %d GiB\n", cluster.Volume.Size)
 	fmt.Printf("  Created At: %s\n", cluster.CreatedAt)
 	fmt.Printf("  Apply Parameters Pending: %v\n", cluster.ApplyParametersPending)
+	fmt.Printf("  Deletion Protected: %v\n", cluster.DeletionProtected)
 }
 
 func ExampleUpdateCluster() {
@@ -421,6 +423,7 @@ func ExampleUpdateCluster() {
 		ParameterGroupID:    &newParamGroupID,
 		BackupRetentionDays: &newBackupRetention,
 		BackupStartAt:       helpers.StrPtr("04:30"),
+		DeletionProtected:   helpers.BoolPtr(true),
 	})
 	if err != nil {
 		log.Fatal(err)
@@ -430,6 +433,7 @@ func ExampleUpdateCluster() {
 	fmt.Printf("  New Parameter Group ID: %s\n", updatedCluster.ParameterGroupID)
 	fmt.Printf("  New Backup Retention: %d days\n", updatedCluster.BackupRetentionDays)
 	fmt.Printf("  New Backup Start Time: %s\n", updatedCluster.BackupStartAt)
+	fmt.Printf("  New Deletion Protected: %v\n", updatedCluster.DeletionProtected)
 }
 
 // Example for parameter groups
