@@ -85,14 +85,22 @@ type BucketVersioningConfiguration struct {
 	Status VersioningStatus `json:"Status,omitempty"`
 }
 
+type ObjectOwner struct {
+	DisplayName string `json:"display_name,omitempty"`
+	ID          string `json:"id,omitempty"`
+}
+
 // ObjectVersion represents a version of an object in a versioned bucket.
 type ObjectVersion struct {
-	Key            string    `json:"key"`
-	VersionID      string    `json:"version_id"`
-	Size           int64     `json:"size"`
-	LastModified   time.Time `json:"last_modified"`
-	IsDeleteMarker bool      `json:"is_delete_marker"`
-	ETag           string    `json:"etag,omitempty"`
+	Key            string      `json:"key"`
+	VersionID      string      `json:"version_id"`
+	Size           int64       `json:"size"`
+	LastModified   time.Time   `json:"last_modified"`
+	IsDeleteMarker bool        `json:"is_delete_marker"`
+	ETag           string      `json:"etag,omitempty"`
+	StorageClass   string      `json:"storage_class,omitempty"`
+	IsLatest       bool        `json:"is_latest"`
+	Owner          ObjectOwner `json:"owner"`
 }
 
 // DownloadOptions defines optional parameters for downloading objects.

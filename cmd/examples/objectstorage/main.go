@@ -138,15 +138,19 @@ func runE2ETest(ctx context.Context, osClient *objectstorage.ObjectStorageClient
 	testGetPresignedURL(ctx, osClient)
 	pause()
 
-	// Step 15: Delete bucket CORS
+	// Step 15: List all object versions
+	testListAllVersions(ctx, osClient)
+	pause()
+
+	// Step 16: Delete bucket CORS
 	testDeleteBucketCORS(ctx, osClient)
 	pause()
 
-	// Step 16: Delete object
+	// Step 17: Delete object
 	testDeleteObject(ctx, osClient)
 	pause()
 
-	// Step 17: Delete bucket
+	// Step 18: Delete bucket
 	testDeleteBucket(ctx, osClient)
 	pause()
 
@@ -458,8 +462,32 @@ func testGetPresignedURL(ctx context.Context, osClient *objectstorage.ObjectStor
 	fmt.Printf("✅ Presigned PUT URL retrieved: %s\n\n", presignedURL.URL)
 }
 
+func testListAllVersions(ctx context.Context, osClient *objectstorage.ObjectStorageClient) {
+	fmt.Println("📝 Test 15: List all object versions")
+	fmt.Println("─────────────────────────────────────────────────────────────")
+
+	versions, err := osClient.Objects().ListAllVersions(ctx, testBucketName, testObjectKey)
+	if err != nil {
+		fmt.Printf("❌ Failed to list object versions: %v\n\n", err)
+		return
+	}
+
+	fmt.Printf("✅ Listed %d version(s) for object %s:\n", len(versions), testObjectKey)
+	for _, v := range versions {
+		fmt.Printf("   Version ID: %s\n", v.VersionID)
+		fmt.Printf("      Key: %s\n", v.Key)
+		fmt.Printf("      Size: %d bytes\n", v.Size)
+		fmt.Printf("      Last Modified: %s\n", v.LastModified)
+		fmt.Printf("      Is Latest: %t\n", v.IsLatest)
+		fmt.Printf("      Is Delete Marker: %t\n", v.IsDeleteMarker)
+		fmt.Printf("      Storage Class: %s\n", v.StorageClass)
+		fmt.Printf("      ETag: %s\n", v.ETag)
+	}
+	fmt.Println()
+}
+
 func testDeleteBucketCORS(ctx context.Context, osClient *objectstorage.ObjectStorageClient) {
-	fmt.Println("📝 Test 15: Delete Bucket CORS")
+	fmt.Println("📝 Test 16: Delete Bucket CORS")
 	fmt.Println("─────────────────────────────────────────────────────────────")
 
 	err := osClient.Buckets().DeleteCORS(ctx, testBucketName)
@@ -472,7 +500,7 @@ func testDeleteBucketCORS(ctx context.Context, osClient *objectstorage.ObjectSto
 }
 
 func testDeleteObject(ctx context.Context, osClient *objectstorage.ObjectStorageClient) {
-	fmt.Println("📝 Test 16: Delete Object")
+	fmt.Println("📝 Test 17: Delete Object")
 	fmt.Println("─────────────────────────────────────────────────────────────")
 
 	err := osClient.Objects().Delete(ctx, testBucketName, testObjectKey, nil)
@@ -485,7 +513,7 @@ func testDeleteObject(ctx context.Context, osClient *objectstorage.ObjectStorage
 }
 
 func testDeleteBucket(ctx context.Context, osClient *objectstorage.ObjectStorageClient) {
-	fmt.Println("📝 Test 17: Delete Bucket")
+	fmt.Println("📝 Test 18: Delete Bucket")
 	fmt.Println("─────────────────────────────────────────────────────────────")
 
 	err := osClient.Buckets().Delete(ctx, testBucketName, true)

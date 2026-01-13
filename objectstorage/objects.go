@@ -19,6 +19,7 @@ type ObjectService interface {
 	List(ctx context.Context, bucketName string, opts ObjectListOptions) ([]Object, error)
 	ListAll(ctx context.Context, bucketName string, opts ObjectFilterOptions) ([]Object, error)
 	ListVersions(ctx context.Context, bucketName string, objectKey string, opts *ListVersionsOptions) ([]ObjectVersion, error)
+	ListAllVersions(ctx context.Context, bucketName string, objectKey string) ([]ObjectVersion, error)
 	Delete(ctx context.Context, bucketName string, objectKey string, opts *DeleteOptions) error
 	Metadata(ctx context.Context, bucketName string, objectKey string, opts *MetadataOptions) (*Object, error)
 	LockObject(ctx context.Context, bucketName string, objectKey string, retainUntilDate time.Time) error
@@ -381,6 +382,46 @@ func (s *objectService) ListVersions(ctx context.Context, bucketName string, obj
 			}
 			count++
 		}
+	}
+
+	return result, nil
+}
+
+func (s *objectService) ListAllVersions(ctx context.Context, bucketName string, objectKey string) ([]ObjectVersion, error) {
+	if bucketName == "" {
+		return nil, &InvalidBucketNameError{Name: bucketName}
+	}
+
+	if objectKey == "" {
+		return nil, &InvalidObjectKeyError{Key: objectKey}
+	}
+
+	result := make([]ObjectVersion, 0)
+	objectVersionCh := s.client.minioClient.ListObjects(ctx, bucketName, minio.ListObjectsOptions{
+		Prefix:       objectKey,
+		Recursive:    true,
+		WithVersions: true,
+	})
+
+	for objectInfo := range objectVersionCh {
+		if objectInfo.Err != nil {
+			return nil, objectInfo.Err
+		}
+
+		result = append(result, ObjectVersion{
+			Key:            objectInfo.Key,
+			VersionID:      objectInfo.VersionID,
+			Size:           objectInfo.Size,
+			LastModified:   objectInfo.LastModified,
+			ETag:           objectInfo.ETag,
+			IsDeleteMarker: objectInfo.IsDeleteMarker,
+			IsLatest:       objectInfo.IsLatest,
+			Owner: ObjectOwner{
+				DisplayName: objectInfo.Owner.DisplayName,
+				ID:          objectInfo.Owner.ID,
+			},
+			StorageClass: objectInfo.StorageClass,
+		})
 	}
 
 	return result, nil
