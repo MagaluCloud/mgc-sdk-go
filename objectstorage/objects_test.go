@@ -562,7 +562,7 @@ func TestObjectServiceMetadata(t *testing.T) {
 			osClient, _ := New(core, "minioadmin", "minioadmin")
 			svc := osClient.Objects()
 
-			_, err := svc.Metadata(context.Background(), tt.bucketName, tt.objectKey)
+			_, err := svc.Metadata(context.Background(), tt.bucketName, tt.objectKey, nil)
 
 			if tt.wantErr && err == nil {
 				t.Errorf("Metadata() expected error, got nil")
@@ -578,7 +578,7 @@ func TestObjectServiceMetadata_ValidParameters(t *testing.T) {
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Objects()
 
-	_, err := svc.Metadata(context.Background(), "test-bucket", "test-key")
+	_, err := svc.Metadata(context.Background(), "test-bucket", "test-key", nil)
 
 	if err == nil {
 		t.Error("Metadata() expected error due to no connection, got nil")
@@ -593,7 +593,9 @@ func TestObjectServiceMetadata_WithVersionID(t *testing.T) {
 	svc := osClient.Objects()
 
 	// Test retrieving metadata - this exercises the success path up to the MinIO call
-	_, err := svc.Metadata(context.Background(), "test-bucket", "test-key")
+	_, err := svc.Metadata(context.Background(), "test-bucket", "test-key", &MetadataOptions{
+		VersionID: "version-id",
+	})
 
 	// Expected to fail due to no connection, but validates parameter handling
 	if err == nil {

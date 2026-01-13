@@ -239,7 +239,7 @@ func testObjectMetadata(ctx context.Context, osClient *objectstorage.ObjectStora
 	fmt.Println("📝 Test 5: Get Object Metadata")
 	fmt.Println("─────────────────────────────────────────────────────────────")
 
-	obj, err := osClient.Objects().Metadata(ctx, testBucketName, testObjectKey)
+	obj, err := osClient.Objects().Metadata(ctx, testBucketName, testObjectKey, nil)
 	if err != nil {
 		fmt.Printf("❌ Failed: %v\n\n", err)
 		return
@@ -250,7 +250,8 @@ func testObjectMetadata(ctx context.Context, osClient *objectstorage.ObjectStora
 	fmt.Printf("   Size: %d bytes\n", obj.Size)
 	fmt.Printf("   Content-Type: %s\n", obj.ContentType)
 	fmt.Printf("   Last Modified: %s\n", obj.LastModified)
-	fmt.Printf("   ETag: %s\n\n", obj.ETag)
+	fmt.Printf("   ETag: %s\n", obj.ETag)
+	fmt.Printf("   Storage Class: %s\n\n", obj.StorageClass)
 }
 
 func testDownloadObject(ctx context.Context, osClient *objectstorage.ObjectStorageClient) {

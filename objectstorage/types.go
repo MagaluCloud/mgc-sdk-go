@@ -15,6 +15,7 @@ type Object struct {
 	LastModified time.Time `json:"last_modified"`
 	ETag         string    `json:"etag,omitempty"`
 	ContentType  string    `json:"content_type,omitempty"`
+	StorageClass string    `json:"storage_class,omitempty"`
 }
 
 // BucketListOptions defines parameters for filtering and pagination of bucket lists.
@@ -119,4 +120,8 @@ type ObjectLockInfo struct {
 	Mode            string     `json:"mode,omitempty"`
 	RetainUntilDate *time.Time `json:"retain_until_date,omitempty"`
 	Locked          bool       `json:"locked"`
+}
+
+type MetadataOptions struct {
+	VersionID string `json:"version_id,omitempty"`
 }

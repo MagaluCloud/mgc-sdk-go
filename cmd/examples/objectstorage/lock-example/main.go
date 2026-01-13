@@ -210,7 +210,7 @@ func main() {
 	// Step 11: Get object metadata
 	fmt.Println("📍 Step 11: Get object metadata")
 	fmt.Printf("   Retrieving metadata for '%s'...\n", testObjectKey)
-	metadata, err := osClient.Objects().Metadata(ctx, testBucketName, testObjectKey)
+	metadata, err := osClient.Objects().Metadata(ctx, testBucketName, testObjectKey, nil)
 	if err != nil {
 		fmt.Printf("   ❌ Failed to get metadata: %v\n", err)
 	} else {
@@ -221,6 +221,7 @@ func main() {
 		fmt.Printf("      - Content-Type: %s\n", metadata.ContentType)
 		fmt.Printf("      - Last Modified: %s\n", metadata.LastModified.Format("2006-01-02 15:04:05"))
 		fmt.Printf("      - ETag: %s\n", metadata.ETag)
+		fmt.Printf("      - Storage Class: %s\n", metadata.StorageClass)
 	}
 	fmt.Println()
 	pause()

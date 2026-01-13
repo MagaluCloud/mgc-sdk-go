@@ -18,7 +18,7 @@ type ObjectService interface {
 	ListAll(ctx context.Context, bucketName string, opts ObjectFilterOptions) ([]Object, error)
 	ListVersions(ctx context.Context, bucketName string, objectKey string, opts *ListVersionsOptions) ([]ObjectVersion, error)
 	Delete(ctx context.Context, bucketName string, objectKey string, opts *DeleteOptions) error
-	Metadata(ctx context.Context, bucketName string, objectKey string) (*Object, error)
+	Metadata(ctx context.Context, bucketName string, objectKey string, opts *MetadataOptions) (*Object, error)
 	LockObject(ctx context.Context, bucketName string, objectKey string, retainUntilDate time.Time) error
 	UnlockObject(ctx context.Context, bucketName string, objectKey string) error
 	GetObjectLockStatus(ctx context.Context, bucketName string, objectKey string) (bool, error)
@@ -198,7 +198,7 @@ func (s *objectService) Delete(ctx context.Context, bucketName string, objectKey
 }
 
 // Metadata returns metadata about an object.
-func (s *objectService) Metadata(ctx context.Context, bucketName string, objectKey string) (*Object, error) {
+func (s *objectService) Metadata(ctx context.Context, bucketName string, objectKey string, opts *MetadataOptions) (*Object, error) {
 	if bucketName == "" {
 		return nil, &InvalidBucketNameError{Name: bucketName}
 	}
@@ -207,9 +207,19 @@ func (s *objectService) Metadata(ctx context.Context, bucketName string, objectK
 		return nil, &InvalidObjectKeyError{Key: objectKey}
 	}
 
-	info, err := s.client.minioClient.StatObject(ctx, bucketName, objectKey, minio.StatObjectOptions{})
+	metadataOpts := minio.StatObjectOptions{}
+	if opts != nil && opts.VersionID != "" {
+		metadataOpts.VersionID = opts.VersionID
+	}
+
+	info, err := s.client.minioClient.StatObject(ctx, bucketName, objectKey, metadataOpts)
 	if err != nil {
 		return nil, err
+	}
+
+	storageClass := ""
+	if val, ok := info.Metadata["X-Amz-Storage-Class"]; ok && len(val) > 0 {
+		storageClass = val[0]
 	}
 
 	return &Object{
@@ -218,6 +228,7 @@ func (s *objectService) Metadata(ctx context.Context, bucketName string, objectK
 		LastModified: info.LastModified,
 		ETag:         info.ETag,
 		ContentType:  info.ContentType,
+		StorageClass: storageClass,
 	}, nil
 }
 
