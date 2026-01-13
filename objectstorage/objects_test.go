@@ -741,6 +741,56 @@ func TestObjectServiceGetObjectLockStatus(t *testing.T) {
 	}
 }
 
+func TestObjectServiceGetObjectLockInfo_InvalidBucketName(t *testing.T) {
+	t.Parallel()
+
+	core := client.NewMgcClient()
+	osClient, _ := New(core, "minioadmin", "minioadmin")
+	svc := osClient.Objects()
+
+	_, err := svc.GetObjectLockInfo(context.Background(), "", "test-key")
+
+	if err == nil {
+		t.Error("GetObjectLockInfo() expected error for empty bucket name, got nil")
+	}
+
+	if _, ok := err.(*InvalidBucketNameError); !ok {
+		t.Errorf("GetObjectLockInfo() expected InvalidBucketNameError, got %T", err)
+	}
+}
+
+func TestObjectServiceGetObjectLockInfo_InvalidObjectKey(t *testing.T) {
+	t.Parallel()
+
+	core := client.NewMgcClient()
+	osClient, _ := New(core, "minioadmin", "minioadmin")
+	svc := osClient.Objects()
+
+	_, err := svc.GetObjectLockInfo(context.Background(), "test-bucket", "")
+
+	if err == nil {
+		t.Error("GetObjectLockInfo() expected error for empty object key, got nil")
+	}
+
+	if _, ok := err.(*InvalidObjectKeyError); !ok {
+		t.Errorf("GetObjectLockInfo() expected InvalidObjectKeyError, got %T", err)
+	}
+}
+
+func TestObjectServiceGetObjectLockInfo(t *testing.T) {
+	t.Parallel()
+
+	core := client.NewMgcClient()
+	osClient, _ := New(core, "minioadmin", "minioadmin")
+	svc := osClient.Objects()
+
+	_, err := svc.GetObjectLockInfo(context.Background(), "test-bucket", "test-key")
+
+	if err == nil {
+		t.Error("GetObjectLockInfo() expected error due to no connection, got nil")
+	}
+}
+
 // Versioning tests
 
 func TestObjectServiceListVersions_InvalidBucketName(t *testing.T) {

@@ -22,6 +22,7 @@ type ObjectService interface {
 	LockObject(ctx context.Context, bucketName string, objectKey string, retainUntilDate time.Time) error
 	UnlockObject(ctx context.Context, bucketName string, objectKey string) error
 	GetObjectLockStatus(ctx context.Context, bucketName string, objectKey string) (bool, error)
+	GetObjectLockInfo(ctx context.Context, bucketName string, objectKey string) (*ObjectLockInfo, error)
 }
 
 // objectService implements the ObjectService interface.
@@ -276,6 +277,8 @@ func (s *objectService) GetObjectLockStatus(ctx context.Context, bucketName stri
 		return false, &InvalidObjectKeyError{Key: objectKey}
 	}
 
+	ctx = WithFixRetentionTime(ctx)
+
 	mode, _, err := s.client.minioClient.GetObjectRetention(ctx, bucketName, objectKey, "")
 	if err != nil {
 		return false, err
@@ -285,6 +288,36 @@ func (s *objectService) GetObjectLockStatus(ctx context.Context, bucketName stri
 	isLocked := mode != nil
 
 	return isLocked, nil
+}
+
+// GetObjectLockInfo retrieves the lock information of an object.
+func (s *objectService) GetObjectLockInfo(ctx context.Context, bucketName string, objectKey string) (*ObjectLockInfo, error) {
+	if bucketName == "" {
+		return nil, &InvalidBucketNameError{Name: bucketName}
+	}
+
+	if objectKey == "" {
+		return nil, &InvalidObjectKeyError{Key: objectKey}
+	}
+
+	ctx = WithFixRetentionTime(ctx)
+
+	mode, retentionUntilDate, err := s.client.minioClient.GetObjectRetention(ctx, bucketName, objectKey, "")
+	if err != nil {
+		return nil, err
+	}
+
+	if mode == nil {
+		return &ObjectLockInfo{
+			Locked: false,
+		}, nil
+	}
+
+	return &ObjectLockInfo{
+		Locked:          true,
+		Mode:            mode.String(),
+		RetainUntilDate: retentionUntilDate,
+	}, nil
 }
 
 // ListVersions retrieves all versions of an object from a versioned bucket.

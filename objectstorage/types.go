@@ -114,3 +114,9 @@ type ListVersionsOptions struct {
 	Limit  *int `json:"_limit,omitempty"`
 	Offset *int `json:"_offset,omitempty"`
 }
+
+type ObjectLockInfo struct {
+	Mode            string     `json:"mode,omitempty"`
+	RetainUntilDate *time.Time `json:"retain_until_date,omitempty"`
+	Locked          bool       `json:"locked"`
+}
