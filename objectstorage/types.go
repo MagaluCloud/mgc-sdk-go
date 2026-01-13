@@ -125,3 +125,12 @@ type ObjectLockInfo struct {
 type MetadataOptions struct {
 	VersionID string `json:"version_id,omitempty"`
 }
+
+type GetPresignedURLOptions struct {
+	Method          string         `json:"method,omitempty"`
+	ExpiryInSeconds *time.Duration `json:"expiry_in_seconds,omitempty"`
+}
+
+type PresignedURL struct {
+	URL string `json:"url"`
+}
