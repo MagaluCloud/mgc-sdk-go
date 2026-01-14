@@ -85,7 +85,7 @@ func main() {
 	// Step 2: Upload an object
 	fmt.Println("📍 Step 2: Upload object to bucket")
 	fmt.Printf("   Uploading '%s'...\n", testObjectKey)
-	err = osClient.Objects().Upload(ctx, testBucketName, testObjectKey, []byte(testObjectData), "text/plain")
+	err = osClient.Objects().Upload(ctx, testBucketName, testObjectKey, []byte(testObjectData), "text/plain", "standard")
 	if err != nil {
 		fmt.Printf("   ❌ Failed to upload object: %v\n", err)
 	} else {

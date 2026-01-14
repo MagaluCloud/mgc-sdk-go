@@ -233,6 +233,7 @@ func testUploadObject(ctx context.Context, osClient *objectstorage.ObjectStorage
 		testObjectKey,
 		[]byte(testObjectData),
 		"text/plain",
+		"standard",
 	)
 	if err != nil {
 		fmt.Printf("❌ Failed: %v\n\n", err)

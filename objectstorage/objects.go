@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"net/url"
 	"regexp"
+	"slices"
+	"strings"
 	"time"
 
 	"github.com/minio/minio-go/v7"
@@ -14,7 +16,7 @@ import (
 
 // ObjectService provides operations for managing objects.
 type ObjectService interface {
-	Upload(ctx context.Context, bucketName string, objectKey string, data []byte, contentType string) error
+	Upload(ctx context.Context, bucketName string, objectKey string, data []byte, contentType string, storageClass string) error
 	Download(ctx context.Context, bucketName string, objectKey string, opts *DownloadOptions) ([]byte, error)
 	DownloadStream(ctx context.Context, bucketName string, objectKey string, opts *DownloadStreamOptions) (io.Reader, error)
 	List(ctx context.Context, bucketName string, opts ObjectListOptions) ([]Object, error)
@@ -36,7 +38,7 @@ type objectService struct {
 }
 
 // Upload uploads an object to a bucket.
-func (s *objectService) Upload(ctx context.Context, bucketName string, objectKey string, data []byte, contentType string) error {
+func (s *objectService) Upload(ctx context.Context, bucketName string, objectKey string, data []byte, contentType string, storageClass string) error {
 	if bucketName == "" {
 		return &InvalidBucketNameError{Name: bucketName}
 	}
@@ -49,8 +51,15 @@ func (s *objectService) Upload(ctx context.Context, bucketName string, objectKey
 		return &InvalidObjectDataError{Message: "object data cannot be empty"}
 	}
 
+	validStorageClasses := []string{"standard", "cold_instant"}
+
+	if !slices.Contains(validStorageClasses, strings.ToLower(storageClass)) {
+		return &InvalidObjectDataError{Message: "invalid storage class. Valid options are 'standard' and 'cold_instant'"}
+	}
+
 	_, err := s.client.minioClient.PutObject(ctx, bucketName, objectKey, bytes.NewReader(data), int64(len(data)), minio.PutObjectOptions{
-		ContentType: contentType,
+		ContentType:  contentType,
+		StorageClass: storageClass,
 	})
 
 	return err
