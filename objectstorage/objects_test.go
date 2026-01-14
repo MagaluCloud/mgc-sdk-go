@@ -291,6 +291,16 @@ func TestObjectServiceList(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name:       "with filter",
+			bucketName: "test-bucket",
+			opts: ObjectListOptions{
+				Filter: &[]ObjectListFilter{
+					{Include: "images"},
+				},
+			},
+			wantErr: false,
+		},
 	}
 
 	for _, tt := range tests {
@@ -530,6 +540,17 @@ func TestObjectServiceListWithOptions(t *testing.T) {
 		})
 		if err == nil {
 			t.Error("List() with all options expected error due to no connection, got nil")
+		}
+	})
+
+	t.Run("with Filter", func(t *testing.T) {
+		_, err := svc.List(context.Background(), "test-bucket", ObjectListOptions{
+			Filter: &[]ObjectListFilter{
+				{Exclude: "folder/"},
+			},
+		})
+		if err == nil {
+			t.Error("List() with Filter expected error due to no connection, got nil")
 		}
 	})
 }
@@ -1188,6 +1209,9 @@ func TestObjectListOptions(t *testing.T) {
 		Offset:    &offset,
 		Prefix:    "uploads/",
 		Delimiter: "/",
+		Filter: &[]ObjectListFilter{
+			{Include: "text", Exclude: "image"},
+		},
 	}
 
 	if opts.Limit == nil || *opts.Limit != 20 {
@@ -1204,6 +1228,14 @@ func TestObjectListOptions(t *testing.T) {
 
 	if opts.Delimiter != "/" {
 		t.Errorf("ObjectListOptions.Delimiter expected '/', got %q", opts.Delimiter)
+	}
+
+	if (*opts.Filter)[0].Include != "text" {
+		t.Errorf("ObjectListOptions.Filter.Include expected 'text', got %q", (*opts.Filter)[0].Include)
+	}
+
+	if (*opts.Filter)[0].Exclude != "image" {
+		t.Errorf("ObjectListOptions.Filter.Exclude expected 'image', got %q", (*opts.Filter)[0].Exclude)
 	}
 }
 

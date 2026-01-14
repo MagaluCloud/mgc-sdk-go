@@ -24,12 +24,18 @@ type BucketListOptions struct {
 	Offset *int `json:"_offset,omitempty"`
 }
 
+type ObjectListFilter struct {
+	Include string `json:"include,omitempty"`
+	Exclude string `json:"exclude,omitempty"`
+}
+
 // ObjectListOptions defines parameters for filtering and pagination of object lists.
 type ObjectListOptions struct {
-	Limit     *int   `json:"_limit,omitempty"`
-	Offset    *int   `json:"_offset,omitempty"`
-	Prefix    string `json:"prefix,omitempty"`
-	Delimiter string `json:"delimiter,omitempty"`
+	Limit     *int                `json:"_limit,omitempty"`
+	Offset    *int                `json:"_offset,omitempty"`
+	Prefix    string              `json:"prefix,omitempty"`
+	Delimiter string              `json:"delimiter,omitempty"`
+	Filter    *[]ObjectListFilter `json:"filter,omitempty"`
 }
 
 // ObjectFilterOptions defines filtering options for ListAll (without pagination).

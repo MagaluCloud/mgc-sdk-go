@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"regexp"
 	"time"
 
 	"github.com/minio/minio-go/v7"
@@ -137,12 +138,30 @@ func (s *objectService) List(ctx context.Context, bucketName string, opts Object
 		}
 
 		if count >= offset && count < offset+limit {
-			result = append(result, Object{
-				Key:          object.Key,
-				Size:         object.Size,
-				LastModified: object.LastModified,
-				ETag:         object.ETag,
-			})
+			addObj := true
+
+			if opts.Filter != nil {
+				for _, filter := range *opts.Filter {
+					if filter.Include != "" && !matchesPattern(object.Key, filter.Include) {
+						addObj = false
+						continue
+					}
+					if filter.Exclude != "" && matchesPattern(object.Key, filter.Exclude) {
+						addObj = false
+						continue
+					}
+				}
+			}
+
+			if addObj {
+				result = append(result, Object{
+					Key:          object.Key,
+					Size:         object.Size,
+					LastModified: object.LastModified,
+					ETag:         object.ETag,
+					StorageClass: object.StorageClass,
+				})
+			}
 		}
 
 		count++
@@ -153,6 +172,14 @@ func (s *objectService) List(ctx context.Context, bucketName string, opts Object
 	}
 
 	return result, nil
+}
+
+func matchesPattern(key, pattern string) bool {
+	re, err := regexp.Compile(pattern)
+	if err != nil {
+		return false
+	}
+	return re.MatchString(key)
 }
 
 // ListAll retrieves all objects in a bucket without pagination.
