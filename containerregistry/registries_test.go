@@ -47,6 +47,30 @@ func TestRegistriesService_Create(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "successful create with proxy cache id",
+			request: &RegistryRequest{
+				Name:         "test-registry",
+				ProxyCacheID: strPtr("proxy-cache-id"),
+			},
+			response: `{
+				"id": "reg-123",
+				"name": "test-registry",
+				"storage_usage_bytes": 1024,
+				"proxy_cache_id": "proxy-cache-id",
+				"created_at": "2024-01-01T00:00:00Z",
+				"updated_at": "2024-01-01T00:00:00Z"
+			}`,
+			statusCode: http.StatusOK,
+			want: &RegistryResponse{
+				ID:        "reg-123",
+				Name:      "test-registry",
+				Storage:   1024,
+				CreatedAt: "2024-01-01T00:00:00Z",
+				UpdatedAt: "2024-01-01T00:00:00Z",
+			},
+			wantErr: false,
+		},
+		{
 			name: "empty name",
 			request: &RegistryRequest{
 				Name: "",

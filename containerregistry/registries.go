@@ -23,16 +23,18 @@ type (
 
 	// RegistryRequest represents the request payload for creating a registry
 	RegistryRequest struct {
-		Name string `json:"name"`
+		Name         string  `json:"name"`
+		ProxyCacheID *string `json:"proxy_cache_id,omitempty"`
 	}
 
 	// RegistryResponse represents a container registry
 	RegistryResponse struct {
-		ID        string `json:"id"`
-		Name      string `json:"name"`
-		Storage   int    `json:"storage_usage_bytes"`
-		CreatedAt string `json:"created_at"`
-		UpdatedAt string `json:"updated_at"`
+		ID           string  `json:"id"`
+		Name         string  `json:"name"`
+		Storage      int     `json:"storage_usage_bytes"`
+		ProxyCacheID *string `json:"proxy_cache_id,omitempty"`
+		CreatedAt    string  `json:"created_at"`
+		UpdatedAt    string  `json:"updated_at"`
 	}
 
 	// RegistryListOptions provides options for listing registries with pagination
