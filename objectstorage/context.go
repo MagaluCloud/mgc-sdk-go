@@ -27,3 +27,16 @@ func HasFixRetentionTime(ctx context.Context) bool {
 	v, ok := ctx.Value(fixRetentionTimeKey).(bool)
 	return ok && v
 }
+
+type storageClassKeyType struct{}
+
+var storageClassKey = storageClassKeyType{}
+
+func WithStorageClass(ctx context.Context, storageClass string) context.Context {
+	return context.WithValue(ctx, storageClassKey, storageClass)
+}
+
+func HasStorageClass(ctx context.Context) bool {
+	v, ok := ctx.Value(storageClassKey).(string)
+	return ok && v != ""
+}

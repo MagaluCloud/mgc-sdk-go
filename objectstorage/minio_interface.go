@@ -39,6 +39,7 @@ type minioClientInterface interface {
 	SetAppInfo(appName string, appVersion string)
 	PresignedGetObject(ctx context.Context, bucketName string, objectName string, expiry time.Duration, reqParams url.Values) (*url.URL, error)
 	PresignedPutObject(ctx context.Context, bucketName string, objectName string, expiry time.Duration) (*url.URL, error)
+	CopyObject(ctx context.Context, dst minio.CopyDestOptions, src minio.CopySrcOptions) (minio.UploadInfo, error)
 }
 
 // Ensure *minio.Client implements minioClientInterface

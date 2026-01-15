@@ -17,6 +17,10 @@ func (t *objectStorageTransport) RoundTrip(req *http.Request) (*http.Response, e
 		req.Header.Set("X-Force-Container-Delete", "true")
 	}
 
+	if req.Method == http.MethodPut && HasStorageClass(req.Context()) {
+		req.Header.Set("X-Amz-Storage-Class", req.Context().Value(storageClassKey).(string))
+	}
+
 	resp, err := t.base.RoundTrip(req)
 	if err != nil {
 		return nil, err

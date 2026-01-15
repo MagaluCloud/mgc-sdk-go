@@ -30,6 +30,7 @@ type ObjectService interface {
 	GetObjectLockStatus(ctx context.Context, bucketName string, objectKey string) (bool, error)
 	GetObjectLockInfo(ctx context.Context, bucketName string, objectKey string) (*ObjectLockInfo, error)
 	GetPresignedURL(ctx context.Context, bucketName string, objectKey string, opts GetPresignedURLOptions) (*PresignedURL, error)
+	Copy(ctx context.Context, src CopySrcConfig, dst CopyDstConfig) error
 }
 
 // objectService implements the ObjectService interface.
@@ -51,13 +52,12 @@ func (s *objectService) Upload(ctx context.Context, bucketName string, objectKey
 		return &InvalidObjectDataError{Message: "object data cannot be empty"}
 	}
 
-	validStorageClasses := []string{"standard", "cold_instant"}
-
-	if !slices.Contains(validStorageClasses, strings.ToLower(storageClass)) {
-		return &InvalidObjectDataError{Message: "invalid storage class. Valid options are 'standard' and 'cold_instant'"}
+	err := storageClassIsValid(storageClass)
+	if err != nil {
+		return err
 	}
 
-	_, err := s.client.minioClient.PutObject(ctx, bucketName, objectKey, bytes.NewReader(data), int64(len(data)), minio.PutObjectOptions{
+	_, err = s.client.minioClient.PutObject(ctx, bucketName, objectKey, bytes.NewReader(data), int64(len(data)), minio.PutObjectOptions{
 		ContentType:  contentType,
 		StorageClass: storageClass,
 	})
@@ -497,4 +497,61 @@ func (s *objectService) GetPresignedURL(ctx context.Context, bucketName string, 
 	}
 
 	return &PresignedURL{URL: presignedURL.String()}, nil
+}
+
+func (s *objectService) Copy(ctx context.Context, src CopySrcConfig, dst CopyDstConfig) error {
+	if src.BucketName == "" {
+		return &InvalidBucketNameError{Name: src.BucketName}
+	}
+	if src.ObjectKey == "" {
+		return &InvalidObjectKeyError{Key: src.ObjectKey}
+	}
+
+	if dst.BucketName == "" {
+		return &InvalidBucketNameError{Name: dst.BucketName}
+	}
+	if dst.ObjectKey == "" {
+		return &InvalidObjectKeyError{Key: dst.ObjectKey}
+	}
+
+	copyDst := minio.CopyDestOptions{
+		Bucket: dst.BucketName,
+		Object: dst.ObjectKey,
+	}
+
+	copySrc := minio.CopySrcOptions{
+		Bucket: src.BucketName,
+		Object: src.ObjectKey,
+	}
+
+	if src.VersionID != "" {
+		copySrc.VersionID = src.VersionID
+	}
+
+	if dst.StorageClass != "" {
+		err := storageClassIsValid(dst.StorageClass)
+		if err != nil {
+			return err
+		}
+
+		ctx = WithStorageClass(ctx, dst.StorageClass)
+	}
+
+	_, err := s.client.minioClient.CopyObject(
+		ctx,
+		copyDst,
+		copySrc,
+	)
+
+	return err
+}
+
+func storageClassIsValid(storageClass string) error {
+	validStorageClasses := []string{"standard", "cold_instant"}
+
+	if !slices.Contains(validStorageClasses, strings.ToLower(storageClass)) {
+		return &InvalidObjectDataError{Message: "invalid storage class. Valid options are 'standard' and 'cold_instant'"}
+	}
+
+	return nil
 }

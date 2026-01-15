@@ -148,3 +148,15 @@ type GetPresignedURLOptions struct {
 type PresignedURL struct {
 	URL string `json:"url"`
 }
+
+type CopySrcConfig struct {
+	BucketName string `json:"bucket_name"`
+	ObjectKey  string `json:"object_key"`
+	VersionID  string `json:"version_id,omitempty"`
+}
+
+type CopyDstConfig struct {
+	BucketName   string `json:"bucket_name"`
+	ObjectKey    string `json:"object_key"`
+	StorageClass string `json:"storage_class,omitempty"`
+}

@@ -142,15 +142,19 @@ func runE2ETest(ctx context.Context, osClient *objectstorage.ObjectStorageClient
 	testListAllVersions(ctx, osClient)
 	pause()
 
-	// Step 16: Delete bucket CORS
+	// Step 16: Copy object
+	testCopyObject(ctx, osClient)
+	pause()
+
+	// Step 17: Delete bucket CORS
 	testDeleteBucketCORS(ctx, osClient)
 	pause()
 
-	// Step 17: Delete object
+	// Step 18: Delete object
 	testDeleteObject(ctx, osClient)
 	pause()
 
-	// Step 18: Delete bucket
+	// Step 19: Delete bucket
 	testDeleteBucket(ctx, osClient)
 	pause()
 
@@ -487,8 +491,27 @@ func testListAllVersions(ctx context.Context, osClient *objectstorage.ObjectStor
 	fmt.Println()
 }
 
+func testCopyObject(ctx context.Context, osClient *objectstorage.ObjectStorageClient) {
+	fmt.Println("📝 Test 16: Copy Object")
+	fmt.Println("─────────────────────────────────────────────────────────────")
+
+	err := osClient.Objects().Copy(ctx, objectstorage.CopySrcConfig{
+		BucketName: testBucketName,
+		ObjectKey:  testObjectKey,
+	}, objectstorage.CopyDstConfig{
+		BucketName: testBucketName,
+		ObjectKey:  "test.txt",
+	})
+	if err != nil {
+		fmt.Printf("❌ Failed to copy the object: %v\n\n", err)
+		return
+	}
+
+	fmt.Printf("✅ Object copied successfully\n\n")
+}
+
 func testDeleteBucketCORS(ctx context.Context, osClient *objectstorage.ObjectStorageClient) {
-	fmt.Println("📝 Test 16: Delete Bucket CORS")
+	fmt.Println("📝 Test 17: Delete Bucket CORS")
 	fmt.Println("─────────────────────────────────────────────────────────────")
 
 	err := osClient.Buckets().DeleteCORS(ctx, testBucketName)
@@ -501,7 +524,7 @@ func testDeleteBucketCORS(ctx context.Context, osClient *objectstorage.ObjectSto
 }
 
 func testDeleteObject(ctx context.Context, osClient *objectstorage.ObjectStorageClient) {
-	fmt.Println("📝 Test 17: Delete Object")
+	fmt.Println("📝 Test 18: Delete Object")
 	fmt.Println("─────────────────────────────────────────────────────────────")
 
 	err := osClient.Objects().Delete(ctx, testBucketName, testObjectKey, nil)
@@ -514,7 +537,7 @@ func testDeleteObject(ctx context.Context, osClient *objectstorage.ObjectStorage
 }
 
 func testDeleteBucket(ctx context.Context, osClient *objectstorage.ObjectStorageClient) {
-	fmt.Println("📝 Test 18: Delete Bucket")
+	fmt.Println("📝 Test 19: Delete Bucket")
 	fmt.Println("─────────────────────────────────────────────────────────────")
 
 	err := osClient.Buckets().Delete(ctx, testBucketName, true)

@@ -1185,6 +1185,191 @@ func TestObjectServiceGetPresignedURL_WithExpiry(t *testing.T) {
 	}
 }
 
+func TestObjectServiceCopy_InvalidSrcBucketName(t *testing.T) {
+	t.Parallel()
+
+	core := client.NewMgcClient()
+	osClient, _ := New(core, "minioadmin", "minioadmin")
+	svc := osClient.Objects()
+
+	err := svc.Copy(context.Background(), CopySrcConfig{
+		BucketName: "",
+		ObjectKey:  "object-key",
+	}, CopyDstConfig{
+		BucketName: "bucket-name",
+		ObjectKey:  "object-key",
+	})
+
+	if err == nil {
+		t.Error("Copy() expected error for empty bucket name, got nil")
+	}
+
+	if _, ok := err.(*InvalidBucketNameError); !ok {
+		t.Errorf("Copy() expected InvalidBucketNameError, got %T", err)
+	}
+}
+
+func TestObjectServiceCopy_InvalidSrcObjectKey(t *testing.T) {
+	t.Parallel()
+
+	core := client.NewMgcClient()
+	osClient, _ := New(core, "minioadmin", "minioadmin")
+	svc := osClient.Objects()
+
+	err := svc.Copy(context.Background(), CopySrcConfig{
+		BucketName: "bucket-name",
+		ObjectKey:  "",
+	}, CopyDstConfig{
+		BucketName: "bucket-name",
+		ObjectKey:  "object-key",
+	})
+
+	if err == nil {
+		t.Error("Copy() expected error for empty object key, got nil")
+	}
+
+	if _, ok := err.(*InvalidObjectKeyError); !ok {
+		t.Errorf("Copy() expected InvalidObjectKeyError, got %T", err)
+	}
+}
+
+func TestObjectServiceCopy_InvalidDstBucketName(t *testing.T) {
+	t.Parallel()
+
+	core := client.NewMgcClient()
+	osClient, _ := New(core, "minioadmin", "minioadmin")
+	svc := osClient.Objects()
+
+	err := svc.Copy(context.Background(), CopySrcConfig{
+		BucketName: "bucket-name",
+		ObjectKey:  "object-key",
+		VersionID:  "version-id",
+	}, CopyDstConfig{
+		BucketName:   "",
+		ObjectKey:    "object-key",
+		StorageClass: "standard",
+	})
+
+	if err == nil {
+		t.Error("Copy() expected error for empty bucket name, got nil")
+	}
+
+	if _, ok := err.(*InvalidBucketNameError); !ok {
+		t.Errorf("Copy() expected InvalidBucketNameError, got %T", err)
+	}
+}
+
+func TestObjectServiceCopy_InvalidDstObjectKey(t *testing.T) {
+	t.Parallel()
+
+	core := client.NewMgcClient()
+	osClient, _ := New(core, "minioadmin", "minioadmin")
+	svc := osClient.Objects()
+
+	err := svc.Copy(context.Background(), CopySrcConfig{
+		BucketName: "bucket-name",
+		ObjectKey:  "object-key",
+	}, CopyDstConfig{
+		BucketName: "bucket-name",
+		ObjectKey:  "",
+	})
+
+	if err == nil {
+		t.Error("Copy() expected error for empty object key, got nil")
+	}
+
+	if _, ok := err.(*InvalidObjectKeyError); !ok {
+		t.Errorf("Copy() expected InvalidObjectKeyError, got %T", err)
+	}
+}
+
+func TestObjectServiceCopy_InvalidStorageClass(t *testing.T) {
+	t.Parallel()
+
+	core := client.NewMgcClient()
+	osClient, _ := New(core, "minioadmin", "minioadmin")
+	svc := osClient.Objects()
+
+	err := svc.Copy(context.Background(), CopySrcConfig{
+		BucketName: "bucket-name",
+		ObjectKey:  "object-key",
+	}, CopyDstConfig{
+		BucketName:   "bucket-name",
+		ObjectKey:    "object-key",
+		StorageClass: "invalid-class",
+	})
+
+	if err == nil {
+		t.Error("Copy() expected error for invalid storage class, got nil")
+	}
+
+	if _, ok := err.(*InvalidObjectDataError); !ok {
+		t.Errorf("Copy() expected InvalidObjectDataError, got %T", err)
+	}
+}
+
+func TestObjectServiceCopy(t *testing.T) {
+	t.Parallel()
+
+	core := client.NewMgcClient()
+	osClient, _ := New(core, "minioadmin", "minioadmin")
+	svc := osClient.Objects()
+
+	err := svc.Copy(context.Background(), CopySrcConfig{
+		BucketName: "bucket-name",
+		ObjectKey:  "object-key",
+	}, CopyDstConfig{
+		BucketName: "bucket-name",
+		ObjectKey:  "object-key",
+	})
+
+	if err == nil {
+		t.Error("Copy() expected error due to no connection, got nil")
+	}
+}
+
+func TestObjectServiceCopy_WithStandardStorageClass(t *testing.T) {
+	t.Parallel()
+
+	core := client.NewMgcClient()
+	osClient, _ := New(core, "minioadmin", "minioadmin")
+	svc := osClient.Objects()
+
+	err := svc.Copy(context.Background(), CopySrcConfig{
+		BucketName: "bucket-name",
+		ObjectKey:  "object-key",
+	}, CopyDstConfig{
+		BucketName:   "bucket-name",
+		ObjectKey:    "object-key",
+		StorageClass: "standard",
+	})
+
+	if err == nil {
+		t.Error("Copy() expected error due to no connection, got nil")
+	}
+}
+
+func TestObjectServiceCopy_WithColdInstantStorageClass(t *testing.T) {
+	t.Parallel()
+
+	core := client.NewMgcClient()
+	osClient, _ := New(core, "minioadmin", "minioadmin")
+	svc := osClient.Objects()
+
+	err := svc.Copy(context.Background(), CopySrcConfig{
+		BucketName: "bucket-name",
+		ObjectKey:  "object-key",
+	}, CopyDstConfig{
+		BucketName:   "bucket-name",
+		ObjectKey:    "object-key",
+		StorageClass: "cold_instant",
+	})
+
+	if err == nil {
+		t.Error("Copy() expected error due to no connection, got nil")
+	}
+}
+
 func TestStreamReadCloser(t *testing.T) {
 	t.Parallel()
 
