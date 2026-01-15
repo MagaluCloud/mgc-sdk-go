@@ -84,14 +84,21 @@ func listRegistries(c *client.CoreClient) {
 	}
 
 	for _, registry := range registries.Results {
-		fmt.Println("Registry: ", registry.Name, "Storage: ", registry.Storage, "CreatedAt: ", registry.CreatedAt, "UpdatedAt: ", registry.UpdatedAt)
+		fmt.Println("Registry: ", registry.Name, "\nStorage: ", registry.Storage, "\nCreatedAt: ", registry.CreatedAt, "\nUpdatedAt: ", registry.UpdatedAt)
+
+		if registry.ProxyCacheID != nil {
+			fmt.Println("Proxy Cache ID: ", *registry.ProxyCacheID)
+		}
+
+		fmt.Println()
 	}
 }
 
 func createRegistry(c *client.CoreClient) string {
 	containerRegistryClient := containerregistry.New(c)
 	registry, err := containerRegistryClient.Registries().Create(context.Background(), &containerregistry.RegistryRequest{
-		Name: "test-registry" + strconv.Itoa(int(time.Now().Unix())),
+		Name:         "test-registry" + strconv.Itoa(int(time.Now().Unix())),
+		ProxyCacheID: helpers.StrPtr("proxy-cache-id"),
 	})
 	if err != nil {
 		log.Fatal(err)
@@ -107,7 +114,11 @@ func getRegistry(c *client.CoreClient, id string) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println("Registry: ", registry.Name, "Storage: ", registry.Storage, "CreatedAt: ", registry.CreatedAt, "UpdatedAt: ", registry.UpdatedAt)
+	fmt.Println("Registry: ", registry.Name, "\nStorage: ", registry.Storage, "\nCreatedAt: ", registry.CreatedAt, "\nUpdatedAt: ", registry.UpdatedAt)
+
+	if registry.ProxyCacheID != nil {
+		fmt.Println("Proxy Cache ID: ", *registry.ProxyCacheID)
+	}
 }
 
 func deleteRegistry(c *client.CoreClient, id string) {
