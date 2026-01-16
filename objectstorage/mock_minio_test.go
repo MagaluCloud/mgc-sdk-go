@@ -31,6 +31,7 @@ type mockMinioClient struct {
 	getObjectFunc          func(ctx context.Context, bucketName string, objectName string, opts minio.GetObjectOptions) (*minio.Object, error)
 	listObjectsFunc        func(ctx context.Context, bucketName string, opts minio.ListObjectsOptions) <-chan minio.ObjectInfo
 	removeObjectFunc       func(ctx context.Context, bucketName string, objectName string, opts minio.RemoveObjectOptions) error
+	removeObjectsFunc      func(ctx context.Context, bucketName string, objectsCh <-chan minio.ObjectInfo, opts minio.RemoveObjectsOptions) <-chan minio.RemoveObjectError
 	statObjectFunc         func(ctx context.Context, bucketName string, objectName string, opts minio.StatObjectOptions) (minio.ObjectInfo, error)
 	putObjectRetentionFunc func(ctx context.Context, bucketName string, objectName string, opts minio.PutObjectRetentionOptions) error
 	getObjectRetentionFunc func(ctx context.Context, bucketName string, objectName string, versionID string) (*minio.RetentionMode, *time.Time, error)
@@ -475,4 +476,12 @@ func (m *mockMinioClient) CopyObject(ctx context.Context, dst minio.CopyDestOpti
 		Bucket: dst.Bucket,
 		Key:    dst.Object,
 	}, nil
+}
+
+func (m *mockMinioClient) RemoveObjects(ctx context.Context, bucketName string, objectsCh <-chan minio.ObjectInfo, opts minio.RemoveObjectsOptions) <-chan minio.RemoveObjectError {
+	if m.removeObjectsFunc != nil {
+		return m.removeObjectsFunc(ctx, bucketName, objectsCh, opts)
+	}
+
+	return nil
 }

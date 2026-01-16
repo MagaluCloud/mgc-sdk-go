@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/MagaluCloud/mgc-sdk-go/client"
+	"github.com/MagaluCloud/mgc-sdk-go/helpers"
 	"github.com/MagaluCloud/mgc-sdk-go/objectstorage"
 )
 
@@ -154,7 +155,11 @@ func runE2ETest(ctx context.Context, osClient *objectstorage.ObjectStorageClient
 	testDeleteObject(ctx, osClient)
 	pause()
 
-	// Step 19: Delete bucket
+	// Step 19: Delete all objects
+	testDeleteAllObjects(ctx, osClient)
+	pause()
+
+	// Step 20: Delete bucket
 	testDeleteBucket(ctx, osClient)
 	pause()
 
@@ -237,7 +242,7 @@ func testUploadObject(ctx context.Context, osClient *objectstorage.ObjectStorage
 		testObjectKey,
 		[]byte(testObjectData),
 		"text/plain",
-		"standard",
+		helpers.StrPtr("standard"),
 	)
 	if err != nil {
 		fmt.Printf("❌ Failed: %v\n\n", err)
@@ -536,8 +541,36 @@ func testDeleteObject(ctx context.Context, osClient *objectstorage.ObjectStorage
 	fmt.Printf("✅ Object deleted: %s\n\n", testObjectKey)
 }
 
+func testDeleteAllObjects(ctx context.Context, osClient *objectstorage.ObjectStorageClient) {
+	fmt.Println("📝 Test 19: Delete All Objects")
+	fmt.Println("─────────────────────────────────────────────────────────────")
+
+	err := osClient.Objects().Upload(
+		ctx,
+		testBucketName,
+		testObjectKey,
+		[]byte(testObjectData),
+		"text/plain",
+		helpers.StrPtr("standard"),
+	)
+	if err != nil {
+		fmt.Printf("❌ Failed: %v\n\n", err)
+		return
+	}
+
+	fmt.Printf("✅ Object uploaded: %s\n", testObjectKey)
+
+	_, err = osClient.Objects().DeleteAll(ctx, testBucketName, nil)
+	if err != nil {
+		fmt.Printf("❌ Failed: %v\n\n", err)
+		return
+	}
+
+	fmt.Printf("✅ All objects are deleted: %s\n\n", testBucketName)
+}
+
 func testDeleteBucket(ctx context.Context, osClient *objectstorage.ObjectStorageClient) {
-	fmt.Println("📝 Test 19: Delete Bucket")
+	fmt.Println("📝 Test 20: Delete Bucket")
 	fmt.Println("─────────────────────────────────────────────────────────────")
 
 	err := osClient.Buckets().Delete(ctx, testBucketName, true)

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/MagaluCloud/mgc-sdk-go/client"
+	"github.com/MagaluCloud/mgc-sdk-go/helpers"
 )
 
 func TestObjectServiceUpload_InvalidBucketName(t *testing.T) {
@@ -18,7 +19,7 @@ func TestObjectServiceUpload_InvalidBucketName(t *testing.T) {
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Objects()
 
-	err := svc.Upload(context.Background(), "", "test-key", []byte("test-data"), "text/plain", "standard")
+	err := svc.Upload(context.Background(), "", "test-key", []byte("test-data"), "text/plain", helpers.StrPtr("standard"))
 
 	if err == nil {
 		t.Error("Upload() expected error for empty bucket name, got nil")
@@ -36,7 +37,7 @@ func TestObjectServiceUpload_InvalidObjectKey(t *testing.T) {
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Objects()
 
-	err := svc.Upload(context.Background(), "test-bucket", "", []byte("test-data"), "text/plain", "cold_instant")
+	err := svc.Upload(context.Background(), "test-bucket", "", []byte("test-data"), "text/plain", helpers.StrPtr("cold_instant"))
 
 	if err == nil {
 		t.Error("Upload() expected error for empty object key, got nil")
@@ -55,7 +56,7 @@ func TestObjectServiceUpload_InvalidStorageClass(t *testing.T) {
 	svc := osClient.Objects()
 
 	data := []byte("test data")
-	err := svc.Upload(context.Background(), "test-bucket", "test-key", data, "text/plain", "test")
+	err := svc.Upload(context.Background(), "test-bucket", "test-key", data, "text/plain", helpers.StrPtr("test"))
 
 	if err == nil {
 		t.Error("Upload() expected error for invalid storage class, got nil")
@@ -73,7 +74,7 @@ func TestObjectServiceUpload_EmptyData(t *testing.T) {
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Objects()
 
-	err := svc.Upload(context.Background(), "test-bucket", "test-key", []byte{}, "", "standard")
+	err := svc.Upload(context.Background(), "test-bucket", "test-key", []byte{}, "", helpers.StrPtr("standard"))
 
 	if err == nil {
 		t.Error("Upload() expected error for empty data, got nil")
@@ -92,7 +93,7 @@ func TestObjectServiceUpload_ValidParameters(t *testing.T) {
 	svc := osClient.Objects()
 
 	data := []byte("test data")
-	err := svc.Upload(context.Background(), "test-bucket", "test-key", data, "text/plain", "standard")
+	err := svc.Upload(context.Background(), "test-bucket", "test-key", data, "text/plain", helpers.StrPtr("standard"))
 
 	if err == nil {
 		t.Error("Upload() expected error due to no connection, got nil")
@@ -107,7 +108,7 @@ func TestObjectServiceUpload_ValidStorageClass(t *testing.T) {
 	svc := osClient.Objects()
 
 	data := []byte("test data")
-	err := svc.Upload(context.Background(), "test-bucket", "test-key", data, "text/plain", "cold_instant")
+	err := svc.Upload(context.Background(), "test-bucket", "test-key", data, "text/plain", helpers.StrPtr("cold_instant"))
 
 	if err == nil {
 		t.Error("Upload() expected error due to no connection, got nil")
@@ -1370,6 +1371,38 @@ func TestObjectServiceCopy_WithColdInstantStorageClass(t *testing.T) {
 	}
 }
 
+func TestObjectServiceDeleteAll_InvalidBucketName(t *testing.T) {
+	t.Parallel()
+
+	core := client.NewMgcClient()
+	osClient, _ := New(core, "minioadmin", "minioadmin")
+	svc := osClient.Objects()
+
+	_, err := svc.DeleteAll(context.Background(), "", nil)
+
+	if err == nil {
+		t.Error("DeleteAll() expected error for empty bucket name, got nil")
+	}
+
+	if _, ok := err.(*InvalidBucketNameError); !ok {
+		t.Errorf("DeleteAll() expected InvalidBucketNameError, got %T", err)
+	}
+}
+
+func TestObjectServiceDeleteAll(t *testing.T) {
+	t.Parallel()
+
+	core := client.NewMgcClient()
+	osClient, _ := New(core, "minioadmin", "minioadmin")
+	svc := osClient.Objects()
+
+	_, err := svc.DeleteAll(context.Background(), "bucket-name", nil)
+
+	if err == nil {
+		t.Error("DeleteAll() expected error due to no connection, got nil")
+	}
+}
+
 func TestStreamReadCloser(t *testing.T) {
 	t.Parallel()
 
@@ -1602,6 +1635,23 @@ func TestGetPresignedURLOptions(t *testing.T) {
 
 	if opts.ExpiryInSeconds == nil || *opts.ExpiryInSeconds != 300 {
 		t.Errorf("GetPresignedURLOptions.ExpiryInSeconds expected 300, got %v", opts.ExpiryInSeconds)
+	}
+}
+
+func TestObjectDeleteOptions(t *testing.T) {
+	t.Parallel()
+
+	opts := DeleteAllOptions{
+		Filter:    &[]ObjectDeleteFilter{{Include: "test", Exclude: "bucket"}},
+		BatchSize: helpers.IntPtr(100),
+	}
+
+	if *opts.BatchSize != 100 {
+		t.Errorf("DeleteAllOptions.BatchSize expected 100, got %d", opts.BatchSize)
+	}
+
+	if len(*opts.Filter) != 1 || (*opts.Filter)[0].Include != "test" || (*opts.Filter)[0].Exclude != "bucket" {
+		t.Errorf("DeleteAllOptions.Filter expected [{'Include': 'test', 'Exclude': 'bucket'}], got %q", *opts.Filter)
 	}
 }
 

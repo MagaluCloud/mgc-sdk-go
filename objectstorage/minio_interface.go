@@ -33,6 +33,7 @@ type minioClientInterface interface {
 	GetObject(ctx context.Context, bucketName string, objectName string, opts minio.GetObjectOptions) (*minio.Object, error)
 	ListObjects(ctx context.Context, bucketName string, opts minio.ListObjectsOptions) <-chan minio.ObjectInfo
 	RemoveObject(ctx context.Context, bucketName string, objectName string, opts minio.RemoveObjectOptions) error
+	RemoveObjects(ctx context.Context, bucketName string, objectsCh <-chan minio.ObjectInfo, opts minio.RemoveObjectsOptions) <-chan minio.RemoveObjectError
 	StatObject(ctx context.Context, bucketName string, objectName string, opts minio.StatObjectOptions) (minio.ObjectInfo, error)
 	PutObjectRetention(ctx context.Context, bucketName string, objectName string, opts minio.PutObjectRetentionOptions) error
 	GetObjectRetention(ctx context.Context, bucketName string, objectName string, versionID string) (*minio.RetentionMode, *time.Time, error)

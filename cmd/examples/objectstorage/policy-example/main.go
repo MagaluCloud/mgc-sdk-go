@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/MagaluCloud/mgc-sdk-go/client"
+	"github.com/MagaluCloud/mgc-sdk-go/helpers"
 	"github.com/MagaluCloud/mgc-sdk-go/objectstorage"
 )
 
@@ -85,7 +86,7 @@ func main() {
 	// Step 2: Upload an object
 	fmt.Println("📍 Step 2: Upload object to bucket")
 	fmt.Printf("   Uploading '%s'...\n", testObjectKey)
-	err = osClient.Objects().Upload(ctx, testBucketName, testObjectKey, []byte(testObjectData), "text/plain", "standard")
+	err = osClient.Objects().Upload(ctx, testBucketName, testObjectKey, []byte(testObjectData), "text/plain", helpers.StrPtr("standard"))
 	if err != nil {
 		fmt.Printf("   ❌ Failed to upload object: %v\n", err)
 	} else {

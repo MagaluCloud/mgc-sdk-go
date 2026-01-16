@@ -16,7 +16,7 @@ import (
 
 // ObjectService provides operations for managing objects.
 type ObjectService interface {
-	Upload(ctx context.Context, bucketName string, objectKey string, data []byte, contentType string, storageClass string) error
+	Upload(ctx context.Context, bucketName string, objectKey string, data []byte, contentType string, storageClass *string) error
 	Download(ctx context.Context, bucketName string, objectKey string, opts *DownloadOptions) ([]byte, error)
 	DownloadStream(ctx context.Context, bucketName string, objectKey string, opts *DownloadStreamOptions) (io.Reader, error)
 	List(ctx context.Context, bucketName string, opts ObjectListOptions) ([]Object, error)
@@ -24,6 +24,7 @@ type ObjectService interface {
 	ListVersions(ctx context.Context, bucketName string, objectKey string, opts *ListVersionsOptions) ([]ObjectVersion, error)
 	ListAllVersions(ctx context.Context, bucketName string, objectKey string) ([]ObjectVersion, error)
 	Delete(ctx context.Context, bucketName string, objectKey string, opts *DeleteOptions) error
+	DeleteAll(ctx context.Context, bucketName string, opts *DeleteAllOptions) (*DeleteAllResult, error)
 	Metadata(ctx context.Context, bucketName string, objectKey string, opts *MetadataOptions) (*Object, error)
 	LockObject(ctx context.Context, bucketName string, objectKey string, retainUntilDate time.Time) error
 	UnlockObject(ctx context.Context, bucketName string, objectKey string) error
@@ -39,7 +40,7 @@ type objectService struct {
 }
 
 // Upload uploads an object to a bucket.
-func (s *objectService) Upload(ctx context.Context, bucketName string, objectKey string, data []byte, contentType string, storageClass string) error {
+func (s *objectService) Upload(ctx context.Context, bucketName string, objectKey string, data []byte, contentType string, storageClass *string) error {
 	if bucketName == "" {
 		return &InvalidBucketNameError{Name: bucketName}
 	}
@@ -52,15 +53,20 @@ func (s *objectService) Upload(ctx context.Context, bucketName string, objectKey
 		return &InvalidObjectDataError{Message: "object data cannot be empty"}
 	}
 
-	err := storageClassIsValid(storageClass)
-	if err != nil {
-		return err
+	opts := minio.PutObjectOptions{
+		ContentType: contentType,
 	}
 
-	_, err = s.client.minioClient.PutObject(ctx, bucketName, objectKey, bytes.NewReader(data), int64(len(data)), minio.PutObjectOptions{
-		ContentType:  contentType,
-		StorageClass: storageClass,
-	})
+	if storageClass != nil && *storageClass != "" {
+		err := storageClassIsValid(*storageClass)
+		if err != nil {
+			return err
+		}
+
+		opts.StorageClass = *storageClass
+	}
+
+	_, err := s.client.minioClient.PutObject(ctx, bucketName, objectKey, bytes.NewReader(data), int64(len(data)), opts)
 
 	return err
 }
@@ -235,6 +241,89 @@ func (s *objectService) Delete(ctx context.Context, bucketName string, objectKey
 	}
 
 	return s.client.minioClient.RemoveObject(ctx, bucketName, objectKey, removeOpts)
+}
+
+// DeleteAll removes all objects from a bucket in batches based on filter criteria.
+func (s *objectService) DeleteAll(ctx context.Context, bucketName string, opts *DeleteAllOptions) (*DeleteAllResult, error) {
+	if bucketName == "" {
+		return nil, &InvalidBucketNameError{Name: bucketName}
+	}
+
+	result := &DeleteAllResult{
+		DeletedCount: 0,
+		ErrorCount:   0,
+		Errors:       make([]DeleteError, 0),
+	}
+
+	batchSize := 1000
+	if opts != nil && opts.BatchSize != nil && *opts.BatchSize > 0 && *opts.BatchSize <= 1000 {
+		batchSize = *opts.BatchSize
+	}
+
+	listOpts := ObjectFilterOptions{
+		Prefix:    "",
+		Delimiter: "",
+	}
+
+	objects, err := s.ListAll(ctx, bucketName, listOpts)
+	if err != nil {
+		return nil, err
+	}
+
+	var objectsToDelete []Object
+	if opts != nil && opts.Filter != nil {
+		for _, obj := range objects {
+			shouldDelete := true
+
+			for _, filter := range *opts.Filter {
+				if filter.Include != "" && !matchesPattern(obj.Key, filter.Include) {
+					shouldDelete = false
+					break
+				}
+				if filter.Exclude != "" && matchesPattern(obj.Key, filter.Exclude) {
+					shouldDelete = false
+					break
+				}
+			}
+
+			if shouldDelete {
+				objectsToDelete = append(objectsToDelete, obj)
+			}
+		}
+	} else {
+		objectsToDelete = objects
+	}
+
+	for i := 0; i < len(objectsToDelete); i += batchSize {
+		end := i + batchSize
+		if end > len(objectsToDelete) {
+			end = len(objectsToDelete)
+		}
+
+		batch := objectsToDelete[i:end]
+
+		objectsCh := make(chan minio.ObjectInfo, len(batch))
+		for _, obj := range batch {
+			objectsCh <- minio.ObjectInfo{Key: obj.Key}
+		}
+		close(objectsCh)
+
+		removeResultsCh := s.client.minioClient.RemoveObjects(ctx, bucketName, objectsCh, minio.RemoveObjectsOptions{})
+
+		for removeResult := range removeResultsCh {
+			if removeResult.Err != nil {
+				result.ErrorCount++
+				result.Errors = append(result.Errors, DeleteError{
+					ObjectKey: removeResult.ObjectName,
+					Error:     removeResult.Err,
+				})
+			} else {
+				result.DeletedCount++
+			}
+		}
+	}
+
+	return result, nil
 }
 
 // Metadata returns metadata about an object.

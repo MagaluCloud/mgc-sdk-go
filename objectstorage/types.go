@@ -160,3 +160,24 @@ type CopyDstConfig struct {
 	ObjectKey    string `json:"object_key"`
 	StorageClass string `json:"storage_class,omitempty"`
 }
+
+type ObjectDeleteFilter struct {
+	Include string `json:"include,omitempty"`
+	Exclude string `json:"exclude,omitempty"`
+}
+
+type DeleteAllOptions struct {
+	Filter    *[]ObjectDeleteFilter `json:"filter,omitempty"`
+	BatchSize *int                  `json:"batch_size,omitempty"`
+}
+
+type DeleteError struct {
+	ObjectKey string
+	Error     error
+}
+
+type DeleteAllResult struct {
+	DeletedCount int64
+	ErrorCount   int64
+	Errors       []DeleteError
+}
