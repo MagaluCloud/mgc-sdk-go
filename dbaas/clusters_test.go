@@ -254,6 +254,10 @@ func TestClusterService_Create(t *testing.T) {
 				assertEqual(t, tt.request.Password, reqBody.Password)
 				assertEqual(t, tt.request.Volume.Size, reqBody.Volume.Size)
 
+				if tt.request.DeletionProtected != nil {
+					assertEqual(t, *tt.request.DeletionProtected, *reqBody.DeletionProtected)
+				}
+
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(tt.statusCode)
 				w.Write([]byte(tt.response))
@@ -405,6 +409,10 @@ func TestClusterService_Update(t *testing.T) {
 					}
 					if tt.request.BackupStartAt != nil {
 						assertEqual(t, *tt.request.BackupStartAt, *reqBody.BackupStartAt)
+					}
+
+					if tt.request.DeletionProtected != nil {
+						assertEqual(t, *tt.request.DeletionProtected, *reqBody.DeletionProtected)
 					}
 
 					w.Header().Set("Content-Type", "application/json")

@@ -310,6 +310,10 @@ func TestInstanceService_Create(t *testing.T) {
 				assertEqual(t, tt.request.User, req.User)
 				assertEqual(t, tt.request.Password, req.Password)
 
+				if tt.request.DeletionProtected != nil {
+					assertEqual(t, *tt.request.DeletionProtected, *req.DeletionProtected)
+				}
+
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(tt.statusCode)
 				w.Write([]byte(tt.response))
@@ -420,6 +424,7 @@ func TestInstanceService_Update(t *testing.T) {
 				assertEqual(t, *tt.request.BackupRetentionDays, *req.BackupRetentionDays)
 				assertEqual(t, *tt.request.BackupStartAt, *req.BackupStartAt)
 				assertEqual(t, *tt.request.ParameterGroupID, *req.ParameterGroupID)
+				assertEqual(t, *tt.request.DeletionProtected, *req.DeletionProtected)
 
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(tt.statusCode)
