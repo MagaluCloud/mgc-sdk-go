@@ -48,7 +48,8 @@ func TestClusterService_List(t *testing.T) {
 						"apply_parameters_pending": false,
 						"backup_retention_days": 7,
 						"backup_start_at": "01:00",
-						"created_at": "2023-01-01T00:00:00Z"
+						"created_at": "2023-01-01T00:00:00Z",
+						"deletion_protected": false
 					},
 					{
 						"id": "cluster-2",
@@ -62,7 +63,8 @@ func TestClusterService_List(t *testing.T) {
 						"apply_parameters_pending": false,
 						"backup_retention_days": 7,
 						"backup_start_at": "02:00",
-						"created_at": "2023-01-02T00:00:00Z"
+						"created_at": "2023-01-02T00:00:00Z",
+						"deletion_protected": true
 					}
 				]
 			}`,
@@ -202,6 +204,30 @@ func TestClusterService_Create(t *testing.T) {
 			wantErr:    false,
 		},
 		{
+			name: "successful creation with deletion protection",
+			request: ClusterCreateRequest{
+				Name:           "test-cluster",
+				EngineID:       "postgres-13",
+				InstanceTypeID: "db.t3.micro",
+				User:           "admin",
+				Password:       "password123",
+				Volume: ClusterVolumeRequest{
+					Size: 20,
+					Type: helpers.StrPtr("gp2"),
+				},
+				ParameterGroupID:    helpers.StrPtr("pg-1"),
+				BackupRetentionDays: helpers.IntPtr(7),
+				BackupStartAt:       helpers.StrPtr("01:00"),
+				DeletionProtected:   helpers.BoolPtr(true),
+			},
+			response: `{
+				"id": "cluster-1"
+			}`,
+			statusCode: http.StatusAccepted,
+			wantID:     "cluster-1",
+			wantErr:    false,
+		},
+		{
 			name: "validation error",
 			request: ClusterCreateRequest{
 				Name:     "test-cluster",
@@ -227,6 +253,10 @@ func TestClusterService_Create(t *testing.T) {
 				assertEqual(t, tt.request.User, reqBody.User)
 				assertEqual(t, tt.request.Password, reqBody.Password)
 				assertEqual(t, tt.request.Volume.Size, reqBody.Volume.Size)
+
+				if tt.request.DeletionProtected != nil {
+					assertEqual(t, *tt.request.DeletionProtected, *reqBody.DeletionProtected)
+				}
 
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(tt.statusCode)
@@ -273,7 +303,8 @@ func TestClusterService_Get(t *testing.T) {
 				"apply_parameters_pending": false,
 				"backup_retention_days": 7,
 				"backup_start_at": "01:00",
-				"created_at": "2023-01-01T00:00:00Z"
+				"created_at": "2023-01-01T00:00:00Z",
+				"deletion_protected": true
 			}`,
 			statusCode: http.StatusOK,
 			wantID:     "cluster-1",
@@ -335,6 +366,7 @@ func TestClusterService_Update(t *testing.T) {
 				ParameterGroupID:    helpers.StrPtr("pg-2"),
 				BackupRetentionDays: helpers.IntPtr(14),
 				BackupStartAt:       helpers.StrPtr("02:00"),
+				DeletionProtected:   helpers.BoolPtr(true),
 			},
 			response: `{
 				"id": "cluster-1",
@@ -342,7 +374,8 @@ func TestClusterService_Update(t *testing.T) {
 				"parameter_group_id": "pg-2",
 				"backup_retention_days": 14,
 				"backup_start_at": "02:00",
-				"status": "ACTIVE"
+				"status": "ACTIVE",
+				"deletion_protected": true
 			}`,
 			statusCode: http.StatusOK,
 			wantID:     "cluster-1",
@@ -376,6 +409,10 @@ func TestClusterService_Update(t *testing.T) {
 					}
 					if tt.request.BackupStartAt != nil {
 						assertEqual(t, *tt.request.BackupStartAt, *reqBody.BackupStartAt)
+					}
+
+					if tt.request.DeletionProtected != nil {
+						assertEqual(t, *tt.request.DeletionProtected, *reqBody.DeletionProtected)
 					}
 
 					w.Header().Set("Content-Type", "application/json")
@@ -644,8 +681,8 @@ func TestClusterService_ListAll(t *testing.T) {
 			response: `{
 				"meta": {"page": {"offset": 0, "limit": 25, "count": 2, "total": 2, "max_limit": 100}},
 				"results": [
-					{"id": "cluster-1", "name": "Cluster 1"},
-					{"id": "cluster-2", "name": "Cluster 2"}
+					{"id": "cluster-1", "name": "Cluster 1", "deletion_protected": true},
+					{"id": "cluster-2", "name": "Cluster 2", "deletion_protected": false}
 				]
 			}`,
 			statusCode: http.StatusOK,

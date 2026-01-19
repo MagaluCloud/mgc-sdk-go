@@ -107,6 +107,7 @@ type (
 		ParameterGroupID    *string              `json:"parameter_group_id,omitempty"`
 		BackupRetentionDays *int                 `json:"backup_retention_days,omitempty"`
 		BackupStartAt       *string              `json:"backup_start_at,omitempty"`
+		DeletionProtected   *bool                `json:"deletion_protected,omitempty"`
 	}
 
 	ClusterResizeRequest struct {
@@ -151,6 +152,7 @@ type (
 		UpdatedAt              *time.Time            `json:"updated_at,omitempty"`
 		StartedAt              *string               `json:"started_at,omitempty"`
 		FinishedAt             *string               `json:"finished_at,omitempty"`
+		DeletionProtected      bool                  `json:"deletion_protected"`
 	}
 
 	// ClusterUpdateRequest represents the request payload for updating a cluster
@@ -158,6 +160,7 @@ type (
 		ParameterGroupID    *string `json:"parameter_group_id,omitempty"`
 		BackupRetentionDays *int    `json:"backup_retention_days,omitempty"`
 		BackupStartAt       *string `json:"backup_start_at,omitempty"`
+		DeletionProtected   *bool   `json:"deletion_protected,omitempty"`
 	}
 )
 
