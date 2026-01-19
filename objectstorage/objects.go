@@ -6,9 +6,12 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"os"
+	"path/filepath"
 	"regexp"
 	"slices"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/minio/minio-go/v7"
@@ -19,6 +22,7 @@ type ObjectService interface {
 	Upload(ctx context.Context, bucketName string, objectKey string, data []byte, contentType string, storageClass *string) error
 	Download(ctx context.Context, bucketName string, objectKey string, opts *DownloadOptions) ([]byte, error)
 	DownloadStream(ctx context.Context, bucketName string, objectKey string, opts *DownloadStreamOptions) (io.Reader, error)
+	DownloadAll(ctx context.Context, bucketName string, dst string, opts *DownloadAllOptions) (*DownloadAllResult, error)
 	List(ctx context.Context, bucketName string, opts ObjectListOptions) ([]Object, error)
 	ListAll(ctx context.Context, bucketName string, opts ObjectFilterOptions) ([]Object, error)
 	ListVersions(ctx context.Context, bucketName string, objectKey string, opts *ListVersionsOptions) ([]ObjectVersion, error)
@@ -123,6 +127,172 @@ func (s *objectService) DownloadStream(ctx context.Context, bucketName string, o
 	return object, nil
 }
 
+// DownloadAll downloads all objects from a bucket to a destination directory.
+func (s *objectService) DownloadAll(
+	ctx context.Context,
+	bucketName string,
+	dstPath string,
+	opts *DownloadAllOptions,
+) (*DownloadAllResult, error) {
+	if bucketName == "" {
+		return nil, &InvalidBucketNameError{Name: bucketName}
+	}
+
+	if dstPath == "" {
+		return nil, &InvalidObjectDataError{Message: "dstPath is empty"}
+	}
+
+	result := &DownloadAllResult{
+		DownloadedCount: 0,
+		ErrorCount:      0,
+		Errors:          make([]DownloadError, 0),
+	}
+
+	if err := os.MkdirAll(dstPath, 0755); err != nil {
+		return result, err
+	}
+
+	listOpts := minio.ListObjectsOptions{
+		Recursive: true,
+	}
+
+	if opts != nil && opts.Prefix != "" {
+		listOpts.Prefix = opts.Prefix
+	}
+
+	maxParallel := 10
+
+	objectCh := s.client.minioClient.ListObjects(ctx, bucketName, listOpts)
+
+	workers := make(chan struct{}, maxParallel)
+	var wg sync.WaitGroup
+	var mu sync.Mutex
+
+	for objectInfo := range objectCh {
+		if objectInfo.Err != nil {
+			mu.Lock()
+			result.ErrorCount++
+			result.Errors = append(result.Errors, DownloadError{
+				ObjectKey: objectInfo.Key,
+				Error:     objectInfo.Err,
+			})
+			mu.Unlock()
+			continue
+		}
+
+		if opts != nil {
+			shouldDownload := shouldProccessObject(opts.Filter, objectInfo.Key)
+
+			if !shouldDownload {
+				continue
+			}
+		}
+
+		wg.Add(1)
+		workers <- struct{}{}
+
+		go func(obj minio.ObjectInfo) {
+			defer wg.Done()
+			defer func() { <-workers }()
+
+			filePath := filepath.Join(dstPath, obj.Key)
+			fileDir := filepath.Dir(filePath)
+
+			if obj.Size == 0 && strings.HasSuffix(obj.Key, "/") {
+				dirPath := filepath.Join(dstPath, obj.Key)
+
+				if err := os.MkdirAll(dirPath, 0755); err != nil {
+					mu.Lock()
+					result.ErrorCount++
+					result.Errors = append(result.Errors, DownloadError{
+						ObjectKey: obj.Key,
+						Error:     err,
+					})
+					mu.Unlock()
+					return
+				}
+
+				mu.Lock()
+				result.DownloadedCount++
+				mu.Unlock()
+				return
+			}
+
+			if err := os.MkdirAll(fileDir, 0755); err != nil {
+				mu.Lock()
+				result.ErrorCount++
+				result.Errors = append(result.Errors, DownloadError{
+					ObjectKey: obj.Key,
+					Error:     err,
+				})
+				mu.Unlock()
+				return
+			}
+
+			object, err := s.client.minioClient.GetObject(
+				ctx,
+				bucketName,
+				obj.Key,
+				minio.GetObjectOptions{},
+			)
+			if err != nil {
+				mu.Lock()
+				result.ErrorCount++
+				result.Errors = append(result.Errors, DownloadError{
+					ObjectKey: obj.Key,
+					Error:     err,
+				})
+				mu.Unlock()
+				return
+			}
+			defer object.Close()
+
+			file, err := os.Create(filePath)
+			if err != nil {
+				mu.Lock()
+				result.ErrorCount++
+				result.Errors = append(result.Errors, DownloadError{
+					ObjectKey: obj.Key,
+					Error:     err,
+				})
+				mu.Unlock()
+				return
+			}
+
+			defer file.Close()
+
+			success := false
+			defer func() {
+				file.Close()
+				object.Close()
+				if !success {
+					_ = os.Remove(filePath)
+				}
+			}()
+
+			if _, err := io.Copy(file, object); err != nil {
+				mu.Lock()
+				result.ErrorCount++
+				result.Errors = append(result.Errors, DownloadError{
+					ObjectKey: obj.Key,
+					Error:     err,
+				})
+				mu.Unlock()
+				return
+			}
+
+			success = true
+
+			mu.Lock()
+			result.DownloadedCount++
+			mu.Unlock()
+		}(objectInfo)
+	}
+
+	wg.Wait()
+	return result, nil
+}
+
 // List retrieves a list of objects in a bucket with pagination.
 func (s *objectService) List(ctx context.Context, bucketName string, opts ObjectListOptions) ([]Object, error) {
 	if bucketName == "" {
@@ -153,22 +323,9 @@ func (s *objectService) List(ctx context.Context, bucketName string, opts Object
 		}
 
 		if count >= offset && count < offset+limit {
-			addObj := true
+			shouldAddObj := shouldProccessObject(opts.Filter, object.Key)
 
-			if opts.Filter != nil {
-				for _, filter := range *opts.Filter {
-					if filter.Include != "" && !matchesPattern(object.Key, filter.Include) {
-						addObj = false
-						continue
-					}
-					if filter.Exclude != "" && matchesPattern(object.Key, filter.Exclude) {
-						addObj = false
-						continue
-					}
-				}
-			}
-
-			if addObj {
+			if shouldAddObj {
 				result = append(result, Object{
 					Key:          object.Key,
 					Size:         object.Size,
@@ -260,70 +417,82 @@ func (s *objectService) DeleteAll(ctx context.Context, bucketName string, opts *
 		batchSize = *opts.BatchSize
 	}
 
-	listOpts := ObjectFilterOptions{
-		Prefix:    "",
-		Delimiter: "",
-	}
+	listCh := s.client.minioClient.ListObjects(
+		ctx,
+		bucketName,
+		minio.ListObjectsOptions{
+			Recursive: true,
+		},
+	)
 
-	objects, err := s.ListAll(ctx, bucketName, listOpts)
-	if err != nil {
-		return nil, err
-	}
+	batch := make([]minio.ObjectInfo, 0, batchSize)
 
-	var objectsToDelete []Object
-	if opts != nil && opts.Filter != nil {
-		for _, obj := range objects {
-			shouldDelete := true
+	for obj := range listCh {
+		if obj.Err != nil {
+			result.ErrorCount++
+			result.Errors = append(result.Errors, DeleteError{
+				ObjectKey: obj.Key,
+				Error:     obj.Err,
+			})
+			continue
+		}
 
-			for _, filter := range *opts.Filter {
-				if filter.Include != "" && !matchesPattern(obj.Key, filter.Include) {
-					shouldDelete = false
-					break
-				}
-				if filter.Exclude != "" && matchesPattern(obj.Key, filter.Exclude) {
-					shouldDelete = false
-					break
-				}
-			}
+		if opts != nil {
+			shouldDeleteObject := shouldProccessObject(opts.Filter, obj.Key)
 
-			if shouldDelete {
-				objectsToDelete = append(objectsToDelete, obj)
+			if !shouldDeleteObject {
+				continue
 			}
 		}
-	} else {
-		objectsToDelete = objects
+
+		batch = append(batch, minio.ObjectInfo{Key: obj.Key})
+
+		if len(batch) == batchSize {
+			s.deleteBatch(ctx, bucketName, batch, result)
+			batch = batch[:0]
+		}
 	}
 
-	for i := 0; i < len(objectsToDelete); i += batchSize {
-		end := i + batchSize
-		if end > len(objectsToDelete) {
-			end = len(objectsToDelete)
-		}
-
-		batch := objectsToDelete[i:end]
-
-		objectsCh := make(chan minio.ObjectInfo, len(batch))
-		for _, obj := range batch {
-			objectsCh <- minio.ObjectInfo{Key: obj.Key}
-		}
-		close(objectsCh)
-
-		removeResultsCh := s.client.minioClient.RemoveObjects(ctx, bucketName, objectsCh, minio.RemoveObjectsOptions{})
-
-		for removeResult := range removeResultsCh {
-			if removeResult.Err != nil {
-				result.ErrorCount++
-				result.Errors = append(result.Errors, DeleteError{
-					ObjectKey: removeResult.ObjectName,
-					Error:     removeResult.Err,
-				})
-			} else {
-				result.DeletedCount++
-			}
-		}
+	if len(batch) > 0 {
+		s.deleteBatch(ctx, bucketName, batch, result)
 	}
 
 	return result, nil
+}
+
+func (s *objectService) deleteBatch(
+	ctx context.Context,
+	bucketName string,
+	batch []minio.ObjectInfo,
+	result *DeleteAllResult,
+) {
+	objectsCh := make(chan minio.ObjectInfo)
+
+	go func() {
+		defer close(objectsCh)
+		for _, obj := range batch {
+			objectsCh <- obj
+		}
+	}()
+
+	removeResultsCh := s.client.minioClient.RemoveObjects(
+		ctx,
+		bucketName,
+		objectsCh,
+		minio.RemoveObjectsOptions{},
+	)
+
+	for res := range removeResultsCh {
+		if res.Err != nil {
+			result.ErrorCount++
+			result.Errors = append(result.Errors, DeleteError{
+				ObjectKey: res.ObjectName,
+				Error:     res.Err,
+			})
+		} else {
+			result.DeletedCount++
+		}
+	}
 }
 
 // Metadata returns metadata about an object.
@@ -643,4 +812,23 @@ func storageClassIsValid(storageClass string) error {
 	}
 
 	return nil
+}
+
+func shouldProccessObject(filters *[]FilterOptions, objectKey string) bool {
+	shouldDownload := true
+
+	if filters != nil {
+		for _, filter := range *filters {
+			if filter.Include != "" && !matchesPattern(objectKey, filter.Include) {
+				shouldDownload = false
+				break
+			}
+			if filter.Exclude != "" && matchesPattern(objectKey, filter.Exclude) {
+				shouldDownload = false
+				break
+			}
+		}
+	}
+
+	return shouldDownload
 }

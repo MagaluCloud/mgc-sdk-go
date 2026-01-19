@@ -288,6 +288,96 @@ func TestObjectServiceDownloadStream_InvalidObjectKey(t *testing.T) {
 	}
 }
 
+func TestObjectServiceDownloadAll_InvalidBucketName(t *testing.T) {
+	t.Parallel()
+
+	core := client.NewMgcClient()
+	osClient, _ := New(core, "minioadmin", "minioadmin")
+	svc := osClient.Objects()
+
+	_, err := svc.DownloadAll(context.Background(), "", "test-key", nil)
+
+	if err == nil {
+		t.Error("DownloadAll() expected error for empty bucket name, got nil")
+	}
+
+	if _, ok := err.(*InvalidBucketNameError); !ok {
+		t.Errorf("DownloadAll() expected InvalidBucketNameError, got %T", err)
+	}
+}
+
+func TestObjectServiceDownloadAll_InvalidDstPath(t *testing.T) {
+	t.Parallel()
+
+	core := client.NewMgcClient()
+	osClient, _ := New(core, "minioadmin", "minioadmin")
+	svc := osClient.Objects()
+
+	_, err := svc.DownloadAll(context.Background(), "test-bucket", "", nil)
+
+	if err == nil {
+		t.Error("DownloadAll() expected error for empty dst path, got nil")
+	}
+
+	if _, ok := err.(*InvalidObjectDataError); !ok {
+		t.Errorf("DownloadAll() expected InvalidObjectDataError, got %T", err)
+	}
+}
+
+func TestObjectServiceDownloadAll_ValidParameters(t *testing.T) {
+	t.Parallel()
+
+	core := client.NewMgcClient()
+	osClient, _ := New(core, "minioadmin", "minioadmin")
+	svc := osClient.Objects()
+
+	_, err := svc.DownloadAll(context.Background(), "test-bucket", "test-key", nil)
+
+	if err != nil {
+		t.Error("Download() expected success, got error")
+	}
+}
+
+func TestObjectServiceDownloadAll_WithOptions(t *testing.T) {
+	t.Parallel()
+
+	core := client.NewMgcClient()
+	osClient, _ := New(core, "minioadmin", "minioadmin")
+	svc := osClient.Objects()
+
+	t.Run("with empty Filter", func(t *testing.T) {
+		opts := &DownloadAllOptions{Filter: nil}
+		_, err := svc.DownloadAll(context.Background(), "test-bucket", "test-key", opts)
+		if err != nil {
+			t.Error("DownloadAll() with empty Filter expected success, got error")
+		}
+	})
+
+	t.Run("with non-empty Filter", func(t *testing.T) {
+		opts := &DownloadAllOptions{Filter: &[]FilterOptions{{Exclude: "test", Include: "new"}}}
+		_, err := svc.DownloadAll(context.Background(), "test-bucket", "test-key", opts)
+		if err != nil {
+			t.Error("DownloadAll() with Filter expected success, got error")
+		}
+	})
+
+	t.Run("with empty Prefix", func(t *testing.T) {
+		opts := &DownloadAllOptions{Prefix: ""}
+		_, err := svc.DownloadAll(context.Background(), "test-bucket", "test-key", opts)
+		if err != nil {
+			t.Error("DownloadAll() with empty Prefix expected success, got error")
+		}
+	})
+
+	t.Run("with non-empty Prefix", func(t *testing.T) {
+		opts := &DownloadAllOptions{Prefix: "test"}
+		_, err := svc.DownloadAll(context.Background(), "test-bucket", "test-key", opts)
+		if err != nil {
+			t.Error("DownloadAll() with Prefix expected success, got error")
+		}
+	})
+}
+
 func TestObjectServiceList(t *testing.T) {
 	t.Parallel()
 
@@ -330,7 +420,7 @@ func TestObjectServiceList(t *testing.T) {
 			name:       "with filter",
 			bucketName: "test-bucket",
 			opts: ObjectListOptions{
-				Filter: &[]ObjectListFilter{
+				Filter: &[]FilterOptions{
 					{Include: "images"},
 				},
 			},
@@ -580,7 +670,7 @@ func TestObjectServiceListWithOptions(t *testing.T) {
 
 	t.Run("with Filter", func(t *testing.T) {
 		_, err := svc.List(context.Background(), "test-bucket", ObjectListOptions{
-			Filter: &[]ObjectListFilter{
+			Filter: &[]FilterOptions{
 				{Exclude: "folder/"},
 			},
 		})
@@ -1398,8 +1488,8 @@ func TestObjectServiceDeleteAll(t *testing.T) {
 
 	_, err := svc.DeleteAll(context.Background(), "bucket-name", nil)
 
-	if err == nil {
-		t.Error("DeleteAll() expected error due to no connection, got nil")
+	if err != nil {
+		t.Error("DeleteAll() expected success, got error")
 	}
 }
 
@@ -1461,7 +1551,7 @@ func TestObjectListOptions(t *testing.T) {
 		Offset:    &offset,
 		Prefix:    "uploads/",
 		Delimiter: "/",
-		Filter: &[]ObjectListFilter{
+		Filter: &[]FilterOptions{
 			{Include: "text", Exclude: "image"},
 		},
 	}
@@ -1642,7 +1732,7 @@ func TestObjectDeleteOptions(t *testing.T) {
 	t.Parallel()
 
 	opts := DeleteAllOptions{
-		Filter:    &[]ObjectDeleteFilter{{Include: "test", Exclude: "bucket"}},
+		Filter:    &[]FilterOptions{{Include: "test", Exclude: "bucket"}},
 		BatchSize: helpers.IntPtr(100),
 	}
 

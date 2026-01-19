@@ -24,18 +24,13 @@ type BucketListOptions struct {
 	Offset *int `json:"_offset,omitempty"`
 }
 
-type ObjectListFilter struct {
-	Include string `json:"include,omitempty"`
-	Exclude string `json:"exclude,omitempty"`
-}
-
 // ObjectListOptions defines parameters for filtering and pagination of object lists.
 type ObjectListOptions struct {
-	Limit     *int                `json:"_limit,omitempty"`
-	Offset    *int                `json:"_offset,omitempty"`
-	Prefix    string              `json:"prefix,omitempty"`
-	Delimiter string              `json:"delimiter,omitempty"`
-	Filter    *[]ObjectListFilter `json:"filter,omitempty"`
+	Limit     *int             `json:"_limit,omitempty"`
+	Offset    *int             `json:"_offset,omitempty"`
+	Prefix    string           `json:"prefix,omitempty"`
+	Delimiter string           `json:"delimiter,omitempty"`
+	Filter    *[]FilterOptions `json:"filter,omitempty"`
 }
 
 // ObjectFilterOptions defines filtering options for ListAll (without pagination).
@@ -161,14 +156,9 @@ type CopyDstConfig struct {
 	StorageClass string `json:"storage_class,omitempty"`
 }
 
-type ObjectDeleteFilter struct {
-	Include string `json:"include,omitempty"`
-	Exclude string `json:"exclude,omitempty"`
-}
-
 type DeleteAllOptions struct {
-	Filter    *[]ObjectDeleteFilter `json:"filter,omitempty"`
-	BatchSize *int                  `json:"batch_size,omitempty"`
+	Filter    *[]FilterOptions `json:"filter,omitempty"`
+	BatchSize *int             `json:"batch_size,omitempty"`
 }
 
 type DeleteError struct {
@@ -180,4 +170,28 @@ type DeleteAllResult struct {
 	DeletedCount int64
 	ErrorCount   int64
 	Errors       []DeleteError
+}
+
+// DownloadAllOptions defines parameters for downloading all objects from a bucket.
+type DownloadAllOptions struct {
+	Prefix string           `json:"prefix,omitempty"`
+	Filter *[]FilterOptions `json:"filter,omitempty"`
+}
+
+// DownloadError represents an error that occurred while downloading an object.
+type DownloadError struct {
+	ObjectKey string
+	Error     error
+}
+
+// DownloadAllResult represents the result of a DownloadAll operation.
+type DownloadAllResult struct {
+	DownloadedCount int64
+	ErrorCount      int64
+	Errors          []DownloadError
+}
+
+type FilterOptions struct {
+	Include string `json:"include,omitempty"`
+	Exclude string `json:"exclude,omitempty"`
 }
