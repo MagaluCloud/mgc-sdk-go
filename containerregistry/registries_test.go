@@ -47,6 +47,31 @@ func TestRegistriesService_Create(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "successful create with proxy cache id",
+			request: &RegistryRequest{
+				Name:         "test-registry",
+				ProxyCacheID: strPtr("proxy-cache-id"),
+			},
+			response: `{
+				"id": "reg-123",
+				"name": "test-registry",
+				"storage_usage_bytes": 1024,
+				"proxy_cache_id": "proxy-cache-id",
+				"created_at": "2024-01-01T00:00:00Z",
+				"updated_at": "2024-01-01T00:00:00Z"
+			}`,
+			statusCode: http.StatusOK,
+			want: &RegistryResponse{
+				ID:           "reg-123",
+				Name:         "test-registry",
+				Storage:      1024,
+				ProxyCacheID: strPtr("proxy-cache-id"),
+				CreatedAt:    "2024-01-01T00:00:00Z",
+				UpdatedAt:    "2024-01-01T00:00:00Z",
+			},
+			wantErr: false,
+		},
+		{
 			name: "empty name",
 			request: &RegistryRequest{
 				Name: "",
@@ -100,6 +125,16 @@ func TestRegistriesService_Create(t *testing.T) {
 				if got.Name != tt.want.Name {
 					t.Errorf("Create() got Name = %v, want %v", got.Name, tt.want.Name)
 				}
+
+				if tt.request.ProxyCacheID != nil {
+					if *got.ProxyCacheID != *tt.want.ProxyCacheID {
+						t.Errorf("Create() got ProxyCacheID = %v, want %v", *got.ProxyCacheID, *tt.want.ProxyCacheID)
+					}
+				} else {
+					if got.ProxyCacheID != nil {
+						t.Errorf("Create() got ProxyCacheID = %v, want %v", *got.ProxyCacheID, nil)
+					}
+				}
 			}
 		})
 	}
@@ -132,6 +167,7 @@ func TestRegistriesService_List(t *testing.T) {
 						"id": "reg-123",
 						"name": "test-registry",
 						"storage_usage_bytes": 1024,
+						"proxy_cache_id": "proxy-cache-id",
 						"created_at": "2024-01-01T00:00:00Z",
 						"updated_at": "2024-01-01T00:00:00Z"
 					}
@@ -142,11 +178,12 @@ func TestRegistriesService_List(t *testing.T) {
 			want: &ListRegistriesResponse{
 				Results: []RegistryResponse{
 					{
-						ID:        "reg-123",
-						Name:      "test-registry",
-						Storage:   1024,
-						CreatedAt: "2024-01-01T00:00:00Z",
-						UpdatedAt: "2024-01-01T00:00:00Z",
+						ID:           "reg-123",
+						Name:         "test-registry",
+						Storage:      1024,
+						ProxyCacheID: strPtr("proxy-cache-id"),
+						CreatedAt:    "2024-01-01T00:00:00Z",
+						UpdatedAt:    "2024-01-01T00:00:00Z",
 					},
 				},
 			},
@@ -343,6 +380,20 @@ func TestRegistriesService_List(t *testing.T) {
 				if len(got.Results) != len(tt.want.Results) {
 					t.Errorf("List() got %v registries, want %v", len(got.Results), len(tt.want.Results))
 				}
+
+				for index, result := range got.Results {
+					wantRegistry := tt.want.Results[index]
+
+					if wantRegistry.ProxyCacheID != nil {
+						if *result.ProxyCacheID != *wantRegistry.ProxyCacheID {
+							t.Errorf("List() got ProxyCacheID = %v, want %v", *result.ProxyCacheID, *wantRegistry.ProxyCacheID)
+						}
+					} else {
+						if result.ProxyCacheID != nil {
+							t.Errorf("List() got ProxyCacheID = %v, want %v", *result.ProxyCacheID, nil)
+						}
+					}
+				}
 			}
 		})
 	}
@@ -358,7 +409,29 @@ func TestRegistriesService_Get(t *testing.T) {
 		wantErr    bool
 	}{
 		{
-			name:       "successful get",
+			name:       "successful get with proxy cache id",
+			registryID: "reg-123",
+			response: `{
+				"id": "reg-123",
+				"name": "test-registry",
+				"storage_usage_bytes": 1024,
+				"proxy_cache_id": "proxy-cache-id",
+				"created_at": "2024-01-01T00:00:00Z",
+				"updated_at": "2024-01-01T00:00:00Z"
+			}`,
+			statusCode: http.StatusOK,
+			want: &RegistryResponse{
+				ID:           "reg-123",
+				Name:         "test-registry",
+				Storage:      1024,
+				ProxyCacheID: strPtr("proxy-cache-id"),
+				CreatedAt:    "2024-01-01T00:00:00Z",
+				UpdatedAt:    "2024-01-01T00:00:00Z",
+			},
+			wantErr: false,
+		},
+		{
+			name:       "successful get without proxy cache id",
 			registryID: "reg-123",
 			response: `{
 				"id": "reg-123",
@@ -428,6 +501,16 @@ func TestRegistriesService_Get(t *testing.T) {
 				}
 				if got.Name != tt.want.Name {
 					t.Errorf("Get() got Name = %v, want %v", got.Name, tt.want.Name)
+				}
+
+				if tt.want.ProxyCacheID != nil {
+					if *got.ProxyCacheID != *tt.want.ProxyCacheID {
+						t.Errorf("Get() got ProxyCacheID = %v, want %v", *got.ProxyCacheID, *tt.want.ProxyCacheID)
+					}
+				} else {
+					if got.ProxyCacheID != nil {
+						t.Errorf("Get() got ProxyCacheID = %v, want %v", *got.ProxyCacheID, nil)
+					}
 				}
 			}
 		})
