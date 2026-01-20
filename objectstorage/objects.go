@@ -29,13 +29,14 @@ type ObjectService interface {
 	ListAllVersions(ctx context.Context, bucketName string, objectKey string) ([]ObjectVersion, error)
 	Delete(ctx context.Context, bucketName string, objectKey string, opts *DeleteOptions) error
 	DeleteAll(ctx context.Context, bucketName string, opts *DeleteAllOptions) (*DeleteAllResult, error)
+	Copy(ctx context.Context, src CopySrcConfig, dst CopyDstConfig) error
+	CopyAll(ctx context.Context, src CopyPath, dst CopyPath, opts *CopyAllOptions) (*CopyAllResult, error)
 	Metadata(ctx context.Context, bucketName string, objectKey string, opts *MetadataOptions) (*Object, error)
 	LockObject(ctx context.Context, bucketName string, objectKey string, retainUntilDate time.Time) error
 	UnlockObject(ctx context.Context, bucketName string, objectKey string) error
 	GetObjectLockStatus(ctx context.Context, bucketName string, objectKey string) (bool, error)
 	GetObjectLockInfo(ctx context.Context, bucketName string, objectKey string) (*ObjectLockInfo, error)
 	GetPresignedURL(ctx context.Context, bucketName string, objectKey string, opts GetPresignedURLOptions) (*PresignedURL, error)
-	Copy(ctx context.Context, src CopySrcConfig, dst CopyDstConfig) error
 }
 
 // objectService implements the ObjectService interface.
@@ -802,6 +803,119 @@ func (s *objectService) Copy(ctx context.Context, src CopySrcConfig, dst CopyDst
 	)
 
 	return err
+}
+
+func (s *objectService) CopyAll(ctx context.Context, src CopyPath, dst CopyPath, opts *CopyAllOptions) (*CopyAllResult, error) {
+	if src.BucketName == "" {
+		return nil, &InvalidBucketNameError{Name: src.BucketName}
+	}
+
+	if dst.BucketName == "" {
+		return nil, &InvalidBucketNameError{Name: dst.BucketName}
+	}
+
+	if opts != nil && opts.StorageClass != "" {
+		err := storageClassIsValid(opts.StorageClass)
+
+		if err != nil {
+			return nil, err
+		}
+
+		ctx = WithStorageClass(ctx, opts.StorageClass)
+	}
+
+	result := &CopyAllResult{
+		CopiedCount: 0,
+		ErrorCount:  0,
+		Errors:      make([]CopyError, 0),
+	}
+
+	maxParallel := 20
+
+	listOpts := minio.ListObjectsOptions{
+		Recursive: true,
+	}
+
+	if src.ObjectKey != "" {
+		listOpts.Prefix = src.ObjectKey
+	}
+
+	objectCh := s.client.minioClient.ListObjects(ctx, src.BucketName, listOpts)
+
+	workers := make(chan struct{}, maxParallel)
+	var wg sync.WaitGroup
+	var mu sync.Mutex
+
+	for objectInfo := range objectCh {
+		if objectInfo.Err != nil {
+			mu.Lock()
+			result.ErrorCount++
+			result.Errors = append(result.Errors, CopyError{
+				ObjectKey: objectInfo.Key,
+				Error:     objectInfo.Err,
+			})
+			mu.Unlock()
+			continue
+		}
+
+		if opts != nil {
+			shouldCopy := shouldProccessObject(opts.Filter, objectInfo.Key)
+
+			if !shouldCopy {
+				continue
+			}
+		}
+
+		wg.Add(1)
+		workers <- struct{}{}
+
+		go func(obj minio.ObjectInfo) {
+			defer wg.Done()
+			defer func() { <-workers }()
+
+			if obj.Size == 0 && strings.HasSuffix(obj.Key, "/") {
+				mu.Lock()
+				result.CopiedCount++
+				mu.Unlock()
+				return
+			}
+
+			copySrc := minio.CopySrcOptions{
+				Bucket: src.BucketName,
+				Object: obj.Key,
+			}
+
+			dstObject := obj.Key
+
+			if dst.ObjectKey != "" {
+				dstObject = dst.ObjectKey + "/" + dstObject
+			}
+
+			copyDst := minio.CopyDestOptions{
+				Bucket: dst.BucketName,
+				Object: dstObject,
+			}
+
+			_, err := s.client.minioClient.CopyObject(ctx, copyDst, copySrc)
+			if err != nil {
+				mu.Lock()
+				result.ErrorCount++
+				result.Errors = append(result.Errors, CopyError{
+					ObjectKey: obj.Key,
+					Error:     err,
+				})
+				mu.Unlock()
+				return
+			}
+
+			mu.Lock()
+			result.CopiedCount++
+			mu.Unlock()
+		}(objectInfo)
+	}
+
+	wg.Wait()
+	return result, nil
 }
 
 func storageClassIsValid(storageClass string) error {

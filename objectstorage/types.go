@@ -195,3 +195,24 @@ type FilterOptions struct {
 	Include string `json:"include,omitempty"`
 	Exclude string `json:"exclude,omitempty"`
 }
+
+type CopyPath struct {
+	BucketName string
+	ObjectKey  string
+}
+
+type CopyAllOptions struct {
+	Filter       *[]FilterOptions `json:"filter,omitempty"`
+	StorageClass string           `json:"storage_class,omitempty"`
+}
+
+type CopyError struct {
+	ObjectKey string
+	Error     error
+}
+
+type CopyAllResult struct {
+	CopiedCount int64
+	ErrorCount  int64
+	Errors      []CopyError
+}

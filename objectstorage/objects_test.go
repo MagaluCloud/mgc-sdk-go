@@ -1461,6 +1461,142 @@ func TestObjectServiceCopy_WithColdInstantStorageClass(t *testing.T) {
 	}
 }
 
+func TestObjectServiceCopyAll_InvalidSrcBucketName(t *testing.T) {
+	t.Parallel()
+
+	core := client.NewMgcClient()
+	osClient, _ := New(core, "minioadmin", "minioadmin")
+	svc := osClient.Objects()
+
+	_, err := svc.CopyAll(context.Background(), CopyPath{
+		BucketName: "",
+		ObjectKey:  "object-key",
+	}, CopyPath{
+		BucketName: "bucket-name",
+		ObjectKey:  "object-key",
+	}, nil)
+
+	if err == nil {
+		t.Error("CopyAll() expected error for empty bucket name, got nil")
+	}
+
+	if _, ok := err.(*InvalidBucketNameError); !ok {
+		t.Errorf("CopyAll() expected InvalidBucketNameError, got %T", err)
+	}
+}
+
+func TestObjectServiceCopyAll_InvalidDstBucketName(t *testing.T) {
+	t.Parallel()
+
+	core := client.NewMgcClient()
+	osClient, _ := New(core, "minioadmin", "minioadmin")
+	svc := osClient.Objects()
+
+	_, err := svc.CopyAll(context.Background(), CopyPath{
+		BucketName: "bucket-name",
+		ObjectKey:  "object-key",
+	}, CopyPath{
+		BucketName: "",
+		ObjectKey:  "object-key",
+	}, nil)
+
+	if err == nil {
+		t.Error("CopyAll() expected error for empty bucket name, got nil")
+	}
+
+	if _, ok := err.(*InvalidBucketNameError); !ok {
+		t.Errorf("CopyAll() expected InvalidBucketNameError, got %T", err)
+	}
+}
+
+func TestObjectServiceCopyAll_InvalidStorageClass(t *testing.T) {
+	t.Parallel()
+
+	core := client.NewMgcClient()
+	osClient, _ := New(core, "minioadmin", "minioadmin")
+	svc := osClient.Objects()
+
+	_, err := svc.CopyAll(context.Background(), CopyPath{
+		BucketName: "bucket-name",
+		ObjectKey:  "object-key",
+	}, CopyPath{
+		BucketName: "bucket-name",
+		ObjectKey:  "object-key",
+	}, &CopyAllOptions{StorageClass: "invalid-class"})
+
+	if err == nil {
+		t.Error("CopyAll() expected error for invalid storage class, got nil")
+	}
+
+	if _, ok := err.(*InvalidObjectDataError); !ok {
+		t.Errorf("CopyAll() expected InvalidObjectDataError, got %T", err)
+	}
+}
+
+func TestObjectServiceCopyAll(t *testing.T) {
+	t.Parallel()
+
+	core := client.NewMgcClient()
+	osClient, _ := New(core, "minioadmin", "minioadmin")
+	svc := osClient.Objects()
+
+	_, err := svc.CopyAll(context.Background(), CopyPath{
+		BucketName: "bucket-name",
+		ObjectKey:  "object-key",
+	}, CopyPath{
+		BucketName: "bucket-name",
+		ObjectKey:  "object-key",
+	}, nil)
+
+	if err != nil {
+		t.Error("CopyAll() expected success, got error")
+	}
+}
+
+func TestObjectServiceCopyAll_WithStandardStorageClass(t *testing.T) {
+	t.Parallel()
+
+	core := client.NewMgcClient()
+	osClient, _ := New(core, "minioadmin", "minioadmin")
+	svc := osClient.Objects()
+
+	_, err := svc.CopyAll(context.Background(), CopyPath{
+		BucketName: "bucket-name",
+		ObjectKey:  "object-key",
+	}, CopyPath{
+		BucketName: "bucket-name",
+		ObjectKey:  "object-key",
+	}, &CopyAllOptions{
+		StorageClass: "standard",
+	})
+
+	if err != nil {
+		t.Error("CopyAll() expected success, got error")
+	}
+}
+
+func TestObjectServiceCopyAll_WithColdInstantStorageClass(t *testing.T) {
+	t.Parallel()
+
+	core := client.NewMgcClient()
+	osClient, _ := New(core, "minioadmin", "minioadmin")
+	svc := osClient.Objects()
+
+	_, err := svc.CopyAll(context.Background(), CopyPath{
+		BucketName: "bucket-name",
+		ObjectKey:  "object-key",
+	}, CopyPath{
+		BucketName: "bucket-name",
+		ObjectKey:  "object-key",
+	}, &CopyAllOptions{
+		StorageClass: "cold_instant",
+	})
+
+	if err == nil {
+		t.Error("CopyAll() expected error due to no connection, got nil")
+	}
+}
+
 func TestObjectServiceDeleteAll_InvalidBucketName(t *testing.T) {
 	t.Parallel()
 
