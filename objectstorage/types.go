@@ -157,6 +157,7 @@ type CopyDstConfig struct {
 }
 
 type DeleteAllOptions struct {
+	ObjectKey string           `json:"object_key,omitempty"`
 	Filter    *[]FilterOptions `json:"filter,omitempty"`
 	BatchSize *int             `json:"batch_size,omitempty"`
 }

@@ -418,12 +418,18 @@ func (s *objectService) DeleteAll(ctx context.Context, bucketName string, opts *
 		batchSize = *opts.BatchSize
 	}
 
+	listOpts := minio.ListObjectsOptions{
+		Recursive: true,
+	}
+
+	if opts != nil && opts.ObjectKey != "" {
+		listOpts.Prefix = opts.ObjectKey
+	}
+
 	listCh := s.client.minioClient.ListObjects(
 		ctx,
 		bucketName,
-		minio.ListObjectsOptions{
-			Recursive: true,
-		},
+		listOpts,
 	)
 
 	batch := make([]minio.ObjectInfo, 0, batchSize)
