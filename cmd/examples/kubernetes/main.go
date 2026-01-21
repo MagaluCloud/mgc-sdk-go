@@ -85,6 +85,8 @@ func main() {
 	ExampleListFlavorsAndVersions(k8sClient)
 	ExampleDeleteCluster(k8sClient, idSemNodePool)
 	ExampleDeleteCluster(k8sClient, idComNodePool)
+
+	ExampleListVersions(k8sClient)
 }
 
 func deleteAllClusters(k8sClient *kubernetes.KubernetesClient) {
@@ -465,4 +467,22 @@ func ExampleGetNodePool(k8sClient *kubernetes.KubernetesClient, clusterID string
 	}
 
 	fmt.Println("\nNode Pool:", nodePool)
+}
+
+func ExampleListVersions(k8sClient *kubernetes.KubernetesClient) {
+	ctx := context.Background()
+
+	versions, err := k8sClient.Versions().List(ctx, true)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println("\nVersions:")
+
+	for _, version := range versions {
+		fmt.Printf("   Version: %s\n", version.Version)
+		fmt.Printf("   Deprecated: %t\n", version.Deprecated)
+
+		fmt.Println()
+	}
 }
