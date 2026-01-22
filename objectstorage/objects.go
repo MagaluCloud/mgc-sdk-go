@@ -9,7 +9,6 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -20,6 +19,7 @@ import (
 // ObjectService provides operations for managing objects.
 type ObjectService interface {
 	Upload(ctx context.Context, bucketName string, objectKey string, data []byte, contentType string, storageClass *string) error
+	UploadDir(ctx context.Context, bucketName string, objectKey string, srcDir string, opts *UploadDirOptions) (*UploadAllResult, error)
 	Download(ctx context.Context, bucketName string, objectKey string, opts *DownloadOptions) ([]byte, error)
 	DownloadStream(ctx context.Context, bucketName string, objectKey string, opts *DownloadStreamOptions) (io.Reader, error)
 	DownloadAll(ctx context.Context, bucketName string, dst string, opts *DownloadAllOptions) (*DownloadAllResult, error)
@@ -44,14 +44,40 @@ type objectService struct {
 	client *ObjectStorageClient
 }
 
+const (
+	defaultBatchSize = 1000
+	maxParallel      = 10
+)
+
+func validateBucket(bucket string) error {
+	if bucket == "" {
+		return &InvalidBucketNameError{Name: bucket}
+	}
+	return nil
+}
+
+func validateObjectKey(key string) error {
+	if key == "" {
+		return &InvalidObjectKeyError{Key: key}
+	}
+	return nil
+}
+
+func resolveBatchSize(size *int) int {
+	if size != nil && *size > 0 {
+		return *size
+	}
+	return defaultBatchSize
+}
+
 // Upload uploads an object to a bucket.
 func (s *objectService) Upload(ctx context.Context, bucketName string, objectKey string, data []byte, contentType string, storageClass *string) error {
-	if bucketName == "" {
-		return &InvalidBucketNameError{Name: bucketName}
+	if err := validateBucket(bucketName); err != nil {
+		return err
 	}
 
-	if objectKey == "" {
-		return &InvalidObjectKeyError{Key: objectKey}
+	if err := validateObjectKey(objectKey); err != nil {
+		return err
 	}
 
 	if len(data) == 0 {
@@ -76,56 +102,158 @@ func (s *objectService) Upload(ctx context.Context, bucketName string, objectKey
 	return err
 }
 
+func (s *objectService) UploadDir(
+	ctx context.Context,
+	bucketName string,
+	objectKey string,
+	srcDir string,
+	opts *UploadDirOptions,
+) (*UploadAllResult, error) {
+	if err := validateBucket(bucketName); err != nil {
+		return nil, err
+	}
+	if srcDir == "" {
+		return nil, &InvalidObjectDataError{Message: "srcDir is empty"}
+	}
+
+	batchSize := defaultBatchSize
+	if opts != nil {
+		batchSize = resolveBatchSize(&opts.BatchSize)
+	}
+
+	if opts.StorageClass != "" {
+		err := storageClassIsValid(opts.StorageClass)
+		if err != nil {
+			return nil, err
+		}
+
+		ctx = WithStorageClass(ctx, opts.StorageClass)
+	}
+
+	fileCh := make(chan string)
+
+	go func() {
+		defer close(fileCh)
+
+		_ = filepath.WalkDir(srcDir, func(path string, d os.DirEntry, err error) error {
+			if err != nil {
+				return err
+			}
+			if d.IsDir() {
+				if opts != nil && opts.Shallow && path != srcDir {
+					return filepath.SkipDir
+				}
+				return nil
+			}
+			fileCh <- path
+			return nil
+		})
+	}()
+
+	result := &UploadAllResult{
+		Errors: make([]UploadError, 0),
+	}
+
+	var mu sync.Mutex
+
+	handler := func(ctx context.Context, path string) error {
+		relPath, err := filepath.Rel(srcDir, path)
+		if err != nil {
+			return err
+		}
+
+		dstKey := filepath.ToSlash(filepath.Join(objectKey, relPath))
+
+		file, err := os.Open(path)
+		if err != nil {
+			return err
+		}
+		defer file.Close()
+
+		putOpts := minio.PutObjectOptions{
+			ContentType: "application/octet-stream",
+		}
+
+		if opts != nil && opts.StorageClass != "" {
+			if err := storageClassIsValid(opts.StorageClass); err != nil {
+				return err
+			}
+			putOpts.StorageClass = opts.StorageClass
+		}
+
+		_, err = s.client.minioClient.PutObject(
+			ctx,
+			bucketName,
+			dstKey,
+			file,
+			-1,
+			putOpts,
+		)
+		return err
+	}
+
+	processStreamInBatches(
+		ctx,
+		fileCh,
+		batchSize,
+		maxParallel,
+		handler,
+		func() {
+			mu.Lock()
+			result.UploadedCount++
+			mu.Unlock()
+		},
+		func(err error) {
+			mu.Lock()
+			result.ErrorCount++
+			result.Errors = append(result.Errors, UploadError{Error: err})
+			mu.Unlock()
+		},
+	)
+
+	return result, nil
+}
+
+func (s *objectService) getObject(ctx context.Context, bucketName, objectKey string, versionID string) (*minio.Object, error) {
+	if err := validateBucket(bucketName); err != nil {
+		return nil, err
+	}
+	if err := validateObjectKey(objectKey); err != nil {
+		return nil, err
+	}
+
+	opts := minio.GetObjectOptions{}
+	if versionID != "" {
+		opts.VersionID = versionID
+	}
+
+	return s.client.minioClient.GetObject(ctx, bucketName, objectKey, opts)
+}
+
 // Download retrieves an object from a bucket and returns its content as bytes.
 func (s *objectService) Download(ctx context.Context, bucketName string, objectKey string, opts *DownloadOptions) ([]byte, error) {
-	if bucketName == "" {
-		return nil, &InvalidBucketNameError{Name: bucketName}
+	versionID := ""
+	if opts != nil {
+		versionID = opts.VersionID
 	}
 
-	if objectKey == "" {
-		return nil, &InvalidObjectKeyError{Key: objectKey}
-	}
-
-	getOpts := minio.GetObjectOptions{}
-	if opts != nil && opts.VersionID != "" {
-		getOpts.VersionID = opts.VersionID
-	}
-
-	object, err := s.client.minioClient.GetObject(ctx, bucketName, objectKey, getOpts)
+	object, err := s.getObject(ctx, bucketName, objectKey, versionID)
 	if err != nil {
 		return nil, err
 	}
 	defer object.Close()
 
-	data, err := io.ReadAll(object)
-	if err != nil {
-		return nil, err
-	}
-
-	return data, nil
+	return io.ReadAll(object)
 }
 
 // DownloadStream retrieves an object from a bucket and returns a reader for streaming.
 func (s *objectService) DownloadStream(ctx context.Context, bucketName string, objectKey string, opts *DownloadStreamOptions) (io.Reader, error) {
-	if bucketName == "" {
-		return nil, &InvalidBucketNameError{Name: bucketName}
+	versionID := ""
+	if opts != nil {
+		versionID = opts.VersionID
 	}
 
-	if objectKey == "" {
-		return nil, &InvalidObjectKeyError{Key: objectKey}
-	}
-
-	getOpts := minio.GetObjectOptions{}
-	if opts != nil && opts.VersionID != "" {
-		getOpts.VersionID = opts.VersionID
-	}
-
-	object, err := s.client.minioClient.GetObject(ctx, bucketName, objectKey, getOpts)
-	if err != nil {
-		return nil, err
-	}
-
-	return object, nil
+	return s.getObject(ctx, bucketName, objectKey, versionID)
 }
 
 // DownloadAll downloads all objects from a bucket to a destination directory.
@@ -135,169 +263,99 @@ func (s *objectService) DownloadAll(
 	dstPath string,
 	opts *DownloadAllOptions,
 ) (*DownloadAllResult, error) {
-	if bucketName == "" {
-		return nil, &InvalidBucketNameError{Name: bucketName}
+	if err := validateBucket(bucketName); err != nil {
+		return nil, err
 	}
-
 	if dstPath == "" {
 		return nil, &InvalidObjectDataError{Message: "dstPath is empty"}
 	}
 
-	result := &DownloadAllResult{
-		DownloadedCount: 0,
-		ErrorCount:      0,
-		Errors:          make([]DownloadError, 0),
-	}
-
 	if err := os.MkdirAll(dstPath, 0755); err != nil {
-		return result, err
+		return nil, err
 	}
 
-	listOpts := minio.ListObjectsOptions{
-		Recursive: true,
+	batchSize := defaultBatchSize
+	if opts != nil {
+		batchSize = resolveBatchSize(&opts.BatchSize)
 	}
 
+	listOpts := minio.ListObjectsOptions{Recursive: true}
 	if opts != nil && opts.Prefix != "" {
 		listOpts.Prefix = opts.Prefix
 	}
 
-	maxParallel := 10
-
 	objectCh := s.client.minioClient.ListObjects(ctx, bucketName, listOpts)
 
-	workers := make(chan struct{}, maxParallel)
-	var wg sync.WaitGroup
+	result := &DownloadAllResult{
+		Errors: make([]DownloadError, 0),
+	}
+
 	var mu sync.Mutex
 
-	for objectInfo := range objectCh {
-		if objectInfo.Err != nil {
-			mu.Lock()
-			result.ErrorCount++
-			result.Errors = append(result.Errors, DownloadError{
-				ObjectKey: objectInfo.Key,
-				Error:     objectInfo.Err,
-			})
-			mu.Unlock()
-			continue
+	handler := func(ctx context.Context, obj minio.ObjectInfo) error {
+		if obj.Err != nil {
+			return obj.Err
+		}
+		if opts != nil && !shouldProcessObject(opts.Filter, obj.Key) {
+			return nil
 		}
 
-		if opts != nil {
-			shouldDownload := shouldProccessObject(opts.Filter, objectInfo.Key)
-
-			if !shouldDownload {
-				continue
-			}
+		if obj.Size == 0 && strings.HasSuffix(obj.Key, "/") {
+			return os.MkdirAll(filepath.Join(dstPath, obj.Key), 0755)
 		}
 
-		wg.Add(1)
-		workers <- struct{}{}
+		filePath := filepath.Join(dstPath, obj.Key)
+		if err := os.MkdirAll(filepath.Dir(filePath), 0755); err != nil {
+			return err
+		}
 
-		go func(obj minio.ObjectInfo) {
-			defer wg.Done()
-			defer func() { <-workers }()
+		object, err := s.client.minioClient.GetObject(
+			ctx,
+			bucketName,
+			obj.Key,
+			minio.GetObjectOptions{},
+		)
+		if err != nil {
+			return err
+		}
+		defer object.Close()
 
-			filePath := filepath.Join(dstPath, obj.Key)
-			fileDir := filepath.Dir(filePath)
+		file, err := os.Create(filePath)
+		if err != nil {
+			return err
+		}
+		defer file.Close()
 
-			if obj.Size == 0 && strings.HasSuffix(obj.Key, "/") {
-				dirPath := filepath.Join(dstPath, obj.Key)
+		_, err = io.Copy(file, object)
+		return err
+	}
 
-				if err := os.MkdirAll(dirPath, 0755); err != nil {
-					mu.Lock()
-					result.ErrorCount++
-					result.Errors = append(result.Errors, DownloadError{
-						ObjectKey: obj.Key,
-						Error:     err,
-					})
-					mu.Unlock()
-					return
-				}
-
-				mu.Lock()
-				result.DownloadedCount++
-				mu.Unlock()
-				return
-			}
-
-			if err := os.MkdirAll(fileDir, 0755); err != nil {
-				mu.Lock()
-				result.ErrorCount++
-				result.Errors = append(result.Errors, DownloadError{
-					ObjectKey: obj.Key,
-					Error:     err,
-				})
-				mu.Unlock()
-				return
-			}
-
-			object, err := s.client.minioClient.GetObject(
-				ctx,
-				bucketName,
-				obj.Key,
-				minio.GetObjectOptions{},
-			)
-			if err != nil {
-				mu.Lock()
-				result.ErrorCount++
-				result.Errors = append(result.Errors, DownloadError{
-					ObjectKey: obj.Key,
-					Error:     err,
-				})
-				mu.Unlock()
-				return
-			}
-			defer object.Close()
-
-			file, err := os.Create(filePath)
-			if err != nil {
-				mu.Lock()
-				result.ErrorCount++
-				result.Errors = append(result.Errors, DownloadError{
-					ObjectKey: obj.Key,
-					Error:     err,
-				})
-				mu.Unlock()
-				return
-			}
-
-			defer file.Close()
-
-			success := false
-			defer func() {
-				file.Close()
-				object.Close()
-				if !success {
-					_ = os.Remove(filePath)
-				}
-			}()
-
-			if _, err := io.Copy(file, object); err != nil {
-				mu.Lock()
-				result.ErrorCount++
-				result.Errors = append(result.Errors, DownloadError{
-					ObjectKey: obj.Key,
-					Error:     err,
-				})
-				mu.Unlock()
-				return
-			}
-
-			success = true
-
+	processStreamInBatches(
+		ctx,
+		objectCh,
+		batchSize,
+		maxParallel,
+		handler,
+		func() {
 			mu.Lock()
 			result.DownloadedCount++
 			mu.Unlock()
-		}(objectInfo)
-	}
+		},
+		func(err error) {
+			mu.Lock()
+			result.ErrorCount++
+			result.Errors = append(result.Errors, DownloadError{Error: err})
+			mu.Unlock()
+		},
+	)
 
-	wg.Wait()
 	return result, nil
 }
 
 // List retrieves a list of objects in a bucket with pagination.
 func (s *objectService) List(ctx context.Context, bucketName string, opts ObjectListOptions) ([]Object, error) {
-	if bucketName == "" {
-		return nil, &InvalidBucketNameError{Name: bucketName}
+	if err := validateBucket(bucketName); err != nil {
+		return nil, err
 	}
 
 	result := make([]Object, 0)
@@ -324,7 +382,7 @@ func (s *objectService) List(ctx context.Context, bucketName string, opts Object
 		}
 
 		if count >= offset && count < offset+limit {
-			shouldAddObj := shouldProccessObject(opts.Filter, object.Key)
+			shouldAddObj := shouldProcessObject(opts.Filter, object.Key)
 
 			if shouldAddObj {
 				result = append(result, Object{
@@ -357,8 +415,8 @@ func matchesPattern(key, pattern string) bool {
 
 // ListAll retrieves all objects in a bucket without pagination.
 func (s *objectService) ListAll(ctx context.Context, bucketName string, opts ObjectFilterOptions) ([]Object, error) {
-	if bucketName == "" {
-		return nil, &InvalidBucketNameError{Name: bucketName}
+	if err := validateBucket(bucketName); err != nil {
+		return nil, err
 	}
 
 	result := make([]Object, 0)
@@ -402,114 +460,78 @@ func (s *objectService) Delete(ctx context.Context, bucketName string, objectKey
 }
 
 // DeleteAll removes all objects from a bucket in batches based on filter criteria.
-func (s *objectService) DeleteAll(ctx context.Context, bucketName string, opts *DeleteAllOptions) (*DeleteAllResult, error) {
-	if bucketName == "" {
-		return nil, &InvalidBucketNameError{Name: bucketName}
+func (s *objectService) DeleteAll(
+	ctx context.Context,
+	bucketName string,
+	opts *DeleteAllOptions,
+) (*DeleteAllResult, error) {
+	if err := validateBucket(bucketName); err != nil {
+		return nil, err
 	}
 
-	result := &DeleteAllResult{
-		DeletedCount: 0,
-		ErrorCount:   0,
-		Errors:       make([]DeleteError, 0),
+	batchSize := defaultBatchSize
+	if opts != nil {
+		batchSize = resolveBatchSize(opts.BatchSize)
 	}
 
-	batchSize := 1000
-	if opts != nil && opts.BatchSize != nil && *opts.BatchSize > 0 && *opts.BatchSize <= 1000 {
-		batchSize = *opts.BatchSize
-	}
-
-	listOpts := minio.ListObjectsOptions{
-		Recursive: true,
-	}
-
+	listOpts := minio.ListObjectsOptions{Recursive: true}
 	if opts != nil && opts.ObjectKey != "" {
 		listOpts.Prefix = opts.ObjectKey
 	}
 
-	listCh := s.client.minioClient.ListObjects(
-		ctx,
-		bucketName,
-		listOpts,
-	)
+	objectCh := s.client.minioClient.ListObjects(ctx, bucketName, listOpts)
 
-	batch := make([]minio.ObjectInfo, 0, batchSize)
+	result := &DeleteAllResult{
+		Errors: make([]DeleteError, 0),
+	}
 
-	for obj := range listCh {
+	var mu sync.Mutex
+
+	handler := func(ctx context.Context, obj minio.ObjectInfo) error {
 		if obj.Err != nil {
+			return obj.Err
+		}
+		if opts != nil && !shouldProcessObject(opts.Filter, obj.Key) {
+			return nil
+		}
+		return s.client.minioClient.RemoveObject(
+			ctx,
+			bucketName,
+			obj.Key,
+			minio.RemoveObjectOptions{},
+		)
+	}
+
+	processStreamInBatches(
+		ctx,
+		objectCh,
+		batchSize,
+		maxParallel,
+		handler,
+		func() {
+			mu.Lock()
+			result.DeletedCount++
+			mu.Unlock()
+		},
+		func(err error) {
+			mu.Lock()
 			result.ErrorCount++
-			result.Errors = append(result.Errors, DeleteError{
-				ObjectKey: obj.Key,
-				Error:     obj.Err,
-			})
-			continue
-		}
-
-		if opts != nil {
-			shouldDeleteObject := shouldProccessObject(opts.Filter, obj.Key)
-
-			if !shouldDeleteObject {
-				continue
-			}
-		}
-
-		batch = append(batch, minio.ObjectInfo{Key: obj.Key})
-
-		if len(batch) == batchSize {
-			s.deleteBatch(ctx, bucketName, batch, result)
-			batch = batch[:0]
-		}
-	}
-
-	if len(batch) > 0 {
-		s.deleteBatch(ctx, bucketName, batch, result)
-	}
+			result.Errors = append(result.Errors, DeleteError{Error: err})
+			mu.Unlock()
+		},
+	)
 
 	return result, nil
 }
 
-func (s *objectService) deleteBatch(
-	ctx context.Context,
-	bucketName string,
-	batch []minio.ObjectInfo,
-	result *DeleteAllResult,
-) {
-	objectsCh := make(chan minio.ObjectInfo)
-
-	go func() {
-		defer close(objectsCh)
-		for _, obj := range batch {
-			objectsCh <- obj
-		}
-	}()
-
-	removeResultsCh := s.client.minioClient.RemoveObjects(
-		ctx,
-		bucketName,
-		objectsCh,
-		minio.RemoveObjectsOptions{},
-	)
-
-	for res := range removeResultsCh {
-		if res.Err != nil {
-			result.ErrorCount++
-			result.Errors = append(result.Errors, DeleteError{
-				ObjectKey: res.ObjectName,
-				Error:     res.Err,
-			})
-		} else {
-			result.DeletedCount++
-		}
-	}
-}
-
 // Metadata returns metadata about an object.
 func (s *objectService) Metadata(ctx context.Context, bucketName string, objectKey string, opts *MetadataOptions) (*Object, error) {
-	if bucketName == "" {
-		return nil, &InvalidBucketNameError{Name: bucketName}
+	if err := validateBucket(bucketName); err != nil {
+		return nil, err
 	}
 
-	if objectKey == "" {
-		return nil, &InvalidObjectKeyError{Key: objectKey}
+	if err := validateObjectKey(objectKey); err != nil {
+		return nil, err
 	}
 
 	metadataOpts := minio.StatObjectOptions{}
@@ -608,12 +630,12 @@ func (s *objectService) GetObjectLockStatus(ctx context.Context, bucketName stri
 
 // GetObjectLockInfo retrieves the lock information of an object.
 func (s *objectService) GetObjectLockInfo(ctx context.Context, bucketName string, objectKey string) (*ObjectLockInfo, error) {
-	if bucketName == "" {
-		return nil, &InvalidBucketNameError{Name: bucketName}
+	if err := validateBucket(bucketName); err != nil {
+		return nil, err
 	}
 
-	if objectKey == "" {
-		return nil, &InvalidObjectKeyError{Key: objectKey}
+	if err := validateObjectKey(objectKey); err != nil {
+		return nil, err
 	}
 
 	ctx = WithFixRetentionTime(ctx)
@@ -638,12 +660,12 @@ func (s *objectService) GetObjectLockInfo(ctx context.Context, bucketName string
 
 // ListVersions retrieves all versions of an object from a versioned bucket.
 func (s *objectService) ListVersions(ctx context.Context, bucketName string, objectKey string, opts *ListVersionsOptions) ([]ObjectVersion, error) {
-	if bucketName == "" {
-		return nil, &InvalidBucketNameError{Name: bucketName}
+	if err := validateBucket(bucketName); err != nil {
+		return nil, err
 	}
 
-	if objectKey == "" {
-		return nil, &InvalidObjectKeyError{Key: objectKey}
+	if err := validateObjectKey(objectKey); err != nil {
+		return nil, err
 	}
 
 	result := make([]ObjectVersion, 0)
@@ -689,12 +711,12 @@ func (s *objectService) ListVersions(ctx context.Context, bucketName string, obj
 }
 
 func (s *objectService) ListAllVersions(ctx context.Context, bucketName string, objectKey string) ([]ObjectVersion, error) {
-	if bucketName == "" {
-		return nil, &InvalidBucketNameError{Name: bucketName}
+	if err := validateBucket(bucketName); err != nil {
+		return nil, err
 	}
 
-	if objectKey == "" {
-		return nil, &InvalidObjectKeyError{Key: objectKey}
+	if err := validateObjectKey(objectKey); err != nil {
+		return nil, err
 	}
 
 	result := make([]ObjectVersion, 0)
@@ -729,12 +751,12 @@ func (s *objectService) ListAllVersions(ctx context.Context, bucketName string, 
 }
 
 func (s *objectService) GetPresignedURL(ctx context.Context, bucketName string, objectKey string, opts GetPresignedURLOptions) (*PresignedURL, error) {
-	if bucketName == "" {
-		return nil, &InvalidBucketNameError{Name: bucketName}
+	if err := validateBucket(bucketName); err != nil {
+		return nil, err
 	}
 
-	if objectKey == "" {
-		return nil, &InvalidObjectKeyError{Key: objectKey}
+	if err := validateObjectKey(objectKey); err != nil {
+		return nil, err
 	}
 
 	if opts.Method != http.MethodGet && opts.Method != http.MethodPut {
@@ -765,18 +787,18 @@ func (s *objectService) GetPresignedURL(ctx context.Context, bucketName string, 
 }
 
 func (s *objectService) Copy(ctx context.Context, src CopySrcConfig, dst CopyDstConfig) error {
-	if src.BucketName == "" {
-		return &InvalidBucketNameError{Name: src.BucketName}
+	if err := validateBucket(src.BucketName); err != nil {
+		return err
 	}
-	if src.ObjectKey == "" {
-		return &InvalidObjectKeyError{Key: src.ObjectKey}
+	if err := validateObjectKey(src.ObjectKey); err != nil {
+		return err
 	}
 
-	if dst.BucketName == "" {
-		return &InvalidBucketNameError{Name: dst.BucketName}
+	if err := validateBucket(dst.BucketName); err != nil {
+		return err
 	}
-	if dst.ObjectKey == "" {
-		return &InvalidObjectKeyError{Key: dst.ObjectKey}
+	if err := validateObjectKey(dst.ObjectKey); err != nil {
+		return err
 	}
 
 	copyDst := minio.CopyDestOptions{
@@ -811,13 +833,22 @@ func (s *objectService) Copy(ctx context.Context, src CopySrcConfig, dst CopyDst
 	return err
 }
 
-func (s *objectService) CopyAll(ctx context.Context, src CopyPath, dst CopyPath, opts *CopyAllOptions) (*CopyAllResult, error) {
-	if src.BucketName == "" {
-		return nil, &InvalidBucketNameError{Name: src.BucketName}
+func (s *objectService) CopyAll(
+	ctx context.Context,
+	src CopyPath,
+	dst CopyPath,
+	opts *CopyAllOptions,
+) (*CopyAllResult, error) {
+	if err := validateBucket(src.BucketName); err != nil {
+		return nil, err
+	}
+	if err := validateBucket(dst.BucketName); err != nil {
+		return nil, err
 	}
 
-	if dst.BucketName == "" {
-		return nil, &InvalidBucketNameError{Name: dst.BucketName}
+	batchSize := defaultBatchSize
+	if opts != nil {
+		batchSize = resolveBatchSize(&opts.BatchSize)
 	}
 
 	if opts != nil && opts.StorageClass != "" {
@@ -830,111 +861,83 @@ func (s *objectService) CopyAll(ctx context.Context, src CopyPath, dst CopyPath,
 		ctx = WithStorageClass(ctx, opts.StorageClass)
 	}
 
-	result := &CopyAllResult{
-		CopiedCount: 0,
-		ErrorCount:  0,
-		Errors:      make([]CopyError, 0),
-	}
-
-	maxParallel := 20
-
-	listOpts := minio.ListObjectsOptions{
-		Recursive: true,
-	}
-
+	listOpts := minio.ListObjectsOptions{Recursive: true}
 	if src.ObjectKey != "" {
 		listOpts.Prefix = src.ObjectKey
 	}
 
 	objectCh := s.client.minioClient.ListObjects(ctx, src.BucketName, listOpts)
 
-	workers := make(chan struct{}, maxParallel)
-	var wg sync.WaitGroup
+	result := &CopyAllResult{
+		Errors: make([]CopyError, 0),
+	}
+
 	var mu sync.Mutex
 
-	for objectInfo := range objectCh {
-		if objectInfo.Err != nil {
-			mu.Lock()
-			result.ErrorCount++
-			result.Errors = append(result.Errors, CopyError{
-				ObjectKey: objectInfo.Key,
-				Error:     objectInfo.Err,
-			})
-			mu.Unlock()
-			continue
+	handler := func(ctx context.Context, obj minio.ObjectInfo) error {
+		if obj.Err != nil {
+			return obj.Err
+		}
+		if opts != nil && !shouldProcessObject(opts.Filter, obj.Key) {
+			return nil
+		}
+		if obj.Size == 0 && strings.HasSuffix(obj.Key, "/") {
+			return nil
 		}
 
-		if opts != nil {
-			shouldCopy := shouldProccessObject(opts.Filter, objectInfo.Key)
-
-			if !shouldCopy {
-				continue
-			}
+		dstKey := obj.Key
+		if dst.ObjectKey != "" {
+			dstKey = filepath.ToSlash(filepath.Join(dst.ObjectKey, obj.Key))
 		}
 
-		wg.Add(1)
-		workers <- struct{}{}
-
-		go func(obj minio.ObjectInfo) {
-			defer wg.Done()
-			defer func() { <-workers }()
-
-			if obj.Size == 0 && strings.HasSuffix(obj.Key, "/") {
-				mu.Lock()
-				result.CopiedCount++
-				mu.Unlock()
-				return
-			}
-
-			copySrc := minio.CopySrcOptions{
+		_, err := s.client.minioClient.CopyObject(
+			ctx,
+			minio.CopyDestOptions{
+				Bucket: dst.BucketName,
+				Object: dstKey,
+			},
+			minio.CopySrcOptions{
 				Bucket: src.BucketName,
 				Object: obj.Key,
-			}
+			},
+		)
+		return err
+	}
 
-			dstObject := obj.Key
-
-			if dst.ObjectKey != "" {
-				dstObject = dst.ObjectKey + "/" + dstObject
-			}
-
-			copyDst := minio.CopyDestOptions{
-				Bucket: dst.BucketName,
-				Object: dstObject,
-			}
-
-			_, err := s.client.minioClient.CopyObject(ctx, copyDst, copySrc)
-			if err != nil {
-				mu.Lock()
-				result.ErrorCount++
-				result.Errors = append(result.Errors, CopyError{
-					ObjectKey: obj.Key,
-					Error:     err,
-				})
-				mu.Unlock()
-				return
-			}
-
+	processStreamInBatches(
+		ctx,
+		objectCh,
+		batchSize,
+		maxParallel,
+		handler,
+		func() {
 			mu.Lock()
 			result.CopiedCount++
 			mu.Unlock()
-		}(objectInfo)
-	}
+		},
+		func(err error) {
+			mu.Lock()
+			result.ErrorCount++
+			result.Errors = append(result.Errors, CopyError{Error: err})
+			mu.Unlock()
+		},
+	)
 
-	wg.Wait()
 	return result, nil
 }
 
 func storageClassIsValid(storageClass string) error {
-	validStorageClasses := []string{"standard", "cold_instant"}
-
-	if !slices.Contains(validStorageClasses, strings.ToLower(storageClass)) {
-		return &InvalidObjectDataError{Message: "invalid storage class. Valid options are 'standard' and 'cold_instant'"}
+	switch strings.ToLower(storageClass) {
+	case "standard", "cold_instant":
+		return nil
+	default:
+		return &InvalidObjectDataError{
+			Message: "invalid storage class. Valid options are 'standard' and 'cold_instant'",
+		}
 	}
-
-	return nil
 }
 
-func shouldProccessObject(filters *[]FilterOptions, objectKey string) bool {
+func shouldProcessObject(filters *[]FilterOptions, objectKey string) bool {
 	shouldDownload := true
 
 	if filters != nil {
@@ -951,4 +954,69 @@ func shouldProccessObject(filters *[]FilterOptions, objectKey string) bool {
 	}
 
 	return shouldDownload
+}
+
+func processStreamInBatches[T any](
+	ctx context.Context,
+	input <-chan T,
+	batchSize int,
+	maxParallel int,
+	handler func(context.Context, T) error,
+	onSuccess func(),
+	onError func(error),
+) {
+	var (
+		wg  sync.WaitGroup
+		sem = make(chan struct{}, maxParallel)
+	)
+
+	batch := make([]T, 0, batchSize)
+
+	flush := func(items []T) {
+		for _, item := range items {
+			select {
+			case <-ctx.Done():
+				return
+			default:
+			}
+
+			wg.Add(1)
+			sem <- struct{}{}
+
+			go func(it T) {
+				defer wg.Done()
+				defer func() { <-sem }()
+
+				if err := handler(ctx, it); err != nil {
+					onError(err)
+					return
+				}
+				onSuccess()
+			}(item)
+		}
+
+		wg.Wait()
+	}
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+
+		case item, ok := <-input:
+			if !ok {
+				if len(batch) > 0 {
+					flush(batch)
+				}
+				return
+			}
+
+			batch = append(batch, item)
+
+			if len(batch) == batchSize {
+				flush(batch)
+				batch = batch[:0]
+			}
+		}
+	}
 }

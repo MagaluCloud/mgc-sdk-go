@@ -168,15 +168,16 @@ type DeleteError struct {
 }
 
 type DeleteAllResult struct {
-	DeletedCount int64
-	ErrorCount   int64
+	DeletedCount int
+	ErrorCount   int
 	Errors       []DeleteError
 }
 
 // DownloadAllOptions defines parameters for downloading all objects from a bucket.
 type DownloadAllOptions struct {
-	Prefix string           `json:"prefix,omitempty"`
-	Filter *[]FilterOptions `json:"filter,omitempty"`
+	Prefix    string           `json:"prefix,omitempty"`
+	Filter    *[]FilterOptions `json:"filter,omitempty"`
+	BatchSize int              `json:"batch_size,omitempty"`
 }
 
 // DownloadError represents an error that occurred while downloading an object.
@@ -187,8 +188,8 @@ type DownloadError struct {
 
 // DownloadAllResult represents the result of a DownloadAll operation.
 type DownloadAllResult struct {
-	DownloadedCount int64
-	ErrorCount      int64
+	DownloadedCount int
+	ErrorCount      int
 	Errors          []DownloadError
 }
 
@@ -205,6 +206,7 @@ type CopyPath struct {
 type CopyAllOptions struct {
 	Filter       *[]FilterOptions `json:"filter,omitempty"`
 	StorageClass string           `json:"storage_class,omitempty"`
+	BatchSize    int              `json:"batch_size,omitempty"`
 }
 
 type CopyError struct {
@@ -213,7 +215,24 @@ type CopyError struct {
 }
 
 type CopyAllResult struct {
-	CopiedCount int64
-	ErrorCount  int64
+	CopiedCount int
+	ErrorCount  int
 	Errors      []CopyError
+}
+
+type UploadDirOptions struct {
+	Shallow      bool
+	StorageClass string
+	BatchSize    int
+}
+
+type UploadAllResult struct {
+	UploadedCount int
+	ErrorCount    int
+	Errors        []UploadError
+}
+
+type UploadError struct {
+	FilePath string
+	Error    error
 }

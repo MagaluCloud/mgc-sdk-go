@@ -115,6 +115,80 @@ func TestObjectServiceUpload_ValidStorageClass(t *testing.T) {
 	}
 }
 
+func TestObjectServiceUploadDir_InvalidBucketName(t *testing.T) {
+	t.Parallel()
+
+	core := client.NewMgcClient()
+	osClient, _ := New(core, "minioadmin", "minioadmin")
+	svc := osClient.Objects()
+
+	_, err := svc.UploadDir(context.Background(), "", "test-key", "src", &UploadDirOptions{})
+
+	if err == nil {
+		t.Error("UploadDir() expected error for empty bucket name, got nil")
+	}
+
+	if _, ok := err.(*InvalidBucketNameError); !ok {
+		t.Errorf("UploadDir() expected InvalidBucketNameError, got %T", err)
+	}
+}
+
+func TestObjectServiceUploadDir_InvalidStorageClass(t *testing.T) {
+	t.Parallel()
+
+	core := client.NewMgcClient()
+	osClient, _ := New(core, "minioadmin", "minioadmin")
+	svc := osClient.Objects()
+
+	_, err := svc.UploadDir(context.Background(), "bucket-name", "test-key", "src", &UploadDirOptions{
+		StorageClass: "invalid",
+	})
+
+	if err == nil {
+		t.Error("UploadDir() expected error for invalid storage class, got nil")
+	}
+
+	if _, ok := err.(*InvalidObjectDataError); !ok {
+		t.Errorf("UploadDir() expected InvalidObjectDataError, got %T", err)
+	}
+}
+
+func TestObjectServiceUploadDir_ValidParameters(t *testing.T) {
+	t.Parallel()
+
+	core := client.NewMgcClient()
+	osClient, _ := New(core, "minioadmin", "minioadmin")
+	svc := osClient.Objects()
+
+	_, err := svc.UploadDir(context.Background(), "bucket-name", "test-key", "src", &UploadDirOptions{
+		Shallow:      false,
+		StorageClass: "standard",
+		BatchSize:    100,
+	})
+
+	if err != nil {
+		t.Error("UploadDir() expected success, got error")
+	}
+}
+
+func TestObjectServiceUploadDir_ValidStorageClass(t *testing.T) {
+	t.Parallel()
+
+	core := client.NewMgcClient()
+	osClient, _ := New(core, "minioadmin", "minioadmin")
+	svc := osClient.Objects()
+
+	_, err := svc.UploadDir(context.Background(), "", "test-key", "src", &UploadDirOptions{
+		Shallow:      false,
+		StorageClass: "cold_instant",
+		BatchSize:    100,
+	})
+
+	if err == nil {
+		t.Error("UploadDir() expected error due to no connection, got nil")
+	}
+}
+
 func TestObjectServiceDownload_ValidParameters(t *testing.T) {
 	t.Parallel()
 
