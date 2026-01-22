@@ -224,6 +224,7 @@ type UploadDirOptions struct {
 	Shallow      bool
 	StorageClass string
 	BatchSize    int
+	Filter       *[]FilterOptions
 }
 
 type UploadAllResult struct {

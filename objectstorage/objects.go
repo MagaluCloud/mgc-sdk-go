@@ -130,7 +130,7 @@ func (s *objectService) UploadDir(
 		ctx = WithStorageClass(ctx, opts.StorageClass)
 	}
 
-	fileCh := make(chan string)
+	fileCh := make(chan string, batchSize*2)
 
 	go func() {
 		defer close(fileCh)
@@ -145,7 +145,11 @@ func (s *objectService) UploadDir(
 				}
 				return nil
 			}
-			fileCh <- path
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			case fileCh <- path:
+			}
 			return nil
 		})
 	}()
@@ -163,6 +167,10 @@ func (s *objectService) UploadDir(
 		}
 
 		dstKey := filepath.ToSlash(filepath.Join(objectKey, relPath))
+
+		if opts != nil && !shouldProcessObject(opts.Filter, dstKey) {
+			return nil
+		}
 
 		file, err := os.Open(path)
 		if err != nil {
