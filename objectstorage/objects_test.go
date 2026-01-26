@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"reflect"
 	"slices"
 	"sync/atomic"
 	"testing"
@@ -1409,6 +1410,131 @@ func TestObjectServiceListAllVersions(t *testing.T) {
 
 	if err == nil {
 		t.Error("ListAllVersions() expected error due to no connection, got nil")
+	}
+}
+
+func TestObjectServiceListAllVersions_Success(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+
+	lastModified := time.Now()
+
+	mock := newMockMinioClient()
+
+	mock.buckets["bucket-name"] = &mockBucket{
+		name: "bucket-name",
+		objects: map[string]*mockObject{
+			"file.txt": {
+				key:          "file.txt",
+				size:         123,
+				lastModified: lastModified,
+				etag:         "etag-123",
+			},
+		},
+	}
+
+	// Sobrescreve o ListObjects para simular versões
+	mock.listObjectsFunc = func(
+		ctx context.Context,
+		bucketName string,
+		opts minio.ListObjectsOptions,
+	) <-chan minio.ObjectInfo {
+		ch := make(chan minio.ObjectInfo, 2)
+
+		go func() {
+			defer close(ch)
+
+			ch <- minio.ObjectInfo{
+				Key:            "file.txt",
+				VersionID:      "v1",
+				Size:           123,
+				LastModified:   lastModified,
+				ETag:           "etag-v1",
+				IsDeleteMarker: false,
+				IsLatest:       false,
+				StorageClass:   "STANDARD",
+				Owner: minio.Owner{
+					DisplayName: "user-1",
+					ID:          "owner-1",
+				},
+			}
+
+			ch <- minio.ObjectInfo{
+				Key:            "file.txt",
+				VersionID:      "v2",
+				Size:           456,
+				LastModified:   lastModified.Add(time.Minute),
+				ETag:           "etag-v2",
+				IsDeleteMarker: true,
+				IsLatest:       true,
+				StorageClass:   "COLD",
+				Owner: minio.Owner{
+					DisplayName: "user-2",
+					ID:          "owner-2",
+				},
+			}
+		}()
+
+		return ch
+	}
+
+	core := client.NewMgcClient()
+	osClient, _ := New(
+		core,
+		"minioadmin",
+		"minioadmin",
+		WithMinioClientInterface(mock),
+	)
+	svc := osClient.Objects()
+
+	versions, err := svc.ListAllVersions(
+		ctx,
+		"bucket-name",
+		"file.txt",
+	)
+
+	if err != nil {
+		t.Errorf("ListAllVersions() expected success, got %v", err)
+	}
+
+	if len(versions) != 2 {
+		t.Fatalf("expected 2 versions, got %v", len(versions))
+	}
+
+	expected := []ObjectVersion{
+		{
+			Key:            "file.txt",
+			VersionID:      "v1",
+			Size:           123,
+			LastModified:   lastModified,
+			ETag:           "etag-v1",
+			IsDeleteMarker: false,
+			IsLatest:       false,
+			Owner: ObjectOwner{
+				DisplayName: "user-1",
+				ID:          "owner-1",
+			},
+			StorageClass: "STANDARD",
+		},
+		{
+			Key:            "file.txt",
+			VersionID:      "v2",
+			Size:           456,
+			LastModified:   lastModified.Add(time.Minute),
+			ETag:           "etag-v2",
+			IsDeleteMarker: true,
+			IsLatest:       true,
+			Owner: ObjectOwner{
+				DisplayName: "user-2",
+				ID:          "owner-2",
+			},
+			StorageClass: "COLD",
+		},
+	}
+
+	if !reflect.DeepEqual(versions, expected) {
+		t.Errorf("ListAllVersions() mismatch\nexpected: %+v\ngot: %+v", expected, versions)
 	}
 }
 
