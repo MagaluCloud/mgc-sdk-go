@@ -753,17 +753,23 @@ func TestObjectServiceListAll_Success(t *testing.T) {
 
 	ctx := context.Background()
 
+	lastModified := time.Now()
+
 	mock := newMockMinioClient()
 	mock.buckets["bucket-name"] = &mockBucket{
 		name: "bucket-name",
 		objects: map[string]*mockObject{
 			"a.txt": {
-				key:  "a.txt",
-				size: 10,
+				key:          "a.txt",
+				size:         10,
+				lastModified: lastModified,
+				etag:         "etag-a",
 			},
 			"b.txt": {
-				key:  "b.txt",
-				size: 20,
+				key:          "b.txt",
+				size:         20,
+				lastModified: lastModified.Add(time.Minute),
+				etag:         "etag-b",
 			},
 		},
 	}
@@ -787,16 +793,23 @@ func TestObjectServiceListAll_Success(t *testing.T) {
 		t.Errorf("ListAll() expected 2 objects, got %v", len(objects))
 	}
 
-	keys := map[string]bool{}
-	for _, obj := range objects {
-		keys[obj.Key] = true
+	expected := []Object{
+		{
+			Key:          "a.txt",
+			Size:         10,
+			LastModified: lastModified,
+			ETag:         "etag-a",
+		},
+		{
+			Key:          "b.txt",
+			Size:         20,
+			LastModified: lastModified.Add(time.Minute),
+			ETag:         "etag-b",
+		},
 	}
 
-	if !keys["a.txt"] {
-		t.Errorf("expected object a.txt to be listed")
-	}
-	if !keys["b.txt"] {
-		t.Errorf("expected object b.txt to be listed")
+	if !reflect.DeepEqual(objects, expected) {
+		t.Errorf("ListAll() mismatch\nexpected: %+v\ngot: %+v", expected, objects)
 	}
 }
 
@@ -1677,7 +1690,7 @@ func TestObjectServiceGetPresignedURL_InvalidObjectKey(t *testing.T) {
 	}
 }
 
-func TestObjectServiceGetPresignedURL(t *testing.T) {
+func TestObjectServiceGetPresignedURL_PUTMethod(t *testing.T) {
 	t.Parallel()
 
 	core := client.NewMgcClient()
@@ -1686,6 +1699,22 @@ func TestObjectServiceGetPresignedURL(t *testing.T) {
 
 	_, err := svc.GetPresignedURL(context.Background(), "test-bucket", "test-key", GetPresignedURLOptions{
 		Method: http.MethodPut,
+	})
+
+	if err != nil {
+		t.Error("GetPresignedURL() expected presigned URL, got nil")
+	}
+}
+
+func TestObjectServiceGetPresignedURL_GETMethod(t *testing.T) {
+	t.Parallel()
+
+	core := client.NewMgcClient()
+	osClient, _ := New(core, "minioadmin", "minioadmin")
+	svc := osClient.Objects()
+
+	_, err := svc.GetPresignedURL(context.Background(), "test-bucket", "test-key", GetPresignedURLOptions{
+		Method: http.MethodGet,
 	})
 
 	if err != nil {
