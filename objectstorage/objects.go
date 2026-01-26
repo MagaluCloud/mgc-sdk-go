@@ -221,17 +221,24 @@ func (s *objectService) UploadDir(ctx context.Context, bucketName string, object
 
 	if p != nil {
 		p.Start(int64(len(files)))
+		defer p.Finish()
 	}
 
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
+
+	var wg sync.WaitGroup
 
 	processStreamInBatches(
 		ctx,
 		fileCh,
 		batchSize,
 		maxParallel,
-		handler,
+		func(ctx context.Context, path string) error {
+			wg.Add(1)
+			defer wg.Done()
+			return handler(ctx, path)
+		},
 		func() {
 			mu.Lock()
 			result.UploadedCount++
@@ -248,10 +255,6 @@ func (s *objectService) UploadDir(ctx context.Context, bucketName string, object
 			mu.Unlock()
 		},
 	)
-
-	if p != nil {
-		p.Finish()
-	}
 
 	return result, nil
 }
