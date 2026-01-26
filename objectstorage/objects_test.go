@@ -2232,9 +2232,12 @@ func TestObjectServiceCopyAll_SkipsDirectories(t *testing.T) {
 		objects: map[string]*mockObject{},
 	}
 
+	var mu sync.Mutex
 	count := 0
 	mock.copyObjectFunc = func(ctx context.Context, dst minio.CopyDestOptions, src minio.CopySrcOptions) (minio.UploadInfo, error) {
+		mu.Lock()
 		count++
+		mu.Unlock()
 		return minio.UploadInfo{}, nil
 	}
 
@@ -2280,9 +2283,12 @@ func TestObjectServiceCopyAll_Filter(t *testing.T) {
 		objects: map[string]*mockObject{},
 	}
 
+	var mu sync.Mutex
 	var copied []string
 	mock.copyObjectFunc = func(ctx context.Context, dst minio.CopyDestOptions, src minio.CopySrcOptions) (minio.UploadInfo, error) {
+		mu.Lock()
 		copied = append(copied, src.Object)
+		mu.Unlock()
 		return minio.UploadInfo{}, nil
 	}
 
@@ -2337,10 +2343,13 @@ func TestCopyAll_CopyError(t *testing.T) {
 		objects: map[string]*mockObject{},
 	}
 
+	var mu sync.Mutex
 	mock.copyObjectFunc = func(ctx context.Context, dst minio.CopyDestOptions, src minio.CopySrcOptions) (minio.UploadInfo, error) {
+		mu.Lock()
 		if src.Object == "b.txt" {
 			return minio.UploadInfo{}, fmt.Errorf("boom")
 		}
+		mu.Unlock()
 		return minio.UploadInfo{}, nil
 	}
 
