@@ -234,13 +234,7 @@ func (s *objectService) UploadDir(ctx context.Context, bucketName string, object
 		maxParallel,
 		handler,
 		func() {
-			mu.Lock()
-			result.UploadedCount++
-			mu.Unlock()
-
-			if p != nil {
-				p.Add(1)
-			}
+			progressSuccess(p, &mu, &result.UploadedCount)
 		},
 		func(err error) {
 			mu.Lock()
@@ -318,18 +312,9 @@ func (s *objectService) DownloadAll(ctx context.Context, bucketName string, dstP
 		listOpts.Prefix = opts.Prefix
 	}
 
-	var objects []minio.ObjectInfo
-
-	for obj := range s.client.minioClient.ListObjects(ctx, bucketName, listOpts) {
-		if obj.Err != nil {
-			return nil, obj.Err
-		}
-
-		if opts != nil && !shouldProcessObject(opts.Filter, obj.Key) {
-			continue
-		}
-
-		objects = append(objects, obj)
+	objects, err := s.listFilteredObjects(ctx, bucketName, listOpts, opts.Filter, false)
+	if err != nil {
+		return nil, err
 	}
 
 	total := int64(len(objects))
@@ -397,13 +382,7 @@ func (s *objectService) DownloadAll(ctx context.Context, bucketName string, dstP
 		maxParallel,
 		handler,
 		func() {
-			mu.Lock()
-			result.DownloadedCount++
-			mu.Unlock()
-
-			if p != nil {
-				p.Add(1)
-			}
+			progressSuccess(p, &mu, &result.DownloadedCount)
 		},
 		func(err error) {
 			mu.Lock()
@@ -539,18 +518,9 @@ func (s *objectService) DeleteAll(ctx context.Context, bucketName string, opts *
 		listOpts.Prefix = opts.ObjectKey
 	}
 
-	var objects []minio.ObjectInfo
-
-	for obj := range s.client.minioClient.ListObjects(ctx, bucketName, listOpts) {
-		if obj.Err != nil {
-			return nil, obj.Err
-		}
-
-		if opts != nil && !shouldProcessObject(opts.Filter, obj.Key) {
-			continue
-		}
-
-		objects = append(objects, obj)
+	objects, err := s.listFilteredObjects(ctx, bucketName, listOpts, opts.Filter, false)
+	if err != nil {
+		return nil, err
 	}
 
 	total := int64(len(objects))
@@ -596,13 +566,7 @@ func (s *objectService) DeleteAll(ctx context.Context, bucketName string, opts *
 		maxParallel,
 		handler,
 		func() {
-			mu.Lock()
-			result.DeletedCount++
-			mu.Unlock()
-
-			if p != nil {
-				p.Add(1)
-			}
+			progressSuccess(p, &mu, &result.DeletedCount)
 		},
 		func(err error) {
 			mu.Lock()
@@ -924,12 +888,7 @@ func (s *objectService) Copy(ctx context.Context, src CopySrcConfig, dst CopyDst
 	return err
 }
 
-func (s *objectService) CopyAll(
-	ctx context.Context,
-	src CopyPath,
-	dst CopyPath,
-	opts *CopyAllOptions,
-) (*CopyAllResult, error) {
+func (s *objectService) CopyAll(ctx context.Context, src CopyPath, dst CopyPath, opts *CopyAllOptions) (*CopyAllResult, error) {
 	if err := validateBucket(src.BucketName); err != nil {
 		return nil, err
 	}
@@ -959,22 +918,9 @@ func (s *objectService) CopyAll(
 		listOpts.Prefix = src.ObjectKey
 	}
 
-	var objects []minio.ObjectInfo
-
-	for obj := range s.client.minioClient.ListObjects(procCtx, src.BucketName, listOpts) {
-		if obj.Err != nil {
-			return nil, obj.Err
-		}
-
-		if opts != nil && !shouldProcessObject(opts.Filter, obj.Key) {
-			continue
-		}
-
-		if obj.Size == 0 && strings.HasSuffix(obj.Key, "/") {
-			continue
-		}
-
-		objects = append(objects, obj)
+	objects, err := s.listFilteredObjects(procCtx, src.BucketName, listOpts, opts.Filter, true)
+	if err != nil {
+		return nil, err
 	}
 
 	total := int64(len(objects))
@@ -1031,13 +977,7 @@ func (s *objectService) CopyAll(
 		maxParallel,
 		handler,
 		func() {
-			mu.Lock()
-			result.CopiedCount++
-			mu.Unlock()
-
-			if p != nil {
-				p.Add(1)
-			}
+			progressSuccess(p, &mu, &result.CopiedCount)
 		},
 		func(err error) {
 			mu.Lock()
@@ -1151,4 +1091,43 @@ func (pr *ProgressReader) Read(b []byte) (int, error) {
 		pr.p.Add(int64(n))
 	}
 	return n, err
+}
+
+func progressSuccess(p ProgressReporter, mu *sync.Mutex, counter *int) {
+	mu.Lock()
+	*counter++
+	mu.Unlock()
+
+	if p != nil {
+		p.Add(1)
+	}
+}
+
+func (s *objectService) listFilteredObjects(
+	ctx context.Context,
+	bucket string,
+	opts minio.ListObjectsOptions,
+	filters *[]FilterOptions,
+	skipDirs bool,
+) ([]minio.ObjectInfo, error) {
+
+	var result []minio.ObjectInfo
+
+	for obj := range s.client.minioClient.ListObjects(ctx, bucket, opts) {
+		if obj.Err != nil {
+			return nil, obj.Err
+		}
+
+		if filters != nil && !shouldProcessObject(filters, obj.Key) {
+			continue
+		}
+
+		if skipDirs && obj.Size == 0 && strings.HasSuffix(obj.Key, "/") {
+			continue
+		}
+
+		result = append(result, obj)
+	}
+
+	return result, nil
 }
