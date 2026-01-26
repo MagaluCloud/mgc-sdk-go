@@ -339,9 +339,7 @@ func TestObjectServiceUploadDir_FilterSkipsFile(t *testing.T) {
 	}
 }
 
-func TestObjectServiceUploadDir_WithouFilter(t *testing.T) {
-	t.Parallel()
-
+func TestObjectServiceUploadDir_WithoutFilter(t *testing.T) {
 	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Objects()
