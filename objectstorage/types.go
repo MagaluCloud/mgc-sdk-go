@@ -1,6 +1,9 @@
 package objectstorage
 
-import "time"
+import (
+	"io"
+	"time"
+)
 
 // Bucket represents an object storage bucket.
 type Bucket struct {
@@ -236,4 +239,15 @@ type UploadAllResult struct {
 type UploadError struct {
 	FilePath string
 	Error    error
+}
+
+type ProgressReporter interface {
+	Start(total int64)
+	Add(delta int64)
+	Finish()
+}
+
+type ProgressReader struct {
+	r io.Reader
+	p ProgressReporter
 }

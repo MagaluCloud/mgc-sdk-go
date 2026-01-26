@@ -97,7 +97,21 @@ func (s *objectService) Upload(ctx context.Context, bucketName string, objectKey
 		opts.StorageClass = *storageClass
 	}
 
-	_, err := s.client.minioClient.PutObject(ctx, bucketName, objectKey, bytes.NewReader(data), int64(len(data)), opts)
+	p := GetProgress(ctx)
+	size := int64(len(data))
+
+	var reader io.Reader = bytes.NewReader(data)
+
+	if p != nil {
+		p.Start(size)
+		reader = &ProgressReader{
+			r: reader,
+			p: p,
+		}
+		defer p.Finish()
+	}
+
+	_, err := s.client.minioClient.PutObject(ctx, bucketName, objectKey, reader, int64(len(data)), opts)
 
 	return err
 }
@@ -130,28 +144,37 @@ func (s *objectService) UploadDir(
 		ctx = WithStorageClass(ctx, opts.StorageClass)
 	}
 
+	var files []string
+
+	err := filepath.WalkDir(srcDir, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() {
+			if opts != nil && opts.Shallow && path != srcDir {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+
+		files = append(files, path)
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	fileCh := make(chan string, batchSize*2)
 
 	go func() {
 		defer close(fileCh)
-
-		_ = filepath.WalkDir(srcDir, func(path string, d os.DirEntry, err error) error {
-			if err != nil {
-				return err
-			}
-			if d.IsDir() {
-				if opts != nil && opts.Shallow && path != srcDir {
-					return filepath.SkipDir
-				}
-				return nil
-			}
+		for _, f := range files {
 			select {
 			case <-ctx.Done():
-				return ctx.Err()
-			case fileCh <- path:
+				return
+			case fileCh <- f:
 			}
-			return nil
-		})
+		}
 	}()
 
 	result := &UploadAllResult{
@@ -200,6 +223,16 @@ func (s *objectService) UploadDir(
 		return err
 	}
 
+	p := GetProgress(ctx)
+
+	if p != nil {
+		p.Start(int64(len(files)))
+		defer p.Finish()
+	}
+
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
 	processStreamInBatches(
 		ctx,
 		fileCh,
@@ -210,6 +243,10 @@ func (s *objectService) UploadDir(
 			mu.Lock()
 			result.UploadedCount++
 			mu.Unlock()
+
+			if p != nil {
+				p.Add(1)
+			}
 		},
 		func(err error) {
 			mu.Lock()
@@ -292,7 +329,40 @@ func (s *objectService) DownloadAll(
 		listOpts.Prefix = opts.Prefix
 	}
 
-	objectCh := s.client.minioClient.ListObjects(ctx, bucketName, listOpts)
+	var objects []minio.ObjectInfo
+
+	for obj := range s.client.minioClient.ListObjects(ctx, bucketName, listOpts) {
+		if obj.Err != nil {
+			return nil, obj.Err
+		}
+
+		if opts != nil && !shouldProcessObject(opts.Filter, obj.Key) {
+			continue
+		}
+
+		objects = append(objects, obj)
+	}
+
+	total := int64(len(objects))
+
+	p := GetProgress(ctx)
+	if p != nil {
+		p.Start(total)
+		defer p.Finish()
+	}
+
+	objectCh := make(chan minio.ObjectInfo, batchSize*2)
+
+	go func() {
+		defer close(objectCh)
+		for _, obj := range objects {
+			select {
+			case <-ctx.Done():
+				return
+			case objectCh <- obj:
+			}
+		}
+	}()
 
 	result := &DownloadAllResult{
 		Errors: make([]DownloadError, 0),
@@ -301,13 +371,6 @@ func (s *objectService) DownloadAll(
 	var mu sync.Mutex
 
 	handler := func(ctx context.Context, obj minio.ObjectInfo) error {
-		if obj.Err != nil {
-			return obj.Err
-		}
-		if opts != nil && !shouldProcessObject(opts.Filter, obj.Key) {
-			return nil
-		}
-
 		if obj.Size == 0 && strings.HasSuffix(obj.Key, "/") {
 			return os.MkdirAll(filepath.Join(dstPath, obj.Key), 0755)
 		}
@@ -348,6 +411,10 @@ func (s *objectService) DownloadAll(
 			mu.Lock()
 			result.DownloadedCount++
 			mu.Unlock()
+
+			if p != nil {
+				p.Add(1)
+			}
 		},
 		func(err error) {
 			mu.Lock()
@@ -487,7 +554,40 @@ func (s *objectService) DeleteAll(
 		listOpts.Prefix = opts.ObjectKey
 	}
 
-	objectCh := s.client.minioClient.ListObjects(ctx, bucketName, listOpts)
+	var objects []minio.ObjectInfo
+
+	for obj := range s.client.minioClient.ListObjects(ctx, bucketName, listOpts) {
+		if obj.Err != nil {
+			return nil, obj.Err
+		}
+
+		if opts != nil && !shouldProcessObject(opts.Filter, obj.Key) {
+			continue
+		}
+
+		objects = append(objects, obj)
+	}
+
+	total := int64(len(objects))
+
+	p := GetProgress(ctx)
+	if p != nil {
+		p.Start(total)
+		defer p.Finish()
+	}
+
+	objectCh := make(chan minio.ObjectInfo, batchSize*2)
+
+	go func() {
+		defer close(objectCh)
+		for _, obj := range objects {
+			select {
+			case <-ctx.Done():
+				return
+			case objectCh <- obj:
+			}
+		}
+	}()
 
 	result := &DeleteAllResult{
 		Errors: make([]DeleteError, 0),
@@ -496,12 +596,6 @@ func (s *objectService) DeleteAll(
 	var mu sync.Mutex
 
 	handler := func(ctx context.Context, obj minio.ObjectInfo) error {
-		if obj.Err != nil {
-			return obj.Err
-		}
-		if opts != nil && !shouldProcessObject(opts.Filter, obj.Key) {
-			return nil
-		}
 		return s.client.minioClient.RemoveObject(
 			ctx,
 			bucketName,
@@ -520,6 +614,10 @@ func (s *objectService) DeleteAll(
 			mu.Lock()
 			result.DeletedCount++
 			mu.Unlock()
+
+			if p != nil {
+				p.Add(1)
+			}
 		},
 		func(err error) {
 			mu.Lock()
@@ -874,7 +972,44 @@ func (s *objectService) CopyAll(
 		listOpts.Prefix = src.ObjectKey
 	}
 
-	objectCh := s.client.minioClient.ListObjects(ctx, src.BucketName, listOpts)
+	var objects []minio.ObjectInfo
+
+	for obj := range s.client.minioClient.ListObjects(ctx, src.BucketName, listOpts) {
+		if obj.Err != nil {
+			return nil, obj.Err
+		}
+
+		if opts != nil && !shouldProcessObject(opts.Filter, obj.Key) {
+			continue
+		}
+
+		if obj.Size == 0 && strings.HasSuffix(obj.Key, "/") {
+			continue
+		}
+
+		objects = append(objects, obj)
+	}
+
+	total := int64(len(objects))
+
+	p := GetProgress(ctx)
+	if p != nil {
+		p.Start(total)
+		defer p.Finish()
+	}
+
+	objectCh := make(chan minio.ObjectInfo, batchSize*2)
+
+	go func() {
+		defer close(objectCh)
+		for _, obj := range objects {
+			select {
+			case <-ctx.Done():
+				return
+			case objectCh <- obj:
+			}
+		}
+	}()
 
 	result := &CopyAllResult{
 		Errors: make([]CopyError, 0),
@@ -883,16 +1018,6 @@ func (s *objectService) CopyAll(
 	var mu sync.Mutex
 
 	handler := func(ctx context.Context, obj minio.ObjectInfo) error {
-		if obj.Err != nil {
-			return obj.Err
-		}
-		if opts != nil && !shouldProcessObject(opts.Filter, obj.Key) {
-			return nil
-		}
-		if obj.Size == 0 && strings.HasSuffix(obj.Key, "/") {
-			return nil
-		}
-
 		dstKey := obj.Key
 		if dst.ObjectKey != "" {
 			dstKey = filepath.ToSlash(filepath.Join(dst.ObjectKey, obj.Key))
@@ -922,6 +1047,10 @@ func (s *objectService) CopyAll(
 			mu.Lock()
 			result.CopiedCount++
 			mu.Unlock()
+
+			if p != nil {
+				p.Add(1)
+			}
 		},
 		func(err error) {
 			mu.Lock()
@@ -1027,4 +1156,12 @@ func processStreamInBatches[T any](
 			}
 		}
 	}
+}
+
+func (pr *ProgressReader) Read(b []byte) (int, error) {
+	n, err := pr.r.Read(b)
+	if n > 0 {
+		pr.p.Add(int64(n))
+	}
+	return n, err
 }
