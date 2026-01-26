@@ -129,7 +129,7 @@ func (s *objectService) UploadDir(ctx context.Context, bucketName string, object
 		batchSize = resolveBatchSize(&opts.BatchSize)
 	}
 
-	if opts != nil && opts.StorageClass != "" {
+	if opts != nil {
 		err := storageClassIsValid(opts.StorageClass)
 		if err != nil {
 			return nil, err
@@ -237,10 +237,7 @@ func (s *objectService) UploadDir(ctx context.Context, bucketName string, object
 			progressSuccess(p, &mu, &result.UploadedCount)
 		},
 		func(err error) {
-			mu.Lock()
-			result.ErrorCount++
-			result.Errors = append(result.Errors, UploadError{Error: err})
-			mu.Unlock()
+			progressError(&mu, &result.ErrorCount, &result.Errors, UploadError{Error: err})
 		},
 	)
 
@@ -327,19 +324,6 @@ func (s *objectService) DownloadAll(ctx context.Context, bucketName string, dstP
 		defer p.Finish()
 	}
 
-	objectCh := make(chan minio.ObjectInfo, batchSize*2)
-
-	go func() {
-		defer close(objectCh)
-		for _, obj := range objects {
-			select {
-			case <-ctx.Done():
-				return
-			case objectCh <- obj:
-			}
-		}
-	}()
-
 	result := &DownloadAllResult{
 		Errors: make([]DownloadError, 0),
 	}
@@ -375,20 +359,20 @@ func (s *objectService) DownloadAll(ctx context.Context, bucketName string, dstP
 		return err
 	}
 
-	processStreamInBatches(
+	s.runObjectPipeline(
 		ctx,
-		objectCh,
-		batchSize,
-		maxParallel,
+		objects,
+		ObjectPipelineOptions{
+			BatchSize:   batchSize,
+			MaxParallel: maxParallel,
+			Progress:    p,
+		},
 		handler,
 		func() {
 			progressSuccess(p, &mu, &result.DownloadedCount)
 		},
 		func(err error) {
-			mu.Lock()
-			result.ErrorCount++
-			result.Errors = append(result.Errors, DownloadError{Error: err})
-			mu.Unlock()
+			progressError(&mu, &result.ErrorCount, &result.Errors, DownloadError{Error: err})
 		},
 	)
 
@@ -533,19 +517,6 @@ func (s *objectService) DeleteAll(ctx context.Context, bucketName string, opts *
 		defer p.Finish()
 	}
 
-	objectCh := make(chan minio.ObjectInfo, batchSize*2)
-
-	go func() {
-		defer close(objectCh)
-		for _, obj := range objects {
-			select {
-			case <-ctx.Done():
-				return
-			case objectCh <- obj:
-			}
-		}
-	}()
-
 	result := &DeleteAllResult{
 		Errors: make([]DeleteError, 0),
 	}
@@ -559,20 +530,20 @@ func (s *objectService) DeleteAll(ctx context.Context, bucketName string, opts *
 		)
 	}
 
-	processStreamInBatches(
+	s.runObjectPipeline(
 		ctx,
-		objectCh,
-		batchSize,
-		maxParallel,
+		objects,
+		ObjectPipelineOptions{
+			BatchSize:   batchSize,
+			MaxParallel: maxParallel,
+			Progress:    p,
+		},
 		handler,
 		func() {
 			progressSuccess(p, &mu, &result.DeletedCount)
 		},
 		func(err error) {
-			mu.Lock()
-			result.ErrorCount++
-			result.Errors = append(result.Errors, DeleteError{Error: err})
-			mu.Unlock()
+			progressError(&mu, &result.ErrorCount, &result.Errors, DeleteError{Error: err})
 		},
 	)
 
@@ -933,19 +904,6 @@ func (s *objectService) CopyAll(ctx context.Context, src CopyPath, dst CopyPath,
 		defer p.Finish()
 	}
 
-	objectCh := make(chan minio.ObjectInfo, batchSize*2)
-
-	go func() {
-		defer close(objectCh)
-		for _, obj := range objects {
-			select {
-			case <-procCtx.Done():
-				return
-			case objectCh <- obj:
-			}
-		}
-	}()
-
 	result := &CopyAllResult{
 		Errors: make([]CopyError, 0),
 	}
@@ -970,20 +928,20 @@ func (s *objectService) CopyAll(ctx context.Context, src CopyPath, dst CopyPath,
 		return err
 	}
 
-	processStreamInBatches(
-		procCtx,
-		objectCh,
-		batchSize,
-		maxParallel,
+	s.runObjectPipeline(
+		ctx,
+		objects,
+		ObjectPipelineOptions{
+			BatchSize:   batchSize,
+			MaxParallel: maxParallel,
+			Progress:    p,
+		},
 		handler,
 		func() {
 			progressSuccess(p, &mu, &result.CopiedCount)
 		},
 		func(err error) {
-			mu.Lock()
-			result.ErrorCount++
-			result.Errors = append(result.Errors, CopyError{Error: err})
-			mu.Unlock()
+			progressError(&mu, &result.ErrorCount, &result.Errors, CopyError{Error: err})
 		},
 	)
 
@@ -1103,13 +1061,14 @@ func progressSuccess(p ProgressReporter, mu *sync.Mutex, counter *int) {
 	}
 }
 
-func (s *objectService) listFilteredObjects(
-	ctx context.Context,
-	bucket string,
-	opts minio.ListObjectsOptions,
-	filters *[]FilterOptions,
-	skipDirs bool,
-) ([]minio.ObjectInfo, error) {
+func progressError[T any](mu *sync.Mutex, counter *int, errs *[]T, err T) {
+	mu.Lock()
+	*counter++
+	*errs = append(*errs, err)
+	mu.Unlock()
+}
+
+func (s *objectService) listFilteredObjects(ctx context.Context, bucket string, opts minio.ListObjectsOptions, filters *[]FilterOptions, skipDirs bool) ([]minio.ObjectInfo, error) {
 
 	var result []minio.ObjectInfo
 
@@ -1130,4 +1089,36 @@ func (s *objectService) listFilteredObjects(
 	}
 
 	return result, nil
+}
+
+func (s *objectService) runObjectPipeline(
+	ctx context.Context,
+	objects []minio.ObjectInfo,
+	opts ObjectPipelineOptions,
+	handler func(context.Context, minio.ObjectInfo) error,
+	onSuccess func(),
+	onError func(error),
+) {
+	objectCh := make(chan minio.ObjectInfo, opts.BatchSize*2)
+
+	go func() {
+		defer close(objectCh)
+		for _, obj := range objects {
+			select {
+			case <-ctx.Done():
+				return
+			case objectCh <- obj:
+			}
+		}
+	}()
+
+	processStreamInBatches(
+		ctx,
+		objectCh,
+		opts.BatchSize,
+		opts.MaxParallel,
+		handler,
+		onSuccess,
+		onError,
+	)
 }

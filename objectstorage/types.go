@@ -251,3 +251,9 @@ type ProgressReader struct {
 	r io.Reader
 	p ProgressReporter
 }
+
+type ObjectPipelineOptions struct {
+	BatchSize   int
+	MaxParallel int
+	Progress    ProgressReporter
+}
