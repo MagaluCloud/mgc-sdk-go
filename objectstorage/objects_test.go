@@ -8,12 +8,14 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"slices"
 	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/MagaluCloud/mgc-sdk-go/client"
 	"github.com/MagaluCloud/mgc-sdk-go/helpers"
+	"github.com/minio/minio-go/v7"
 )
 
 func TestObjectServiceUpload_InvalidBucketName(t *testing.T) {
@@ -182,6 +184,8 @@ func TestObjectServiceUploadDir_InvalidStorageClass(t *testing.T) {
 }
 
 func TestObjectServiceUploadDir_ValidParameters(t *testing.T) {
+	t.Parallel()
+
 	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Objects()
@@ -198,6 +202,8 @@ func TestObjectServiceUploadDir_ValidParameters(t *testing.T) {
 }
 
 func TestObjectServiceUploadDir_ValidStorageClass(t *testing.T) {
+	t.Parallel()
+
 	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Objects()
@@ -214,6 +220,8 @@ func TestObjectServiceUploadDir_ValidStorageClass(t *testing.T) {
 }
 
 func TestObjectServiceUploadDir_BatchSizeZero(t *testing.T) {
+	t.Parallel()
+
 	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Objects()
@@ -228,6 +236,8 @@ func TestObjectServiceUploadDir_BatchSizeZero(t *testing.T) {
 }
 
 func TestObjectServiceUploadDir_WalkDirCollectsFiles(t *testing.T) {
+	t.Parallel()
+
 	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Objects()
@@ -255,6 +265,8 @@ func TestObjectServiceUploadDir_WalkDirCollectsFiles(t *testing.T) {
 }
 
 func TestObjectServiceUploadDir_ShallowSkipsSubDirs(t *testing.T) {
+	t.Parallel()
+
 	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Objects()
@@ -293,6 +305,8 @@ func TestObjectServiceUploadDir_ShallowSkipsSubDirs(t *testing.T) {
 }
 
 func TestObjectServiceUploadDir_FilterSkipsFile(t *testing.T) {
+	t.Parallel()
+
 	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Objects()
@@ -330,6 +344,8 @@ func TestObjectServiceUploadDir_FilterSkipsFile(t *testing.T) {
 }
 
 func TestObjectServiceUploadDir_WithoutFilter(t *testing.T) {
+	t.Parallel()
+
 	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Objects()
@@ -1836,6 +1852,215 @@ func TestObjectServiceCopyAll_WithColdInstantStorageClass(t *testing.T) {
 
 	if err == nil {
 		t.Error("CopyAll() expected error due to no connection, got nil")
+	}
+}
+
+func TestObjectServiceCopyAll_Success(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+
+	mock := newMockMinioClient()
+	mock.buckets["src"] = &mockBucket{
+		name: "src",
+		objects: map[string]*mockObject{
+			"a.txt": {key: "a.txt", size: 10},
+			"b.txt": {key: "b.txt", size: 20},
+		},
+	}
+	mock.buckets["dst"] = &mockBucket{
+		name:    "dst",
+		objects: map[string]*mockObject{},
+	}
+
+	copied := make([]string, 0)
+
+	mock.copyObjectFunc = func(
+		ctx context.Context,
+		dst minio.CopyDestOptions,
+		src minio.CopySrcOptions,
+	) (minio.UploadInfo, error) {
+		copied = append(copied, dst.Object)
+		return minio.UploadInfo{}, nil
+	}
+
+	core := client.NewMgcClient()
+	osClient, _ := New(core, "minioadmin", "minioadmin", WithMinioClientInterface(mock))
+	svc := osClient.Objects()
+
+	res, err := svc.CopyAll(
+		ctx,
+		CopyPath{BucketName: "src"},
+		CopyPath{BucketName: "dst"},
+		nil,
+	)
+
+	if err != nil {
+		t.Errorf("CopyAll() expected success, got %v", err)
+	}
+	if res.CopiedCount != 2 {
+		t.Errorf("CopiedCount expected 2, got %v", res.CopiedCount)
+	}
+	if res.ErrorCount != 0 {
+		t.Errorf("ErrorCount expected 0, got %v", res.ErrorCount)
+	}
+	if len(copied) != 2 {
+		t.Errorf("copied expected 2, got %v", len(copied))
+	}
+}
+
+func TestObjectServiceCopyAll_SkipsDirectories(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+
+	mock := newMockMinioClient()
+	mock.buckets["src"] = &mockBucket{
+		name: "src",
+		objects: map[string]*mockObject{
+			"dir/":     {key: "dir/", size: 0},
+			"dir/a":    {key: "dir/a", size: 5},
+			"file.txt": {key: "file.txt", size: 3},
+		},
+	}
+	mock.buckets["dst"] = &mockBucket{
+		name:    "dst",
+		objects: map[string]*mockObject{},
+	}
+
+	count := 0
+	mock.copyObjectFunc = func(ctx context.Context, dst minio.CopyDestOptions, src minio.CopySrcOptions) (minio.UploadInfo, error) {
+		count++
+		return minio.UploadInfo{}, nil
+	}
+
+	core := client.NewMgcClient()
+	osClient, _ := New(core, "minioadmin", "minioadmin", WithMinioClientInterface(mock))
+	svc := osClient.Objects()
+
+	res, err := svc.CopyAll(ctx,
+		CopyPath{BucketName: "src"},
+		CopyPath{BucketName: "dst"},
+		nil,
+	)
+
+	if err != nil {
+		t.Errorf("CopyAll() expected success, got %v", err)
+	}
+	if res.CopiedCount != 2 {
+		t.Errorf("CopiedCount expected 2, got %v", res.CopiedCount)
+	}
+	if res.ErrorCount != 0 {
+		t.Errorf("ErrorCount expected 0, got %v", res.ErrorCount)
+	}
+	if count != 2 {
+		t.Errorf("count expected 2, got %v", count)
+	}
+}
+
+func TestObjectServiceCopyAll_Filter(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+
+	mock := newMockMinioClient()
+	mock.buckets["src"] = &mockBucket{
+		name: "src",
+		objects: map[string]*mockObject{
+			"a.txt": {key: "a.txt", size: 1},
+			"b.log": {key: "b.log", size: 1},
+		},
+	}
+	mock.buckets["dst"] = &mockBucket{
+		name:    "dst",
+		objects: map[string]*mockObject{},
+	}
+
+	var copied []string
+	mock.copyObjectFunc = func(ctx context.Context, dst minio.CopyDestOptions, src minio.CopySrcOptions) (minio.UploadInfo, error) {
+		copied = append(copied, src.Object)
+		return minio.UploadInfo{}, nil
+	}
+
+	core := client.NewMgcClient()
+	osClient, _ := New(core, "minioadmin", "minioadmin", WithMinioClientInterface(mock))
+	svc := osClient.Objects()
+
+	filter := []FilterOptions{
+		{Include: ".txt"},
+	}
+
+	opts := &CopyAllOptions{
+		Filter: &filter,
+	}
+
+	res, err := svc.CopyAll(ctx,
+		CopyPath{BucketName: "src"},
+		CopyPath{BucketName: "dst"},
+		opts,
+	)
+
+	if err != nil {
+		t.Errorf("CopyAll() expected success, got %v", err)
+	}
+	if res.CopiedCount != 1 {
+		t.Errorf("CopiedCount expected 1, got %v", res.CopiedCount)
+	}
+	if res.ErrorCount != 0 {
+		t.Errorf("ErrorCount expected 0, got %v", res.ErrorCount)
+	}
+	if slices.Compare([]string{"a.txt"}, copied) != 0 {
+		t.Errorf("copied expected ['a.txt'], got %v", copied)
+	}
+
+}
+
+func TestCopyAll_CopyError(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+
+	mock := newMockMinioClient()
+	mock.buckets["src"] = &mockBucket{
+		name: "src",
+		objects: map[string]*mockObject{
+			"a.txt": {key: "a.txt", size: 1},
+			"b.txt": {key: "b.txt", size: 1},
+		},
+	}
+	mock.buckets["dst"] = &mockBucket{
+		name:    "dst",
+		objects: map[string]*mockObject{},
+	}
+
+	mock.copyObjectFunc = func(ctx context.Context, dst minio.CopyDestOptions, src minio.CopySrcOptions) (minio.UploadInfo, error) {
+		if src.Object == "b.txt" {
+			return minio.UploadInfo{}, fmt.Errorf("boom")
+		}
+		return minio.UploadInfo{}, nil
+	}
+
+	core := client.NewMgcClient()
+	osClient, _ := New(core, "minioadmin", "minioadmin", WithMinioClientInterface(mock))
+	svc := osClient.Objects()
+
+	res, err := svc.CopyAll(ctx,
+		CopyPath{BucketName: "src"},
+		CopyPath{BucketName: "dst"},
+		nil,
+	)
+
+	if err != nil {
+		t.Errorf("CopyAll() expected success, got %v", err)
+	}
+	if res.CopiedCount != 1 {
+		t.Errorf("CopiedCount expected 1, got %v", res.CopiedCount)
+	}
+	if res.ErrorCount != 1 {
+		t.Errorf("ErrorCount expected 1, got %v", res.ErrorCount)
+	}
+	if len(res.Errors) != 1 {
+		t.Errorf("len(Errors) expected 1, got %v", len(res.Errors))
 	}
 }
 
