@@ -461,7 +461,7 @@ func (m *mockMinioClient) PresignedPutObject(ctx context.Context, bucketName str
 	return parsedURL, nil
 }
 
-func (m *mockMinioClient) SetAppInfo(appName string, appVersion string) {
+func (m *mockMinioClient) SetAppInfo(appName, appVersion string) {
 	m.setAppInfoCalls++
 	m.lastAppName = appName
 	m.lastAppVersion = appVersion
