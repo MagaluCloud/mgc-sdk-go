@@ -227,16 +227,12 @@ func (s *objectService) UploadDir(ctx context.Context, bucketName string, object
 	procCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	var wg sync.WaitGroup
-
 	processStreamInBatches(
 		procCtx,
 		fileCh,
 		batchSize,
 		maxParallel,
 		func(ctx context.Context, path string) error {
-			wg.Add(1)
-			defer wg.Done()
 			return handler(ctx, path)
 		},
 		func() {
@@ -943,6 +939,8 @@ func (s *objectService) CopyAll(
 		return nil, err
 	}
 
+	procCtx := ctx
+
 	batchSize := defaultBatchSize
 	if opts != nil {
 		batchSize = resolveBatchSize(&opts.BatchSize)
@@ -955,7 +953,7 @@ func (s *objectService) CopyAll(
 			return nil, err
 		}
 
-		ctx = WithStorageClass(ctx, opts.StorageClass)
+		procCtx = WithStorageClass(ctx, opts.StorageClass)
 	}
 
 	listOpts := minio.ListObjectsOptions{Recursive: true}
@@ -965,7 +963,7 @@ func (s *objectService) CopyAll(
 
 	var objects []minio.ObjectInfo
 
-	for obj := range s.client.minioClient.ListObjects(ctx, src.BucketName, listOpts) {
+	for obj := range s.client.minioClient.ListObjects(procCtx, src.BucketName, listOpts) {
 		if obj.Err != nil {
 			return nil, obj.Err
 		}
@@ -997,7 +995,7 @@ func (s *objectService) CopyAll(
 		defer close(objectCh)
 		for _, obj := range objects {
 			select {
-			case <-ctx.Done():
+			case <-procCtx.Done():
 				return
 			case objectCh <- obj:
 			}
@@ -1028,16 +1026,12 @@ func (s *objectService) CopyAll(
 		return err
 	}
 
-	var wg sync.WaitGroup
-
 	processStreamInBatches(
-		ctx,
+		procCtx,
 		objectCh,
 		batchSize,
 		maxParallel,
 		func(ctx context.Context, obj minio.ObjectInfo) error {
-			wg.Add(1)
-			defer wg.Done()
 			return handler(ctx, obj)
 		},
 		func() {

@@ -1264,8 +1264,6 @@ func TestObjectServiceGetObjectLockInfo(t *testing.T) {
 	}
 }
 
-// Versioning tests
-
 func TestObjectServiceListVersions_InvalidBucketName(t *testing.T) {
 	t.Parallel()
 
@@ -1447,7 +1445,6 @@ func TestObjectServiceListAllVersions_Success(t *testing.T) {
 		},
 	}
 
-	// Sobrescreve o ListObjects para simular versões
 	mock.listObjectsFunc = func(
 		ctx context.Context,
 		bucketName string,
