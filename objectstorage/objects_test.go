@@ -3517,10 +3517,10 @@ func TestObjectDeleteOptions(t *testing.T) {
 
 	opts := DeleteAllOptions{
 		Filter:    &[]FilterOptions{{Include: "test", Exclude: "bucket"}},
-		BatchSize: helpers.IntPtr(100),
+		BatchSize: 100,
 	}
 
-	if *opts.BatchSize != 100 {
+	if opts.BatchSize != 100 {
 		t.Errorf("DeleteAllOptions.BatchSize expected 100, got %d", opts.BatchSize)
 	}
 

@@ -124,17 +124,22 @@ func (s *objectService) UploadDir(ctx context.Context, bucketName string, object
 		return nil, &InvalidObjectDataError{Message: "srcDir is empty"}
 	}
 
-	batchSize := defaultBatchSize
-	if opts != nil {
-		batchSize = resolveBatchSize(&opts.BatchSize)
+	if opts == nil {
+		opts = &UploadDirOptions{
+			BatchSize:    defaultBatchSize,
+			Shallow:      false,
+			StorageClass: "",
+			Filter:       nil,
+		}
 	}
 
-	if opts != nil {
+	batchSize := resolveBatchSize(&opts.BatchSize)
+
+	if opts.StorageClass != "" {
 		err := storageClassIsValid(opts.StorageClass)
 		if err != nil {
 			return nil, err
 		}
-
 		ctx = WithStorageClass(ctx, opts.StorageClass)
 	}
 
@@ -145,13 +150,13 @@ func (s *objectService) UploadDir(ctx context.Context, bucketName string, object
 			return err
 		}
 		if d.IsDir() {
-			if opts != nil && opts.Shallow && path != srcDir {
+			if opts.Shallow && path != srcDir {
 				return filepath.SkipDir
 			}
 			return nil
 		}
 
-		if opts != nil && !shouldProcessObject(opts.Filter, path) {
+		if !shouldProcessObject(opts.Filter, path) {
 			return nil
 		}
 
@@ -199,10 +204,7 @@ func (s *objectService) UploadDir(ctx context.Context, bucketName string, object
 			ContentType: "application/octet-stream",
 		}
 
-		if opts != nil && opts.StorageClass != "" {
-			if err := storageClassIsValid(opts.StorageClass); err != nil {
-				return err
-			}
+		if opts.StorageClass != "" {
 			putOpts.StorageClass = opts.StorageClass
 		}
 
@@ -299,13 +301,18 @@ func (s *objectService) DownloadAll(ctx context.Context, bucketName string, dstP
 		return nil, err
 	}
 
-	batchSize := defaultBatchSize
-	if opts != nil {
-		batchSize = resolveBatchSize(&opts.BatchSize)
+	if opts == nil {
+		opts = &DownloadAllOptions{
+			Prefix:    "",
+			Filter:    nil,
+			BatchSize: defaultBatchSize,
+		}
 	}
 
+	batchSize := resolveBatchSize(&opts.BatchSize)
+
 	listOpts := minio.ListObjectsOptions{Recursive: true}
-	if opts != nil && opts.Prefix != "" {
+	if opts.Prefix != "" {
 		listOpts.Prefix = opts.Prefix
 	}
 
@@ -492,13 +499,18 @@ func (s *objectService) DeleteAll(ctx context.Context, bucketName string, opts *
 		return nil, err
 	}
 
-	batchSize := defaultBatchSize
-	if opts != nil {
-		batchSize = resolveBatchSize(opts.BatchSize)
+	if opts == nil {
+		opts = &DeleteAllOptions{
+			BatchSize: defaultBatchSize,
+			ObjectKey: "",
+			Filter:    nil,
+		}
 	}
 
+	batchSize := resolveBatchSize(&opts.BatchSize)
+
 	listOpts := minio.ListObjectsOptions{Recursive: true}
-	if opts != nil && opts.ObjectKey != "" {
+	if opts.ObjectKey != "" {
 		listOpts.Prefix = opts.ObjectKey
 	}
 
@@ -869,12 +881,17 @@ func (s *objectService) CopyAll(ctx context.Context, src CopyPath, dst CopyPath,
 
 	procCtx := ctx
 
-	batchSize := defaultBatchSize
-	if opts != nil {
-		batchSize = resolveBatchSize(&opts.BatchSize)
+	if opts == nil {
+		opts = &CopyAllOptions{
+			BatchSize:    defaultBatchSize,
+			Filter:       nil,
+			StorageClass: "",
+		}
 	}
 
-	if opts != nil && opts.StorageClass != "" {
+	batchSize := resolveBatchSize(&opts.BatchSize)
+
+	if opts.StorageClass != "" {
 		err := storageClassIsValid(opts.StorageClass)
 
 		if err != nil {
@@ -1069,7 +1086,6 @@ func progressError[T any](mu *sync.Mutex, counter *int, errs *[]T, err T) {
 }
 
 func (s *objectService) listFilteredObjects(ctx context.Context, bucket string, opts minio.ListObjectsOptions, filters *[]FilterOptions, skipDirs bool) ([]minio.ObjectInfo, error) {
-
 	var result []minio.ObjectInfo
 
 	for obj := range s.client.minioClient.ListObjects(ctx, bucket, opts) {
