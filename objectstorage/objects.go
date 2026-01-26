@@ -221,7 +221,6 @@ func (s *objectService) UploadDir(ctx context.Context, bucketName string, object
 
 	if p != nil {
 		p.Start(int64(len(files)))
-		defer p.Finish()
 	}
 
 	ctx, cancel := context.WithCancel(ctx)
@@ -249,6 +248,10 @@ func (s *objectService) UploadDir(ctx context.Context, bucketName string, object
 			mu.Unlock()
 		},
 	)
+
+	if p != nil {
+		p.Finish()
+	}
 
 	return result, nil
 }
