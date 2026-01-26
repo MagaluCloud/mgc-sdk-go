@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"slices"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -1374,6 +1375,102 @@ func TestObjectServiceListVersionsWithOptions(t *testing.T) {
 	})
 }
 
+func TestObjectServiceListVersions_WithLimitAndOffset(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	lastModified := time.Now()
+
+	mock := newMockMinioClient()
+
+	mock.listObjectsFunc = func(
+		ctx context.Context,
+		bucketName string,
+		opts minio.ListObjectsOptions,
+	) <-chan minio.ObjectInfo {
+		ch := make(chan minio.ObjectInfo)
+
+		go func() {
+			defer close(ch)
+
+			ch <- minio.ObjectInfo{
+				Key:          "file.txt",
+				VersionID:    "v1",
+				Size:         10,
+				LastModified: lastModified,
+				ETag:         "etag-v1",
+			}
+			ch <- minio.ObjectInfo{
+				Key:          "file.txt",
+				VersionID:    "v2",
+				Size:         20,
+				LastModified: lastModified.Add(time.Minute),
+				ETag:         "etag-v2",
+			}
+			ch <- minio.ObjectInfo{
+				Key:          "file.txt",
+				VersionID:    "v3",
+				Size:         30,
+				LastModified: lastModified.Add(2 * time.Minute),
+				ETag:         "etag-v3",
+			}
+			ch <- minio.ObjectInfo{
+				Key:          "other.txt",
+				VersionID:    "x1",
+				Size:         999,
+				LastModified: lastModified,
+				ETag:         "etag-x",
+			}
+		}()
+
+		return ch
+	}
+
+	core := client.NewMgcClient()
+	osClient, _ := New(
+		core,
+		"minioadmin",
+		"minioadmin",
+		WithMinioClientInterface(mock),
+	)
+	svc := osClient.Objects()
+
+	limit := 1
+	offset := 1
+
+	versions, err := svc.ListVersions(
+		ctx,
+		"bucket-name",
+		"file.txt",
+		&ListVersionsOptions{
+			Limit:  &limit,
+			Offset: &offset,
+		},
+	)
+
+	if err != nil {
+		t.Errorf("ListVersions() expected success, got %v", err)
+	}
+
+	expected := []ObjectVersion{
+		{
+			Key:          "file.txt",
+			VersionID:    "v2",
+			Size:         20,
+			LastModified: lastModified.Add(time.Minute),
+			ETag:         "etag-v2",
+		},
+	}
+
+	if len(versions) != len(expected) {
+		t.Fatalf("expected %v versions, got %v", len(expected), len(versions))
+	}
+
+	if !reflect.DeepEqual(versions, expected) {
+		t.Errorf("ListVersions() mismatch\nexpected: %+v\ngot: %+v", expected, versions)
+	}
+}
+
 func TestObjectServiceListAllVersions_InvalidBucketName(t *testing.T) {
 	t.Parallel()
 
@@ -2077,6 +2174,7 @@ func TestObjectServiceCopyAll_Success(t *testing.T) {
 		objects: map[string]*mockObject{},
 	}
 
+	var mu sync.Mutex
 	copied := make([]string, 0)
 
 	mock.copyObjectFunc = func(
@@ -2084,7 +2182,9 @@ func TestObjectServiceCopyAll_Success(t *testing.T) {
 		dst minio.CopyDestOptions,
 		src minio.CopySrcOptions,
 	) (minio.UploadInfo, error) {
+		mu.Lock()
 		copied = append(copied, dst.Object)
+		mu.Unlock()
 		return minio.UploadInfo{}, nil
 	}
 

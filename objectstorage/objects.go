@@ -227,18 +227,12 @@ func (s *objectService) UploadDir(ctx context.Context, bucketName string, object
 	procCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	var wg sync.WaitGroup
-
 	processStreamInBatches(
 		procCtx,
 		fileCh,
 		batchSize,
 		maxParallel,
-		func(ctx context.Context, path string) error {
-			wg.Add(1)
-			defer wg.Done()
-			return handler(ctx, path)
-		},
+		handler,
 		func() {
 			mu.Lock()
 			result.UploadedCount++
@@ -1030,18 +1024,12 @@ func (s *objectService) CopyAll(
 		return err
 	}
 
-	var wg sync.WaitGroup
-
 	processStreamInBatches(
 		procCtx,
 		objectCh,
 		batchSize,
 		maxParallel,
-		func(ctx context.Context, obj minio.ObjectInfo) error {
-			wg.Add(1)
-			defer wg.Done()
-			return handler(ctx, obj)
-		},
+		handler,
 		func() {
 			mu.Lock()
 			result.CopiedCount++
