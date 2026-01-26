@@ -116,13 +116,7 @@ func (s *objectService) Upload(ctx context.Context, bucketName string, objectKey
 	return err
 }
 
-func (s *objectService) UploadDir(
-	ctx context.Context,
-	bucketName string,
-	objectKey string,
-	srcDir string,
-	opts *UploadDirOptions,
-) (*UploadAllResult, error) {
+func (s *objectService) UploadDir(ctx context.Context, bucketName string, objectKey string, srcDir string, opts *UploadDirOptions) (*UploadAllResult, error) {
 	if err := validateBucket(bucketName); err != nil {
 		return nil, err
 	}
@@ -302,12 +296,7 @@ func (s *objectService) DownloadStream(ctx context.Context, bucketName string, o
 }
 
 // DownloadAll downloads all objects from a bucket to a destination directory.
-func (s *objectService) DownloadAll(
-	ctx context.Context,
-	bucketName string,
-	dstPath string,
-	opts *DownloadAllOptions,
-) (*DownloadAllResult, error) {
+func (s *objectService) DownloadAll(ctx context.Context, bucketName string, dstPath string, opts *DownloadAllOptions) (*DownloadAllResult, error) {
 	if err := validateBucket(bucketName); err != nil {
 		return nil, err
 	}
@@ -535,11 +524,7 @@ func (s *objectService) Delete(ctx context.Context, bucketName string, objectKey
 }
 
 // DeleteAll removes all objects from a bucket in batches based on filter criteria.
-func (s *objectService) DeleteAll(
-	ctx context.Context,
-	bucketName string,
-	opts *DeleteAllOptions,
-) (*DeleteAllResult, error) {
+func (s *objectService) DeleteAll(ctx context.Context, bucketName string, opts *DeleteAllOptions) (*DeleteAllResult, error) {
 	if err := validateBucket(bucketName); err != nil {
 		return nil, err
 	}

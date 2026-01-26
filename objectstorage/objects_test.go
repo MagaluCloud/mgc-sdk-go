@@ -1955,6 +1955,99 @@ func TestObjectDeleteOptions(t *testing.T) {
 	}
 }
 
+func TestStorageClassIsValid(t *testing.T) {
+
+	tests := []struct {
+		name  string
+		class string
+		valid bool
+	}{
+		{"standard", "standard", true},
+		{"cold instant", "cold_instant", true},
+		{"empty", "", false},
+		{"invalid", "invalid", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := storageClassIsValid(tt.class)
+
+			if got != nil && tt.valid {
+				t.Errorf("expected storage class is valid, got %v", got)
+			}
+
+			if got == nil && !tt.valid {
+				t.Errorf("expected error, got storage class is valid")
+			}
+		})
+	}
+}
+
+func TestMatchesPattern(t *testing.T) {
+	tests := []struct {
+		name    string
+		key     string
+		pattern string
+		match   bool
+	}{
+		{
+			name:    "matches pattern",
+			key:     "images/photo.jpg",
+			pattern: "images/.*",
+			match:   true,
+		},
+		{
+			name:    "does not match pattern",
+			key:     "docs/readme.md",
+			pattern: "images/.*",
+			match:   false,
+		},
+		{
+			name:    "invalid regex",
+			key:     "file.txt",
+			pattern: "[",
+			match:   false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := matchesPattern(tt.key, tt.pattern)
+			if got != tt.match {
+				t.Fatalf("expected %v, got %v", tt.match, got)
+			}
+		})
+	}
+}
+
+func TestShouldProcessObject(t *testing.T) {
+	filters := []FilterOptions{
+		{Include: "images/.*"},
+	}
+
+	if shouldProcessObject(&filters, "docs/readme.md") {
+		t.Error("expected object to be skipped")
+	}
+
+	if !shouldProcessObject(&filters, "images/photo.jpg") {
+		t.Error("expected object to be processed")
+	}
+}
+
+func TestUploadDir_BatchSizeZero(t *testing.T) {
+	core := client.NewMgcClient()
+	osClient, _ := New(core, "minioadmin", "minioadmin")
+	svc := osClient.Objects()
+
+	_, err := svc.UploadDir(context.Background(), "bucket", "key", "src", &UploadDirOptions{
+		BatchSize: 0,
+	})
+
+	if err == nil {
+		t.Error("expected error for batch size zero")
+	}
+}
+
 func intPtr(v int) *int {
 	return &v
 }
