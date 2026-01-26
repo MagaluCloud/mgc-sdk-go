@@ -2848,13 +2848,17 @@ func TestObjectServiceDeleteAll_Success(t *testing.T) {
 
 	removed := make([]string, 0)
 
+	var mu sync.Mutex
+
 	mock.removeObjectFunc = func(
 		ctx context.Context,
 		bucketName string,
 		objectName string,
 		opts minio.RemoveObjectOptions,
 	) error {
+		mu.Lock()
 		removed = append(removed, objectName)
+		mu.Unlock()
 		return nil
 	}
 
@@ -2904,15 +2908,20 @@ func TestObjectServiceDeleteAll_PartialError(t *testing.T) {
 		return ch
 	}
 
+	var mu sync.Mutex
+
 	mock.removeObjectFunc = func(
 		ctx context.Context,
 		bucketName string,
 		objectName string,
 		opts minio.RemoveObjectOptions,
 	) error {
+		mu.Lock()
 		if objectName == "b.txt" {
+			mu.Unlock()
 			return fmt.Errorf("delete failed")
 		}
+		mu.Unlock()
 		return nil
 	}
 
@@ -2968,13 +2977,17 @@ func TestObjectServiceDeleteAll_WithFilter(t *testing.T) {
 
 	removed := make([]string, 0)
 
+	var mu sync.Mutex
+
 	mock.removeObjectFunc = func(
 		ctx context.Context,
 		bucketName string,
 		objectName string,
 		opts minio.RemoveObjectOptions,
 	) error {
+		mu.Lock()
 		removed = append(removed, objectName)
+		mu.Unlock()
 		return nil
 	}
 
