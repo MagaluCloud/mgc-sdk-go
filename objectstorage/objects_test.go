@@ -375,6 +375,73 @@ func TestObjectServiceUploadDir_WithoutFilter(t *testing.T) {
 	}
 }
 
+func TestObjectServiceUploadDir_WithStorageClass(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+
+	srcDir := t.TempDir()
+
+	filePath := filepath.Join(srcDir, "file.txt")
+	err := os.WriteFile(filePath, []byte("hello"), 0644)
+	if err != nil {
+		t.Fatalf("failed to create temp file: %v", err)
+	}
+
+	mock := newMockMinioClient()
+
+	var receivedStorageClass string
+
+	mock.putObjectFunc = func(
+		ctx context.Context,
+		bucketName string,
+		objectName string,
+		reader io.Reader,
+		objectSize int64,
+		opts minio.PutObjectOptions,
+	) (minio.UploadInfo, error) {
+		receivedStorageClass = opts.StorageClass
+		return minio.UploadInfo{}, nil
+	}
+
+	core := client.NewMgcClient()
+	osClient, _ := New(
+		core,
+		"minioadmin",
+		"minioadmin",
+		WithMinioClientInterface(mock),
+	)
+	svc := osClient.Objects()
+
+	storageClass := "STANDARD"
+
+	res, err := svc.UploadDir(
+		ctx,
+		"bucket-name",
+		"dst",
+		srcDir,
+		&UploadDirOptions{
+			StorageClass: storageClass,
+		},
+	)
+
+	if err != nil {
+		t.Fatalf("UploadDir() unexpected error: %v", err)
+	}
+
+	if res.UploadedCount != 1 {
+		t.Fatalf("expected UploadedCount 1, got %v", res.UploadedCount)
+	}
+
+	if receivedStorageClass != storageClass {
+		t.Fatalf(
+			"expected StorageClass %q, got %q",
+			storageClass,
+			receivedStorageClass,
+		)
+	}
+}
+
 func TestObjectServiceDownload_ValidParameters(t *testing.T) {
 	t.Parallel()
 
@@ -636,6 +703,95 @@ func TestObjectServiceDownloadAll_WithOptions(t *testing.T) {
 			t.Error("DownloadAll() expected error for empty data, got nil")
 		}
 	})
+}
+
+func TestObjectServiceDownloadAll_SuccessEmpty(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	tmpDir := t.TempDir()
+
+	mock := newMockMinioClient()
+
+	mock.listObjectsFunc = func(
+		ctx context.Context,
+		bucket string,
+		opts minio.ListObjectsOptions,
+	) <-chan minio.ObjectInfo {
+		ch := make(chan minio.ObjectInfo)
+		close(ch)
+		return ch
+	}
+
+	core := client.NewMgcClient()
+	osClient, _ := New(core, "minioadmin", "minioadmin", WithMinioClientInterface(mock))
+	svc := osClient.Objects()
+
+	res, err := svc.DownloadAll(ctx, "bucket", tmpDir, nil)
+
+	if err != nil {
+		t.Fatalf("expected success, got %v", err)
+	}
+	if res.DownloadedCount != 0 {
+		t.Errorf("expected DownloadedCount 0, got %d", res.DownloadedCount)
+	}
+	if res.ErrorCount != 0 {
+		t.Errorf("expected ErrorCount 0, got %d", res.ErrorCount)
+	}
+}
+
+func TestObjectServiceDownloadAll_HandlerError(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	tmpDir := t.TempDir()
+
+	mock := newMockMinioClient()
+
+	mock.listObjectsFunc = func(
+		ctx context.Context,
+		bucket string,
+		opts minio.ListObjectsOptions,
+	) <-chan minio.ObjectInfo {
+		ch := make(chan minio.ObjectInfo, 1)
+		go func() {
+			defer close(ch)
+			ch <- minio.ObjectInfo{
+				Key:  "file.txt",
+				Size: 10,
+			}
+		}()
+		return ch
+	}
+
+	mock.getObjectFunc = func(
+		ctx context.Context,
+		bucketName string,
+		objectName string,
+		opts minio.GetObjectOptions,
+	) (*minio.Object, error) {
+		return nil, fmt.Errorf("boom")
+	}
+
+	core := client.NewMgcClient()
+	osClient, _ := New(core, "minioadmin", "minioadmin", WithMinioClientInterface(mock))
+	svc := osClient.Objects()
+
+	res, err := svc.DownloadAll(ctx, "bucket", tmpDir, nil)
+
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	if res.DownloadedCount != 0 {
+		t.Errorf("expected DownloadedCount 0, got %d", res.DownloadedCount)
+	}
+	if res.ErrorCount != 1 {
+		t.Errorf("expected ErrorCount 1, got %d", res.ErrorCount)
+	}
+	if len(res.Errors) != 1 {
+		t.Errorf("expected 1 error, got %d", len(res.Errors))
+	}
 }
 
 func TestObjectServiceList(t *testing.T) {
@@ -2198,6 +2354,26 @@ func TestObjectServiceGetPresignedURL_InvalidObjectKey(t *testing.T) {
 	}
 }
 
+func TestObjectServiceGetPresignedURL_InvalidMethod(t *testing.T) {
+	t.Parallel()
+
+	core := client.NewMgcClient()
+	osClient, _ := New(core, "minioadmin", "minioadmin")
+	svc := osClient.Objects()
+
+	_, err := svc.GetPresignedURL(context.Background(), "test-bucket", "test-object", GetPresignedURLOptions{
+		Method: http.MethodPost,
+	})
+
+	if err == nil {
+		t.Error("GetPresignedURL() expected error for invalid method, got nil")
+	}
+
+	if _, ok := err.(*InvalidObjectDataError); !ok {
+		t.Errorf("GetPresignedURL() expected InvalidObjectDataError, got %T", err)
+	}
+}
+
 func TestObjectServiceGetPresignedURL_PUTMethod(t *testing.T) {
 	t.Parallel()
 
@@ -3012,6 +3188,92 @@ func TestObjectServiceDeleteAll_WithFilter(t *testing.T) {
 
 	if res.DeletedCount != 2 {
 		t.Fatalf("DeletedCount expected 2, got %d", res.DeletedCount)
+	}
+}
+
+func TestObjectServiceDeleteAll_WithObjectKeyPrefix(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+
+	mock := newMockMinioClient()
+
+	var receivedPrefix string
+
+	mock.listObjectsFunc = func(
+		ctx context.Context,
+		bucket string,
+		opts minio.ListObjectsOptions,
+	) <-chan minio.ObjectInfo {
+		receivedPrefix = opts.Prefix
+
+		ch := make(chan minio.ObjectInfo)
+		go func() {
+			defer close(ch)
+			ch <- minio.ObjectInfo{Key: "photos/a.jpg"}
+			ch <- minio.ObjectInfo{Key: "photos/b.jpg"}
+		}()
+		return ch
+	}
+
+	deleted := make([]string, 0)
+
+	var mu sync.Mutex
+
+	mock.removeObjectFunc = func(
+		ctx context.Context,
+		bucket string,
+		object string,
+		opts minio.RemoveObjectOptions,
+	) error {
+		mu.Lock()
+		deleted = append(deleted, object)
+		mu.Unlock()
+		return nil
+	}
+
+	core := client.NewMgcClient()
+	osClient, _ := New(
+		core,
+		"minioadmin",
+		"minioadmin",
+		WithMinioClientInterface(mock),
+	)
+	svc := osClient.Objects()
+
+	res, err := svc.DeleteAll(
+		ctx,
+		"bucket-name",
+		&DeleteAllOptions{
+			ObjectKey: "photos/",
+		},
+	)
+
+	if err != nil {
+		t.Fatalf("DeleteAll() unexpected error: %v", err)
+	}
+
+	if receivedPrefix != "photos/" {
+		t.Fatalf("expected prefix %q, got %q", "photos/", receivedPrefix)
+	}
+
+	if res.DeletedCount != 2 {
+		t.Fatalf("expected DeletedCount 2, got %v", res.DeletedCount)
+	}
+
+	expectedDeleted := map[string]bool{
+		"photos/a.jpg": true,
+		"photos/b.jpg": true,
+	}
+
+	for _, obj := range deleted {
+		if !expectedDeleted[obj] {
+			t.Fatalf("unexpected object deleted: %s", obj)
+		}
+	}
+
+	if res.ErrorCount != 0 {
+		t.Fatalf("expected ErrorCount 0, got %v", res.ErrorCount)
 	}
 }
 
