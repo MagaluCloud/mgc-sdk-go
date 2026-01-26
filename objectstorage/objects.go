@@ -224,13 +224,13 @@ func (s *objectService) UploadDir(ctx context.Context, bucketName string, object
 		defer p.Finish()
 	}
 
-	ctx, cancel := context.WithCancel(ctx)
+	procCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
 	var wg sync.WaitGroup
 
 	processStreamInBatches(
-		ctx,
+		procCtx,
 		fileCh,
 		batchSize,
 		maxParallel,
