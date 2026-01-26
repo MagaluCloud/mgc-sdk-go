@@ -3,6 +3,7 @@ package objectstorage
 import (
 	"context"
 	"io"
+	"net/url"
 	"time"
 
 	"github.com/minio/minio-go/v7"
@@ -30,12 +31,17 @@ type mockMinioClient struct {
 	getObjectFunc          func(ctx context.Context, bucketName string, objectName string, opts minio.GetObjectOptions) (*minio.Object, error)
 	listObjectsFunc        func(ctx context.Context, bucketName string, opts minio.ListObjectsOptions) <-chan minio.ObjectInfo
 	removeObjectFunc       func(ctx context.Context, bucketName string, objectName string, opts minio.RemoveObjectOptions) error
+	removeObjectsFunc      func(ctx context.Context, bucketName string, objectsCh <-chan minio.ObjectInfo, opts minio.RemoveObjectsOptions) <-chan minio.RemoveObjectError
 	statObjectFunc         func(ctx context.Context, bucketName string, objectName string, opts minio.StatObjectOptions) (minio.ObjectInfo, error)
 	putObjectRetentionFunc func(ctx context.Context, bucketName string, objectName string, opts minio.PutObjectRetentionOptions) error
 	getObjectRetentionFunc func(ctx context.Context, bucketName string, objectName string, versionID string) (*minio.RetentionMode, *time.Time, error)
-	setAppInfoCalls        int
-	lastAppName            string
-	lastAppVersion         string
+	presignedGetObjectFunc func(ctx context.Context, bucketName string, objectName string, expiry time.Duration, reqParams url.Values) (*url.URL, error)
+	presignedPutObjectFunc func(ctx context.Context, bucketName string, objectName string, expiry time.Duration) (*url.URL, error)
+	copyObjectFunc         func(context.Context, minio.CopyDestOptions, minio.CopySrcOptions) (minio.UploadInfo, error)
+
+	setAppInfoCalls int
+	lastAppName     string
+	lastAppVersion  string
 }
 
 type mockBucket struct {
@@ -405,8 +411,77 @@ func (m *mockMinioClient) GetObjectRetention(ctx context.Context, bucketName str
 	return obj.retention.mode, obj.retention.retainUntilDate, nil
 }
 
-func (m *mockMinioClient) SetAppInfo(appName string, appVersion string) {
+func (m *mockMinioClient) PresignedGetObject(ctx context.Context, bucketName string, objectName string, expiry time.Duration, reqParams url.Values) (*url.URL, error) {
+	if m.presignedGetObjectFunc != nil {
+		return m.presignedGetObjectFunc(ctx, bucketName, objectName, expiry, reqParams)
+	}
+
+	bucket, exists := m.buckets[bucketName]
+	if !exists {
+		return nil, nil
+	}
+
+	obj, exists := bucket.objects[objectName]
+	if !exists {
+		return nil, nil
+	}
+
+	mockURL := "https://mock-minio/" + bucketName + "/" + obj.key + "?expiry=" + expiry.String()
+
+	parsedURL, err := url.Parse(mockURL)
+	if err != nil {
+		return nil, err
+	}
+
+	return parsedURL, nil
+}
+
+func (m *mockMinioClient) PresignedPutObject(ctx context.Context, bucketName string, objectName string, expiry time.Duration) (*url.URL, error) {
+	if m.presignedPutObjectFunc != nil {
+		return m.presignedPutObjectFunc(ctx, bucketName, objectName, expiry)
+	}
+
+	bucket, exists := m.buckets[bucketName]
+	if !exists {
+		return nil, nil
+	}
+
+	obj, exists := bucket.objects[objectName]
+	if !exists {
+		return nil, nil
+	}
+
+	mockURL := "https://mock-minio/" + bucketName + "/" + obj.key + "?expiry=" + expiry.String()
+
+	parsedURL, err := url.Parse(mockURL)
+	if err != nil {
+		return nil, err
+	}
+
+	return parsedURL, nil
+}
+
+func (m *mockMinioClient) SetAppInfo(appName, appVersion string) {
 	m.setAppInfoCalls++
 	m.lastAppName = appName
 	m.lastAppVersion = appVersion
+}
+
+func (m *mockMinioClient) CopyObject(ctx context.Context, dst minio.CopyDestOptions, src minio.CopySrcOptions) (minio.UploadInfo, error) {
+	if m.copyObjectFunc != nil {
+		return m.copyObjectFunc(ctx, dst, src)
+	}
+
+	return minio.UploadInfo{
+		Bucket: dst.Bucket,
+		Key:    dst.Object,
+	}, nil
+}
+
+func (m *mockMinioClient) RemoveObjects(ctx context.Context, bucketName string, objectsCh <-chan minio.ObjectInfo, opts minio.RemoveObjectsOptions) <-chan minio.RemoveObjectError {
+	if m.removeObjectsFunc != nil {
+		return m.removeObjectsFunc(ctx, bucketName, objectsCh, opts)
+	}
+
+	return nil
 }
