@@ -2214,6 +2214,46 @@ func TestShouldProcessObject(t *testing.T) {
 	}
 }
 
+func TestResolveBatchSize(t *testing.T) {
+	t.Run("nil size returns defaultBatchSize", func(t *testing.T) {
+		got := resolveBatchSize(nil)
+
+		if got != defaultBatchSize {
+			t.Fatalf("expected %d, got %d", defaultBatchSize, got)
+		}
+	})
+
+	t.Run("zero size returns defaultBatchSize", func(t *testing.T) {
+		size := 0
+
+		got := resolveBatchSize(&size)
+
+		if got != defaultBatchSize {
+			t.Fatalf("expected %d, got %d", defaultBatchSize, got)
+		}
+	})
+
+	t.Run("negative size returns defaultBatchSize", func(t *testing.T) {
+		size := -10
+
+		got := resolveBatchSize(&size)
+
+		if got != defaultBatchSize {
+			t.Fatalf("expected %d, got %d", defaultBatchSize, got)
+		}
+	})
+
+	t.Run("positive size returns provided value", func(t *testing.T) {
+		size := 42
+
+		got := resolveBatchSize(&size)
+
+		if got != size {
+			t.Fatalf("expected %d, got %d", size, got)
+		}
+	})
+}
+
 func intPtr(v int) *int {
 	return &v
 }
