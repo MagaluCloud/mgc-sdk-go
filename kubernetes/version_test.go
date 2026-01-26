@@ -10,14 +10,16 @@ import (
 
 func TestVersionService_List(t *testing.T) {
 	tests := []struct {
-		name       string
-		response   string
-		statusCode int
-		want       []Version
-		wantErr    bool
+		name              string
+		includeDeprecated bool
+		response          string
+		statusCode        int
+		want              []Version
+		wantErr           bool
 	}{
 		{
-			name: "successful list versions",
+			name:              "successful list versions including deprecated versions",
+			includeDeprecated: true,
 			response: `{
 				"results": [
 					{"version": "v1.30.2", "deprecated": false},
@@ -32,23 +34,41 @@ func TestVersionService_List(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:       "empty response",
-			response:   `{"results": []}`,
+			name:              "successful list versions excluding deprecated versions",
+			includeDeprecated: false,
+			response: `{
+				"results": [
+					{"version": "v1.30.2", "deprecated": false},
+					{"version": "v1.29.5", "deprecated": true}
+				]
+			}`,
 			statusCode: http.StatusOK,
-			want:       []Version{},
-			wantErr:    false,
+			want: []Version{
+				{Version: "v1.30.2", Deprecated: false},
+			},
+			wantErr: false,
 		},
 		{
-			name:       "invalid response format",
-			response:   `{"invalid": "data"}`,
-			statusCode: http.StatusOK,
-			wantErr:    false,
+			name:              "empty response",
+			includeDeprecated: false,
+			response:          `{"results": []}`,
+			statusCode:        http.StatusOK,
+			want:              []Version{},
+			wantErr:           false,
 		},
 		{
-			name:       "server error",
-			response:   `{"error": "internal server error"}`,
-			statusCode: http.StatusInternalServerError,
-			wantErr:    true,
+			name:              "invalid response format",
+			includeDeprecated: false,
+			response:          `{"invalid": "data"}`,
+			statusCode:        http.StatusOK,
+			wantErr:           false,
+		},
+		{
+			name:              "server error",
+			includeDeprecated: false,
+			response:          `{"error": "internal server error"}`,
+			statusCode:        http.StatusInternalServerError,
+			wantErr:           true,
 		},
 	}
 
@@ -63,7 +83,7 @@ func TestVersionService_List(t *testing.T) {
 			defer server.Close()
 
 			client := testClient(server.URL)
-			versions, err := client.Versions().List(context.Background())
+			versions, err := client.Versions().List(context.Background(), tt.includeDeprecated)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("List() error = %v, wantErr %v", err, tt.wantErr)
@@ -96,7 +116,7 @@ func TestVersionService_List_ContextCancellation(t *testing.T) {
 	defer cancel()
 
 	client := testClient(server.URL)
-	_, err := client.Versions().List(ctx)
+	_, err := client.Versions().List(ctx, false)
 
 	if err == nil {
 		t.Error("Expected context cancellation error, got nil")

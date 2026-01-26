@@ -34,7 +34,11 @@ jobs:
       - name: Run Unit Tests
         timeout-minutes: 10
         run: |
-          go test -v -race -coverprofile=coverage.out ./...
+          go test -v -race \
+            -covermode=atomic \
+            -coverpkg=./... \
+            -coverprofile=coverage.out \
+            ./...
 
       - name: Upload Coverage Report to SonarCloud
         uses: sonarsource/sonarqube-scan-action@v6
