@@ -747,6 +747,58 @@ func TestObjectServiceListAll(t *testing.T) {
 	}
 }
 
+func TestObjectServiceListAll_Success(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+
+	mock := newMockMinioClient()
+	mock.buckets["bucket-name"] = &mockBucket{
+		name: "bucket-name",
+		objects: map[string]*mockObject{
+			"a.txt": {
+				key:  "a.txt",
+				size: 10,
+			},
+			"b.txt": {
+				key:  "b.txt",
+				size: 20,
+			},
+		},
+	}
+
+	core := client.NewMgcClient()
+	osClient, _ := New(
+		core,
+		"minioadmin",
+		"minioadmin",
+		WithMinioClientInterface(mock),
+	)
+	svc := osClient.Objects()
+
+	objects, err := svc.ListAll(ctx, "bucket-name", ObjectFilterOptions{})
+
+	if err != nil {
+		t.Errorf("ListAll() expected success, got %v", err)
+	}
+
+	if len(objects) != 2 {
+		t.Errorf("ListAll() expected 2 objects, got %v", len(objects))
+	}
+
+	keys := map[string]bool{}
+	for _, obj := range objects {
+		keys[obj.Key] = true
+	}
+
+	if !keys["a.txt"] {
+		t.Errorf("expected object a.txt to be listed")
+	}
+	if !keys["b.txt"] {
+		t.Errorf("expected object b.txt to be listed")
+	}
+}
+
 func TestObjectServiceDelete(t *testing.T) {
 	t.Parallel()
 

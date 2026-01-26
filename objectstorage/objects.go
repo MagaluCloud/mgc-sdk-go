@@ -1028,12 +1028,18 @@ func (s *objectService) CopyAll(
 		return err
 	}
 
+	var wg sync.WaitGroup
+
 	processStreamInBatches(
 		ctx,
 		objectCh,
 		batchSize,
 		maxParallel,
-		handler,
+		func(ctx context.Context, obj minio.ObjectInfo) error {
+			wg.Add(1)
+			defer wg.Done()
+			return handler(ctx, obj)
+		},
 		func() {
 			mu.Lock()
 			result.CopiedCount++
