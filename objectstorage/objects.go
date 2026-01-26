@@ -311,10 +311,7 @@ func (s *objectService) DownloadAll(ctx context.Context, bucketName string, dstP
 
 	batchSize := resolveBatchSize(&opts.BatchSize)
 
-	listOpts := minio.ListObjectsOptions{Recursive: true}
-	if opts.Prefix != "" {
-		listOpts.Prefix = opts.Prefix
-	}
+	listOpts := minio.ListObjectsOptions{Recursive: true, Prefix: opts.Prefix}
 
 	objects, err := s.listFilteredObjects(ctx, bucketName, listOpts, opts.Filter, false)
 	if err != nil {
@@ -509,10 +506,7 @@ func (s *objectService) DeleteAll(ctx context.Context, bucketName string, opts *
 
 	batchSize := resolveBatchSize(&opts.BatchSize)
 
-	listOpts := minio.ListObjectsOptions{Recursive: true}
-	if opts.ObjectKey != "" {
-		listOpts.Prefix = opts.ObjectKey
-	}
+	listOpts := minio.ListObjectsOptions{Recursive: true, Prefix: opts.ObjectKey}
 
 	objects, err := s.listFilteredObjects(ctx, bucketName, listOpts, opts.Filter, false)
 	if err != nil {
@@ -901,10 +895,7 @@ func (s *objectService) CopyAll(ctx context.Context, src CopyPath, dst CopyPath,
 		procCtx = WithStorageClass(ctx, opts.StorageClass)
 	}
 
-	listOpts := minio.ListObjectsOptions{Recursive: true}
-	if src.ObjectKey != "" {
-		listOpts.Prefix = src.ObjectKey
-	}
+	listOpts := minio.ListObjectsOptions{Recursive: true, Prefix: src.ObjectKey}
 
 	objects, err := s.listFilteredObjects(procCtx, src.BucketName, listOpts, opts.Filter, true)
 	if err != nil {
