@@ -703,6 +703,141 @@ func TestObjectServiceList(t *testing.T) {
 	}
 }
 
+func TestObjectServiceList_WithOffset(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+
+	mock := newMockMinioClient()
+
+	mock.listObjectsFunc = func(ctx context.Context, bucket string, opts minio.ListObjectsOptions) <-chan minio.ObjectInfo {
+		ch := make(chan minio.ObjectInfo)
+		go func() {
+			defer close(ch)
+			ch <- minio.ObjectInfo{Key: "a.txt"}
+			ch <- minio.ObjectInfo{Key: "b.txt"}
+			ch <- minio.ObjectInfo{Key: "c.txt"}
+		}()
+		return ch
+	}
+
+	core := client.NewMgcClient()
+	osClient, _ := New(core, "minioadmin", "minioadmin", WithMinioClientInterface(mock))
+	svc := osClient.Objects()
+
+	offset := 1
+
+	objs, err := svc.List(ctx, "bucket", ObjectListOptions{
+		Offset: &offset,
+	})
+
+	if err != nil {
+		t.Fatalf("List() unexpected error: %v", err)
+	}
+
+	gotKeys := make([]string, 0)
+	for _, o := range objs {
+		gotKeys = append(gotKeys, o.Key)
+	}
+
+	expected := []string{"b.txt", "c.txt"}
+
+	if !reflect.DeepEqual(gotKeys, expected) {
+		t.Errorf("expected %v, got %v", expected, gotKeys)
+	}
+}
+
+func TestObjectServiceList_WithLimit(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+
+	mock := newMockMinioClient()
+
+	mock.listObjectsFunc = func(ctx context.Context, bucket string, opts minio.ListObjectsOptions) <-chan minio.ObjectInfo {
+		ch := make(chan minio.ObjectInfo)
+		go func() {
+			defer close(ch)
+			ch <- minio.ObjectInfo{Key: "a.txt"}
+			ch <- minio.ObjectInfo{Key: "b.txt"}
+			ch <- minio.ObjectInfo{Key: "c.txt"}
+		}()
+		return ch
+	}
+
+	core := client.NewMgcClient()
+	osClient, _ := New(core, "minioadmin", "minioadmin", WithMinioClientInterface(mock))
+	svc := osClient.Objects()
+
+	limit := 2
+
+	objs, err := svc.List(ctx, "bucket", ObjectListOptions{
+		Limit: &limit,
+	})
+
+	if err != nil {
+		t.Fatalf("List() unexpected error: %v", err)
+	}
+
+	gotKeys := make([]string, 0)
+	for _, o := range objs {
+		gotKeys = append(gotKeys, o.Key)
+	}
+
+	expected := []string{"a.txt", "b.txt"}
+
+	if !reflect.DeepEqual(gotKeys, expected) {
+		t.Errorf("expected %v, got %v", expected, gotKeys)
+	}
+}
+
+func TestObjectServiceList_WithOffsetAndLimit(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+
+	mock := newMockMinioClient()
+
+	mock.listObjectsFunc = func(ctx context.Context, bucket string, opts minio.ListObjectsOptions) <-chan minio.ObjectInfo {
+		ch := make(chan minio.ObjectInfo)
+		go func() {
+			defer close(ch)
+			ch <- minio.ObjectInfo{Key: "a.txt"}
+			ch <- minio.ObjectInfo{Key: "b.txt"}
+			ch <- minio.ObjectInfo{Key: "c.txt"}
+			ch <- minio.ObjectInfo{Key: "d.txt"}
+		}()
+		return ch
+	}
+
+	core := client.NewMgcClient()
+	osClient, _ := New(core, "minioadmin", "minioadmin", WithMinioClientInterface(mock))
+	svc := osClient.Objects()
+
+	offset := 1
+	limit := 2
+
+	objs, err := svc.List(ctx, "bucket", ObjectListOptions{
+		Offset: &offset,
+		Limit:  &limit,
+	})
+
+	if err != nil {
+		t.Fatalf("List() unexpected error: %v", err)
+	}
+
+	gotKeys := make([]string, 0)
+	for _, o := range objs {
+		gotKeys = append(gotKeys, o.Key)
+	}
+
+	expected := []string{"b.txt", "c.txt"}
+
+	if !reflect.DeepEqual(gotKeys, expected) {
+		t.Errorf("expected %v, got %v", expected, gotKeys)
+	}
+}
+
 func TestObjectServiceListAll(t *testing.T) {
 	t.Parallel()
 
@@ -757,22 +892,19 @@ func TestObjectServiceListAll_Success(t *testing.T) {
 	lastModified := time.Now()
 
 	mock := newMockMinioClient()
-	mock.buckets["bucket-name"] = &mockBucket{
-		name: "bucket-name",
-		objects: map[string]*mockObject{
-			"a.txt": {
-				key:          "a.txt",
-				size:         10,
-				lastModified: lastModified,
-				etag:         "etag-a",
-			},
-			"b.txt": {
-				key:          "b.txt",
-				size:         20,
-				lastModified: lastModified.Add(time.Minute),
-				etag:         "etag-b",
-			},
-		},
+
+	mock.listObjectsFunc = func(
+		ctx context.Context,
+		bucket string,
+		opts minio.ListObjectsOptions,
+	) <-chan minio.ObjectInfo {
+		ch := make(chan minio.ObjectInfo)
+		go func() {
+			defer close(ch)
+			ch <- minio.ObjectInfo{Key: "a.txt", Size: 10, LastModified: lastModified, ETag: "etag-a"}
+			ch <- minio.ObjectInfo{Key: "b.txt", Size: 20, LastModified: lastModified.Add(time.Minute), ETag: "etag-b"}
+		}()
+		return ch
 	}
 
 	core := client.NewMgcClient()
@@ -1075,6 +1207,102 @@ func TestObjectServiceMetadata_WithVersionID(t *testing.T) {
 	}
 }
 
+func TestObjectServiceMetadata_Success(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	lastModified := time.Now()
+
+	mock := newMockMinioClient()
+
+	mock.statObjectFunc = func(
+		ctx context.Context,
+		bucketName string,
+		objectName string,
+		opts minio.StatObjectOptions,
+	) (minio.ObjectInfo, error) {
+		return minio.ObjectInfo{
+			Key:          objectName,
+			Size:         123,
+			LastModified: lastModified,
+			ETag:         "etag-123",
+			ContentType:  "text/plain",
+			Metadata: map[string][]string{
+				"X-Amz-Storage-Class": {"STANDARD"},
+			},
+		}, nil
+	}
+
+	core := client.NewMgcClient()
+	osClient, _ := New(
+		core,
+		"minioadmin",
+		"minioadmin",
+		WithMinioClientInterface(mock),
+	)
+	svc := osClient.Objects()
+
+	obj, err := svc.Metadata(ctx, "bucket-name", "file.txt", nil)
+
+	if err != nil {
+		t.Fatalf("Metadata() unexpected error: %v", err)
+	}
+
+	expected := &Object{
+		Key:          "file.txt",
+		Size:         123,
+		LastModified: lastModified,
+		ETag:         "etag-123",
+		ContentType:  "text/plain",
+		StorageClass: "STANDARD",
+	}
+
+	if !reflect.DeepEqual(obj, expected) {
+		t.Fatalf("Metadata() mismatch\nexpected: %+v\ngot: %+v", expected, obj)
+	}
+}
+
+func TestObjectServiceMetadata_NoStorageClass(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+
+	mock := newMockMinioClient()
+
+	mock.statObjectFunc = func(
+		ctx context.Context,
+		bucketName string,
+		objectName string,
+		opts minio.StatObjectOptions,
+	) (minio.ObjectInfo, error) {
+		return minio.ObjectInfo{
+			Key:         objectName,
+			Size:        50,
+			ContentType: "application/json",
+			Metadata:    map[string][]string{},
+		}, nil
+	}
+
+	core := client.NewMgcClient()
+	osClient, _ := New(
+		core,
+		"minioadmin",
+		"minioadmin",
+		WithMinioClientInterface(mock),
+	)
+	svc := osClient.Objects()
+
+	obj, err := svc.Metadata(ctx, "bucket-name", "data.json", nil)
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if obj.StorageClass != "" {
+		t.Fatalf("expected empty StorageClass, got %q", obj.StorageClass)
+	}
+}
+
 func TestObjectServiceLockObject_InvalidBucketName(t *testing.T) {
 	t.Parallel()
 
@@ -1343,6 +1571,111 @@ func TestObjectServiceGetObjectLockInfo(t *testing.T) {
 
 	if err == nil {
 		t.Error("GetObjectLockInfo() expected error due to no connection, got nil")
+	}
+}
+
+func TestObjectServiceGetObjectLockInfo_Unlocked(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+
+	mock := newMockMinioClient()
+
+	mock.getObjectRetentionFunc = func(
+		ctx context.Context,
+		bucketName string,
+		objectKey string,
+		versionID string,
+	) (*minio.RetentionMode, *time.Time, error) {
+		return nil, nil, nil
+	}
+
+	core := client.NewMgcClient()
+	osClient, _ := New(
+		core,
+		"minioadmin",
+		"minioadmin",
+		WithMinioClientInterface(mock),
+	)
+
+	info, err := osClient.Objects().GetObjectLockInfo(
+		ctx,
+		"bucket-name",
+		"file.txt",
+	)
+
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	if info == nil {
+		t.Fatalf("expected ObjectLockInfo, got nil")
+	}
+
+	if info.Locked {
+		t.Errorf("expected Locked=false, got true")
+	}
+
+	if info.Mode != "" {
+		t.Errorf("expected empty Mode, got %v", info.Mode)
+	}
+
+	if info.RetainUntilDate != nil {
+		t.Errorf("expected RetainUntilDate to be nil, got %v", info.RetainUntilDate)
+	}
+}
+
+func TestObjectServiceGetObjectLockInfo_Locked(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+
+	mock := newMockMinioClient()
+
+	retainUntil := time.Now().Add(24 * time.Hour)
+	mode := minio.RetentionMode("COMPLIANCE")
+
+	mock.getObjectRetentionFunc = func(
+		ctx context.Context,
+		bucketName string,
+		objectKey string,
+		versionID string,
+	) (*minio.RetentionMode, *time.Time, error) {
+		return &mode, &retainUntil, nil
+	}
+
+	core := client.NewMgcClient()
+	osClient, _ := New(
+		core,
+		"minioadmin",
+		"minioadmin",
+		WithMinioClientInterface(mock),
+	)
+
+	info, err := osClient.Objects().GetObjectLockInfo(
+		ctx,
+		"bucket-name",
+		"file.txt",
+	)
+
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if info == nil {
+		t.Fatalf("expected ObjectLockInfo, got nil")
+	}
+	if !info.Locked {
+		t.Errorf("expected Locked=true, got false")
+	}
+	if info.Mode != mode.String() {
+		t.Errorf("expected Mode=%v, got %v", mode.String(), info.Mode)
+	}
+	if !info.RetainUntilDate.Equal(retainUntil) {
+		t.Errorf(
+			"expected RetainUntilDate=%v, got %v",
+			retainUntil,
+			*info.RetainUntilDate,
+		)
 	}
 }
 
@@ -2488,6 +2821,184 @@ func TestObjectServiceDeleteAll(t *testing.T) {
 
 	if err == nil {
 		t.Error("DeleteAll() expected error, got nil")
+	}
+}
+
+func TestObjectServiceDeleteAll_Success(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+
+	mock := newMockMinioClient()
+
+	mock.listObjectsFunc = func(
+		ctx context.Context,
+		bucket string,
+		opts minio.ListObjectsOptions,
+	) <-chan minio.ObjectInfo {
+		ch := make(chan minio.ObjectInfo)
+		go func() {
+			defer close(ch)
+			ch <- minio.ObjectInfo{Key: "a.txt"}
+			ch <- minio.ObjectInfo{Key: "b.txt"}
+			ch <- minio.ObjectInfo{Key: "c.txt"}
+		}()
+		return ch
+	}
+
+	removed := make([]string, 0)
+
+	mock.removeObjectFunc = func(
+		ctx context.Context,
+		bucketName string,
+		objectName string,
+		opts minio.RemoveObjectOptions,
+	) error {
+		removed = append(removed, objectName)
+		return nil
+	}
+
+	core := client.NewMgcClient()
+	osClient, _ := New(
+		core,
+		"minioadmin",
+		"minioadmin",
+		WithMinioClientInterface(mock),
+	)
+	svc := osClient.Objects()
+
+	res, err := svc.DeleteAll(ctx, "bucket-name", nil)
+
+	if err != nil {
+		t.Fatalf("DeleteAll() unexpected error: %v", err)
+	}
+
+	if res.DeletedCount != 3 {
+		t.Fatalf("DeletedCount expected 3, got %d", res.DeletedCount)
+	}
+
+	if res.ErrorCount != 0 {
+		t.Fatalf("ErrorCount expected 0, got %d", res.ErrorCount)
+	}
+}
+
+func TestObjectServiceDeleteAll_PartialError(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+
+	mock := newMockMinioClient()
+
+	mock.listObjectsFunc = func(
+		ctx context.Context,
+		bucket string,
+		opts minio.ListObjectsOptions,
+	) <-chan minio.ObjectInfo {
+		ch := make(chan minio.ObjectInfo)
+		go func() {
+			defer close(ch)
+			ch <- minio.ObjectInfo{Key: "a.txt"}
+			ch <- minio.ObjectInfo{Key: "b.txt"}
+			ch <- minio.ObjectInfo{Key: "c.txt"}
+		}()
+		return ch
+	}
+
+	mock.removeObjectFunc = func(
+		ctx context.Context,
+		bucketName string,
+		objectName string,
+		opts minio.RemoveObjectOptions,
+	) error {
+		if objectName == "b.txt" {
+			return fmt.Errorf("delete failed")
+		}
+		return nil
+	}
+
+	core := client.NewMgcClient()
+	osClient, _ := New(
+		core,
+		"minioadmin",
+		"minioadmin",
+		WithMinioClientInterface(mock),
+	)
+	svc := osClient.Objects()
+
+	res, err := svc.DeleteAll(ctx, "bucket-name", nil)
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if res.DeletedCount != 2 {
+		t.Fatalf("DeletedCount expected 2, got %d", res.DeletedCount)
+	}
+
+	if res.ErrorCount != 1 {
+		t.Fatalf("ErrorCount expected 1, got %d", res.ErrorCount)
+	}
+
+	if len(res.Errors) != 1 {
+		t.Fatalf("expected 1 error, got %d", len(res.Errors))
+	}
+}
+
+func TestObjectServiceDeleteAll_WithFilter(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+
+	mock := newMockMinioClient()
+
+	mock.listObjectsFunc = func(
+		ctx context.Context,
+		bucket string,
+		opts minio.ListObjectsOptions,
+	) <-chan minio.ObjectInfo {
+		ch := make(chan minio.ObjectInfo)
+		go func() {
+			defer close(ch)
+			ch <- minio.ObjectInfo{Key: "a.txt"}
+			ch <- minio.ObjectInfo{Key: "b.log"}
+			ch <- minio.ObjectInfo{Key: "c.txt"}
+		}()
+		return ch
+	}
+
+	removed := make([]string, 0)
+
+	mock.removeObjectFunc = func(
+		ctx context.Context,
+		bucketName string,
+		objectName string,
+		opts minio.RemoveObjectOptions,
+	) error {
+		removed = append(removed, objectName)
+		return nil
+	}
+
+	core := client.NewMgcClient()
+	osClient, _ := New(
+		core,
+		"minioadmin",
+		"minioadmin",
+		WithMinioClientInterface(mock),
+	)
+	svc := osClient.Objects()
+
+	res, err := svc.DeleteAll(ctx, "bucket-name", &DeleteAllOptions{
+		Filter: &[]FilterOptions{
+			{Include: ".txt"},
+		},
+	})
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if res.DeletedCount != 2 {
+		t.Fatalf("DeletedCount expected 2, got %d", res.DeletedCount)
 	}
 }
 
