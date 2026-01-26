@@ -3,10 +3,12 @@ package objectstorage
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -180,8 +182,6 @@ func TestObjectServiceUploadDir_InvalidStorageClass(t *testing.T) {
 }
 
 func TestObjectServiceUploadDir_ValidParameters(t *testing.T) {
-	t.Parallel()
-
 	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Objects()
@@ -198,8 +198,6 @@ func TestObjectServiceUploadDir_ValidParameters(t *testing.T) {
 }
 
 func TestObjectServiceUploadDir_ValidStorageClass(t *testing.T) {
-	t.Parallel()
-
 	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Objects()
@@ -2242,6 +2240,169 @@ func TestResolveBatchSize(t *testing.T) {
 			t.Fatalf("expected %d, got %d", size, got)
 		}
 	})
+}
+
+func TestProcessStreamInBatches_AllSuccess(t *testing.T) {
+	ctx := context.Background()
+	input := make(chan int)
+
+	var handled int32
+	var success int32
+	var errors int32
+
+	handler := func(ctx context.Context, v int) error {
+		atomic.AddInt32(&handled, 1)
+		return nil
+	}
+
+	onSuccess := func() {
+		atomic.AddInt32(&success, 1)
+	}
+
+	onError := func(err error) {
+		atomic.AddInt32(&errors, 1)
+	}
+
+	go func() {
+		input <- 1
+		input <- 2
+		input <- 3
+		close(input)
+	}()
+
+	processStreamInBatches(
+		ctx,
+		input,
+		2,
+		2,
+		handler,
+		onSuccess,
+		onError,
+	)
+
+	if handled != 3 {
+		t.Fatalf("expected 3 handled items, got %d", handled)
+	}
+	if success != 3 {
+		t.Fatalf("expected 3 successes, got %d", success)
+	}
+	if errors != 0 {
+		t.Fatalf("expected 0 errors, got %d", errors)
+	}
+}
+
+func TestProcessStreamInBatches_HandlerError(t *testing.T) {
+	ctx := context.Background()
+	input := make(chan int)
+
+	var success int32
+	var errors int32
+
+	handler := func(ctx context.Context, v int) error {
+		if v == 2 {
+			return fmt.Errorf("boom")
+		}
+		return nil
+	}
+
+	onSuccess := func() {
+		atomic.AddInt32(&success, 1)
+	}
+
+	onError := func(err error) {
+		atomic.AddInt32(&errors, 1)
+	}
+
+	go func() {
+		input <- 1
+		input <- 2
+		input <- 3
+		close(input)
+	}()
+
+	processStreamInBatches(
+		ctx,
+		input,
+		3,
+		2,
+		handler,
+		onSuccess,
+		onError,
+	)
+
+	if success != 2 {
+		t.Fatalf("expected 2 successes, got %d", success)
+	}
+	if errors != 1 {
+		t.Fatalf("expected 1 error, got %d", errors)
+	}
+}
+
+func TestProcessStreamInBatches_BatchFlush(t *testing.T) {
+	ctx := context.Background()
+	input := make(chan int)
+
+	var calls int32
+
+	handler := func(ctx context.Context, v int) error {
+		atomic.AddInt32(&calls, 1)
+		return nil
+	}
+
+	go func() {
+		input <- 1
+		input <- 2
+		input <- 3
+		input <- 4
+		close(input)
+	}()
+
+	processStreamInBatches(
+		ctx,
+		input,
+		2,
+		1,
+		handler,
+		func() {},
+		func(error) {},
+	)
+
+	if calls != 4 {
+		t.Fatalf("expected 4 handler calls, got %d", calls)
+	}
+}
+
+func TestProcessStreamInBatches_FlushOnChannelClose(t *testing.T) {
+	ctx := context.Background()
+
+	input := make(chan int)
+	go func() {
+		defer close(input)
+		input <- 1
+		input <- 2
+	}()
+
+	var success int32
+
+	processStreamInBatches(
+		ctx,
+		input,
+		3,
+		1,
+		func(ctx context.Context, v int) error {
+			return nil
+		},
+		func() {
+			atomic.AddInt32(&success, 1)
+		},
+		func(err error) {
+			t.Fatalf("unexpected error: %v", err)
+		},
+	)
+
+	if success != 2 {
+		t.Fatalf("expected 2 success calls, got %d", success)
+	}
 }
 
 func intPtr(v int) *int {
