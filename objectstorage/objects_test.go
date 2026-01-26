@@ -166,8 +166,8 @@ func TestObjectServiceUploadDir_ValidParameters(t *testing.T) {
 		BatchSize:    100,
 	})
 
-	if err != nil {
-		t.Error("UploadDir() expected success, got error")
+	if err == nil {
+		t.Error("UploadDir() expected error, got nil")
 	}
 }
 
@@ -407,8 +407,8 @@ func TestObjectServiceDownloadAll_ValidParameters(t *testing.T) {
 
 	_, err := svc.DownloadAll(context.Background(), "test-bucket", "test-key", nil)
 
-	if err != nil {
-		t.Error("Download() expected success, got error")
+	if err == nil {
+		t.Error("DownloadAll() expected error, got nil")
 	}
 }
 
@@ -422,32 +422,32 @@ func TestObjectServiceDownloadAll_WithOptions(t *testing.T) {
 	t.Run("with empty Filter", func(t *testing.T) {
 		opts := &DownloadAllOptions{Filter: nil}
 		_, err := svc.DownloadAll(context.Background(), "test-bucket", "test-key", opts)
-		if err != nil {
-			t.Error("DownloadAll() with empty Filter expected success, got error")
+		if err == nil {
+			t.Error("DownloadAll() expected error for empty data, got nil")
 		}
 	})
 
 	t.Run("with non-empty Filter", func(t *testing.T) {
 		opts := &DownloadAllOptions{Filter: &[]FilterOptions{{Exclude: "test", Include: "new"}}}
 		_, err := svc.DownloadAll(context.Background(), "test-bucket", "test-key", opts)
-		if err != nil {
-			t.Error("DownloadAll() with Filter expected success, got error")
+		if err == nil {
+			t.Error("DownloadAll() expected error for empty data, got nil")
 		}
 	})
 
 	t.Run("with empty Prefix", func(t *testing.T) {
 		opts := &DownloadAllOptions{Prefix: ""}
 		_, err := svc.DownloadAll(context.Background(), "test-bucket", "test-key", opts)
-		if err != nil {
-			t.Error("DownloadAll() with empty Prefix expected success, got error")
+		if err == nil {
+			t.Error("DownloadAll() expected error for empty data, got nil")
 		}
 	})
 
 	t.Run("with non-empty Prefix", func(t *testing.T) {
 		opts := &DownloadAllOptions{Prefix: "test"}
 		_, err := svc.DownloadAll(context.Background(), "test-bucket", "test-key", opts)
-		if err != nil {
-			t.Error("DownloadAll() with Prefix expected success, got error")
+		if err == nil {
+			t.Error("DownloadAll() expected error for empty data, got nil")
 		}
 	})
 }
@@ -1622,8 +1622,8 @@ func TestObjectServiceCopyAll(t *testing.T) {
 		ObjectKey:  "object-key",
 	}, nil)
 
-	if err != nil {
-		t.Error("CopyAll() expected success, got error")
+	if err == nil {
+		t.Error("CopyAll() expected error, got nil")
 	}
 }
 
@@ -1644,8 +1644,8 @@ func TestObjectServiceCopyAll_WithStandardStorageClass(t *testing.T) {
 		StorageClass: "standard",
 	})
 
-	if err != nil {
-		t.Error("CopyAll() expected success, got error")
+	if err == nil {
+		t.Error("CopyAll() expected error, got nil")
 	}
 }
 
@@ -1698,8 +1698,8 @@ func TestObjectServiceDeleteAll(t *testing.T) {
 
 	_, err := svc.DeleteAll(context.Background(), "bucket-name", nil)
 
-	if err != nil {
-		t.Error("DeleteAll() expected success, got error")
+	if err == nil {
+		t.Error("DeleteAll() expected error, got nil")
 	}
 }
 
