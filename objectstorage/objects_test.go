@@ -216,8 +216,6 @@ func TestObjectServiceUploadDir_ValidStorageClass(t *testing.T) {
 }
 
 func TestObjectServiceUploadDir_BatchSizeZero(t *testing.T) {
-	t.Parallel()
-
 	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Objects()
@@ -232,8 +230,6 @@ func TestObjectServiceUploadDir_BatchSizeZero(t *testing.T) {
 }
 
 func TestObjectServiceUploadDir_WalkDirCollectsFiles(t *testing.T) {
-	t.Parallel()
-
 	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Objects()
@@ -261,8 +257,6 @@ func TestObjectServiceUploadDir_WalkDirCollectsFiles(t *testing.T) {
 }
 
 func TestObjectServiceUploadDir_ShallowSkipsSubDirs(t *testing.T) {
-	t.Parallel()
-
 	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Objects()
@@ -301,8 +295,6 @@ func TestObjectServiceUploadDir_ShallowSkipsSubDirs(t *testing.T) {
 }
 
 func TestObjectServiceUploadDir_FilterSkipsFile(t *testing.T) {
-	t.Parallel()
-
 	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Objects()
@@ -340,8 +332,6 @@ func TestObjectServiceUploadDir_FilterSkipsFile(t *testing.T) {
 }
 
 func TestObjectServiceUploadDir_WithoutFilter(t *testing.T) {
-	t.Parallel()
-
 	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Objects()

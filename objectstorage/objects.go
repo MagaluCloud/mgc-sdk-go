@@ -102,12 +102,8 @@ func (s *objectService) Upload(ctx context.Context, bucketName string, objectKey
 
 	var reader io.Reader = bytes.NewReader(data)
 
-	var mu sync.Mutex
-
 	if p != nil {
-		mu.Lock()
 		p.Start(size)
-		mu.Unlock()
 		reader = &ProgressReader{
 			r: reader,
 			p: p,
@@ -224,9 +220,7 @@ func (s *objectService) UploadDir(ctx context.Context, bucketName string, object
 	p := GetProgress(ctx)
 
 	if p != nil {
-		mu.Lock()
 		p.Start(int64(len(files)))
-		mu.Unlock()
 		defer p.Finish()
 	}
 
@@ -245,9 +239,7 @@ func (s *objectService) UploadDir(ctx context.Context, bucketName string, object
 			mu.Unlock()
 
 			if p != nil {
-				mu.Lock()
 				p.Add(1)
-				mu.Unlock()
 			}
 		},
 		func(err error) {
@@ -346,9 +338,7 @@ func (s *objectService) DownloadAll(ctx context.Context, bucketName string, dstP
 
 	p := GetProgress(ctx)
 	if p != nil {
-		mu.Lock()
 		p.Start(total)
-		mu.Unlock()
 		defer p.Finish()
 	}
 
@@ -412,9 +402,7 @@ func (s *objectService) DownloadAll(ctx context.Context, bucketName string, dstP
 			mu.Unlock()
 
 			if p != nil {
-				mu.Lock()
 				p.Add(1)
-				mu.Unlock()
 			}
 		},
 		func(err error) {
@@ -571,9 +559,7 @@ func (s *objectService) DeleteAll(ctx context.Context, bucketName string, opts *
 
 	p := GetProgress(ctx)
 	if p != nil {
-		mu.Lock()
 		p.Start(total)
-		mu.Unlock()
 		defer p.Finish()
 	}
 
@@ -615,9 +601,7 @@ func (s *objectService) DeleteAll(ctx context.Context, bucketName string, opts *
 			mu.Unlock()
 
 			if p != nil {
-				mu.Lock()
 				p.Add(1)
-				mu.Unlock()
 			}
 		},
 		func(err error) {
@@ -997,9 +981,7 @@ func (s *objectService) CopyAll(
 
 	p := GetProgress(ctx)
 	if p != nil {
-		mu.Lock()
 		p.Start(total)
-		mu.Unlock()
 		defer p.Finish()
 	}
 
@@ -1052,9 +1034,7 @@ func (s *objectService) CopyAll(
 			mu.Unlock()
 
 			if p != nil {
-				mu.Lock()
 				p.Add(1)
-				mu.Unlock()
 			}
 		},
 		func(err error) {
