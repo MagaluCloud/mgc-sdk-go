@@ -1215,6 +1215,87 @@ func TestObjectServiceGetObjectLockStatus(t *testing.T) {
 	}
 }
 
+func TestObjectServiceGetObjectLockStatus_Unlocked(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+
+	mock := newMockMinioClient()
+
+	mock.getObjectRetentionFunc = func(
+		ctx context.Context,
+		bucketName string,
+		objectKey string,
+		versionID string,
+	) (*minio.RetentionMode, *time.Time, error) {
+		return nil, nil, nil
+	}
+
+	core := client.NewMgcClient()
+	osClient, _ := New(
+		core,
+		"minioadmin",
+		"minioadmin",
+		WithMinioClientInterface(mock),
+	)
+
+	isLocked, err := osClient.Objects().GetObjectLockStatus(
+		ctx,
+		"bucket-name",
+		"file.txt",
+	)
+
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	if isLocked {
+		t.Errorf("expected object to be unlocked, got locked")
+	}
+}
+
+func TestObjectServiceGetObjectLockStatus_Locked(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+
+	mock := newMockMinioClient()
+
+	mock.getObjectRetentionFunc = func(
+		ctx context.Context,
+		bucketName string,
+		objectKey string,
+		versionID string,
+	) (*minio.RetentionMode, *time.Time, error) {
+		mode := minio.RetentionMode("COMPLIANCE")
+		until := time.Now().Add(time.Hour)
+
+		return &mode, &until, nil
+	}
+
+	core := client.NewMgcClient()
+	osClient, _ := New(
+		core,
+		"minioadmin",
+		"minioadmin",
+		WithMinioClientInterface(mock),
+	)
+
+	isLocked, err := osClient.Objects().GetObjectLockStatus(
+		ctx,
+		"bucket-name",
+		"file.txt",
+	)
+
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	if !isLocked {
+		t.Errorf("expected object to be locked, got unlocked")
+	}
+}
+
 func TestObjectServiceGetObjectLockInfo_InvalidBucketName(t *testing.T) {
 	t.Parallel()
 
@@ -2347,6 +2428,7 @@ func TestCopyAll_CopyError(t *testing.T) {
 	mock.copyObjectFunc = func(ctx context.Context, dst minio.CopyDestOptions, src minio.CopySrcOptions) (minio.UploadInfo, error) {
 		mu.Lock()
 		if src.Object == "b.txt" {
+			mu.Unlock()
 			return minio.UploadInfo{}, fmt.Errorf("boom")
 		}
 		mu.Unlock()
