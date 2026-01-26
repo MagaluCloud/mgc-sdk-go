@@ -129,7 +129,7 @@ func (s *objectService) UploadDir(ctx context.Context, bucketName string, object
 		batchSize = resolveBatchSize(&opts.BatchSize)
 	}
 
-	if opts.StorageClass != "" {
+	if opts != nil && opts.StorageClass != "" {
 		err := storageClassIsValid(opts.StorageClass)
 		if err != nil {
 			return nil, err
@@ -148,6 +148,10 @@ func (s *objectService) UploadDir(ctx context.Context, bucketName string, object
 			if opts != nil && opts.Shallow && path != srcDir {
 				return filepath.SkipDir
 			}
+			return nil
+		}
+
+		if opts != nil && !shouldProcessObject(opts.Filter, path) {
 			return nil
 		}
 
@@ -184,10 +188,6 @@ func (s *objectService) UploadDir(ctx context.Context, bucketName string, object
 		}
 
 		dstKey := filepath.ToSlash(filepath.Join(objectKey, relPath))
-
-		if opts != nil && !shouldProcessObject(opts.Filter, dstKey) {
-			return nil
-		}
 
 		file, err := os.Open(path)
 		if err != nil {

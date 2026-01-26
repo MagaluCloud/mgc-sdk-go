@@ -5,6 +5,8 @@ import (
 	"context"
 	"io"
 	"net/http"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -133,6 +135,30 @@ func TestObjectServiceUploadDir_InvalidBucketName(t *testing.T) {
 	}
 }
 
+func TestObjectServiceUploadDir_EmptySrcDir(t *testing.T) {
+	t.Parallel()
+
+	core := client.NewMgcClient()
+	osClient, _ := New(core, "minioadmin", "minioadmin")
+	svc := osClient.Objects()
+
+	_, err := svc.UploadDir(
+		context.Background(),
+		"bucket",
+		"key",
+		"",
+		nil,
+	)
+
+	if err == nil {
+		t.Error("UploadDir() expected error for empty src dir, got nil")
+	}
+
+	if _, ok := err.(*InvalidObjectDataError); !ok {
+		t.Errorf("UploadDir() expected InvalidObjectDataError, got %T", err)
+	}
+}
+
 func TestObjectServiceUploadDir_InvalidStorageClass(t *testing.T) {
 	t.Parallel()
 
@@ -186,6 +212,160 @@ func TestObjectServiceUploadDir_ValidStorageClass(t *testing.T) {
 
 	if err == nil {
 		t.Error("UploadDir() expected error due to no connection, got nil")
+	}
+}
+
+func TestObjectServiceUploadDir_BatchSizeZero(t *testing.T) {
+	t.Parallel()
+
+	core := client.NewMgcClient()
+	osClient, _ := New(core, "minioadmin", "minioadmin")
+	svc := osClient.Objects()
+
+	_, err := svc.UploadDir(context.Background(), "bucket", "key", "src", &UploadDirOptions{
+		BatchSize: 0,
+	})
+
+	if err == nil {
+		t.Error("expected error for batch size zero")
+	}
+}
+
+func TestObjectServiceUploadDir_WalkDirCollectsFiles(t *testing.T) {
+	t.Parallel()
+
+	core := client.NewMgcClient()
+	osClient, _ := New(core, "minioadmin", "minioadmin")
+	svc := osClient.Objects()
+
+	tmpDir := t.TempDir()
+
+	filePath := filepath.Join(tmpDir, "file.txt")
+	err := os.WriteFile(filePath, []byte("data"), 0644)
+
+	if err != nil {
+		t.Errorf("expected no error, got %v", err)
+	}
+
+	_, err = svc.UploadDir(
+		context.Background(),
+		"bucket",
+		"key",
+		tmpDir,
+		nil,
+	)
+
+	if err != nil {
+		t.Errorf("expected success, got %v", err)
+	}
+}
+
+func TestObjectServiceUploadDir_ShallowSkipsSubDirs(t *testing.T) {
+	t.Parallel()
+
+	core := client.NewMgcClient()
+	osClient, _ := New(core, "minioadmin", "minioadmin")
+	svc := osClient.Objects()
+
+	tmpDir := t.TempDir()
+
+	subDir := filepath.Join(tmpDir, "sub")
+
+	err := os.Mkdir(subDir, 0755)
+	if err != nil {
+		t.Fatalf("failed to create subDir: %v", err)
+	}
+
+	err = os.WriteFile(filepath.Join(subDir, "file.txt"), []byte("x"), 0644)
+	if err != nil {
+		t.Errorf("expected no error, got %v", err)
+	}
+
+	result, err := svc.UploadDir(
+		context.Background(),
+		"bucket",
+		"key",
+		tmpDir,
+		&UploadDirOptions{
+			Shallow: true,
+		},
+	)
+
+	if err != nil {
+		t.Errorf("expected success, got %v", err)
+	}
+
+	if result.UploadedCount != 0 {
+		t.Errorf("expected UploadedCount to be %v, got %v", 0, result.UploadedCount)
+	}
+}
+
+func TestObjectServiceUploadDir_FilterSkipsFile(t *testing.T) {
+	t.Parallel()
+
+	core := client.NewMgcClient()
+	osClient, _ := New(core, "minioadmin", "minioadmin")
+	svc := osClient.Objects()
+
+	tmpDir := t.TempDir()
+
+	err := os.WriteFile(filepath.Join(tmpDir, "file.txt"), []byte("x"), 0644)
+	if err != nil {
+		t.Errorf("expected no error, got %v", err)
+	}
+
+	filters := []FilterOptions{
+		{Include: "no-match"},
+	}
+
+	result, err := svc.UploadDir(
+		context.Background(),
+		"bucket",
+		"key",
+		tmpDir,
+		&UploadDirOptions{
+			Filter: &filters,
+		},
+	)
+
+	if err != nil {
+		t.Errorf("expected success, got %v", err)
+	}
+	if result.UploadedCount != 0 {
+		t.Errorf("expected UploadedCount to be %v, got %v", 0, result.UploadedCount)
+	}
+	if result.ErrorCount != 0 {
+		t.Errorf("expected ErrorCount to be %v, got %v", 0, result.ErrorCount)
+	}
+}
+
+func TestObjectServiceUploadDir_WithouFilter(t *testing.T) {
+	t.Parallel()
+
+	core := client.NewMgcClient()
+	osClient, _ := New(core, "minioadmin", "minioadmin")
+	svc := osClient.Objects()
+
+	tmpDir := t.TempDir()
+
+	err := os.WriteFile(filepath.Join(tmpDir, "file.txt"), []byte("x"), 0644)
+	if err != nil {
+		t.Errorf("expected no error, got %v", err)
+	}
+
+	result, err := svc.UploadDir(
+		context.Background(),
+		"bucket",
+		"key",
+		tmpDir,
+		nil,
+	)
+
+	if err != nil {
+		t.Errorf("expected success, got %v", err)
+	}
+	if result.ErrorCount != 1 {
+		t.Errorf("expected ErrorCount to be %v, got %v", 1, result.ErrorCount)
 	}
 }
 
@@ -2031,20 +2211,6 @@ func TestShouldProcessObject(t *testing.T) {
 
 	if !shouldProcessObject(&filters, "images/photo.jpg") {
 		t.Error("expected object to be processed")
-	}
-}
-
-func TestUploadDir_BatchSizeZero(t *testing.T) {
-	core := client.NewMgcClient()
-	osClient, _ := New(core, "minioadmin", "minioadmin")
-	svc := osClient.Objects()
-
-	_, err := svc.UploadDir(context.Background(), "bucket", "key", "src", &UploadDirOptions{
-		BatchSize: 0,
-	})
-
-	if err == nil {
-		t.Error("expected error for batch size zero")
 	}
 }
 
