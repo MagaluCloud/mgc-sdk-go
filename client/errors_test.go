@@ -19,19 +19,19 @@ func TestHTTPError_Error(t *testing.T) {
 			name:       "400 Bad Request",
 			statusCode: 400,
 			status:     "400 Bad Request",
-			want:       "HTTP error: 400 400 Bad Request",
+			want:       "\nHTTP error:\n Status: 400 Bad Request\n Body: ",
 		},
 		{
 			name:       "404 Not Found",
 			statusCode: 404,
 			status:     "404 Not Found",
-			want:       "HTTP error: 404 404 Not Found",
+			want:       "\nHTTP error:\n Status: 404 Not Found\n Body: ",
 		},
 		{
 			name:       "500 Internal Server Error",
 			statusCode: 500,
 			status:     "500 Internal Server Error",
-			want:       "HTTP error: 500 500 Internal Server Error",
+			want:       "\nHTTP error:\n Status: 500 Internal Server Error\n Body: ",
 		},
 	}
 
@@ -146,7 +146,7 @@ func TestRetryError_Error(t *testing.T) {
 			name:      "with HTTP error",
 			lastError: &HTTPError{StatusCode: 500, Status: "500 Internal Server Error"},
 			retries:   3,
-			want:      "max retry attempts reached: HTTP error: 500 500 Internal Server Error",
+			want:      "max retry attempts reached: \nHTTP error:\n Status: 500 Internal Server Error\n Body: ",
 		},
 		{
 			name:      "with simple error",
