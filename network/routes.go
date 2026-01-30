@@ -1,0 +1,140 @@
+package network
+
+import (
+	"context"
+	"fmt"
+	"net/http"
+	"net/url"
+	"strconv"
+
+	mgc_http "github.com/MagaluCloud/mgc-sdk-go/internal/http"
+)
+
+type (
+	Route struct {
+		ID              string `json:"id"`
+		VpcID           string `json:"vpc_id"`
+		PortID          string `json:"port_id"`
+		CIDRDestination string `json:"cidr_destination"`
+		Description     string `json:"description,omitempty"`
+		NextHop         string `json:"next_hop"`
+		Type            string `json:"type"`
+		Status          string `json:"status"`
+	}
+
+	CreateRequest struct {
+		PortID          string  `json:"port_id"`
+		CIDRDestination string  `json:"cidr_destination"`
+		Description     *string `json:"description"`
+	}
+
+	CreateResponse struct {
+		ID     string `json:"id"`
+		Status string `json:"status"`
+	}
+
+	ListRouteOptions struct {
+		Zone         *string `json:"zone"`
+		Sort         *string `json:"sort"`
+		Page         *int    `json:"page"`
+		ItemsPerPage *int    `json:"items_per_pages"`
+	}
+
+	ListLinks struct {
+		Next     string `json:"next"`
+		Previous string `json:"previous"`
+		Self     string `json:"self"`
+	}
+
+	ListPage struct {
+		Count           int `json:"count"`
+		Limit           int `json:"limit"`
+		Offset          int `json:"offset"`
+		Total           int `json:"total"`
+		MaxItemsPerPage int `json:"max_items_per_page"`
+	}
+
+	ListMeta struct {
+		Page  ListPage  `json:"page"`
+		Links ListLinks `json:"links"`
+	}
+
+	ListResponse struct {
+		Result []Route  `json:"result"`
+		Meta   ListMeta `json:"meta"`
+	}
+)
+
+type RouteService interface {
+	List(ctx context.Context, vpcID string, opts ListRouteOptions) (*ListResponse, error)
+	Get(ctx context.Context, vpcID, routeID string) (*Route, error)
+	Create(ctx context.Context, vpcID string, req CreateRequest) (*CreateResponse, error)
+	Delete(ctx context.Context, vpcID, routeID string) error
+}
+
+type routeService struct {
+	client *NetworkClient
+}
+
+func (s *routeService) List(ctx context.Context, vpcID string, opts ListRouteOptions) (*ListResponse, error) {
+	query := make(url.Values)
+
+	if opts.Zone != nil {
+		query.Set("_zone", *opts.Zone)
+	}
+	if opts.Sort != nil {
+		query.Set("_sort", *opts.Sort)
+	}
+	if opts.Page != nil {
+		query.Set("_page", strconv.Itoa(*opts.Page))
+	}
+	if opts.ItemsPerPage != nil {
+		query.Set("_items_per_page", strconv.Itoa(*opts.ItemsPerPage))
+	}
+
+	return mgc_http.ExecuteSimpleRequestWithRespBody[ListResponse](
+		ctx,
+		s.client.newRequest,
+		s.client.GetConfig(),
+		http.MethodGet,
+		fmt.Sprintf("/v1/vpcs/%s/route_table/routes", vpcID),
+		nil,
+		query,
+	)
+}
+
+func (s *routeService) Get(ctx context.Context, vpcID, routeID string) (*Route, error) {
+	return mgc_http.ExecuteSimpleRequestWithRespBody[Route](
+		ctx,
+		s.client.newRequest,
+		s.client.GetConfig(),
+		http.MethodGet,
+		fmt.Sprintf("/v1/vpcs/%s/route_table/%s", vpcID, routeID),
+		nil,
+		nil,
+	)
+}
+
+func (s *routeService) Create(ctx context.Context, vpcID string, req CreateRequest) (*CreateResponse, error) {
+	return mgc_http.ExecuteSimpleRequestWithRespBody[CreateResponse](
+		ctx,
+		s.client.newRequest,
+		s.client.GetConfig(),
+		http.MethodPost,
+		fmt.Sprintf("/v1/vpcs/%s/route_table/routes", vpcID),
+		req,
+		nil,
+	)
+}
+
+func (s *routeService) Delete(ctx context.Context, vpcID, routeID string) error {
+	return mgc_http.ExecuteSimpleRequest(
+		ctx,
+		s.client.newRequest,
+		s.client.GetConfig(),
+		http.MethodDelete,
+		fmt.Sprintf("/v1/vpcs/%s/route_table/%s", vpcID, routeID),
+		nil,
+		nil,
+	)
+}

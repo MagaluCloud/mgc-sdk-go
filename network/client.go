@@ -74,3 +74,7 @@ func (c *NetworkClient) SubnetPools() SubnetPoolService {
 func (c *NetworkClient) NatGateways() NatGatewayService {
 	return &natGatewayService{client: c}
 }
+
+func (c *NetworkClient) Routes() RouteService {
+	return &routeService{client: c}
+}
