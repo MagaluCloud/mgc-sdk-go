@@ -73,6 +73,7 @@ type VolumeAttachment struct {
 	Instance   AttachmentInstance `json:"instance"`
 	AttachedAt time.Time          `json:"attached_at"`
 	Device     *string            `json:"device,omitempty"`
+	Serial     *string            `json:"serial"`
 }
 
 // AttachmentInstance represents information about an instance attached to a volume.
