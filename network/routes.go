@@ -52,6 +52,11 @@ type (
 		ItemsPerPage *int    `json:"items_per_pages"`
 	}
 
+	ListAllRoutesOptions struct {
+		Zone *string `json:"zone"`
+		Sort *string `json:"sort"`
+	}
+
 	ListLinks struct {
 		Next     string `json:"next"`
 		Previous string `json:"previous"`
@@ -79,6 +84,7 @@ type (
 
 type RouteService interface {
 	List(ctx context.Context, vpcID string, opts ListRouteOptions) (*ListResponse, error)
+	ListAll(ctx context.Context, vpcID string, opts ListAllRoutesOptions) ([]Route, error)
 	Get(ctx context.Context, vpcID, routeID string) (*Route, error)
 	Create(ctx context.Context, vpcID string, req CreateRequest) (*CreateResponse, error)
 	Delete(ctx context.Context, vpcID, routeID string) error
@@ -113,6 +119,37 @@ func (s *routeService) List(ctx context.Context, vpcID string, opts ListRouteOpt
 		nil,
 		query,
 	)
+}
+
+func (s *routeService) ListAll(ctx context.Context, vpcID string, opts ListAllRoutesOptions) ([]Route, error) {
+	allRoutes := []Route{}
+	page := 0
+	itemsPerPage := 100
+
+	for {
+		currentPage := page
+		opts := ListRouteOptions{
+			Page:         &currentPage,
+			ItemsPerPage: &itemsPerPage,
+			Sort:         opts.Sort,
+			Zone:         opts.Zone,
+		}
+
+		resp, err := s.List(ctx, vpcID, opts)
+		if err != nil {
+			return nil, err
+		}
+
+		allRoutes = append(allRoutes, resp.Result...)
+
+		page += itemsPerPage
+
+		if page >= resp.Meta.Page.Total {
+			break
+		}
+	}
+
+	return allRoutes, nil
 }
 
 func (s *routeService) Get(ctx context.Context, vpcID, routeID string) (*Route, error) {

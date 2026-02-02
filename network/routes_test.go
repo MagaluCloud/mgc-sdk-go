@@ -446,6 +446,506 @@ func TestRouteService_List(t *testing.T) {
 	}
 }
 
+func TestRouteService_ListAll(t *testing.T) {
+	tests := []struct {
+		name       string
+		vpcID      string
+		opts       ListAllRoutesOptions
+		response   string
+		statusCode int
+		want       []Route
+		wantErr    bool
+	}{
+		{
+			name:  "successful list all",
+			vpcID: "vpc-1",
+			opts:  ListAllRoutesOptions{},
+			response: `{
+				"meta": {
+					"links": {
+						"next": "?_offset=4&_limit=2",
+						"previous": "?_offset=0&_limit=2",
+						"self": "?_offset=0&_limit=2"
+					},
+					"page": {
+						"count": 6,
+						"limit": 2,
+						"max_items_per_page": 100,
+						"offset": 0,
+						"total": 200
+					}
+				},
+				"result": [
+					{
+						"id": "route-1",
+						"vpc_id": "vpc-1",
+						"port_id": "port-1",
+						"cidr_destination": "192.168.1.1",
+						"description": "Description",
+						"next_hop": "192.168.1.1",
+						"type": "default",
+						"status": "processing"
+					},
+					{
+						"id": "route-2",
+						"vpc_id": "vpc-2",
+						"port_id": "port-2",
+						"cidr_destination": "192.168.2.1",
+						"description": "Description",
+						"next_hop": "192.168.2.1",
+						"type": "default",
+						"status": "processing"
+					}
+				]
+			}`,
+			statusCode: http.StatusOK,
+			want: []Route{
+				{
+					ID:              "route-1",
+					VpcID:           "vpc-1",
+					PortID:          "port-1",
+					CIDRDestination: "192.168.1.1",
+					Description:     "Description",
+					NextHop:         "192.168.1.1",
+					Type:            "default",
+					Status:          "processing",
+				},
+				{
+					ID:              "route-2",
+					VpcID:           "vpc-2",
+					PortID:          "port-2",
+					CIDRDestination: "192.168.2.1",
+					Description:     "Description",
+					NextHop:         "192.168.2.1",
+					Type:            "default",
+					Status:          "processing",
+				},
+				{
+					ID:              "route-1",
+					VpcID:           "vpc-1",
+					PortID:          "port-1",
+					CIDRDestination: "192.168.1.1",
+					Description:     "Description",
+					NextHop:         "192.168.1.1",
+					Type:            "default",
+					Status:          "processing",
+				},
+				{
+					ID:              "route-2",
+					VpcID:           "vpc-2",
+					PortID:          "port-2",
+					CIDRDestination: "192.168.2.1",
+					Description:     "Description",
+					NextHop:         "192.168.2.1",
+					Type:            "default",
+					Status:          "processing",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:  "successful list all with 2 pages",
+			vpcID: "vpc-1",
+			opts:  ListAllRoutesOptions{},
+			response: `{
+				"meta": {
+					"links": {
+						"next": "?_offset=4&_limit=2",
+						"previous": "?_offset=0&_limit=2",
+						"self": "?_offset=0&_limit=2"
+					},
+					"page": {
+						"count": 6,
+						"limit": 2,
+						"max_items_per_page": 100,
+						"offset": 0,
+						"total": 199
+					}
+				},
+				"result": [
+					{
+						"id": "route-1",
+						"vpc_id": "vpc-1",
+						"port_id": "port-1",
+						"cidr_destination": "192.168.1.1",
+						"description": "Description",
+						"next_hop": "192.168.1.1",
+						"type": "default",
+						"status": "processing"
+					},
+					{
+						"id": "route-2",
+						"vpc_id": "vpc-2",
+						"port_id": "port-2",
+						"cidr_destination": "192.168.2.1",
+						"description": "Description",
+						"next_hop": "192.168.2.1",
+						"type": "default",
+						"status": "processing"
+					}
+				]
+			}`,
+			statusCode: http.StatusOK,
+			want: []Route{
+				{
+					ID:              "route-1",
+					VpcID:           "vpc-1",
+					PortID:          "port-1",
+					CIDRDestination: "192.168.1.1",
+					Description:     "Description",
+					NextHop:         "192.168.1.1",
+					Type:            "default",
+					Status:          "processing",
+				},
+				{
+					ID:              "route-2",
+					VpcID:           "vpc-2",
+					PortID:          "port-2",
+					CIDRDestination: "192.168.2.1",
+					Description:     "Description",
+					NextHop:         "192.168.2.1",
+					Type:            "default",
+					Status:          "processing",
+				},
+				{
+					ID:              "route-1",
+					VpcID:           "vpc-1",
+					PortID:          "port-1",
+					CIDRDestination: "192.168.1.1",
+					Description:     "Description",
+					NextHop:         "192.168.1.1",
+					Type:            "default",
+					Status:          "processing",
+				},
+				{
+					ID:              "route-2",
+					VpcID:           "vpc-2",
+					PortID:          "port-2",
+					CIDRDestination: "192.168.2.1",
+					Description:     "Description",
+					NextHop:         "192.168.2.1",
+					Type:            "default",
+					Status:          "processing",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:  "successful list all with 3 pages",
+			vpcID: "vpc-1",
+			opts:  ListAllRoutesOptions{},
+			response: `{
+				"meta": {
+					"links": {
+						"next": "?_offset=4&_limit=2",
+						"previous": "?_offset=0&_limit=2",
+						"self": "?_offset=0&_limit=2"
+					},
+					"page": {
+						"count": 6,
+						"limit": 2,
+						"max_items_per_page": 100,
+						"offset": 0,
+						"total": 201
+					}
+				},
+				"result": [
+					{
+						"id": "route-1",
+						"vpc_id": "vpc-1",
+						"port_id": "port-1",
+						"cidr_destination": "192.168.1.1",
+						"description": "Description",
+						"next_hop": "192.168.1.1",
+						"type": "default",
+						"status": "processing"
+					},
+					{
+						"id": "route-2",
+						"vpc_id": "vpc-2",
+						"port_id": "port-2",
+						"cidr_destination": "192.168.2.1",
+						"description": "Description",
+						"next_hop": "192.168.2.1",
+						"type": "default",
+						"status": "processing"
+					}
+				]
+			}`,
+			statusCode: http.StatusOK,
+			want: []Route{
+				{
+					ID:              "route-1",
+					VpcID:           "vpc-1",
+					PortID:          "port-1",
+					CIDRDestination: "192.168.1.1",
+					Description:     "Description",
+					NextHop:         "192.168.1.1",
+					Type:            "default",
+					Status:          "processing",
+				},
+				{
+					ID:              "route-2",
+					VpcID:           "vpc-2",
+					PortID:          "port-2",
+					CIDRDestination: "192.168.2.1",
+					Description:     "Description",
+					NextHop:         "192.168.2.1",
+					Type:            "default",
+					Status:          "processing",
+				},
+				{
+					ID:              "route-1",
+					VpcID:           "vpc-1",
+					PortID:          "port-1",
+					CIDRDestination: "192.168.1.1",
+					Description:     "Description",
+					NextHop:         "192.168.1.1",
+					Type:            "default",
+					Status:          "processing",
+				},
+				{
+					ID:              "route-2",
+					VpcID:           "vpc-2",
+					PortID:          "port-2",
+					CIDRDestination: "192.168.2.1",
+					Description:     "Description",
+					NextHop:         "192.168.2.1",
+					Type:            "default",
+					Status:          "processing",
+				},
+				{
+					ID:              "route-1",
+					VpcID:           "vpc-1",
+					PortID:          "port-1",
+					CIDRDestination: "192.168.1.1",
+					Description:     "Description",
+					NextHop:         "192.168.1.1",
+					Type:            "default",
+					Status:          "processing",
+				},
+				{
+					ID:              "route-2",
+					VpcID:           "vpc-2",
+					PortID:          "port-2",
+					CIDRDestination: "192.168.2.1",
+					Description:     "Description",
+					NextHop:         "192.168.2.1",
+					Type:            "default",
+					Status:          "processing",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:  "successful list with zone",
+			vpcID: "vpc-1",
+			opts: ListAllRoutesOptions{
+				Zone: helpers.StrPtr("br-se1"),
+			},
+			response: `{
+				"meta": {
+					"links": {
+						"next": "?_offset=4&_limit=2",
+						"previous": "?_offset=0&_limit=2",
+						"self": "?_offset=0&_limit=2"
+					},
+					"page": {
+						"count": 6,
+						"limit": 2,
+						"max_items_per_page": 100,
+						"offset": 0,
+						"total": 6
+					}
+				},
+				"result": [
+					{
+						"id": "route-1",
+						"vpc_id": "vpc-1",
+						"port_id": "port-1",
+						"cidr_destination": "192.168.1.1",
+						"description": "Description",
+						"next_hop": "192.168.1.1",
+						"type": "default",
+						"status": "processing"
+					},
+					{
+						"id": "route-2",
+						"vpc_id": "vpc-2",
+						"port_id": "port-2",
+						"cidr_destination": "192.168.2.1",
+						"description": "Description",
+						"next_hop": "192.168.2.1",
+						"type": "default",
+						"status": "processing"
+					}
+				]
+			}`,
+			statusCode: http.StatusOK,
+			want: []Route{
+				{
+					ID:              "route-1",
+					VpcID:           "vpc-1",
+					PortID:          "port-1",
+					CIDRDestination: "192.168.1.1",
+					Description:     "Description",
+					NextHop:         "192.168.1.1",
+					Type:            "default",
+					Status:          "processing",
+				},
+				{
+					ID:              "route-2",
+					VpcID:           "vpc-2",
+					PortID:          "port-2",
+					CIDRDestination: "192.168.2.1",
+					Description:     "Description",
+					NextHop:         "192.168.2.1",
+					Type:            "default",
+					Status:          "processing",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:  "successful list with sort",
+			vpcID: "vpc-1",
+			opts: ListAllRoutesOptions{
+				Sort: helpers.StrPtr("desc"),
+			},
+			response: `{
+				"meta": {
+					"links": {
+						"next": "?_offset=4&_limit=2",
+						"previous": "?_offset=0&_limit=2",
+						"self": "?_offset=0&_limit=2"
+					},
+					"page": {
+						"count": 6,
+						"limit": 2,
+						"max_items_per_page": 100,
+						"offset": 0,
+						"total": 6
+					}
+				},
+				"result": [
+					{
+						"id": "route-1",
+						"vpc_id": "vpc-1",
+						"port_id": "port-1",
+						"cidr_destination": "192.168.1.1",
+						"description": "Description",
+						"next_hop": "192.168.1.1",
+						"type": "default",
+						"status": "processing"
+					},
+					{
+						"id": "route-2",
+						"vpc_id": "vpc-2",
+						"port_id": "port-2",
+						"cidr_destination": "192.168.2.1",
+						"description": "Description",
+						"next_hop": "192.168.2.1",
+						"type": "default",
+						"status": "processing"
+					}
+				]
+			}`,
+			statusCode: http.StatusOK,
+			want: []Route{
+				{
+					ID:              "route-1",
+					VpcID:           "vpc-1",
+					PortID:          "port-1",
+					CIDRDestination: "192.168.1.1",
+					Description:     "Description",
+					NextHop:         "192.168.1.1",
+					Type:            "default",
+					Status:          "processing",
+				},
+				{
+					ID:              "route-2",
+					VpcID:           "vpc-2",
+					PortID:          "port-2",
+					CIDRDestination: "192.168.2.1",
+					Description:     "Description",
+					NextHop:         "192.168.2.1",
+					Type:            "default",
+					Status:          "processing",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:       "non-existent vpc id",
+			vpcID:      "invalid",
+			opts:       ListAllRoutesOptions{},
+			response:   `{"error": "vpc id not found"}`,
+			statusCode: http.StatusNotFound,
+			want:       []Route{},
+			wantErr:    true,
+		},
+		{
+			name:       "server error",
+			vpcID:      "vpc-1",
+			opts:       ListAllRoutesOptions{},
+			response:   `{"error": "internal server error"}`,
+			statusCode: http.StatusInternalServerError,
+			want:       []Route{},
+			wantErr:    true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				assertEqual(t, fmt.Sprintf("/network/v1/vpcs/%s/route_table/routes", tt.vpcID), r.URL.Path)
+				assertEqual(t, http.MethodGet, r.Method)
+
+				query := r.URL.Query()
+				if tt.opts.Zone != nil {
+					assertEqual(t, *tt.opts.Zone, query.Get("_zone"))
+				}
+				if tt.opts.Sort != nil {
+					assertEqual(t, *tt.opts.Sort, query.Get("_sort"))
+				}
+
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(tt.statusCode)
+				w.Write([]byte(tt.response))
+			}))
+
+			defer server.Close()
+
+			client := testRouteClient(server.URL)
+			routes, err := client.ListAll(context.Background(), tt.vpcID, tt.opts)
+
+			if tt.wantErr {
+				assertError(t, err)
+				assertEqual(t, true, strings.Contains(err.Error(), strconv.Itoa(tt.statusCode)))
+
+				return
+			}
+
+			assertNoError(t, err)
+
+			assertEqual(t, len(tt.want), len(routes))
+
+			for i, route := range routes {
+				assertEqual(t, tt.want[i].ID, route.ID)
+				assertEqual(t, tt.want[i].VpcID, route.VpcID)
+				assertEqual(t, tt.want[i].PortID, route.PortID)
+				assertEqual(t, tt.want[i].CIDRDestination, route.CIDRDestination)
+				assertEqual(t, tt.want[i].Description, route.Description)
+				assertEqual(t, tt.want[i].NextHop, route.NextHop)
+				assertEqual(t, tt.want[i].Type, route.Type)
+				assertEqual(t, tt.want[i].Status, route.Status)
+			}
+		})
+	}
+}
+
 func TestRouteService_Get(t *testing.T) {
 	tests := []struct {
 		name       string

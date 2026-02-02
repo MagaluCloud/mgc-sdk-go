@@ -931,6 +931,8 @@ func demoRoutesOperations(networkClient *network.NetworkClient) {
 	fmt.Println()
 	listRoutes(networkClient, vpcID)
 	fmt.Println()
+	listAllRoutes(networkClient, vpcID)
+	fmt.Println()
 	deleteRoute(networkClient, vpcID, routeID)
 }
 
@@ -985,7 +987,7 @@ func listRoutes(networkClient *network.NetworkClient, vpcID string) {
 		ItemsPerPage: helpers.IntPtr(10),
 	})
 	if err != nil {
-		log.Fatalf("Failed to list all routes: %v", err)
+		log.Fatalf("Failed to list the routes: %v", err)
 	}
 
 	fmt.Println("Meta Links")
@@ -1001,6 +1003,32 @@ func listRoutes(networkClient *network.NetworkClient, vpcID string) {
 	fmt.Printf("  Total: %d\n", routes.Meta.Page.Total)
 
 	for _, route := range routes.Result {
+		fmt.Printf("Route %s:\n", route.ID)
+		fmt.Printf("  Vpc ID: %s\n", route.VpcID)
+		fmt.Printf("  Port ID: %s\n", route.PortID)
+		fmt.Printf("  CIDR Destination: %s\n", route.CIDRDestination)
+		fmt.Printf("  Description: %s\n", route.Description)
+		fmt.Printf("  Next Hop: %s\n", route.NextHop)
+		fmt.Printf("  Type: %s\n", route.Type)
+		fmt.Printf("  Status: %s\n", route.Status)
+	}
+}
+
+func listAllRoutes(networkClient *network.NetworkClient, vpcID string) {
+	ctx, cancel := getContext()
+	defer cancel()
+
+	routes, err := networkClient.Routes().ListAll(ctx, vpcID, network.ListAllRoutesOptions{
+		Zone: helpers.StrPtr("br-se1"),
+		Sort: helpers.StrPtr("desc"),
+	})
+	if err != nil {
+		log.Fatalf("Failed to list all routes: %v", err)
+	}
+
+	fmt.Println("All routes:")
+
+	for _, route := range routes {
 		fmt.Printf("Route %s:\n", route.ID)
 		fmt.Printf("  Vpc ID: %s\n", route.VpcID)
 		fmt.Printf("  Port ID: %s\n", route.PortID)
