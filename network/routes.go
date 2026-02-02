@@ -10,16 +10,28 @@ import (
 	mgc_http "github.com/MagaluCloud/mgc-sdk-go/internal/http"
 )
 
+type RouteStatus string
+
+const (
+	RouteStatusProcessing RouteStatus = "processing"
+	RouteStatusCreated    RouteStatus = "created"
+	RouteStatusPending    RouteStatus = "pending"
+	RouteStatusDeleting   RouteStatus = "deleting"
+	RouteStatusDeleted    RouteStatus = "deleted"
+	RouteStatusUpdating   RouteStatus = "updating"
+	RouteStatusError      RouteStatus = "error"
+)
+
 type (
 	Route struct {
-		ID              string `json:"id"`
-		VpcID           string `json:"vpc_id"`
-		PortID          string `json:"port_id"`
-		CIDRDestination string `json:"cidr_destination"`
-		Description     string `json:"description,omitempty"`
-		NextHop         string `json:"next_hop"`
-		Type            string `json:"type"`
-		Status          string `json:"status"`
+		ID              string      `json:"id"`
+		VpcID           string      `json:"vpc_id"`
+		PortID          string      `json:"port_id"`
+		CIDRDestination string      `json:"cidr_destination"`
+		Description     string      `json:"description,omitempty"`
+		NextHop         string      `json:"next_hop"`
+		Type            string      `json:"type"`
+		Status          RouteStatus `json:"status"`
 	}
 
 	CreateRequest struct {
