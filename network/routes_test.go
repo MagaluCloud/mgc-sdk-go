@@ -106,6 +106,87 @@ func TestRouteService_List(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name:  "successful list with nil opts",
+			vpcID: "vpc-1",
+			opts:  nil,
+			response: `{
+				"meta": {
+					"links": {
+						"next": "?_offset=4&_limit=2",
+						"previous": "?_offset=0&_limit=2",
+						"self": "?_offset=0&_limit=2"
+					},
+					"page": {
+						"count": 6,
+						"limit": 2,
+						"max_items_per_page": 100,
+						"offset": 0,
+						"total": 6
+					}
+				},
+				"result": [
+					{
+						"id": "route-1",
+						"vpc_id": "vpc-1",
+						"port_id": "port-1",
+						"cidr_destination": "192.168.1.1",
+						"description": "Description",
+						"next_hop": "192.168.1.1",
+						"type": "default",
+						"status": "processing"
+					},
+					{
+						"id": "route-2",
+						"vpc_id": "vpc-2",
+						"port_id": "port-2",
+						"cidr_destination": "192.168.2.1",
+						"description": "Description",
+						"next_hop": "192.168.2.1",
+						"type": "default",
+						"status": "processing"
+					}
+				]
+			}`,
+			statusCode: http.StatusOK,
+			want: &ListResponse{
+				Meta: ListMeta{
+					Links: ListLinks{
+						Next:     helpers.StrPtr("?_offset=4&_limit=2"),
+						Previous: helpers.StrPtr("?_offset=0&_limit=2"),
+						Self:     "?_offset=0&_limit=2",
+					},
+					Page: ListPage{
+						Count:           6,
+						Limit:           2,
+						MaxItemsPerPage: 100,
+						Offset:          0,
+						Total:           6,
+					},
+				},
+				Result: []RouteDetail{
+					{
+						ID:              "route-1",
+						PortID:          "port-1",
+						CIDRDestination: "192.168.1.1",
+						Description:     "Description",
+						NextHop:         "192.168.1.1",
+						Type:            "default",
+						Status:          "processing",
+					},
+					{
+						ID:              "route-2",
+						PortID:          "port-2",
+						CIDRDestination: "192.168.2.1",
+						Description:     "Description",
+						NextHop:         "192.168.2.1",
+						Type:            "default",
+						Status:          "processing",
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
 			name:  "successful list with pagination",
 			vpcID: "vpc-1",
 			opts: &ListRouteOptions{
@@ -457,16 +538,16 @@ func TestRouteService_List(t *testing.T) {
 				assertEqual(t, http.MethodGet, r.Method)
 
 				query := r.URL.Query()
-				if tt.opts.Zone != "" {
+				if tt.opts != nil && tt.opts.Zone != "" {
 					assertEqual(t, tt.opts.Zone, query.Get("zone"))
 				}
-				if tt.opts.Sort != "" {
+				if tt.opts != nil && tt.opts.Sort != "" {
 					assertEqual(t, tt.opts.Sort, query.Get("sort"))
 				}
-				if tt.opts.Page != nil {
+				if tt.opts != nil && tt.opts.Page != nil {
 					assertEqual(t, strconv.Itoa(*tt.opts.Page), query.Get("page"))
 				}
-				if tt.opts.ItemsPerPage != nil {
+				if tt.opts != nil && tt.opts.ItemsPerPage != nil {
 					assertEqual(t, strconv.Itoa(*tt.opts.ItemsPerPage), query.Get("items_per_page"))
 				}
 
@@ -571,6 +652,87 @@ func TestRouteService_ListAll(t *testing.T) {
 			name:  "successful list all",
 			vpcID: "vpc-1",
 			opts:  &ListAllRoutesOptions{},
+			response: `{
+				"meta": {
+					"links": {
+						"next": "?_offset=4&_limit=2",
+						"previous": "?_offset=0&_limit=2",
+						"self": "?_offset=0&_limit=2"
+					},
+					"page": {
+						"count": 6,
+						"limit": 2,
+						"max_items_per_page": 100,
+						"offset": 0,
+						"total": 200
+					}
+				},
+				"result": [
+					{
+						"id": "route-1",
+						"port_id": "port-1",
+						"cidr_destination": "192.168.1.1",
+						"description": "Description",
+						"next_hop": "192.168.1.1",
+						"type": "default",
+						"status": "processing"
+					},
+					{
+						"id": "route-2",
+						"port_id": "port-2",
+						"cidr_destination": "192.168.2.1",
+						"description": "Description",
+						"next_hop": "192.168.2.1",
+						"type": "default",
+						"status": "processing"
+					}
+				]
+			}`,
+			statusCode: http.StatusOK,
+			want: []RouteDetail{
+				{
+					ID:              "route-1",
+					PortID:          "port-1",
+					CIDRDestination: "192.168.1.1",
+					Description:     "Description",
+					NextHop:         "192.168.1.1",
+					Type:            "default",
+					Status:          "processing",
+				},
+				{
+					ID:              "route-2",
+					PortID:          "port-2",
+					CIDRDestination: "192.168.2.1",
+					Description:     "Description",
+					NextHop:         "192.168.2.1",
+					Type:            "default",
+					Status:          "processing",
+				},
+				{
+					ID:              "route-1",
+					PortID:          "port-1",
+					CIDRDestination: "192.168.1.1",
+					Description:     "Description",
+					NextHop:         "192.168.1.1",
+					Type:            "default",
+					Status:          "processing",
+				},
+				{
+					ID:              "route-2",
+					PortID:          "port-2",
+					CIDRDestination: "192.168.2.1",
+					Description:     "Description",
+					NextHop:         "192.168.2.1",
+					Type:            "default",
+					Status:          "processing",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:  "successful list all  with nil opts",
+			vpcID: "vpc-1",
+			opts:  nil,
 			response: `{
 				"meta": {
 					"links": {
@@ -987,10 +1149,10 @@ func TestRouteService_ListAll(t *testing.T) {
 				assertEqual(t, http.MethodGet, r.Method)
 
 				query := r.URL.Query()
-				if tt.opts.Zone != "" {
+				if tt.opts != nil && tt.opts.Zone != "" {
 					assertEqual(t, tt.opts.Zone, query.Get("zone"))
 				}
-				if tt.opts.Sort != "" {
+				if tt.opts != nil && tt.opts.Sort != "" {
 					assertEqual(t, tt.opts.Sort, query.Get("sort"))
 				}
 
