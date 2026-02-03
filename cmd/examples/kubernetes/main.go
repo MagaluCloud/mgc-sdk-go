@@ -472,7 +472,9 @@ func ExampleGetNodePool(k8sClient *kubernetes.KubernetesClient, clusterID string
 func ExampleListVersions(k8sClient *kubernetes.KubernetesClient) {
 	ctx := context.Background()
 
-	versions, err := k8sClient.Versions().List(ctx, true)
+	versions, err := k8sClient.Versions().List(ctx, &kubernetes.VersionListOptions{
+		IncludeDeprecated: true,
+	})
 	if err != nil {
 		log.Fatal(err)
 	}
