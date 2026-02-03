@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"slices"
 	"strconv"
+	"strings"
 
 	mgc_http "github.com/MagaluCloud/mgc-sdk-go/internal/http"
 )
@@ -23,15 +25,19 @@ const (
 )
 
 type (
-	Route struct {
+	RouteDetail struct {
 		ID              string      `json:"id"`
-		VpcID           string      `json:"vpc_id"`
 		PortID          string      `json:"port_id"`
 		CIDRDestination string      `json:"cidr_destination"`
 		Description     string      `json:"description,omitempty"`
 		NextHop         string      `json:"next_hop"`
 		Type            string      `json:"type"`
 		Status          RouteStatus `json:"status"`
+	}
+
+	Route struct {
+		RouteDetail
+		VpcID string `json:"vpc_id"`
 	}
 
 	CreateRequest struct {
@@ -46,21 +52,22 @@ type (
 	}
 
 	ListRouteOptions struct {
-		Zone         *string `json:"zone"`
-		Sort         *string `json:"sort"`
-		Page         *int    `json:"page"`
-		ItemsPerPage *int    `json:"items_per_pages"`
+		Zone string `json:"zone"`
+		// Defines the sorting in the format field:asc|desc
+		Sort         string `json:"sort"`
+		Page         *int   `json:"page"`
+		ItemsPerPage *int   `json:"items_per_pages"`
 	}
 
 	ListAllRoutesOptions struct {
-		Zone *string `json:"zone"`
-		Sort *string `json:"sort"`
+		Zone string `json:"zone"`
+		Sort string `json:"sort"`
 	}
 
 	ListLinks struct {
-		Next     string `json:"next"`
-		Previous string `json:"previous"`
-		Self     string `json:"self"`
+		Next     *string `json:"next,omitempty"`
+		Previous *string `json:"previous,omitempty"`
+		Self     string  `json:"self"`
 	}
 
 	ListPage struct {
@@ -77,14 +84,14 @@ type (
 	}
 
 	ListResponse struct {
-		Result []Route  `json:"result"`
-		Meta   ListMeta `json:"meta"`
+		Result []RouteDetail `json:"result"`
+		Meta   ListMeta      `json:"meta"`
 	}
 )
 
 type RouteService interface {
-	List(ctx context.Context, vpcID string, opts ListRouteOptions) (*ListResponse, error)
-	ListAll(ctx context.Context, vpcID string, opts ListAllRoutesOptions) ([]Route, error)
+	List(ctx context.Context, vpcID string, opts *ListRouteOptions) (*ListResponse, error)
+	ListAll(ctx context.Context, vpcID string, opts *ListAllRoutesOptions) ([]RouteDetail, error)
 	Get(ctx context.Context, vpcID, routeID string) (*Route, error)
 	Create(ctx context.Context, vpcID string, req CreateRequest) (*CreateResponse, error)
 	Delete(ctx context.Context, vpcID, routeID string) error
@@ -94,20 +101,29 @@ type routeService struct {
 	client *NetworkClient
 }
 
-func (s *routeService) List(ctx context.Context, vpcID string, opts ListRouteOptions) (*ListResponse, error) {
+func (s *routeService) List(ctx context.Context, vpcID string, opts *ListRouteOptions) (*ListResponse, error) {
 	query := make(url.Values)
 
-	if opts.Zone != nil {
-		query.Set("_zone", *opts.Zone)
+	if opts == nil {
+		opts = &ListRouteOptions{}
 	}
-	if opts.Sort != nil {
-		query.Set("_sort", *opts.Sort)
+
+	if opts.Zone != "" {
+		query.Set("zone", opts.Zone)
+	}
+	if opts.Sort != "" {
+		err := validateSortValue(opts.Sort)
+		if err != nil {
+			return nil, err
+		}
+
+		query.Set("sort", opts.Sort)
 	}
 	if opts.Page != nil {
-		query.Set("_page", strconv.Itoa(*opts.Page))
+		query.Set("page", strconv.Itoa(*opts.Page))
 	}
 	if opts.ItemsPerPage != nil {
-		query.Set("_items_per_page", strconv.Itoa(*opts.ItemsPerPage))
+		query.Set("items_per_page", strconv.Itoa(*opts.ItemsPerPage))
 	}
 
 	return mgc_http.ExecuteSimpleRequestWithRespBody[ListResponse](
@@ -121,9 +137,9 @@ func (s *routeService) List(ctx context.Context, vpcID string, opts ListRouteOpt
 	)
 }
 
-func (s *routeService) ListAll(ctx context.Context, vpcID string, opts ListAllRoutesOptions) ([]Route, error) {
-	allRoutes := []Route{}
-	page := 0
+func (s *routeService) ListAll(ctx context.Context, vpcID string, opts *ListAllRoutesOptions) ([]RouteDetail, error) {
+	allRoutes := []RouteDetail{}
+	page := 1
 	itemsPerPage := 100
 
 	for {
@@ -135,7 +151,7 @@ func (s *routeService) ListAll(ctx context.Context, vpcID string, opts ListAllRo
 			Zone:         opts.Zone,
 		}
 
-		resp, err := s.List(ctx, vpcID, opts)
+		resp, err := s.List(ctx, vpcID, &opts)
 		if err != nil {
 			return nil, err
 		}
@@ -144,7 +160,7 @@ func (s *routeService) ListAll(ctx context.Context, vpcID string, opts ListAllRo
 
 		page += itemsPerPage
 
-		if page >= resp.Meta.Page.Total {
+		if page > resp.Meta.Page.Total {
 			break
 		}
 	}
@@ -165,6 +181,13 @@ func (s *routeService) Get(ctx context.Context, vpcID, routeID string) (*Route, 
 }
 
 func (s *routeService) Create(ctx context.Context, vpcID string, req CreateRequest) (*CreateResponse, error) {
+	if req.PortID == "" {
+		return nil, fmt.Errorf("port_id cannot be empty")
+	}
+	if req.CIDRDestination == "" {
+		return nil, fmt.Errorf("cidr_destination cannot be empty")
+	}
+
 	return mgc_http.ExecuteSimpleRequestWithRespBody[CreateResponse](
 		ctx,
 		s.client.newRequest,
@@ -186,4 +209,30 @@ func (s *routeService) Delete(ctx context.Context, vpcID, routeID string) error 
 		nil,
 		nil,
 	)
+}
+
+func validateSortValue(sort string) error {
+	allowedSortFields := []string{"id", "port_id", "vpc_id", "description", "cidr_destination", "type", "status"}
+
+	parts := strings.Split(sort, ":")
+	if len(parts) != 2 {
+		return fmt.Errorf("invalid sort format, expected field:asc|desc")
+	}
+
+	field := strings.ToLower(parts[0])
+	direction := strings.ToLower(parts[1])
+
+	if !slices.Contains(allowedSortFields, field) {
+		return fmt.Errorf(
+			"invalid sort field: %q, allowed fields are: %s",
+			field,
+			strings.Join(allowedSortFields, ", "),
+		)
+	}
+
+	if direction != "asc" && direction != "desc" {
+		return fmt.Errorf("invalid sort direction, expected asc or desc")
+	}
+
+	return nil
 }
