@@ -292,7 +292,7 @@ func TestVolumeService_Get(t *testing.T) {
 				t.Errorf("Got volume %+v, want %+v", volume, tt.want)
 			}
 
-			if tt.want.Attachment != nil && *tt.want.Attachment.Serial != *volume.Attachment.Serial {
+			if tt.want.Attachment != nil && tt.want.Attachment.Serial != nil && *tt.want.Attachment.Serial != *volume.Attachment.Serial {
 				t.Errorf("Got attachment serial %+v, want %+v", volume.Attachment.Serial, tt.want.Attachment.Serial)
 			}
 		})
