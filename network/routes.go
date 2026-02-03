@@ -47,21 +47,28 @@ type (
 	}
 
 	CreateResponse struct {
-		ID     string `json:"id"`
-		Status string `json:"status"`
+		ID     string      `json:"id"`
+		Status RouteStatus `json:"status"`
 	}
 
 	ListRouteOptions struct {
-		Zone string `json:"zone"`
-		// Defines the sorting in the format field:asc|desc
-		Sort         string `json:"sort"`
-		Page         *int   `json:"page"`
-		ItemsPerPage *int   `json:"items_per_pages"`
+		// Zone filters routes by availability zone.
+		Zone string
+		// Defines the sorting in the format field:asc|desc.
+		Sort string
+		// Page defines the page number (1-based).
+		//
+		// Default value: 1. Minimum value: 1.
+		Page *int
+		// ItemsPerPage defines the maximum number of items returned per page.
+		//
+		// Default value: 10. Minimum value: 1. Maximum value: 100.
+		ItemsPerPage *int
 	}
 
 	ListAllRoutesOptions struct {
-		Zone string `json:"zone"`
-		Sort string `json:"sort"`
+		Zone string
+		Sort string
 	}
 
 	ListLinks struct {
@@ -89,11 +96,17 @@ type (
 	}
 )
 
+// RouteService defines operations for managing VPC routes.
 type RouteService interface {
+	// List retrieves a paginated list of routes for a given VPC.
 	List(ctx context.Context, vpcID string, opts *ListRouteOptions) (*ListResponse, error)
+	// ListAll retrieves all routes for a given VPC, automatically handling pagination.
 	ListAll(ctx context.Context, vpcID string, opts *ListAllRoutesOptions) ([]RouteDetail, error)
+	// Get retrieves a single route by its ID.
 	Get(ctx context.Context, vpcID, routeID string) (*Route, error)
+	// Create creates a new route in the specified VPC.
 	Create(ctx context.Context, vpcID string, req CreateRequest) (*CreateResponse, error)
+	// Delete removes a route from the specified VPC.
 	Delete(ctx context.Context, vpcID, routeID string) error
 }
 
@@ -142,27 +155,31 @@ func (s *routeService) ListAll(ctx context.Context, vpcID string, opts *ListAllR
 	page := 1
 	itemsPerPage := 100
 
+	if opts == nil {
+		opts = &ListAllRoutesOptions{}
+	}
+
 	for {
 		currentPage := page
-		opts := ListRouteOptions{
+		listOpts := ListRouteOptions{
 			Page:         &currentPage,
 			ItemsPerPage: &itemsPerPage,
 			Sort:         opts.Sort,
 			Zone:         opts.Zone,
 		}
 
-		resp, err := s.List(ctx, vpcID, &opts)
+		resp, err := s.List(ctx, vpcID, &listOpts)
 		if err != nil {
 			return nil, err
 		}
 
 		allRoutes = append(allRoutes, resp.Result...)
 
-		page += itemsPerPage
-
-		if page > resp.Meta.Page.Total {
+		if page*itemsPerPage >= resp.Meta.Page.Total {
 			break
 		}
+
+		page++
 	}
 
 	return allRoutes, nil
