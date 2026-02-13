@@ -31,7 +31,6 @@ const (
 
 // Global variables to store created resources for cleanup
 var (
-	createdLBID     string
 	createdBackends []string
 	createdCerts    []string
 	createdHCs      []string
@@ -57,7 +56,6 @@ func main() {
 	if lbID == "" {
 		log.Fatal("Failed to create load balancer, stopping examples")
 	}
-	createdLBID = lbID
 
 	fmt.Println("\n2. Listing all Load Balancers...")
 	runListLoadBalancersExample(ctx, client)
@@ -170,7 +168,7 @@ func runCreateLoadBalancerExample(ctx context.Context, client *client.CoreClient
 				Description:                         stringPtr("Backend pool for web servers"),
 				BalanceAlgorithm:                    lbaas.BackendBalanceAlgorithmRoundRobin,
 				TargetsType:                         lbaas.BackendTypeInstance,
-				PanicThreshold:                      floatPtr(50.0), // Panic when 50% of targets are unhealthy
+				PanicThreshold:                      intPtr(50), // Panic when 50% of targets are unhealthy
 				CloseConnectionsOnHostHealthFailure: boolPtr(true),
 				// Health check will be linked later
 			},
@@ -179,7 +177,7 @@ func runCreateLoadBalancerExample(ctx context.Context, client *client.CoreClient
 				Description:                         stringPtr("Backend pool for API servers"),
 				BalanceAlgorithm:                    lbaas.BackendBalanceAlgorithmRoundRobin,
 				TargetsType:                         lbaas.BackendTypeInstance,
-				PanicThreshold:                      floatPtr(30.0),
+				PanicThreshold:                      intPtr(30),
 				CloseConnectionsOnHostHealthFailure: boolPtr(false),
 			},
 		},
@@ -497,7 +495,7 @@ func runManageBackendsExample(ctx context.Context, client *client.CoreClient, lb
 		fmt.Printf("  Algorithm: %s\n", backend.BalanceAlgorithm)
 		fmt.Printf("  Targets Type: %s\n", backend.TargetsType)
 		if backend.PanicThreshold != nil {
-			fmt.Printf("  Panic Threshold: %.1f%%\n", *backend.PanicThreshold)
+			fmt.Printf("  Panic Threshold: %d%%\n", *backend.PanicThreshold)
 		}
 		fmt.Printf("  Close Connections on Health Failure: %t\n", *backend.CloseConnectionsOnHostHealthFailure)
 	}
@@ -505,7 +503,7 @@ func runManageBackendsExample(ctx context.Context, client *client.CoreClient, lb
 	// Update the backend
 	fmt.Printf("\nUpdating backend: %s\n", backendID)
 	updateBackendReq := lbaas.UpdateNetworkBackendRequest{
-		PanicThreshold:                      floatPtr(60.0),
+		PanicThreshold:                      intPtr(60),
 		CloseConnectionsOnHostHealthFailure: boolPtr(false),
 	}
 

@@ -37,7 +37,7 @@ type (
 		Name                                string                                 `json:"name"`
 		Description                         *string                                `json:"description,omitempty"`
 		BalanceAlgorithm                    BackendBalanceAlgorithm                `json:"balance_algorithm"`
-		PanicThreshold                      *float64                               `json:"panic_threshold,omitempty"`
+		PanicThreshold                      *int                                   `json:"panic_threshold,omitempty"`
 		TargetsType                         BackendType                            `json:"targets_type"`
 		Targets                             *[]NetworkBackendInstanceTargetRequest `json:"targets,omitempty"`
 		CloseConnectionsOnHostHealthFailure *bool                                  `json:"close_connections_on_host_health_failure,omitempty"`
