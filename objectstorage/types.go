@@ -1,6 +1,9 @@
 package objectstorage
 
-import "time"
+import (
+	"io"
+	"time"
+)
 
 // Bucket represents an object storage bucket.
 type Bucket struct {
@@ -15,6 +18,7 @@ type Object struct {
 	LastModified time.Time `json:"last_modified"`
 	ETag         string    `json:"etag,omitempty"`
 	ContentType  string    `json:"content_type,omitempty"`
+	StorageClass string    `json:"storage_class,omitempty"`
 }
 
 // BucketListOptions defines parameters for filtering and pagination of bucket lists.
@@ -25,10 +29,11 @@ type BucketListOptions struct {
 
 // ObjectListOptions defines parameters for filtering and pagination of object lists.
 type ObjectListOptions struct {
-	Limit     *int   `json:"_limit,omitempty"`
-	Offset    *int   `json:"_offset,omitempty"`
-	Prefix    string `json:"prefix,omitempty"`
-	Delimiter string `json:"delimiter,omitempty"`
+	Limit     *int             `json:"_limit,omitempty"`
+	Offset    *int             `json:"_offset,omitempty"`
+	Prefix    string           `json:"prefix,omitempty"`
+	Delimiter string           `json:"delimiter,omitempty"`
+	Filter    *[]FilterOptions `json:"filter,omitempty"`
 }
 
 // ObjectFilterOptions defines filtering options for ListAll (without pagination).
@@ -84,14 +89,22 @@ type BucketVersioningConfiguration struct {
 	Status VersioningStatus `json:"Status,omitempty"`
 }
 
+type ObjectOwner struct {
+	DisplayName string `json:"display_name,omitempty"`
+	ID          string `json:"id,omitempty"`
+}
+
 // ObjectVersion represents a version of an object in a versioned bucket.
 type ObjectVersion struct {
-	Key            string    `json:"key"`
-	VersionID      string    `json:"version_id"`
-	Size           int64     `json:"size"`
-	LastModified   time.Time `json:"last_modified"`
-	IsDeleteMarker bool      `json:"is_delete_marker"`
-	ETag           string    `json:"etag,omitempty"`
+	Key            string      `json:"key"`
+	VersionID      string      `json:"version_id"`
+	Size           int64       `json:"size"`
+	LastModified   time.Time   `json:"last_modified"`
+	IsDeleteMarker bool        `json:"is_delete_marker"`
+	ETag           string      `json:"etag,omitempty"`
+	StorageClass   string      `json:"storage_class,omitempty"`
+	IsLatest       bool        `json:"is_latest"`
+	Owner          ObjectOwner `json:"owner"`
 }
 
 // DownloadOptions defines optional parameters for downloading objects.
@@ -113,4 +126,134 @@ type DeleteOptions struct {
 type ListVersionsOptions struct {
 	Limit  *int `json:"_limit,omitempty"`
 	Offset *int `json:"_offset,omitempty"`
+}
+
+type ObjectLockInfo struct {
+	Mode            string     `json:"mode,omitempty"`
+	RetainUntilDate *time.Time `json:"retain_until_date,omitempty"`
+	Locked          bool       `json:"locked"`
+}
+
+type MetadataOptions struct {
+	VersionID string `json:"version_id,omitempty"`
+}
+
+type GetPresignedURLOptions struct {
+	Method          string         `json:"method,omitempty"`
+	ExpiryInSeconds *time.Duration `json:"expiry_in_seconds,omitempty"`
+}
+
+type PresignedURL struct {
+	URL string `json:"url"`
+}
+
+type CopySrcConfig struct {
+	BucketName string `json:"bucket_name"`
+	ObjectKey  string `json:"object_key"`
+	VersionID  string `json:"version_id,omitempty"`
+}
+
+type CopyDstConfig struct {
+	BucketName   string `json:"bucket_name"`
+	ObjectKey    string `json:"object_key"`
+	StorageClass string `json:"storage_class,omitempty"`
+}
+
+type DeleteAllOptions struct {
+	ObjectKey string           `json:"object_key,omitempty"`
+	Filter    *[]FilterOptions `json:"filter,omitempty"`
+	BatchSize int              `json:"batch_size,omitempty"`
+}
+
+type DeleteError struct {
+	ObjectKey string
+	Error     error
+}
+
+type DeleteAllResult struct {
+	DeletedCount int
+	ErrorCount   int
+	Errors       []DeleteError
+}
+
+// DownloadAllOptions defines parameters for downloading all objects from a bucket.
+type DownloadAllOptions struct {
+	Prefix    string           `json:"prefix,omitempty"`
+	Filter    *[]FilterOptions `json:"filter,omitempty"`
+	BatchSize int              `json:"batch_size,omitempty"`
+}
+
+// DownloadError represents an error that occurred while downloading an object.
+type DownloadError struct {
+	ObjectKey string
+	Error     error
+}
+
+// DownloadAllResult represents the result of a DownloadAll operation.
+type DownloadAllResult struct {
+	DownloadedCount int
+	ErrorCount      int
+	Errors          []DownloadError
+}
+
+type FilterOptions struct {
+	Include string `json:"include,omitempty"`
+	Exclude string `json:"exclude,omitempty"`
+}
+
+type CopyPath struct {
+	BucketName string
+	ObjectKey  string
+}
+
+type CopyAllOptions struct {
+	Filter       *[]FilterOptions `json:"filter,omitempty"`
+	StorageClass string           `json:"storage_class,omitempty"`
+	BatchSize    int              `json:"batch_size,omitempty"`
+}
+
+type CopyError struct {
+	ObjectKey string
+	Error     error
+}
+
+type CopyAllResult struct {
+	CopiedCount int
+	ErrorCount  int
+	Errors      []CopyError
+}
+
+type UploadDirOptions struct {
+	Shallow      bool
+	StorageClass string
+	BatchSize    int
+	Filter       *[]FilterOptions
+}
+
+type UploadAllResult struct {
+	UploadedCount int
+	ErrorCount    int
+	Errors        []UploadError
+}
+
+type UploadError struct {
+	FilePath string
+	Error    error
+}
+
+type ProgressReporter interface {
+	Start(total int64)
+	Add(delta int64)
+	Finish()
+}
+
+type ProgressReader struct {
+	r io.Reader
+	p ProgressReporter
+}
+
+type ObjectPipelineOptions struct {
+	BatchSize   int
+	MaxParallel int
+	Progress    ProgressReporter
 }
