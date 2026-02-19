@@ -937,7 +937,7 @@ func (s *objectService) CopyAll(ctx context.Context, src CopyPath, dst CopyPath,
 	}
 
 	s.runObjectPipeline(
-		ctx,
+		procCtx,
 		objects,
 		ObjectPipelineOptions{
 			BatchSize:   batchSize,
