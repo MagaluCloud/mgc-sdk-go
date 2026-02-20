@@ -25,7 +25,7 @@ const (
 )
 
 type (
-	VpcsRoutesDetail struct {
+	VpcsRouteDetail struct {
 		ID              string      `json:"id"`
 		PortID          string      `json:"port_id"`
 		CIDRDestination string      `json:"cidr_destination"`
@@ -35,8 +35,8 @@ type (
 		Status          RouteStatus `json:"status"`
 	}
 
-	VpcsRoutes struct {
-		VpcsRoutesDetail
+	VpcsRoute struct {
+		VpcsRouteDetail
 		VpcID string `json:"vpc_id"`
 	}
 
@@ -91,7 +91,7 @@ type (
 	}
 
 	ListVpcsRoutesResponse struct {
-		Result []VpcsRoutesDetail `json:"result"`
+		Result []VpcsRouteDetail  `json:"result"`
 		Meta   ListVpcsRoutesMeta `json:"meta"`
 	}
 )
@@ -101,9 +101,9 @@ type VpcsRoutesService interface {
 	// List retrieves a paginated list of routes for a given VPC.
 	List(ctx context.Context, vpcID string, opts *ListVpcsRoutesOptions) (*ListVpcsRoutesResponse, error)
 	// ListAll retrieves all routes for a given VPC, automatically handling pagination.
-	ListAll(ctx context.Context, vpcID string, opts *ListAllVpcsRoutesOptions) ([]VpcsRoutesDetail, error)
+	ListAll(ctx context.Context, vpcID string, opts *ListAllVpcsRoutesOptions) ([]VpcsRouteDetail, error)
 	// Get retrieves a single route by its ID.
-	Get(ctx context.Context, vpcID, routeID string) (*VpcsRoutes, error)
+	Get(ctx context.Context, vpcID, routeID string) (*VpcsRoute, error)
 	// Create creates a new route in the specified VPC.
 	Create(ctx context.Context, vpcID string, req VpcsRoutesCreateRequest) (*VpcsRoutesCreateResponse, error)
 	// Delete removes a route from the specified VPC.
@@ -150,8 +150,8 @@ func (s *vpcsRoutesService) List(ctx context.Context, vpcID string, opts *ListVp
 	)
 }
 
-func (s *vpcsRoutesService) ListAll(ctx context.Context, vpcID string, opts *ListAllVpcsRoutesOptions) ([]VpcsRoutesDetail, error) {
-	allRoutes := []VpcsRoutesDetail{}
+func (s *vpcsRoutesService) ListAll(ctx context.Context, vpcID string, opts *ListAllVpcsRoutesOptions) ([]VpcsRouteDetail, error) {
+	allRoutes := []VpcsRouteDetail{}
 	page := 1
 	itemsPerPage := 100
 
@@ -185,8 +185,8 @@ func (s *vpcsRoutesService) ListAll(ctx context.Context, vpcID string, opts *Lis
 	return allRoutes, nil
 }
 
-func (s *vpcsRoutesService) Get(ctx context.Context, vpcID, routeID string) (*VpcsRoutes, error) {
-	return mgc_http.ExecuteSimpleRequestWithRespBody[VpcsRoutes](
+func (s *vpcsRoutesService) Get(ctx context.Context, vpcID, routeID string) (*VpcsRoute, error) {
+	return mgc_http.ExecuteSimpleRequestWithRespBody[VpcsRoute](
 		ctx,
 		s.client.newRequest,
 		s.client.GetConfig(),

@@ -82,7 +82,7 @@ func TestRouteService_List(t *testing.T) {
 						Total:           6,
 					},
 				},
-				Result: []VpcsRoutesDetail{
+				Result: []VpcsRouteDetail{
 					{
 						ID:              "route-1",
 						PortID:          "port-1",
@@ -163,7 +163,7 @@ func TestRouteService_List(t *testing.T) {
 						Total:           6,
 					},
 				},
-				Result: []VpcsRoutesDetail{
+				Result: []VpcsRouteDetail{
 					{
 						ID:              "route-1",
 						PortID:          "port-1",
@@ -245,7 +245,7 @@ func TestRouteService_List(t *testing.T) {
 						Total:           6,
 					},
 				},
-				Result: []VpcsRoutesDetail{
+				Result: []VpcsRouteDetail{
 					{
 						ID:              "route-1",
 						PortID:          "port-1",
@@ -326,7 +326,7 @@ func TestRouteService_List(t *testing.T) {
 						Total:           6,
 					},
 				},
-				Result: []VpcsRoutesDetail{
+				Result: []VpcsRouteDetail{
 					{
 						ID:              "route-1",
 						PortID:          "port-1",
@@ -407,7 +407,7 @@ func TestRouteService_List(t *testing.T) {
 						Total:           6,
 					},
 				},
-				Result: []VpcsRoutesDetail{
+				Result: []VpcsRouteDetail{
 					{
 						ID:              "route-1",
 						PortID:          "port-1",
@@ -488,7 +488,7 @@ func TestRouteService_List(t *testing.T) {
 						Total:           6,
 					},
 				},
-				Result: []VpcsRoutesDetail{
+				Result: []VpcsRouteDetail{
 					{
 						ID:              "route-1",
 						PortID:          "port-1",
@@ -645,7 +645,7 @@ func TestRouteService_ListAll(t *testing.T) {
 		opts       *ListAllVpcsRoutesOptions
 		response   string
 		statusCode int
-		want       []VpcsRoutesDetail
+		want       []VpcsRouteDetail
 		wantErr    bool
 	}{
 		{
@@ -689,7 +689,7 @@ func TestRouteService_ListAll(t *testing.T) {
 				]
 			}`,
 			statusCode: http.StatusOK,
-			want: []VpcsRoutesDetail{
+			want: []VpcsRouteDetail{
 				{
 					ID:              "route-1",
 					PortID:          "port-1",
@@ -770,7 +770,7 @@ func TestRouteService_ListAll(t *testing.T) {
 				]
 			}`,
 			statusCode: http.StatusOK,
-			want: []VpcsRoutesDetail{
+			want: []VpcsRouteDetail{
 				{
 					ID:              "route-1",
 					PortID:          "port-1",
@@ -851,7 +851,7 @@ func TestRouteService_ListAll(t *testing.T) {
 				]
 			}`,
 			statusCode: http.StatusOK,
-			want: []VpcsRoutesDetail{
+			want: []VpcsRouteDetail{
 				{
 					ID:              "route-1",
 					PortID:          "port-1",
@@ -932,7 +932,7 @@ func TestRouteService_ListAll(t *testing.T) {
 				]
 			}`,
 			statusCode: http.StatusOK,
-			want: []VpcsRoutesDetail{
+			want: []VpcsRouteDetail{
 				{
 					ID:              "route-1",
 					PortID:          "port-1",
@@ -1033,7 +1033,7 @@ func TestRouteService_ListAll(t *testing.T) {
 				]
 			}`,
 			statusCode: http.StatusOK,
-			want: []VpcsRoutesDetail{
+			want: []VpcsRouteDetail{
 				{
 					ID:              "route-1",
 					PortID:          "port-1",
@@ -1098,7 +1098,7 @@ func TestRouteService_ListAll(t *testing.T) {
 				]
 			}`,
 			statusCode: http.StatusOK,
-			want: []VpcsRoutesDetail{
+			want: []VpcsRouteDetail{
 				{
 					ID:              "route-1",
 					PortID:          "port-1",
@@ -1126,7 +1126,7 @@ func TestRouteService_ListAll(t *testing.T) {
 			opts:       &ListAllVpcsRoutesOptions{},
 			response:   `{"error": "vpc id not found"}`,
 			statusCode: http.StatusNotFound,
-			want:       []VpcsRoutesDetail{},
+			want:       []VpcsRouteDetail{},
 			wantErr:    true,
 		},
 		{
@@ -1135,7 +1135,7 @@ func TestRouteService_ListAll(t *testing.T) {
 			opts:       &ListAllVpcsRoutesOptions{},
 			response:   `{"error": "internal server error"}`,
 			statusCode: http.StatusInternalServerError,
-			want:       []VpcsRoutesDetail{},
+			want:       []VpcsRouteDetail{},
 			wantErr:    true,
 		},
 	}
@@ -1197,7 +1197,7 @@ func TestRouteService_Get(t *testing.T) {
 		routeID    string
 		response   string
 		statusCode int
-		want       *VpcsRoutes
+		want       *VpcsRoute
 		wantErr    bool
 	}{
 		{
@@ -1215,8 +1215,8 @@ func TestRouteService_Get(t *testing.T) {
 				"status": "processing"
 			}`,
 			statusCode: http.StatusOK,
-			want: &VpcsRoutes{
-				VpcsRoutesDetail: VpcsRoutesDetail{
+			want: &VpcsRoute{
+				VpcsRouteDetail: VpcsRouteDetail{
 					ID:              "route-1",
 					PortID:          "port-1",
 					CIDRDestination: "192.168.1.1",
