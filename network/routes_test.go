@@ -1260,7 +1260,7 @@ func TestRouteService_Get(t *testing.T) {
 			t.Parallel()
 
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				assertEqual(t, fmt.Sprintf("/network/v1/vpcs/%s/route_table/%s", tt.vpcID, tt.routeID), r.URL.Path)
+				assertEqual(t, fmt.Sprintf("/network/v1/vpcs/%s/route_table/routes/%s", tt.vpcID, tt.routeID), r.URL.Path)
 				assertEqual(t, http.MethodGet, r.Method)
 
 				w.Header().Set("Content-Type", "application/json")
@@ -1486,7 +1486,7 @@ func TestRouteService_Delete(t *testing.T) {
 			t.Parallel()
 
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				assertEqual(t, fmt.Sprintf("/network/v1/vpcs/%s/route_table/%s", tt.vpcID, tt.routeID), r.URL.Path)
+				assertEqual(t, fmt.Sprintf("/network/v1/vpcs/%s/route_table/routes/%s", tt.vpcID, tt.routeID), r.URL.Path)
 				assertEqual(t, http.MethodDelete, r.Method)
 
 				w.Header().Set("Content-Type", "application/json")

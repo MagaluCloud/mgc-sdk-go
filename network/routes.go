@@ -191,7 +191,7 @@ func (s *routeService) Get(ctx context.Context, vpcID, routeID string) (*Route, 
 		s.client.newRequest,
 		s.client.GetConfig(),
 		http.MethodGet,
-		fmt.Sprintf("/v1/vpcs/%s/route_table/%s", vpcID, routeID),
+		fmt.Sprintf("/v1/vpcs/%s/route_table/routes/%s", vpcID, routeID),
 		nil,
 		nil,
 	)
@@ -222,7 +222,7 @@ func (s *routeService) Delete(ctx context.Context, vpcID, routeID string) error 
 		s.client.newRequest,
 		s.client.GetConfig(),
 		http.MethodDelete,
-		fmt.Sprintf("/v1/vpcs/%s/route_table/%s", vpcID, routeID),
+		fmt.Sprintf("/v1/vpcs/%s/route_table/routes/%s", vpcID, routeID),
 		nil,
 		nil,
 	)
