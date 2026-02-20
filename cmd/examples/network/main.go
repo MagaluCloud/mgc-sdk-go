@@ -949,7 +949,7 @@ func createRoute(networkClient *network.NetworkClient, vpcID string) string {
 	ctx, cancel := getContext()
 	defer cancel()
 
-	route, err := networkClient.Routes().Create(ctx, vpcID, network.CreateRequest{
+	route, err := networkClient.VpcsRoutes().Create(ctx, vpcID, network.VpcsRoutesCreateRequest{
 		PortID:          "your-port-id",
 		CIDRDestination: "172.20.0.0/16",
 		Description:     helpers.StrPtr("Route description"),
@@ -969,7 +969,7 @@ func getRoute(networkClient *network.NetworkClient, vpcID string, routeID string
 	ctx, cancel := getContext()
 	defer cancel()
 
-	route, err := networkClient.Routes().Get(ctx, vpcID, routeID)
+	route, err := networkClient.VpcsRoutes().Get(ctx, vpcID, routeID)
 	if err != nil {
 		log.Fatalf("❌ Failed to get the route: %v", err)
 	}
@@ -989,7 +989,7 @@ func listRoutes(networkClient *network.NetworkClient, vpcID string) {
 	ctx, cancel := getContext()
 	defer cancel()
 
-	routes, err := networkClient.Routes().List(ctx, vpcID, &network.ListRouteOptions{
+	routes, err := networkClient.VpcsRoutes().List(ctx, vpcID, &network.ListVpcsRoutesOptions{
 		Zone:         "a",
 		Sort:         "cidr_destination:asc",
 		Page:         helpers.IntPtr(1),
@@ -1032,7 +1032,7 @@ func listAllRoutes(networkClient *network.NetworkClient, vpcID string) {
 	ctx, cancel := getContext()
 	defer cancel()
 
-	routes, err := networkClient.Routes().ListAll(ctx, vpcID, &network.ListAllRoutesOptions{
+	routes, err := networkClient.VpcsRoutes().ListAll(ctx, vpcID, &network.ListAllVpcsRoutesOptions{
 		Zone: "a",
 		Sort: "description:desc",
 	})
@@ -1057,7 +1057,7 @@ func deleteRoute(networkClient *network.NetworkClient, vpcID string, routeID str
 	ctx, cancel := getContext()
 	defer cancel()
 
-	err := networkClient.Routes().Delete(ctx, vpcID, routeID)
+	err := networkClient.VpcsRoutes().Delete(ctx, vpcID, routeID)
 	if err != nil {
 		log.Fatalf("❌ Failed to delete the route: %v", err)
 	}

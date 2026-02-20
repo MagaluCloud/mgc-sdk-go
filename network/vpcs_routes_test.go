@@ -18,16 +18,16 @@ func TestRouteService_List(t *testing.T) {
 	tests := []struct {
 		name       string
 		vpcID      string
-		opts       *ListRouteOptions
+		opts       *ListVpcsRoutesOptions
 		response   string
 		statusCode int
-		want       *ListResponse
+		want       *ListVpcsRoutesResponse
 		wantErr    bool
 	}{
 		{
 			name:  "successful list",
 			vpcID: "vpc-1",
-			opts:  &ListRouteOptions{},
+			opts:  &ListVpcsRoutesOptions{},
 			response: `{
 				"meta": {
 					"links": {
@@ -67,14 +67,14 @@ func TestRouteService_List(t *testing.T) {
 				]
 			}`,
 			statusCode: http.StatusOK,
-			want: &ListResponse{
-				Meta: ListMeta{
-					Links: ListLinks{
+			want: &ListVpcsRoutesResponse{
+				Meta: ListVpcsRoutesMeta{
+					Links: ListVpcsRoutesLinks{
 						Next:     helpers.StrPtr("?_offset=4&_limit=2"),
 						Previous: helpers.StrPtr("?_offset=0&_limit=2"),
 						Self:     "?_offset=0&_limit=2",
 					},
-					Page: ListPage{
+					Page: ListVpcsRoutesPage{
 						Count:           6,
 						Limit:           2,
 						MaxItemsPerPage: 100,
@@ -82,7 +82,7 @@ func TestRouteService_List(t *testing.T) {
 						Total:           6,
 					},
 				},
-				Result: []RouteDetail{
+				Result: []VpcsRoutesDetail{
 					{
 						ID:              "route-1",
 						PortID:          "port-1",
@@ -148,14 +148,14 @@ func TestRouteService_List(t *testing.T) {
 				]
 			}`,
 			statusCode: http.StatusOK,
-			want: &ListResponse{
-				Meta: ListMeta{
-					Links: ListLinks{
+			want: &ListVpcsRoutesResponse{
+				Meta: ListVpcsRoutesMeta{
+					Links: ListVpcsRoutesLinks{
 						Next:     helpers.StrPtr("?_offset=4&_limit=2"),
 						Previous: helpers.StrPtr("?_offset=0&_limit=2"),
 						Self:     "?_offset=0&_limit=2",
 					},
-					Page: ListPage{
+					Page: ListVpcsRoutesPage{
 						Count:           6,
 						Limit:           2,
 						MaxItemsPerPage: 100,
@@ -163,7 +163,7 @@ func TestRouteService_List(t *testing.T) {
 						Total:           6,
 					},
 				},
-				Result: []RouteDetail{
+				Result: []VpcsRoutesDetail{
 					{
 						ID:              "route-1",
 						PortID:          "port-1",
@@ -189,7 +189,7 @@ func TestRouteService_List(t *testing.T) {
 		{
 			name:  "successful list with pagination",
 			vpcID: "vpc-1",
-			opts: &ListRouteOptions{
+			opts: &ListVpcsRoutesOptions{
 				Page:         helpers.IntPtr(2),
 				ItemsPerPage: helpers.IntPtr(2),
 			},
@@ -230,14 +230,14 @@ func TestRouteService_List(t *testing.T) {
 				]
 			}`,
 			statusCode: http.StatusOK,
-			want: &ListResponse{
-				Meta: ListMeta{
-					Links: ListLinks{
+			want: &ListVpcsRoutesResponse{
+				Meta: ListVpcsRoutesMeta{
+					Links: ListVpcsRoutesLinks{
 						Next:     helpers.StrPtr("?_offset=4&_limit=2"),
 						Previous: helpers.StrPtr("?_offset=0&_limit=2"),
 						Self:     "?_offset=2&_limit=2",
 					},
-					Page: ListPage{
+					Page: ListVpcsRoutesPage{
 						Count:           6,
 						Limit:           2,
 						MaxItemsPerPage: 100,
@@ -245,7 +245,7 @@ func TestRouteService_List(t *testing.T) {
 						Total:           6,
 					},
 				},
-				Result: []RouteDetail{
+				Result: []VpcsRoutesDetail{
 					{
 						ID:              "route-1",
 						PortID:          "port-1",
@@ -271,7 +271,7 @@ func TestRouteService_List(t *testing.T) {
 		{
 			name:  "successful list with zone",
 			vpcID: "vpc-1",
-			opts: &ListRouteOptions{
+			opts: &ListVpcsRoutesOptions{
 				Zone: "a",
 			},
 			response: `{
@@ -311,14 +311,14 @@ func TestRouteService_List(t *testing.T) {
 				]
 			}`,
 			statusCode: http.StatusOK,
-			want: &ListResponse{
-				Meta: ListMeta{
-					Links: ListLinks{
+			want: &ListVpcsRoutesResponse{
+				Meta: ListVpcsRoutesMeta{
+					Links: ListVpcsRoutesLinks{
 						Next:     helpers.StrPtr("?_offset=4&_limit=2"),
 						Previous: helpers.StrPtr("?_offset=0&_limit=2"),
 						Self:     "?_offset=0&_limit=2",
 					},
-					Page: ListPage{
+					Page: ListVpcsRoutesPage{
 						Count:           6,
 						Limit:           2,
 						MaxItemsPerPage: 100,
@@ -326,7 +326,7 @@ func TestRouteService_List(t *testing.T) {
 						Total:           6,
 					},
 				},
-				Result: []RouteDetail{
+				Result: []VpcsRoutesDetail{
 					{
 						ID:              "route-1",
 						PortID:          "port-1",
@@ -352,7 +352,7 @@ func TestRouteService_List(t *testing.T) {
 		{
 			name:  "successful list with sort",
 			vpcID: "vpc-1",
-			opts: &ListRouteOptions{
+			opts: &ListVpcsRoutesOptions{
 				Sort: "description:desc",
 			},
 			response: `{
@@ -392,14 +392,14 @@ func TestRouteService_List(t *testing.T) {
 				]
 			}`,
 			statusCode: http.StatusOK,
-			want: &ListResponse{
-				Meta: ListMeta{
-					Links: ListLinks{
+			want: &ListVpcsRoutesResponse{
+				Meta: ListVpcsRoutesMeta{
+					Links: ListVpcsRoutesLinks{
 						Next:     helpers.StrPtr("?_offset=4&_limit=2"),
 						Previous: helpers.StrPtr("?_offset=0&_limit=2"),
 						Self:     "?_offset=0&_limit=2",
 					},
-					Page: ListPage{
+					Page: ListVpcsRoutesPage{
 						Count:           6,
 						Limit:           2,
 						MaxItemsPerPage: 100,
@@ -407,7 +407,7 @@ func TestRouteService_List(t *testing.T) {
 						Total:           6,
 					},
 				},
-				Result: []RouteDetail{
+				Result: []VpcsRoutesDetail{
 					{
 						ID:              "route-1",
 						PortID:          "port-1",
@@ -433,7 +433,7 @@ func TestRouteService_List(t *testing.T) {
 		{
 			name:  "successful list without meta links next and previous",
 			vpcID: "vpc-1",
-			opts:  &ListRouteOptions{},
+			opts:  &ListVpcsRoutesOptions{},
 			response: `{
 				"meta": {
 					"links": {
@@ -473,14 +473,14 @@ func TestRouteService_List(t *testing.T) {
 				]
 			}`,
 			statusCode: http.StatusOK,
-			want: &ListResponse{
-				Meta: ListMeta{
-					Links: ListLinks{
+			want: &ListVpcsRoutesResponse{
+				Meta: ListVpcsRoutesMeta{
+					Links: ListVpcsRoutesLinks{
 						Next:     nil,
 						Previous: nil,
 						Self:     "?_offset=0&_limit=2",
 					},
-					Page: ListPage{
+					Page: ListVpcsRoutesPage{
 						Count:           6,
 						Limit:           2,
 						MaxItemsPerPage: 100,
@@ -488,7 +488,7 @@ func TestRouteService_List(t *testing.T) {
 						Total:           6,
 					},
 				},
-				Result: []RouteDetail{
+				Result: []VpcsRoutesDetail{
 					{
 						ID:              "route-1",
 						PortID:          "port-1",
@@ -514,7 +514,7 @@ func TestRouteService_List(t *testing.T) {
 		{
 			name:       "non-existent vpc id",
 			vpcID:      "invalid",
-			opts:       &ListRouteOptions{},
+			opts:       &ListVpcsRoutesOptions{},
 			response:   `{"error": "vpc id not found"}`,
 			statusCode: http.StatusNotFound,
 			wantErr:    true,
@@ -522,7 +522,7 @@ func TestRouteService_List(t *testing.T) {
 		{
 			name:       "server error",
 			vpcID:      "vpc-1",
-			opts:       &ListRouteOptions{},
+			opts:       &ListVpcsRoutesOptions{},
 			response:   `{"error": "internal server error"}`,
 			statusCode: http.StatusInternalServerError,
 			wantErr:    true,
@@ -629,7 +629,7 @@ func TestRouteService_List_InvalidSortValue(t *testing.T) {
 			t.Parallel()
 
 			client := testRouteClient("test")
-			_, err := client.List(context.Background(), "123", &ListRouteOptions{
+			_, err := client.List(context.Background(), "123", &ListVpcsRoutesOptions{
 				Sort: tt.sort,
 			})
 
@@ -642,16 +642,16 @@ func TestRouteService_ListAll(t *testing.T) {
 	tests := []struct {
 		name       string
 		vpcID      string
-		opts       *ListAllRoutesOptions
+		opts       *ListAllVpcsRoutesOptions
 		response   string
 		statusCode int
-		want       []RouteDetail
+		want       []VpcsRoutesDetail
 		wantErr    bool
 	}{
 		{
 			name:  "successful list all",
 			vpcID: "vpc-1",
-			opts:  &ListAllRoutesOptions{},
+			opts:  &ListAllVpcsRoutesOptions{},
 			response: `{
 				"meta": {
 					"links": {
@@ -689,7 +689,7 @@ func TestRouteService_ListAll(t *testing.T) {
 				]
 			}`,
 			statusCode: http.StatusOK,
-			want: []RouteDetail{
+			want: []VpcsRoutesDetail{
 				{
 					ID:              "route-1",
 					PortID:          "port-1",
@@ -770,7 +770,7 @@ func TestRouteService_ListAll(t *testing.T) {
 				]
 			}`,
 			statusCode: http.StatusOK,
-			want: []RouteDetail{
+			want: []VpcsRoutesDetail{
 				{
 					ID:              "route-1",
 					PortID:          "port-1",
@@ -813,7 +813,7 @@ func TestRouteService_ListAll(t *testing.T) {
 		{
 			name:  "successful list all with 2 pages",
 			vpcID: "vpc-1",
-			opts:  &ListAllRoutesOptions{},
+			opts:  &ListAllVpcsRoutesOptions{},
 			response: `{
 				"meta": {
 					"links": {
@@ -851,7 +851,7 @@ func TestRouteService_ListAll(t *testing.T) {
 				]
 			}`,
 			statusCode: http.StatusOK,
-			want: []RouteDetail{
+			want: []VpcsRoutesDetail{
 				{
 					ID:              "route-1",
 					PortID:          "port-1",
@@ -894,7 +894,7 @@ func TestRouteService_ListAll(t *testing.T) {
 		{
 			name:  "successful list all with 3 pages",
 			vpcID: "vpc-1",
-			opts:  &ListAllRoutesOptions{},
+			opts:  &ListAllVpcsRoutesOptions{},
 			response: `{
 				"meta": {
 					"links": {
@@ -932,7 +932,7 @@ func TestRouteService_ListAll(t *testing.T) {
 				]
 			}`,
 			statusCode: http.StatusOK,
-			want: []RouteDetail{
+			want: []VpcsRoutesDetail{
 				{
 					ID:              "route-1",
 					PortID:          "port-1",
@@ -993,7 +993,7 @@ func TestRouteService_ListAll(t *testing.T) {
 		{
 			name:  "successful list with zone",
 			vpcID: "vpc-1",
-			opts: &ListAllRoutesOptions{
+			opts: &ListAllVpcsRoutesOptions{
 				Zone: "a",
 			},
 			response: `{
@@ -1033,7 +1033,7 @@ func TestRouteService_ListAll(t *testing.T) {
 				]
 			}`,
 			statusCode: http.StatusOK,
-			want: []RouteDetail{
+			want: []VpcsRoutesDetail{
 				{
 					ID:              "route-1",
 					PortID:          "port-1",
@@ -1058,7 +1058,7 @@ func TestRouteService_ListAll(t *testing.T) {
 		{
 			name:  "successful list with sort",
 			vpcID: "vpc-1",
-			opts: &ListAllRoutesOptions{
+			opts: &ListAllVpcsRoutesOptions{
 				Sort: "description:asc",
 			},
 			response: `{
@@ -1098,7 +1098,7 @@ func TestRouteService_ListAll(t *testing.T) {
 				]
 			}`,
 			statusCode: http.StatusOK,
-			want: []RouteDetail{
+			want: []VpcsRoutesDetail{
 				{
 					ID:              "route-1",
 					PortID:          "port-1",
@@ -1123,19 +1123,19 @@ func TestRouteService_ListAll(t *testing.T) {
 		{
 			name:       "non-existent vpc id",
 			vpcID:      "invalid",
-			opts:       &ListAllRoutesOptions{},
+			opts:       &ListAllVpcsRoutesOptions{},
 			response:   `{"error": "vpc id not found"}`,
 			statusCode: http.StatusNotFound,
-			want:       []RouteDetail{},
+			want:       []VpcsRoutesDetail{},
 			wantErr:    true,
 		},
 		{
 			name:       "server error",
 			vpcID:      "vpc-1",
-			opts:       &ListAllRoutesOptions{},
+			opts:       &ListAllVpcsRoutesOptions{},
 			response:   `{"error": "internal server error"}`,
 			statusCode: http.StatusInternalServerError,
-			want:       []RouteDetail{},
+			want:       []VpcsRoutesDetail{},
 			wantErr:    true,
 		},
 	}
@@ -1197,7 +1197,7 @@ func TestRouteService_Get(t *testing.T) {
 		routeID    string
 		response   string
 		statusCode int
-		want       *Route
+		want       *VpcsRoutes
 		wantErr    bool
 	}{
 		{
@@ -1215,8 +1215,8 @@ func TestRouteService_Get(t *testing.T) {
 				"status": "processing"
 			}`,
 			statusCode: http.StatusOK,
-			want: &Route{
-				RouteDetail: RouteDetail{
+			want: &VpcsRoutes{
+				VpcsRoutesDetail: VpcsRoutesDetail{
 					ID:              "route-1",
 					PortID:          "port-1",
 					CIDRDestination: "192.168.1.1",
@@ -1298,16 +1298,16 @@ func TestRouteService_Create(t *testing.T) {
 	tests := []struct {
 		name       string
 		vpcID      string
-		body       CreateRequest
+		body       VpcsRoutesCreateRequest
 		response   string
 		statusCode int
-		want       *CreateResponse
+		want       *VpcsRoutesCreateResponse
 		wantErr    bool
 	}{
 		{
 			name:  "successful create",
 			vpcID: "vpc-1",
-			body: CreateRequest{
+			body: VpcsRoutesCreateRequest{
 				PortID:          "port-1",
 				CIDRDestination: "192.168.1.1",
 			},
@@ -1316,7 +1316,7 @@ func TestRouteService_Create(t *testing.T) {
 				"status": "processing"
 			}`,
 			statusCode: http.StatusOK,
-			want: &CreateResponse{
+			want: &VpcsRoutesCreateResponse{
 				ID:     "route-1",
 				Status: "processing",
 			},
@@ -1325,7 +1325,7 @@ func TestRouteService_Create(t *testing.T) {
 		{
 			name:  "successful create with description",
 			vpcID: "vpc-1",
-			body: CreateRequest{
+			body: VpcsRoutesCreateRequest{
 				PortID:          "port-1",
 				CIDRDestination: "192.168.1.1",
 				Description:     helpers.StrPtr("Description"),
@@ -1335,7 +1335,7 @@ func TestRouteService_Create(t *testing.T) {
 				"status": "processing"
 			}`,
 			statusCode: http.StatusOK,
-			want: &CreateResponse{
+			want: &VpcsRoutesCreateResponse{
 				ID:     "route-1",
 				Status: "processing",
 			},
@@ -1344,7 +1344,7 @@ func TestRouteService_Create(t *testing.T) {
 		{
 			name:  "non-existent vpc id",
 			vpcID: "invalid",
-			body: CreateRequest{
+			body: VpcsRoutesCreateRequest{
 				PortID:          "port-1",
 				CIDRDestination: "192.168.1.1",
 			},
@@ -1355,7 +1355,7 @@ func TestRouteService_Create(t *testing.T) {
 		{
 			name:  "server error",
 			vpcID: "vpc-1",
-			body: CreateRequest{
+			body: VpcsRoutesCreateRequest{
 				PortID:          "port-1",
 				CIDRDestination: "192.168.1.1",
 			},
@@ -1373,7 +1373,7 @@ func TestRouteService_Create(t *testing.T) {
 				assertEqual(t, fmt.Sprintf("/network/v1/vpcs/%s/route_table/routes", tt.vpcID), r.URL.Path)
 				assertEqual(t, http.MethodPost, r.Method)
 
-				var req CreateRequest
+				var req VpcsRoutesCreateRequest
 				err := json.NewDecoder(r.Body).Decode(&req)
 				assertNoError(t, err)
 
@@ -1412,19 +1412,19 @@ func TestRouteService_Create(t *testing.T) {
 func TestRouteService_Create_InvalidBody(t *testing.T) {
 	tests := []struct {
 		name string
-		body CreateRequest
+		body VpcsRoutesCreateRequest
 		err  string
 	}{
 		{
 			name: "empty port_id",
-			body: CreateRequest{
+			body: VpcsRoutesCreateRequest{
 				CIDRDestination: "192.168.1.1",
 			},
 			err: "port_id cannot be empty",
 		},
 		{
 			name: "empty cidr_destination",
-			body: CreateRequest{
+			body: VpcsRoutesCreateRequest{
 				PortID: "port-1",
 			},
 			err: "cidr_destination cannot be empty",
@@ -1529,12 +1529,12 @@ func TestValidateSortValue_Valid(t *testing.T) {
 	}
 }
 
-func testRouteClient(baseURL string) RouteService {
+func testRouteClient(baseURL string) VpcsRoutesService {
 	httpClient := &http.Client{}
 
 	core := client.NewMgcClient(client.WithAPIKey("test-api-key"),
 		client.WithBaseURL(client.MgcUrl(baseURL)),
 		client.WithHTTPClient(httpClient))
 
-	return New(core).Routes()
+	return New(core).VpcsRoutes()
 }
