@@ -2,6 +2,7 @@ package compute
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -44,14 +45,17 @@ type MinimumRequirements struct {
 type ImageStatus string
 
 const (
-	ImageStatusActive        ImageStatus = "active"
-	ImageStatusDeprecated    ImageStatus = "deprecated"
-	ImageStatusDeleted       ImageStatus = "deleted"
-	ImageStatusPending       ImageStatus = "pending"
-	ImageStatusCreating      ImageStatus = "creating"
-	ImageStatusImporting     ImageStatus = "importing"
-	ImageStatusError         ImageStatus = "error"
-	ImageStatusDeletingError ImageStatus = "deleting_error"
+	ImageStatusActive         ImageStatus = "active"
+	ImageStatusDeprecated     ImageStatus = "deprecated"
+	ImageStatusDeleted        ImageStatus = "deleted"
+	ImageStatusDeleting       ImageStatus = "deleting"
+	ImageStatusDeletingError  ImageStatus = "deleting_error"
+	ImageStatusPending        ImageStatus = "pending"
+	ImageStatusCreating       ImageStatus = "creating"
+	ImageStatusImporting      ImageStatus = "importing"
+	ImageStatusImportingError ImageStatus = "importing_error"
+	ImageStatusInvalidImage   ImageStatus = "invalid_image"
+	ImageStatusError          ImageStatus = "error"
 )
 
 // Platform represents the system platform.
@@ -88,12 +92,27 @@ type CreateCustomImageRequest struct {
 	UEFI         *bool                `json:"uefi,omitempty"`
 }
 
+// CustomImage represents a custom virtual machine image.
+// An image is a template that contains the operating system and software for creating instances.
+type CustomImage struct {
+	ID           string               `json:"id"`
+	Name         string               `json:"name"`
+	Status       ImageStatus          `json:"status"`
+	Platform     Platform             `json:"platform"`
+	License      License              `json:"license"`
+	Requirements *MinimumRequirements `json:"requirements,omitempty"`
+	Version      *string              `json:"version,omitempty"`
+	Description  *string              `json:"description,omitempty"`
+	Metadata     *map[string]any      `json:"metadata,omitempty"`
+}
+
 // ImageService provides operations for managing virtual machine images.
 // This interface allows listing available images with optional filtering.
 type ImageService interface {
 	List(ctx context.Context, opts ImageListOptions) (*ImageList, error)
 	ListAll(ctx context.Context, opts ImageFilterOptions) ([]Image, error)
 	CreateCustom(ctx context.Context, req CreateCustomImageRequest) (string, error)
+	GetCustom(ctx context.Context, id string) (*CustomImage, error)
 }
 
 // imageService implements the ImageService interface.
@@ -203,4 +222,18 @@ func (s *imageService) CreateCustom(ctx context.Context, createReq CreateCustomI
 		return "", err
 	}
 	return res.ID, nil
+}
+
+// GetCustom retrieves a specific custom image.
+// This method makes an HTTP request to get detailed information about an image.
+func (s *imageService) GetCustom(ctx context.Context, id string) (*CustomImage, error) {
+	return mgc_http.ExecuteSimpleRequestWithRespBody[CustomImage](
+		ctx,
+		s.client.newRequest,
+		s.client.GetConfig(),
+		http.MethodGet,
+		fmt.Sprintf("/v1/images/custom/%s", id),
+		nil,
+		nil,
+	)
 }

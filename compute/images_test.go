@@ -434,3 +434,84 @@ func TestImageService_CreateCustom(t *testing.T) {
 		})
 	}
 }
+
+func TestImageService_GetCustom(t *testing.T) {
+	tests := []struct {
+		name       string
+		id         string
+		response   string
+		statusCode int
+		wantErr    bool
+	}{
+		{
+			name: "successful request",
+			id:   "86a304b0-dc28-454e-9448-5275c4008dfa",
+			response: `{
+				 "id": "86a304b0-dc28-454e-9448-5275c4008dfa",
+				 "name": "test",
+				 "status": "active",
+				 "platform": "linux",
+				 "license": "unlicensed",
+				 "requirements": {
+				  "vcpu": 1,
+				  "ram": 1,
+				  "disk": 3
+				 },
+				 "version": "1.0.0",
+				 "description": "Test",
+				 "metadata": {
+				  "uefi": "true"
+				 }
+			}`,
+			statusCode: http.StatusOK,
+			wantErr:    false,
+		},
+		{
+			name:       "image not found",
+			id:         "a0db5832-3767-4335-8a89-9b46ce636790",
+			response:   `{"message": "Image not found"}`,
+			statusCode: http.StatusNotFound,
+			wantErr:    true,
+		},
+		{
+			name:       "server error",
+			id:         "86a304b0-dc28-454e-9448-5275c4008dfa",
+			response:   `{"message": "Internal server error"}`,
+			statusCode: http.StatusInternalServerError,
+			wantErr:    true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(
+				http.HandlerFunc(
+					func(w http.ResponseWriter, r *http.Request) {
+						w.Header().Set("Content-Type", "application/json")
+						w.WriteHeader(tt.statusCode)
+						w.Write([]byte(tt.response))
+					},
+				),
+			)
+			defer server.Close()
+
+			client := testClient(server.URL)
+			got, err := client.Images().GetCustom(context.Background(), tt.id)
+
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("GetCustom() expected erro, got nil")
+					return
+				}
+			} else {
+				if err != nil {
+					t.Errorf("GetCustom() unexpected error: %v", err)
+					return
+				}
+				if got.ID != tt.id {
+					t.Errorf("GetCustom() got ID %s, want %s", got.ID, tt.id)
+				}
+			}
+		})
+	}
+}
