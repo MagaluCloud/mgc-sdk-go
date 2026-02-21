@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
+	"time"
 
 	"github.com/MagaluCloud/mgc-sdk-go/client"
 	"github.com/MagaluCloud/mgc-sdk-go/compute"
@@ -12,10 +14,42 @@ import (
 )
 
 func main() {
+	// Get credentials from environment
+	apiToken := os.Getenv("MGC_API_KEY")
+	if apiToken == "" {
+		log.Fatal("MGC_API_TOKEN environment variable is not set")
+	}
+
+	// Check for optional region parameter
+	region := os.Getenv("MGC_REGION")
+	if region == "" {
+		region = "br-se1"
+	}
+
+	// Set client options
+	opts := []client.Option{client.WithAPIKey(apiToken)}
+	switch strings.ToLower(region) {
+	case "br-ne1":
+		opts = append(opts, client.WithBaseURL(client.BrNe1))
+	case "br-se1":
+		opts = append(opts, client.WithBaseURL(client.BrSe1))
+	default:
+		log.Fatalf("MGC_REGION set with invalid region %s\n", region)
+	}
+
+	// Create MagaluCloud client with selected region
+	c := client.NewMgcClient(opts...)
+
+	// Create Compute client
+	cli := compute.New(c)
+
+	ctx := context.Background()
+
 	// ExampleListMachineTypes()
 	// ExampleListImages()
 	ExampleListImagesWithJWT()
-	ExampleListImagesWithJWTAndAPIKey()
+	ExampleListImagesWithJWTAndAPIKey(ctx, apiToken)
+	ExampleCreateCustomImage(ctx, cli)
 	// id := "" // comment and uncomment to run the examples
 	// // id := ExampleCreateInstance() // uncomment to create a new instance
 	// // id := ExampleListInstances() // uncomment to list instances and get the id of the last instance
@@ -261,14 +295,14 @@ func ExampleListImagesWithJWT() {
 		fmt.Printf("  Minimum Requirements: %d VCPUs, %d RAM, %d Disk\n", image.MinimumRequirements.VCPU, image.MinimumRequirements.RAM, image.MinimumRequirements.Disk)
 	}
 }
-func ExampleListImagesWithJWTAndAPIKey() {
-	c := client.NewMgcClient(client.WithAPIKey("057dca55-6115-API-KEY-f03f8e1adbb2"), client.WithJWToken("Bearer JWTokenn"))
+func ExampleListImagesWithJWTAndAPIKey(ctx context.Context, apiToken string) {
+	c := client.NewMgcClient(client.WithAPIKey(apiToken), client.WithJWToken("Bearer JWToken"))
 	computeClient := compute.New(c)
 
 	// List images
-	_, err := computeClient.Images().List(context.Background(), compute.ImageListOptions{})
+	_, err := computeClient.Images().List(ctx, compute.ImageListOptions{})
 	if err != nil {
-		log.Println("Successfully authenticated with API Key and ignored JWT authentication")
+		log.Println("Failed to authenticate with API Key and ignore JWT authentication")
 		log.Fatal(err)
 	}
 }
@@ -394,3 +428,26 @@ func awaitRunningCompleted(id string) {
 	fmt.Println("Instance is running")
 }
 */
+
+func ExampleCreateCustomImage(ctx context.Context, cli *compute.VirtualMachineClient) {
+	url := os.Getenv("MGC_SIGNED_IMG_URL")
+	if url == "" {
+		fmt.Println("MGC_SIGNED_IMG_URL environment variable not set, skipping custom image creation")
+		return
+	}
+
+	req := compute.CreateCustomImageRequest{
+		Name:         "sdk-example-" + time.Now().Format("20060102150405"),
+		Platform:     compute.PlatformLinux,
+		Architecture: compute.ArchitectureX86_64,
+		License:      compute.LicenseUnlicensed,
+		URL:          url,
+	}
+	id, err := cli.Images().CreateCustom(ctx, req)
+	if err != nil {
+		fmt.Printf("Failed to create custom image: %s\n", err)
+		return
+	}
+
+	fmt.Printf("Image ID: %s\n", id)
+}
