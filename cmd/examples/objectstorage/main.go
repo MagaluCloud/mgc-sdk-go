@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -97,51 +98,55 @@ func runE2ETest(ctx context.Context, osClient *objectstorage.ObjectStorageClient
 	testUploadObject(ctx, osClient)
 	pause()
 
-	// Step 5: Get object metadata
+	// Step 5: Upload object stream
+	testUploadObjectStream(ctx, osClient)
+	pause()
+
+	// Step 6: Get object metadata
 	testObjectMetadata(ctx, osClient)
 	pause()
 
-	// Step 6: Download object
+	// Step 7: Download object
 	testDownloadObject(ctx, osClient)
 	pause()
 
-	// Step 7: Download as stream
+	// Step 8: Download as stream
 	testDownloadObjectStream(ctx, osClient)
 	pause()
 
-	// Step 8: List objects in bucket
+	// Step 9: List objects in bucket
 	testListObjects(ctx, osClient)
 	pause()
 
-	// Step 9: Set bucket policy
+	// Step 10: Set bucket policy
 	testSetBucketPolicy(ctx, osClient)
 	pause()
 
-	// Step 10: Get bucket policy
+	// Step 11: Get bucket policy
 	testGetBucketPolicy(ctx, osClient)
 	pause()
 
-	// Step 11: Delete bucket policy (must do this before deleting object due to policy restrictions)
+	// Step 12: Delete bucket policy (must do this before deleting object due to policy restrictions)
 	testDeleteBucketPolicy(ctx, osClient)
 	pause()
 
-	// Step 12: Set bucket CORS
+	// Step 13: Set bucket CORS
 	testSetBucketCORS(ctx, osClient)
 	pause()
 
-	// Step 13: Get bucket CORS
+	// Step 14: Get bucket CORS
 	testGetBucketCORS(ctx, osClient)
 	pause()
 
-	// Step 14: Delete bucket CORS
+	// Step 15: Delete bucket CORS
 	testDeleteBucketCORS(ctx, osClient)
 	pause()
 
-	// Step 15: Delete object
+	// Step 16: Delete object
 	testDeleteObject(ctx, osClient)
 	pause()
 
-	// Step 16: Delete bucket
+	// Step 17: Delete bucket
 	testDeleteBucket(ctx, osClient)
 	pause()
 
@@ -235,8 +240,30 @@ func testUploadObject(ctx context.Context, osClient *objectstorage.ObjectStorage
 	fmt.Printf("   Content-Type: text/plain\n\n")
 }
 
+func testUploadObjectStream(ctx context.Context, osClient *objectstorage.ObjectStorageClient) {
+	fmt.Println("📝 Test 5: Upload Object Stream")
+	fmt.Println("─────────────────────────────────────────────────────────────")
+
+	err := osClient.Objects().UploadStream(
+		ctx,
+		testBucketName,
+		testObjectKey,
+		bytes.NewBuffer([]byte(testObjectData)),
+		int64(len(testObjectData)),
+		"text/plain",
+	)
+	if err != nil {
+		fmt.Printf("❌ Failed: %v\n\n", err)
+		return
+	}
+
+	fmt.Printf("✅ Object uploaded: %s\n", testObjectKey)
+	fmt.Printf("   Size: %d bytes\n", len(testObjectData))
+	fmt.Printf("   Content-Type: text/plain\n\n")
+}
+
 func testObjectMetadata(ctx context.Context, osClient *objectstorage.ObjectStorageClient) {
-	fmt.Println("📝 Test 5: Get Object Metadata")
+	fmt.Println("📝 Test 6: Get Object Metadata")
 	fmt.Println("─────────────────────────────────────────────────────────────")
 
 	obj, err := osClient.Objects().Metadata(ctx, testBucketName, testObjectKey)
@@ -254,7 +281,7 @@ func testObjectMetadata(ctx context.Context, osClient *objectstorage.ObjectStora
 }
 
 func testDownloadObject(ctx context.Context, osClient *objectstorage.ObjectStorageClient) {
-	fmt.Println("📝 Test 6: Download Object")
+	fmt.Println("📝 Test 7: Download Object")
 	fmt.Println("─────────────────────────────────────────────────────────────")
 
 	data, err := osClient.Objects().Download(ctx, testBucketName, testObjectKey, nil)
@@ -274,7 +301,7 @@ func testDownloadObject(ctx context.Context, osClient *objectstorage.ObjectStora
 }
 
 func testDownloadObjectStream(ctx context.Context, osClient *objectstorage.ObjectStorageClient) {
-	fmt.Println("📝 Test 7: Download Object as Stream")
+	fmt.Println("📝 Test 8: Download Object as Stream")
 	fmt.Println("─────────────────────────────────────────────────────────────")
 
 	reader, err := osClient.Objects().DownloadStream(ctx, testBucketName, testObjectKey, nil)
@@ -300,7 +327,7 @@ func testDownloadObjectStream(ctx context.Context, osClient *objectstorage.Objec
 }
 
 func testListObjects(ctx context.Context, osClient *objectstorage.ObjectStorageClient) {
-	fmt.Println("📝 Test 8: List Objects in Bucket")
+	fmt.Println("📝 Test 9: List Objects in Bucket")
 	fmt.Println("─────────────────────────────────────────────────────────────")
 
 	objects, err := osClient.Objects().ListAll(ctx, testBucketName, objectstorage.ObjectFilterOptions{})
@@ -319,7 +346,7 @@ func testListObjects(ctx context.Context, osClient *objectstorage.ObjectStorageC
 }
 
 func testSetBucketPolicy(ctx context.Context, osClient *objectstorage.ObjectStorageClient) {
-	fmt.Println("📝 Test 9: Set Bucket Policy")
+	fmt.Println("📝 Test 10: Set Bucket Policy")
 	fmt.Println("─────────────────────────────────────────────────────────────")
 
 	policy := &objectstorage.Policy{
@@ -344,7 +371,7 @@ func testSetBucketPolicy(ctx context.Context, osClient *objectstorage.ObjectStor
 }
 
 func testGetBucketPolicy(ctx context.Context, osClient *objectstorage.ObjectStorageClient) {
-	fmt.Println("📝 Test 10: Get Bucket Policy")
+	fmt.Println("📝 Test 11: Get Bucket Policy")
 	fmt.Println("─────────────────────────────────────────────────────────────")
 
 	policyResult, err := osClient.Buckets().GetPolicy(ctx, testBucketName)
@@ -364,7 +391,7 @@ func testGetBucketPolicy(ctx context.Context, osClient *objectstorage.ObjectStor
 }
 
 func testDeleteBucketPolicy(ctx context.Context, osClient *objectstorage.ObjectStorageClient) {
-	fmt.Println("📝 Test 11: Delete Bucket Policy")
+	fmt.Println("📝 Test 12: Delete Bucket Policy")
 	fmt.Println("─────────────────────────────────────────────────────────────")
 
 	err := osClient.Buckets().DeletePolicy(ctx, testBucketName)
@@ -377,7 +404,7 @@ func testDeleteBucketPolicy(ctx context.Context, osClient *objectstorage.ObjectS
 }
 
 func testSetBucketCORS(ctx context.Context, osClient *objectstorage.ObjectStorageClient) {
-	fmt.Println("📝 Test 12: Set Bucket CORS")
+	fmt.Println("📝 Test 13: Set Bucket CORS")
 	fmt.Println("─────────────────────────────────────────────────────────────")
 
 	cors := &objectstorage.CORSConfiguration{
@@ -399,7 +426,7 @@ func testSetBucketCORS(ctx context.Context, osClient *objectstorage.ObjectStorag
 }
 
 func testGetBucketCORS(ctx context.Context, osClient *objectstorage.ObjectStorageClient) {
-	fmt.Println("📝 Test 13: Get Bucket CORS")
+	fmt.Println("📝 Test 14: Get Bucket CORS")
 	fmt.Println("─────────────────────────────────────────────────────────────")
 
 	corsResult, err := osClient.Buckets().GetCORS(ctx, testBucketName)
@@ -425,7 +452,7 @@ func testGetBucketCORS(ctx context.Context, osClient *objectstorage.ObjectStorag
 }
 
 func testDeleteBucketCORS(ctx context.Context, osClient *objectstorage.ObjectStorageClient) {
-	fmt.Println("📝 Test 14: Delete Bucket CORS")
+	fmt.Println("📝 Test 15: Delete Bucket CORS")
 	fmt.Println("─────────────────────────────────────────────────────────────")
 
 	err := osClient.Buckets().DeleteCORS(ctx, testBucketName)
@@ -438,7 +465,7 @@ func testDeleteBucketCORS(ctx context.Context, osClient *objectstorage.ObjectSto
 }
 
 func testDeleteObject(ctx context.Context, osClient *objectstorage.ObjectStorageClient) {
-	fmt.Println("📝 Test 15: Delete Object")
+	fmt.Println("📝 Test 16: Delete Object")
 	fmt.Println("─────────────────────────────────────────────────────────────")
 
 	err := osClient.Objects().Delete(ctx, testBucketName, testObjectKey, nil)
@@ -451,7 +478,7 @@ func testDeleteObject(ctx context.Context, osClient *objectstorage.ObjectStorage
 }
 
 func testDeleteBucket(ctx context.Context, osClient *objectstorage.ObjectStorageClient) {
-	fmt.Println("📝 Test 16: Delete Bucket")
+	fmt.Println("📝 Test 17: Delete Bucket")
 	fmt.Println("─────────────────────────────────────────────────────────────")
 
 	err := osClient.Buckets().Delete(ctx, testBucketName, true)

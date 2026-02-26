@@ -79,6 +79,75 @@ func TestObjectServiceUpload_ValidParameters(t *testing.T) {
 	}
 }
 
+func TestObjectServiceUploadStream_InvalidBucketName(t *testing.T) {
+	t.Parallel()
+
+	core := client.NewMgcClient()
+	osClient, _ := New(core, "minioadmin", "minioadmin")
+	svc := osClient.Objects()
+
+	err := svc.UploadStream(context.Background(), "", "test-key", bytes.NewBuffer([]byte("test-data")), 3, "text/plain")
+
+	if err == nil {
+		t.Error("Upload() expected error for empty bucket name, got nil")
+	}
+
+	if _, ok := err.(*InvalidBucketNameError); !ok {
+		t.Errorf("Upload() expected InvalidBucketNameError, got %T", err)
+	}
+}
+
+func TestObjectServiceUploadStream_InvalidObjectKey(t *testing.T) {
+	t.Parallel()
+
+	core := client.NewMgcClient()
+	osClient, _ := New(core, "minioadmin", "minioadmin")
+	svc := osClient.Objects()
+
+	err := svc.UploadStream(context.Background(), "test-bucket", "", bytes.NewBuffer([]byte("test-data")), 3, "text/plain")
+
+	if err == nil {
+		t.Error("Upload() expected error for empty object key, got nil")
+	}
+
+	if _, ok := err.(*InvalidObjectKeyError); !ok {
+		t.Errorf("Upload() expected InvalidObjectKeyError, got %T", err)
+	}
+}
+
+func TestObjectServiceUploadStream_EmptySize(t *testing.T) {
+	t.Parallel()
+
+	core := client.NewMgcClient()
+	osClient, _ := New(core, "minioadmin", "minioadmin")
+	svc := osClient.Objects()
+
+	err := svc.UploadStream(context.Background(), "test-bucket", "test-key", bytes.NewBuffer([]byte{}), 0, "text/plain")
+
+	if err == nil {
+		t.Error("Upload() expected error for empty data, got nil")
+	}
+
+	if _, ok := err.(*InvalidObjectDataError); !ok {
+		t.Errorf("Upload() expected InvalidObjectDataError, got %T", err)
+	}
+}
+
+func TestObjectServiceUploadStream_ValidParameters(t *testing.T) {
+	t.Parallel()
+
+	core := client.NewMgcClient()
+	osClient, _ := New(core, "minioadmin", "minioadmin")
+	svc := osClient.Objects()
+
+	data := []byte("test data")
+	err := svc.UploadStream(context.Background(), "test-bucket", "test-key", bytes.NewBuffer(data), 3, "text/plain")
+
+	if err == nil {
+		t.Error("Upload() expected error due to no connection, got nil")
+	}
+}
+
 func TestObjectServiceDownload_ValidParameters(t *testing.T) {
 	t.Parallel()
 
