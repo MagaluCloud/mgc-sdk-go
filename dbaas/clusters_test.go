@@ -923,6 +923,158 @@ func TestClusterService_ListAll_WithFilters(t *testing.T) {
 	}
 }
 
+func TestClusterService_StartImportMode(t *testing.T) {
+	tests := []struct {
+		name         string
+		clusterID    string
+		response     string
+		statusCode   int
+		wantID       string
+		wantErr      bool
+		errorMessage *string
+	}{
+		{
+			name:      "successful start import mode",
+			clusterID: "cluster-1",
+			response: `{
+				"id": "cluster-1",
+				"name": "test-cluster",
+				"status": "STARTING_IMPORT_MODE",
+				"started_at": "2023-01-01T01:00:00Z"
+			}`,
+			statusCode: http.StatusAccepted,
+			wantID:     "cluster-1",
+			wantErr:    false,
+		},
+		{
+			name:         "cluster ID empty",
+			clusterID:    "",
+			response:     "ID cannot be empty",
+			statusCode:   http.StatusAccepted,
+			wantErr:      true,
+			errorMessage: helpers.StrPtr("ID cannot be empty"),
+		},
+		{
+			name:       "not found",
+			clusterID:  "invalid",
+			response:   `{"error": "cluster not found"}`,
+			statusCode: http.StatusNotFound,
+			wantErr:    true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if tt.clusterID != "" {
+					expectedPath := fmt.Sprintf("/database/v2/clusters/%s/start-import-mode", tt.clusterID)
+					assertEqual(t, expectedPath, r.URL.Path)
+					assertEqual(t, http.MethodPost, r.Method)
+				}
+
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(tt.statusCode)
+				w.Write([]byte(tt.response))
+			}))
+			defer server.Close()
+
+			client := testClusterClient(server.URL)
+			result, err := client.StartImportMode(context.Background(), tt.clusterID)
+
+			if tt.wantErr {
+				assertError(t, err)
+
+				if tt.errorMessage != nil {
+					assertEqual(t, *tt.errorMessage, err.Error())
+				} else {
+					assertEqual(t, true, strings.Contains(err.Error(), strconv.Itoa(tt.statusCode)))
+				}
+
+				return
+			}
+
+			assertNoError(t, err)
+			assertEqual(t, tt.wantID, result.ID)
+		})
+	}
+}
+
+func TestClusterService_StopImportMode(t *testing.T) {
+	tests := []struct {
+		name         string
+		clusterID    string
+		response     string
+		statusCode   int
+		wantID       string
+		wantErr      bool
+		errorMessage *string
+	}{
+		{
+			name:      "successful stop import mode",
+			clusterID: "cluster-1",
+			response: `{
+				"id": "cluster-1",
+				"name": "test-cluster",
+				"status": "STOPPING_IMPORT_MODE",
+				"stopped_at": "2023-01-01T01:00:00Z"
+			}`,
+			statusCode: http.StatusAccepted,
+			wantID:     "cluster-1",
+			wantErr:    false,
+		},
+		{
+			name:         "cluster ID empty",
+			clusterID:    "",
+			response:     "ID cannot be empty",
+			statusCode:   http.StatusAccepted,
+			wantErr:      true,
+			errorMessage: helpers.StrPtr("ID cannot be empty"),
+		},
+		{
+			name:       "not found",
+			clusterID:  "invalid",
+			response:   `{"error": "cluster not found"}`,
+			statusCode: http.StatusNotFound,
+			wantErr:    true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if tt.clusterID != "" {
+					expectedPath := fmt.Sprintf("/database/v2/clusters/%s/stop-import-mode", tt.clusterID)
+					assertEqual(t, expectedPath, r.URL.Path)
+					assertEqual(t, http.MethodPost, r.Method)
+				}
+
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(tt.statusCode)
+				w.Write([]byte(tt.response))
+			}))
+			defer server.Close()
+
+			client := testClusterClient(server.URL)
+			result, err := client.StopImportMode(context.Background(), tt.clusterID)
+
+			if tt.wantErr {
+				assertError(t, err)
+
+				if tt.errorMessage != nil {
+					assertEqual(t, *tt.errorMessage, err.Error())
+				} else {
+					assertEqual(t, true, strings.Contains(err.Error(), strconv.Itoa(tt.statusCode)))
+				}
+
+				return
+			}
+
+			assertNoError(t, err)
+			assertEqual(t, tt.wantID, result.ID)
+		})
+	}
+}
+
 func Ptr[T any](v T) *T {
 	return &v
 }
