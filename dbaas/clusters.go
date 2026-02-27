@@ -36,17 +36,20 @@ type PageMetadata struct {
 type ClusterStatus string
 
 const (
-	ClusterStatusActive        ClusterStatus = "ACTIVE"
-	ClusterStatusError         ClusterStatus = "ERROR"
-	ClusterStatusPending       ClusterStatus = "PENDING"
-	ClusterStatusCreating      ClusterStatus = "CREATING"
-	ClusterStatusDeleting      ClusterStatus = "DELETING"
-	ClusterStatusDeleted       ClusterStatus = "DELETED"
-	ClusterStatusErrorDeleting ClusterStatus = "ERROR_DELETING"
-	ClusterStatusStarting      ClusterStatus = "STARTING"
-	ClusterStatusStopping      ClusterStatus = "STOPPING"
-	ClusterStatusStopped       ClusterStatus = "STOPPED"
-	ClusterStatusBackingUp     ClusterStatus = "BACKING_UP"
+	ClusterStatusActive             ClusterStatus = "ACTIVE"
+	ClusterStatusError              ClusterStatus = "ERROR"
+	ClusterStatusPending            ClusterStatus = "PENDING"
+	ClusterStatusCreating           ClusterStatus = "CREATING"
+	ClusterStatusDeleting           ClusterStatus = "DELETING"
+	ClusterStatusDeleted            ClusterStatus = "DELETED"
+	ClusterStatusErrorDeleting      ClusterStatus = "ERROR_DELETING"
+	ClusterStatusStarting           ClusterStatus = "STARTING"
+	ClusterStatusStopping           ClusterStatus = "STOPPING"
+	ClusterStatusStopped            ClusterStatus = "STOPPED"
+	ClusterStatusBackingUp          ClusterStatus = "BACKING_UP"
+	ClusterStatusStartingImportMode ClusterStatus = "STARTING_IMPORT_MODE"
+	ClusterStatusImportMode         ClusterStatus = "IMPORT_MODE"
+	ClusterStatusStoppingImportMode ClusterStatus = "STOPPING_IMPORT_MODE"
 )
 
 type (
@@ -175,6 +178,8 @@ type ClusterService interface {
 	Delete(ctx context.Context, ID string) error
 	Start(ctx context.Context, ID string) (*ClusterDetailResponse, error)
 	Stop(ctx context.Context, ID string) (*ClusterDetailResponse, error)
+	StartImportMode(ctx context.Context, ID string) (*ClusterDetailResponse, error)
+	StopImportMode(ctx context.Context, ID string) (*ClusterDetailResponse, error)
 }
 
 // clusterService implements the ClusterService interface
@@ -386,6 +391,40 @@ func (s *clusterService) Stop(ctx context.Context, ID string) (*ClusterDetailRes
 		s.client.GetConfig(),
 		http.MethodPost,
 		fmt.Sprintf("%s/%s/stop", v2ClustersPath, ID),
+		nil,
+		nil,
+	)
+}
+
+// StartImportMode enables optimized mode for bulk data import
+func (s *clusterService) StartImportMode(ctx context.Context, ID string) (*ClusterDetailResponse, error) {
+	if ID == "" {
+		return nil, fmt.Errorf(errIDCannotBeEmpty)
+	}
+
+	return mgc_http.ExecuteSimpleRequestWithRespBody[ClusterDetailResponse](
+		ctx,
+		s.client.newRequest,
+		s.client.GetConfig(),
+		http.MethodPost,
+		fmt.Sprintf("%s/%s/start-import-mode", v2ClustersPath, ID),
+		nil,
+		nil,
+	)
+}
+
+// StopImportMode disables optimized mode for bulk data import
+func (s *clusterService) StopImportMode(ctx context.Context, ID string) (*ClusterDetailResponse, error) {
+	if ID == "" {
+		return nil, fmt.Errorf(errIDCannotBeEmpty)
+	}
+
+	return mgc_http.ExecuteSimpleRequestWithRespBody[ClusterDetailResponse](
+		ctx,
+		s.client.newRequest,
+		s.client.GetConfig(),
+		http.MethodPost,
+		fmt.Sprintf("%s/%s/stop-import-mode", v2ClustersPath, ID),
 		nil,
 		nil,
 	)
