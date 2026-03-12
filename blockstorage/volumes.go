@@ -93,7 +93,7 @@ type CreateVolumeRequest struct {
 	Size             int       `json:"size"`
 	Type             IDOrName  `json:"type"`
 	Snapshot         *IDOrName `json:"snapshot,omitempty"`
-	Encrypted        *bool     `json:"encrypted"`
+	Encrypted        *bool     `json:"encrypted,omitempty"`
 }
 
 // ExtendVolumeRequest represents the request to extend a volume.
