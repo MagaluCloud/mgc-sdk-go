@@ -96,6 +96,11 @@ type CreateVolumeRequest struct {
 	Encrypted        *bool     `json:"encrypted,omitempty"`
 }
 
+// CreateVolumeResponse represents the response from creating a new volume.
+type CreateVolumeResponse struct {
+	ID string `json:"id"`
+}
+
 // ExtendVolumeRequest represents the request to extend a volume.
 type ExtendVolumeRequest struct {
 	Size int `json:"size"`
@@ -166,7 +171,7 @@ const (
 type VolumeService interface {
 	List(ctx context.Context, opts ListOptions) (*ListVolumesResponse, error)
 	ListAll(ctx context.Context, filterOpts VolumeFilterOptions) ([]Volume, error)
-	Create(ctx context.Context, req CreateVolumeRequest) (string, error)
+	Create(ctx context.Context, req CreateVolumeRequest) (*CreateVolumeResponse, error)
 	Get(ctx context.Context, id string, expand []SnapshotExpand) (*Volume, error)
 	Delete(ctx context.Context, id string) error
 	Rename(ctx context.Context, id string, newName string) error
@@ -256,8 +261,8 @@ func (s *volumeService) ListAll(ctx context.Context, filterOpts VolumeFilterOpti
 // Create provisions a new volume.
 // This method makes an HTTP request to create a new volume
 // and returns the ID of the created volume.
-func (s *volumeService) Create(ctx context.Context, req CreateVolumeRequest) (string, error) {
-	result, err := mgc_http.ExecuteSimpleRequestWithRespBody[struct{ ID string }](
+func (s *volumeService) Create(ctx context.Context, req CreateVolumeRequest) (*CreateVolumeResponse, error) {
+	result, err := mgc_http.ExecuteSimpleRequestWithRespBody[CreateVolumeResponse](
 		ctx,
 		s.client.newRequest,
 		s.client.GetConfig(),
@@ -267,9 +272,9 @@ func (s *volumeService) Create(ctx context.Context, req CreateVolumeRequest) (st
 		nil,
 	)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	return result.ID, nil
+	return result, nil
 }
 
 // Get retrieves a specific volume.

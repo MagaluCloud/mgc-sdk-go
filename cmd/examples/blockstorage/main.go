@@ -138,17 +138,19 @@ func ExampleCreateVolume() string {
 		Encrypted: helpers.BoolPtr(true),
 	}
 
-	id, err := blockClient.Volumes().Create(context.Background(), createReq)
+	volume, err := blockClient.Volumes().Create(context.Background(), createReq)
 	if err != nil {
 		var httpError *client.HTTPError
 		if errors.As(err, &httpError) {
 			fmt.Printf("Failed to create volume, status %s\n", httpError.Status)
 			fmt.Printf("Error body: %s\n", string(httpError.Body))
 		}
+
+		return ""
 	}
 
-	fmt.Printf("Created volume with ID: %s\n", id)
-	return id
+	fmt.Printf("Created volume with ID: %s\n", volume.ID)
+	return volume.ID
 }
 
 func ExampleManageVolume(id string) {

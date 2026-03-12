@@ -133,7 +133,7 @@ func TestVolumeService_Create(t *testing.T) {
 		request    CreateVolumeRequest
 		response   string
 		statusCode int
-		wantID     string
+		want       *CreateVolumeResponse
 		wantErr    bool
 	}{
 		{
@@ -145,7 +145,7 @@ func TestVolumeService_Create(t *testing.T) {
 			},
 			response:   `{"id": "vol1"}`,
 			statusCode: http.StatusOK,
-			wantID:     "vol1",
+			want:       &CreateVolumeResponse{ID: "vol1"},
 			wantErr:    false,
 		},
 		{
@@ -181,7 +181,7 @@ func TestVolumeService_Create(t *testing.T) {
 			defer server.Close()
 
 			client := testClient(server.URL)
-			id, err := client.Create(context.Background(), tt.request)
+			volume, err := client.Create(context.Background(), tt.request)
 
 			if tt.wantErr {
 				assertError(t, err)
@@ -190,7 +190,9 @@ func TestVolumeService_Create(t *testing.T) {
 			}
 
 			assertNoError(t, err)
-			assertEqual(t, tt.wantID, id)
+			if tt.want != nil {
+				assertEqual(t, (*tt.want).ID, volume.ID)
+			}
 		})
 	}
 }
