@@ -59,11 +59,13 @@ func ExampleListVolumes() {
 	c := client.NewMgcClient(client.WithAPIKey(apiToken))
 	blockClient := blockstorage.New(c)
 
+	expand := []blockstorage.VolumeExpand{blockstorage.VolumeTypeExpand, blockstorage.VolumeAttachExpand}
+
 	// List volumes with pagination and expansion (paginated)
 	resp, err := blockClient.Volumes().List(context.Background(), blockstorage.ListOptions{
 		Limit:  helpers.IntPtr(10),
 		Offset: helpers.IntPtr(0),
-		Expand: []string{blockstorage.VolumeTypeExpand, blockstorage.VolumeAttachExpand},
+		Expand: &expand,
 	})
 
 	if err != nil {

@@ -37,6 +37,8 @@ func assertNoError(t *testing.T, err error) {
 }
 
 func TestVolumeService_List(t *testing.T) {
+	expand := []VolumeExpand{VolumeTypeExpand, VolumeAttachExpand}
+
 	tests := []struct {
 		name       string
 		opts       ListOptions
@@ -78,12 +80,27 @@ func TestVolumeService_List(t *testing.T) {
 		{
 			name: "with expansion",
 			opts: ListOptions{
-				Expand: []string{VolumeTypeExpand, VolumeAttachExpand},
+				Expand: &expand,
 			},
 			response: `{
 				"meta": {"page": {"offset": 0, "limit": 50, "count": 1, "total": 1, "max_limit": 100}},
 				"volumes": [
 					{"id": "vol1", "type": {"id": "type1"}, "attachment": {"instance": {"id": "inst1"}}}
+				]
+			}`,
+			statusCode: http.StatusOK,
+			want:       1,
+			wantErr:    false,
+		},
+		{
+			name: "with name",
+			opts: ListOptions{
+				Name: helpers.StrPtr("test"),
+			},
+			response: `{
+				"meta": {"page": {"offset": 0, "limit": 50, "count": 1, "total": 1, "max_limit": 100}},
+				"volumes": [
+					{"id": "vol1", "name": "test", "type": {"id": "type1"}, "attachment": {"instance": {"id": "inst1"}}}
 				]
 			}`,
 			statusCode: http.StatusOK,
@@ -105,6 +122,21 @@ func TestVolumeService_List(t *testing.T) {
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(tt.statusCode)
 				w.Write([]byte(tt.response))
+
+				if tt.opts.Name != nil {
+					assertEqual(t, *tt.opts.Name, r.URL.Query().Get("name"))
+				}
+				if tt.opts.Expand != nil {
+					for _, expand := range *tt.opts.Expand {
+						assertEqual(t, true, strings.Contains(strings.Join(r.URL.Query()["expand"], ","), string(expand)))
+					}
+				}
+				if tt.opts.Limit != nil {
+					assertEqual(t, strconv.Itoa(*tt.opts.Limit), r.URL.Query().Get("_limit"))
+				}
+				if tt.opts.Offset != nil {
+					assertEqual(t, strconv.Itoa(*tt.opts.Offset), r.URL.Query().Get("_offset"))
+				}
 			}))
 			defer server.Close()
 

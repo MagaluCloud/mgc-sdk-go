@@ -129,7 +129,8 @@ type ListOptions struct {
 	Limit  *int
 	Offset *int
 	Sort   *string
-	Expand []VolumeExpand
+	Expand *[]VolumeExpand
+	Name   *string
 }
 
 // VolumeFilterOptions provides filtering options for ListAll (without pagination)
@@ -203,10 +204,13 @@ func (s *volumeService) List(ctx context.Context, opts ListOptions) (*ListVolume
 	if opts.Sort != nil {
 		query.Set("_sort", *opts.Sort)
 	}
-	if len(opts.Expand) > 0 {
-		for _, expand := range opts.Expand {
+	if opts.Expand != nil && len(*opts.Expand) > 0 {
+		for _, expand := range *opts.Expand {
 			query.Add("expand", expand)
 		}
+	}
+	if opts.Name != nil {
+		query.Set("name", *opts.Name)
 	}
 
 	result, err := mgc_http.ExecuteSimpleRequestWithRespBody[ListVolumesResponse](
@@ -238,7 +242,7 @@ func (s *volumeService) ListAll(ctx context.Context, filterOpts VolumeFilterOpti
 			Offset: &currentOffset,
 			Limit:  &currentLimit,
 			Sort:   filterOpts.Sort,
-			Expand: filterOpts.Expand,
+			Expand: &filterOpts.Expand,
 		}
 
 		resp, err := s.List(ctx, opts)
