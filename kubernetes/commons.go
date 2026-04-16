@@ -71,6 +71,7 @@ type (
 		Flavor            string            `json:"flavor"`
 		MaxPodsPerNode    *int              `json:"max_pods_per_node,omitempty"`
 		AvailabilityZones *[]string         `json:"availability_zones,omitempty"`
+		Version           *string           `json:"version,omitempty"`
 	}
 
 	// CreateNodePoolRequest represents the request payload for creating a node pool

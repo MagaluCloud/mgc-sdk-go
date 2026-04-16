@@ -337,6 +337,55 @@ func TestClusterService_Update(t *testing.T) {
 	}
 }
 
+func TestClusterService_Upgrade(t *testing.T) {
+	tests := []struct {
+		name        string
+		clusterID   string
+		request     PatchClusterRequest
+		response    string
+		statusCode  int
+		wantVersion string
+		wantErr     bool
+	}{
+		{
+			name:        "successful control plane upgrade",
+			clusterID:   "a2d62e93-73e0-4e0d-a632-8c35bea9e9e0",
+			request:     PatchClusterRequest{Version: strPtr("v1.31.0")},
+			response:    `{"version": "v1.31.0"}`,
+			statusCode:  http.StatusOK,
+			wantVersion: "v1.31.0",
+			wantErr:     false,
+		},
+		{
+			name:    "empty cluster ID",
+			request: PatchClusterRequest{Version: strPtr("v1.31.0")},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(tt.statusCode)
+				w.Write([]byte(tt.response))
+			}))
+			defer server.Close()
+
+			client := testClient(server.URL)
+			result, err := client.Clusters().Update(context.Background(), tt.clusterID, tt.request)
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Upgrade() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			if !tt.wantErr && (result.Version == nil || *result.Version != tt.wantVersion) {
+				t.Errorf("Upgrade() version = %v, want %s", result.Version, tt.wantVersion)
+			}
+		})
+	}
+}
+
 func TestClusterService_GetKubeConfig(t *testing.T) {
 	tests := []struct {
 		name        string

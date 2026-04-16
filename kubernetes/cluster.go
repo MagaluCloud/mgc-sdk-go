@@ -122,11 +122,13 @@ type (
 	// PatchClusterRequest represents the request payload for patching a cluster
 	PatchClusterRequest struct {
 		AllowedCIDRs *[]string `json:"allowed_cidrs,omitempty"`
+		Version      *string   `json:"version,omitempty"`
 	}
 
 	// PatchClusterResponse represents the response when patching a cluster
 	PatchClusterResponse struct {
 		AllowedCIDRs *[]string `json:"allowed_cidrs,omitempty"`
+		Version      *string   `json:"version,omitempty"`
 	}
 
 	// MachineTypesSource represents the source of machine types
