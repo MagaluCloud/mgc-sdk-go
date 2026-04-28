@@ -2,6 +2,8 @@ package kubernetes
 
 import (
 	"context"
+	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -149,6 +151,47 @@ func TestClusterService_Create(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestClusterService_Create_WithCustomerChosenSubnets(t *testing.T) {
+	t.Parallel()
+
+	t.Run("customer informs which subnets host the control plane", func(t *testing.T) {
+		t.Parallel()
+		chosenSubnets := []string{
+			"11111111-1111-1111-1111-111111111111",
+			"22222222-2222-2222-2222-222222222222",
+		}
+
+		var sentPayload map[string]any
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			body, _ := io.ReadAll(r.Body)
+			_ = json.Unmarshal(body, &sentPayload)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusCreated)
+			w.Write([]byte(`{"id":"33333333-3333-3333-3333-33333333333","name":"cluster-new","status":{"state":"Pending","message":""}}`))
+		}))
+		defer server.Close()
+
+		_, err := testClient(server.URL).Clusters().Create(context.Background(), ClusterRequest{
+			Name: "cluster-new",
+			Network: &KubernetesNetworkRequest{
+				SubnetIDs: chosenSubnets,
+			},
+		})
+		if err != nil {
+			t.Fatalf("Create() erro inesperado: %v", err)
+		}
+
+		network := sentPayload["network"].(map[string]any)
+		rawIDs := network["subnet_ids"].([]any)
+
+		for i, id := range chosenSubnets {
+			if rawIDs[i] != id {
+				t.Errorf("subnet[%d] enviada = %v, esperava %s", i, rawIDs[i], id)
+			}
+		}
+	})
 }
 
 func TestClusterService_Delete(t *testing.T) {

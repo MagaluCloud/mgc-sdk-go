@@ -28,13 +28,15 @@ type (
 		Update(ctx context.Context, clusterID string, req PatchClusterRequest) (*PatchClusterResponse, error)
 		GetKubeConfig(ctx context.Context, clusterID string) (*KubeConfig, error)
 	}
-
-	// Network represents network configuration for a cluster
 	Network struct {
-		UUID     string `json:"uuid"`
-		CIDR     string `json:"cidr"`
-		Name     string `json:"name"`
-		SubnetID string `json:"subnet_id"`
+		VPCID   string   `json:"vpc_id,omitempty"`
+		Subnets []Subnet `json:"subnets,omitempty"`
+	}
+
+	Subnet struct {
+		ID               string `json:"id"`
+		CIDR             string `json:"cidr"`
+		AvailabilityZone string `json:"availability_zone"`
 	}
 
 	// Addons represents cluster addons configuration
@@ -109,26 +111,29 @@ type (
 
 	// ClusterRequest represents the request payload for creating a cluster
 	ClusterRequest struct {
-		Name               string                   `json:"name"`
-		Version            *string                  `json:"version,omitempty"`
-		Description        *string                  `json:"description,omitempty"`
-		EnabledServerGroup *bool                    `json:"enabled_server_group,omitempty"`
-		NodePools          *[]CreateNodePoolRequest `json:"node_pools,omitempty"`
-		AllowedCIDRs       *[]string                `json:"allowed_cidrs,omitempty"`
-		ServicesIpV4CIDR   *string                  `json:"services_ipv4_cidr,omitempty"`
-		ClusterIPv4CIDR    *string                  `json:"cluster_ipv4_cidr,omitempty"`
+		Name               string                    `json:"name"`
+		Version            *string                   `json:"version,omitempty"`
+		Description        *string                   `json:"description,omitempty"`
+		EnabledServerGroup *bool                     `json:"enabled_server_group,omitempty"`
+		NodePools          *[]CreateNodePoolRequest  `json:"node_pools,omitempty"`
+		AllowedCIDRs       *[]string                 `json:"allowed_cidrs,omitempty"`
+		ServicesIpV4CIDR   *string                   `json:"services_ipv4_cidr,omitempty"`
+		ClusterIPv4CIDR    *string                   `json:"cluster_ipv4_cidr,omitempty"`
+		Network            *KubernetesNetworkRequest `json:"network,omitempty"`
 	}
 
 	// PatchClusterRequest represents the request payload for patching a cluster
 	PatchClusterRequest struct {
 		AllowedCIDRs *[]string `json:"allowed_cidrs,omitempty"`
 		Version      *string   `json:"version,omitempty"`
+		Description  *string   `json:"description,omitempty"`
 	}
 
 	// PatchClusterResponse represents the response when patching a cluster
 	PatchClusterResponse struct {
 		AllowedCIDRs *[]string `json:"allowed_cidrs,omitempty"`
 		Version      *string   `json:"version,omitempty"`
+		Description  *string   `json:"description,omitempty"`
 	}
 
 	// MachineTypesSource represents the source of machine types

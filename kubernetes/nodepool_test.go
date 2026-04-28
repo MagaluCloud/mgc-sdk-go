@@ -2,6 +2,8 @@ package kubernetes
 
 import (
 	"context"
+	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -136,6 +138,77 @@ func TestNodePoolService_Create(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestNodePoolService_Create_WithCustomerChosenSubnets(t *testing.T) {
+	t.Parallel()
+
+	t.Run("customer informs which subnets host the worker nodes", func(t *testing.T) {
+		t.Parallel()
+		chosenSubnets := []string{
+			"33333333-3333-3333-3333-333333333333",
+			"44444444-4444-4444-4444-444444444444",
+		}
+
+		var sentPayload map[string]any
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			body, _ := io.ReadAll(r.Body)
+			_ = json.Unmarshal(body, &sentPayload)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusCreated)
+			w.Write([]byte(`{"id":"22222222-2222-2222-2222-222222222222","name":"pool-new","replicas":2,"flavor":"BV2-2-40","instance_template":{"flavor":{"name":"BV4-8-40","id":"f1","vcpu":2,"ram":4096,"size":40},"node_image":"","disk_size":40,"disk_type":""},"status":{"state":"creating"}}`))
+		}))
+		defer server.Close()
+
+		_, err := testClient(server.URL).Nodepools().Create(context.Background(), "cluster-123", CreateNodePoolRequest{
+			Name:     "pool-new",
+			Flavor:   "BV4-8-40",
+			Replicas: 2,
+			Network: &KubernetesNetworkRequest{
+				SubnetIDs: chosenSubnets,
+			},
+		})
+		if err != nil {
+			t.Fatalf("Create() erro inesperado: %v", err)
+		}
+
+		network := sentPayload["network"].(map[string]any)
+		rawIDs := network["subnet_ids"].([]any)
+		if len(rawIDs) != len(chosenSubnets) {
+			t.Fatalf("esperava %d subnets enviadas, recebi %d", len(chosenSubnets), len(rawIDs))
+		}
+		for i, id := range chosenSubnets {
+			if rawIDs[i] != id {
+				t.Errorf("subnet[%d] enviada = %v, esperava %s", i, rawIDs[i], id)
+			}
+		}
+	})
+
+	t.Run("customer omits subnets and nodepool inherits cluster subnets", func(t *testing.T) {
+		t.Parallel()
+		var sentPayload map[string]any
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			body, _ := io.ReadAll(r.Body)
+			_ = json.Unmarshal(body, &sentPayload)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusCreated)
+			w.Write([]byte(`{"id":"pool-new","name":"pool-new","replicas":2,"flavor":"BV4-8-40","instance_template":{"flavor":{"name":"BV4-8-40","id":"f1","vcpu":2,"ram":4096,"size":40},"node_image":"","disk_size":40,"disk_type":""},"status":{"state":"creating"}}`))
+		}))
+		defer server.Close()
+
+		_, err := testClient(server.URL).Nodepools().Create(context.Background(), "cluster-123", CreateNodePoolRequest{
+			Name:     "pool-new",
+			Flavor:   "BV4-8-40",
+			Replicas: 2,
+		})
+		if err != nil {
+			t.Fatalf("Create() erro inesperado: %v", err)
+		}
+
+		if _, present := sentPayload["network"]; present {
+			t.Errorf("não esperava chave network no payload quando cliente não escolhe subnets, recebi: %v", sentPayload)
+		}
+	})
 }
 
 func TestNodePoolService_Delete(t *testing.T) {

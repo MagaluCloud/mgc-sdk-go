@@ -72,17 +72,23 @@ type (
 		MaxPodsPerNode    *int              `json:"max_pods_per_node,omitempty"`
 		AvailabilityZones *[]string         `json:"availability_zones,omitempty"`
 		Version           *string           `json:"version,omitempty"`
+		Network           *Network          `json:"network,omitempty"`
 	}
 
 	// CreateNodePoolRequest represents the request payload for creating a node pool
 	CreateNodePoolRequest struct {
-		Name              string     `json:"name"`
-		Flavor            string     `json:"flavor"`
-		Replicas          int        `json:"replicas"`
-		Tags              *[]string  `json:"tags,omitempty"`
-		Taints            *[]Taint   `json:"taints,omitempty"`
-		AutoScale         *AutoScale `json:"auto_scale,omitempty"`
-		MaxPodsPerNode    *int       `json:"max_pods_per_node,omitempty"`
-		AvailabilityZones *[]string  `json:"availability_zones,omitempty"`
+		Name              string                    `json:"name"`
+		Flavor            string                    `json:"flavor"`
+		Replicas          int                       `json:"replicas"`
+		Tags              *[]string                 `json:"tags,omitempty"`
+		Taints            *[]Taint                  `json:"taints,omitempty"`
+		AutoScale         *AutoScale                `json:"auto_scale,omitempty"`
+		MaxPodsPerNode    *int                      `json:"max_pods_per_node,omitempty"`
+		AvailabilityZones *[]string                 `json:"availability_zones,omitempty"`
+		Network           *KubernetesNetworkRequest `json:"network,omitempty"`
+	}
+
+	KubernetesNetworkRequest struct {
+		SubnetIDs []string `json:"subnet_ids"`
 	}
 )
