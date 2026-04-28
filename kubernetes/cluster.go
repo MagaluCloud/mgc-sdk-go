@@ -28,6 +28,8 @@ type (
 		Update(ctx context.Context, clusterID string, req PatchClusterRequest) (*PatchClusterResponse, error)
 		GetKubeConfig(ctx context.Context, clusterID string) (*KubeConfig, error)
 	}
+
+	//VPC related network settings
 	Network struct {
 		VPCID   string   `json:"vpc_id,omitempty"`
 		Subnets []Subnet `json:"subnets,omitempty"`

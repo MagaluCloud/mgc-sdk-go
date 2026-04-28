@@ -89,6 +89,6 @@ type (
 	}
 
 	KubernetesNetworkRequest struct {
-		SubnetIDs []string `json:"subnet_ids"`
+		SubnetIDs []string `json:"subnet_ids,omitempty"`
 	}
 )
