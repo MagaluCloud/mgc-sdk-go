@@ -2,6 +2,8 @@ package kubernetes
 
 import (
 	"context"
+	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -138,6 +140,77 @@ func TestNodePoolService_Create(t *testing.T) {
 	}
 }
 
+func TestNodePoolService_Create_WithCustomerChosenSubnets(t *testing.T) {
+	t.Parallel()
+
+	t.Run("customer informs which subnets host the worker nodes", func(t *testing.T) {
+		t.Parallel()
+		chosenSubnets := []string{
+			"33333333-3333-3333-3333-333333333333",
+			"44444444-4444-4444-4444-444444444444",
+		}
+
+		var sentPayload map[string]any
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			body, _ := io.ReadAll(r.Body)
+			_ = json.Unmarshal(body, &sentPayload)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusCreated)
+			w.Write([]byte(`{"id":"22222222-2222-2222-2222-222222222222","name":"pool-new","replicas":2,"flavor":"BV2-2-40","instance_template":{"flavor":{"name":"BV4-8-40","id":"f1","vcpu":2,"ram":4096,"size":40},"node_image":"","disk_size":40,"disk_type":""},"status":{"state":"creating"}}`))
+		}))
+		defer server.Close()
+
+		_, err := testClient(server.URL).Nodepools().Create(context.Background(), "cluster-123", CreateNodePoolRequest{
+			Name:     "pool-new",
+			Flavor:   "BV4-8-40",
+			Replicas: 2,
+			Network: &KubernetesNetworkRequest{
+				SubnetIDs: chosenSubnets,
+			},
+		})
+		if err != nil {
+			t.Fatalf("Create() erro inesperado: %v", err)
+		}
+
+		network := sentPayload["network"].(map[string]any)
+		rawIDs := network["subnet_ids"].([]any)
+		if len(rawIDs) != len(chosenSubnets) {
+			t.Fatalf("esperava %d subnets enviadas, recebi %d", len(chosenSubnets), len(rawIDs))
+		}
+		for i, id := range chosenSubnets {
+			if rawIDs[i] != id {
+				t.Errorf("subnet[%d] enviada = %v, esperava %s", i, rawIDs[i], id)
+			}
+		}
+	})
+
+	t.Run("customer omits subnets and nodepool inherits cluster subnets", func(t *testing.T) {
+		t.Parallel()
+		var sentPayload map[string]any
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			body, _ := io.ReadAll(r.Body)
+			_ = json.Unmarshal(body, &sentPayload)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusCreated)
+			w.Write([]byte(`{"id":"pool-new","name":"pool-new","replicas":2,"flavor":"BV4-8-40","instance_template":{"flavor":{"name":"BV4-8-40","id":"f1","vcpu":2,"ram":4096,"size":40},"node_image":"","disk_size":40,"disk_type":""},"status":{"state":"creating"}}`))
+		}))
+		defer server.Close()
+
+		_, err := testClient(server.URL).Nodepools().Create(context.Background(), "cluster-123", CreateNodePoolRequest{
+			Name:     "pool-new",
+			Flavor:   "BV4-8-40",
+			Replicas: 2,
+		})
+		if err != nil {
+			t.Fatalf("Create() erro inesperado: %v", err)
+		}
+
+		if _, present := sentPayload["network"]; present {
+			t.Errorf("não esperava chave network no payload quando cliente não escolhe subnets, recebi: %v", sentPayload)
+		}
+	})
+}
+
 func TestNodePoolService_Delete(t *testing.T) {
 	tests := []struct {
 		name       string
@@ -244,6 +317,118 @@ func TestNodePoolService_Create_ValidationError(t *testing.T) {
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Create() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestNodePoolService_Upgrade(t *testing.T) {
+	tests := []struct {
+		name        string
+		clusterID   string
+		nodePoolID  string
+		request     PatchNodePoolRequest
+		response    string
+		statusCode  int
+		wantVersion string
+		wantErr     bool
+	}{
+		{
+			name:        "successful node pool upgrade",
+			clusterID:   "f66d3e79-011c-49fb-9b61-228e2e0d1bd8",
+			nodePoolID:  "ca1a4386-8b75-4354-91a5-f265092c3d6f",
+			request:     PatchNodePoolRequest{Version: strPtr("v1.31.0")},
+			response:    `{"id": "ca1a4386-8b75-4354-91a5-f265092c3d6f", "version": "v1.31.0"}`,
+			statusCode:  http.StatusOK,
+			wantVersion: "v1.31.0",
+			wantErr:     false,
+		},
+		{
+			name:       "empty cluster ID",
+			nodePoolID: "ca1a4386-8b75-4354-91a5-f265092c3d6f",
+			request:    PatchNodePoolRequest{Version: strPtr("v1.31.0")},
+			wantErr:    true,
+		},
+		{
+			name:      "empty node pool ID",
+			clusterID: "f66d3e79-011c-49fb-9b61-228e2e0d1bd8",
+			request:   PatchNodePoolRequest{Version: strPtr("v1.31.0")},
+			wantErr:   true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(tt.statusCode)
+				w.Write([]byte(tt.response))
+			}))
+			defer server.Close()
+
+			client := testClient(server.URL)
+			result, err := client.Nodepools().Update(context.Background(), tt.clusterID, tt.nodePoolID, tt.request)
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Upgrade() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			if !tt.wantErr && (result.Version == nil || *result.Version != tt.wantVersion) {
+				t.Errorf("Upgrade() version = %v, want %s", result.Version, tt.wantVersion)
+			}
+		})
+	}
+}
+
+func TestNodePoolService_GetWithVersion(t *testing.T) {
+	tests := []struct {
+		name        string
+		clusterID   string
+		nodePoolID  string
+		response    string
+		statusCode  int
+		wantVersion string
+		wantErr     bool
+	}{
+		{
+			name:        "node pool with version field",
+			clusterID:   "cluster-123",
+			nodePoolID:  "pool-456",
+			response:    `{"id": "pool-456", "version": "v1.30.2"}`,
+			statusCode:  http.StatusOK,
+			wantVersion: "v1.30.2",
+			wantErr:     false,
+		},
+		{
+			name:       "node pool without version field",
+			clusterID:  "cluster-123",
+			nodePoolID: "pool-456",
+			response:   `{"id": "pool-456"}`,
+			statusCode: http.StatusOK,
+			wantErr:    false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(tt.statusCode)
+				w.Write([]byte(tt.response))
+			}))
+			defer server.Close()
+
+			client := testClient(server.URL)
+			result, err := client.Nodepools().Get(context.Background(), tt.clusterID, tt.nodePoolID)
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Get() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			if !tt.wantErr && tt.wantVersion != "" {
+				if result.Version == nil || *result.Version != tt.wantVersion {
+					t.Errorf("Get() version = %v, want %s", result.Version, tt.wantVersion)
+				}
 			}
 		})
 	}

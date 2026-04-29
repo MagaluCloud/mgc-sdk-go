@@ -2,6 +2,8 @@ package kubernetes
 
 import (
 	"context"
+	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -149,6 +151,47 @@ func TestClusterService_Create(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestClusterService_Create_WithCustomerChosenSubnets(t *testing.T) {
+	t.Parallel()
+
+	t.Run("customer informs which subnets host the control plane", func(t *testing.T) {
+		t.Parallel()
+		chosenSubnets := []string{
+			"11111111-1111-1111-1111-111111111111",
+			"22222222-2222-2222-2222-222222222222",
+		}
+
+		var sentPayload map[string]any
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			body, _ := io.ReadAll(r.Body)
+			_ = json.Unmarshal(body, &sentPayload)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusCreated)
+			w.Write([]byte(`{"id":"33333333-3333-3333-3333-33333333333","name":"cluster-new","status":{"state":"Pending","message":""}}`))
+		}))
+		defer server.Close()
+
+		_, err := testClient(server.URL).Clusters().Create(context.Background(), ClusterRequest{
+			Name: "cluster-new",
+			Network: &KubernetesNetworkRequest{
+				SubnetIDs: chosenSubnets,
+			},
+		})
+		if err != nil {
+			t.Fatalf("Create() erro inesperado: %v", err)
+		}
+
+		network := sentPayload["network"].(map[string]any)
+		rawIDs := network["subnet_ids"].([]any)
+
+		for i, id := range chosenSubnets {
+			if rawIDs[i] != id {
+				t.Errorf("subnet[%d] enviada = %v, esperava %s", i, rawIDs[i], id)
+			}
+		}
+	})
 }
 
 func TestClusterService_Delete(t *testing.T) {
@@ -332,6 +375,55 @@ func TestClusterService_Update(t *testing.T) {
 
 			if !tt.wantErr && len(*result.AllowedCIDRs) != tt.wantCIDRs {
 				t.Errorf("Update() CIDRs = %d, want %d", len(*result.AllowedCIDRs), tt.wantCIDRs)
+			}
+		})
+	}
+}
+
+func TestClusterService_Upgrade(t *testing.T) {
+	tests := []struct {
+		name        string
+		clusterID   string
+		request     PatchClusterRequest
+		response    string
+		statusCode  int
+		wantVersion string
+		wantErr     bool
+	}{
+		{
+			name:        "successful control plane upgrade",
+			clusterID:   "a2d62e93-73e0-4e0d-a632-8c35bea9e9e0",
+			request:     PatchClusterRequest{Version: strPtr("v1.31.0")},
+			response:    `{"version": "v1.31.0"}`,
+			statusCode:  http.StatusOK,
+			wantVersion: "v1.31.0",
+			wantErr:     false,
+		},
+		{
+			name:    "empty cluster ID",
+			request: PatchClusterRequest{Version: strPtr("v1.31.0")},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(tt.statusCode)
+				w.Write([]byte(tt.response))
+			}))
+			defer server.Close()
+
+			client := testClient(server.URL)
+			result, err := client.Clusters().Update(context.Background(), tt.clusterID, tt.request)
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Upgrade() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			if !tt.wantErr && (result.Version == nil || *result.Version != tt.wantVersion) {
+				t.Errorf("Upgrade() version = %v, want %s", result.Version, tt.wantVersion)
 			}
 		})
 	}

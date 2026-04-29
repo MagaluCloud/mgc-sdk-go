@@ -90,6 +90,7 @@ type (
 	PatchNodePoolRequest struct {
 		Replicas  *int       `json:"replicas,omitempty"`
 		AutoScale *AutoScale `json:"auto_scale,omitempty"`
+		Version   *string    `json:"version,omitempty"`
 	}
 
 	// nodePoolService implements the NodePoolService interface
