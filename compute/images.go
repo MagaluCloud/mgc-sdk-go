@@ -54,11 +54,46 @@ const (
 	ImageStatusDeletingError ImageStatus = "deleting_error"
 )
 
+// Platform represents the system platform.
+type Platform string
+
+const (
+	PlatformLinux   Platform = "linux"
+	PlatformWindows Platform = "windows"
+)
+
+// Architecture represents the system architecure.
+type Architecture string
+
+const ArchitectureX86_64 Architecture = "x86/64"
+
+// License indicates if the image software requires a license.
+type License string
+
+const (
+	LicenseLicensed   License = "licensed"
+	LicenseUnlicensed License = "unlicensed"
+)
+
+// CreateCustomImageRequest represents the request to create a new custom image.
+type CreateCustomImageRequest struct {
+	Name         string               `json:"name"`
+	Platform     Platform             `json:"platform"`
+	Architecture Architecture         `json:"architecture"`
+	License      License              `json:"license"`
+	URL          string               `json:"url"`
+	Requirements *MinimumRequirements `json:"requirements,omitempty"`
+	Version      *string              `json:"version,omitempty"`
+	Description  *string              `json:"description,omitempty"`
+	UEFI         *bool                `json:"uefi,omitempty"`
+}
+
 // ImageService provides operations for managing virtual machine images.
 // This interface allows listing available images with optional filtering.
 type ImageService interface {
 	List(ctx context.Context, opts ImageListOptions) (*ImageList, error)
 	ListAll(ctx context.Context, opts ImageFilterOptions) ([]Image, error)
+	CreateCustom(ctx context.Context, req CreateCustomImageRequest) (string, error)
 }
 
 // imageService implements the ImageService interface.
@@ -149,4 +184,23 @@ func (s *imageService) ListAll(ctx context.Context, opts ImageFilterOptions) ([]
 	}
 
 	return allImages, nil
+}
+
+// Create creates a new custom image.
+// This method makes an HTTP request to publish a new custom image
+// and returns the ID of the created image.
+func (s *imageService) CreateCustom(ctx context.Context, createReq CreateCustomImageRequest) (string, error) {
+	res, err := mgc_http.ExecuteSimpleRequestWithRespBody[struct{ ID string }](
+		ctx,
+		s.client.newRequest,
+		s.client.GetConfig(),
+		http.MethodPost,
+		"/v1/images/custom",
+		createReq,
+		nil,
+	)
+	if err != nil {
+		return "", err
+	}
+	return res.ID, nil
 }
