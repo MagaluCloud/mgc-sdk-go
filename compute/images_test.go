@@ -515,3 +515,170 @@ func TestImageService_GetCustom(t *testing.T) {
 		})
 	}
 }
+
+func TestImageService_ListCustom(t *testing.T) {
+	tests := []struct {
+		name       string
+		opts       CustomImageListOptions
+		response   *string
+		statusCode int
+		want       int
+		wantErr    bool
+		checkQuery func(*testing.T, *http.Request)
+	}{
+		{
+			name: "basic list",
+			opts: CustomImageListOptions{},
+			response: strPtr(`{
+				"meta": {"page": {"offset": 0, "limit": 50, "count": 2, "total": 2}},
+				"images": [
+					{"id": "img1", "name": "custom-ubuntu-24_04", "status": "active", "platform": "linux", "license": "unlicensed"},
+					{"id": "img2", "name": "centos-8", "status": "active", "platform": "linux", "license": "unlicensed"}
+				]
+			}`),
+			statusCode: http.StatusOK,
+			want:       2,
+			wantErr:    false,
+		},
+		{
+			name: "with pagination",
+			opts: CustomImageListOptions{
+				Limit:  intPtr(1),
+				Offset: intPtr(1),
+			},
+			response: strPtr(`{
+				"meta": {"page": {"offset": 1, "limit": 1, "count": 1, "total": 2}},
+				"images": [
+					{"id": "img2", "name": "centos-8", "status": "active", "platform": "linux", "license": "unlicensed"}
+				]
+			}`),
+			statusCode: http.StatusOK,
+			want:       1,
+			wantErr:    false,
+			checkQuery: func(t *testing.T, r *http.Request) {
+				if r.URL.Query().Get("_limit") != "1" {
+					t.Errorf("expected limit=1, got %s", r.URL.Query().Get("_limit"))
+				}
+				if r.URL.Query().Get("_offset") != "1" {
+					t.Errorf("expected offset=1, got %s", r.URL.Query().Get("_offset"))
+				}
+			},
+		},
+		{
+			name: "with sorting",
+			opts: CustomImageListOptions{
+				Sort: strPtr("platform:asc"),
+			},
+			response: strPtr(`{
+				"meta": {"page": {"offset": 0, "limit": 50, "count": 2, "total": 2}},
+				"images": [
+					{"id": "img1", "name": "custom-ubuntu-24_04", "status": "active", "platform": "linux", "license": "unlicensed"},
+					{"id": "img2", "name": "centos-8", "status": "active", "platform": "linux", "license": "unlicensed"}
+				]
+			}`),
+			statusCode: http.StatusOK,
+			want:       2,
+			wantErr:    false,
+			checkQuery: func(t *testing.T, r *http.Request) {
+				if r.URL.Query().Get("_sort") != "platform:asc" {
+					t.Errorf("expected sort=platform:asc, got %s", r.URL.Query().Get("_sort"))
+				}
+			},
+		},
+
+		{
+			name: "with name",
+			opts: CustomImageListOptions{
+				Name: strPtr("custom-ubuntu-24_04"),
+			},
+			response: strPtr(`{
+				"meta": {"page": {"offset": 0, "limit": 50, "count": 1, "total": 1}},
+				"images": [
+					{"id": "img1", "name": "custom-ubuntu-24_04", "status": "active", "platform": "linux", "license": "unlicensed"}
+				]
+			}`),
+			statusCode: http.StatusOK,
+			want:       1,
+			wantErr:    false,
+			checkQuery: func(t *testing.T, r *http.Request) {
+				if r.URL.Query().Get("name") != "custom-ubuntu-24_04" {
+					t.Errorf("expected name=custom-ubuntu-24_04, got %s", r.URL.Query().Get("name"))
+				}
+			},
+		},
+		{
+			name:       "server error",
+			opts:       CustomImageListOptions{},
+			response:   strPtr(`{"error": "internal server error"}`),
+			statusCode: http.StatusInternalServerError,
+			wantErr:    true,
+		},
+		{
+			name:       "empty response",
+			opts:       CustomImageListOptions{},
+			response:   strPtr(""),
+			statusCode: http.StatusOK,
+			wantErr:    true,
+		},
+		{
+			name:       "response is nil",
+			opts:       CustomImageListOptions{},
+			response:   nil,
+			statusCode: http.StatusOK,
+			wantErr:    true,
+		},
+		{
+			name:       "malformed json",
+			opts:       CustomImageListOptions{},
+			response:   strPtr(`{"images": [{"id": "broken"}`),
+			statusCode: http.StatusOK,
+			wantErr:    true,
+		},
+		{
+			name: "invalid pagination values",
+			opts: CustomImageListOptions{
+				Limit:  intPtr(-1),
+				Offset: intPtr(-1),
+			},
+			response:   strPtr(`{"error": "invalid pagination parameters"}`),
+			statusCode: http.StatusBadRequest,
+			wantErr:    true,
+			checkQuery: func(t *testing.T, r *http.Request) {
+				if r.URL.Query().Get("_limit") != "-1" {
+					t.Errorf("expected limit=-1, got %s", r.URL.Query().Get("_limit"))
+				}
+				if r.URL.Query().Get("_offset") != "-1" {
+					t.Errorf("expected offset=-1, got %s", r.URL.Query().Get("_offset"))
+				}
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if tt.checkQuery != nil {
+					tt.checkQuery(t, r)
+				}
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(tt.statusCode)
+				w.Write([]byte(*tt.response))
+			}))
+			defer server.Close()
+
+			client := testClient(server.URL)
+			got, err := client.Images().ListCustom(context.Background(), tt.opts)
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ListCustom() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !tt.wantErr && len(got.Images) != tt.want {
+				t.Errorf("ListCustom() got %v images, want %v", len(got.Images), tt.want)
+			}
+			if !tt.wantErr && got.Meta.Page.Total < 0 {
+				t.Errorf("ListCustom() missing metadata")
+			}
+		})
+	}
+}
