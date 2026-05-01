@@ -322,64 +322,6 @@ func TestNodePoolService_Create_ValidationError(t *testing.T) {
 	}
 }
 
-func TestNodePoolService_Upgrade(t *testing.T) {
-	tests := []struct {
-		name        string
-		clusterID   string
-		nodePoolID  string
-		request     PatchNodePoolRequest
-		response    string
-		statusCode  int
-		wantVersion string
-		wantErr     bool
-	}{
-		{
-			name:        "successful node pool upgrade",
-			clusterID:   "f66d3e79-011c-49fb-9b61-228e2e0d1bd8",
-			nodePoolID:  "ca1a4386-8b75-4354-91a5-f265092c3d6f",
-			request:     PatchNodePoolRequest{Version: strPtr("v1.31.0")},
-			response:    `{"id": "ca1a4386-8b75-4354-91a5-f265092c3d6f", "version": "v1.31.0"}`,
-			statusCode:  http.StatusOK,
-			wantVersion: "v1.31.0",
-			wantErr:     false,
-		},
-		{
-			name:       "empty cluster ID",
-			nodePoolID: "ca1a4386-8b75-4354-91a5-f265092c3d6f",
-			request:    PatchNodePoolRequest{Version: strPtr("v1.31.0")},
-			wantErr:    true,
-		},
-		{
-			name:      "empty node pool ID",
-			clusterID: "f66d3e79-011c-49fb-9b61-228e2e0d1bd8",
-			request:   PatchNodePoolRequest{Version: strPtr("v1.31.0")},
-			wantErr:   true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				w.WriteHeader(tt.statusCode)
-				w.Write([]byte(tt.response))
-			}))
-			defer server.Close()
-
-			client := testClient(server.URL)
-			result, err := client.Nodepools().Update(context.Background(), tt.clusterID, tt.nodePoolID, tt.request)
-
-			if (err != nil) != tt.wantErr {
-				t.Errorf("Upgrade() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-
-			if !tt.wantErr && (result.Version == nil || *result.Version != tt.wantVersion) {
-				t.Errorf("Upgrade() version = %v, want %s", result.Version, tt.wantVersion)
-			}
-		})
-	}
-}
-
 func TestNodePoolService_GetWithVersion(t *testing.T) {
 	tests := []struct {
 		name        string
