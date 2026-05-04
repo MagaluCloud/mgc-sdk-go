@@ -53,6 +53,7 @@ func main() {
 	id := ExampleCreateCustomImage(ctx, cli)
 	ExampleRetrieveCustomImage(ctx, cli, id)
 	ExampleListCustomImages(ctx, cli)
+	ExampleUpdateCustomImage(ctx, cli, id)
 	time.Sleep(5 * time.Second)
 	ExampleDeleteCustomImage(ctx, cli, id)
 	// id := "" // comment and uncomment to run the examples
@@ -525,4 +526,22 @@ func ExampleDeleteCustomImage(ctx context.Context, cli *compute.VirtualMachineCl
 	}
 
 	fmt.Printf("Image ID: %s deletion succeeded\n", id)
+}
+
+func ExampleUpdateCustomImage(ctx context.Context, cli *compute.VirtualMachineClient, id string) {
+	if id == "" {
+		fmt.Println("Custom image ID not set, skipping update custom image request")
+		return
+	}
+
+	req := compute.UpdateCustomImageRequest{
+		Description: helpers.StrPtr("SDK test"),
+		Version:     helpers.StrPtr("0.1.0"),
+	}
+	err := cli.Images().UpdateCustom(ctx, id, req)
+	if err != nil {
+		fmt.Printf("Failed to update custom image: %s\n", err)
+		return
+	}
+	fmt.Printf("Image ID: %s update succeeded\n", id)
 }
