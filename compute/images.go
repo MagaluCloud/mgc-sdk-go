@@ -130,6 +130,7 @@ type ImageService interface {
 	CreateCustom(ctx context.Context, req CreateCustomImageRequest) (string, error)
 	GetCustom(ctx context.Context, id string) (*CustomImage, error)
 	ListCustom(ctx context.Context, opts CustomImageListOptions) (*CustomImageList, error)
+	DeleteCustom(ctx context.Context, id string) error
 }
 
 // imageService implements the ImageService interface.
@@ -287,4 +288,18 @@ func (s *imageService) ListCustom(ctx context.Context, opts CustomImageListOptio
 	}
 
 	return response, nil
+}
+
+// DeleteCustom deletes a specific custom image.
+// This method makes an HTTP request to delete the specified image.
+func (s *imageService) DeleteCustom(ctx context.Context, id string) error {
+	return mgc_http.ExecuteSimpleRequest(
+		ctx,
+		s.client.newRequest,
+		s.client.GetConfig(),
+		http.MethodDelete,
+		fmt.Sprintf("/v1/images/custom/%s", id),
+		nil,
+		nil,
+	)
 }
