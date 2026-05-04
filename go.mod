@@ -2,6 +2,8 @@ module github.com/MagaluCloud/mgc-sdk-go
 
 go 1.25.3
 
+retract v1.8.0
+
 require (
 	github.com/minio/minio-go/v7 v7.0.95
 	gopkg.in/yaml.v3 v3.0.1
