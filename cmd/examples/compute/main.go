@@ -49,7 +49,8 @@ func main() {
 	// ExampleListImages()
 	ExampleListImagesWithJWT()
 	ExampleListImagesWithJWTAndAPIKey(ctx, apiToken)
-	ExampleCreateCustomImage(ctx, cli)
+	id := ExampleCreateCustomImage(ctx, cli)
+	ExampleRetrieveCustomImage(ctx, cli, id)
 	// id := "" // comment and uncomment to run the examples
 	// // id := ExampleCreateInstance() // uncomment to create a new instance
 	// // id := ExampleListInstances() // uncomment to list instances and get the id of the last instance
@@ -429,7 +430,7 @@ func awaitRunningCompleted(id string) {
 }
 */
 
-func ExampleCreateCustomImage(ctx context.Context, cli *compute.VirtualMachineClient) {
+func ExampleCreateCustomImage(ctx context.Context, cli *compute.VirtualMachineClient) (id string) {
 	url := os.Getenv("MGC_SIGNED_IMG_URL")
 	if url == "" {
 		fmt.Println("MGC_SIGNED_IMG_URL environment variable not set, skipping custom image creation")
@@ -450,4 +451,33 @@ func ExampleCreateCustomImage(ctx context.Context, cli *compute.VirtualMachineCl
 	}
 
 	fmt.Printf("Image ID: %s\n", id)
+	return
+}
+
+func ExampleRetrieveCustomImage(ctx context.Context, cli *compute.VirtualMachineClient, id string) {
+	if id == "" {
+		fmt.Println("Custom image ID not set, skipping custom image request")
+		return
+	}
+
+	image, err := cli.Images().GetCustom(ctx, id)
+	if err != nil {
+		fmt.Printf("Failed to retrieve custom image: %s\n", err)
+		return
+	}
+
+	fmt.Printf("Image: %s (ID: %s)\n", image.Name, image.ID)
+	fmt.Printf("  Status: %s\n", image.Status)
+	fmt.Printf("  Platform: %s\n", image.Platform)
+	fmt.Printf("  License: %s\n", image.License)
+	fmt.Printf("  Requirements: %d vCPU, %d RAM, %d Disk\n", image.Requirements.VCPU, image.Requirements.RAM, image.Requirements.Disk)
+	if image.Version != nil {
+		fmt.Printf("  Version: %s\n", *image.Version)
+	}
+	if image.Description != nil {
+		fmt.Printf("  Description: %s\n", *image.Description)
+	}
+	if image.Metadata != nil {
+		fmt.Printf("  Metadata: %v\n", *image.Metadata)
+	}
 }
