@@ -515,3 +515,61 @@ func TestImageService_GetCustom(t *testing.T) {
 		})
 	}
 }
+
+func TestImageService_DeleteCustom(t *testing.T) {
+	tests := []struct {
+		name       string
+		id         string
+		response   string
+		statusCode int
+		wantErr    bool
+	}{
+		{
+			name:       "successful request",
+			id:         "86a304b0-dc28-454e-9448-5275c4008dfa",
+			statusCode: http.StatusNoContent,
+			wantErr:    false,
+		},
+		{
+			name:       "image not found",
+			id:         "a0db5832-3767-4335-8a89-9b46ce636790",
+			response:   `{"message": "Image with id a0db5832-3767-4335-8a89-9b46ce636790 not found"}`,
+			statusCode: http.StatusNotFound,
+			wantErr:    true,
+		},
+		{
+			name:       "server error",
+			id:         "86a304b0-dc28-454e-9448-5275c4008dfa",
+			response:   `{"message": "Internal server error"}`,
+			statusCode: http.StatusInternalServerError,
+			wantErr:    true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(
+				http.HandlerFunc(
+					func(w http.ResponseWriter, r *http.Request) {
+						w.Header().Set("Content-Type", "application/json")
+						w.WriteHeader(tt.statusCode)
+						w.Write([]byte(tt.response))
+					},
+				),
+			)
+			defer server.Close()
+
+			client := testClient(server.URL)
+			err := client.Images().DeleteCustom(context.Background(), tt.id)
+
+			if tt.wantErr && err == nil {
+				t.Errorf("DeleteCustom() expected erro, got nil")
+				return
+			}
+			if !tt.wantErr && err != nil {
+				t.Errorf("DeleteCustom() unexpected error: %v", err)
+				return
+			}
+		})
+	}
+}
