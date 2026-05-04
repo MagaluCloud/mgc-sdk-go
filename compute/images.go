@@ -92,6 +92,13 @@ type CreateCustomImageRequest struct {
 	UEFI         *bool                `json:"uefi,omitempty"`
 }
 
+// UpdateCustomImageRequest represents the request to update a custom image.
+type UpdateCustomImageRequest struct {
+	Requirements *MinimumRequirements `json:"requirements,omitempty"`
+	Version      *string              `json:"version,omitempty"`
+	Description  *string              `json:"description,omitempty"`
+}
+
 // CustomImage represents a custom virtual machine image.
 // An image is a template that contains the operating system and software for creating instances.
 type CustomImage struct {
@@ -113,6 +120,7 @@ type ImageService interface {
 	ListAll(ctx context.Context, opts ImageFilterOptions) ([]Image, error)
 	CreateCustom(ctx context.Context, req CreateCustomImageRequest) (string, error)
 	GetCustom(ctx context.Context, id string) (*CustomImage, error)
+	UpdateCustom(ctx context.Context, id string, req UpdateCustomImageRequest) error
 }
 
 // imageService implements the ImageService interface.
@@ -234,6 +242,20 @@ func (s *imageService) GetCustom(ctx context.Context, id string) (*CustomImage, 
 		http.MethodGet,
 		fmt.Sprintf("/v1/images/custom/%s", id),
 		nil,
+		nil,
+	)
+}
+
+// UpdateCustom updates a specific custom image.
+// This method makes an HTTP request to update the specified image.
+func (s *imageService) UpdateCustom(ctx context.Context, id string, updateReq UpdateCustomImageRequest) error {
+	return mgc_http.ExecuteSimpleRequest(
+		ctx,
+		s.client.newRequest,
+		s.client.GetConfig(),
+		http.MethodPatch,
+		fmt.Sprintf("/v1/images/custom/%s", id),
+		updateReq,
 		nil,
 	)
 }
