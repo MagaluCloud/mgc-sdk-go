@@ -51,6 +51,8 @@ func main() {
 	ExampleListImagesWithJWTAndAPIKey(ctx, apiToken)
 	id := ExampleCreateCustomImage(ctx, cli)
 	ExampleRetrieveCustomImage(ctx, cli, id)
+	time.Sleep(5 * time.Second)
+	ExampleDeleteCustomImage(ctx, cli, id)
 	// id := "" // comment and uncomment to run the examples
 	// // id := ExampleCreateInstance() // uncomment to create a new instance
 	// // id := ExampleListInstances() // uncomment to list instances and get the id of the last instance
@@ -480,4 +482,19 @@ func ExampleRetrieveCustomImage(ctx context.Context, cli *compute.VirtualMachine
 	if image.Metadata != nil {
 		fmt.Printf("  Metadata: %v\n", *image.Metadata)
 	}
+}
+
+func ExampleDeleteCustomImage(ctx context.Context, cli *compute.VirtualMachineClient, id string) {
+	if id == "" {
+		fmt.Println("Custom image ID not set, skipping custom image deletion request")
+		return
+	}
+
+	err := cli.Images().DeleteCustom(ctx, id)
+	if err != nil {
+		fmt.Printf("Failed to delete custom image: %s\n", err)
+		return
+	}
+
+	fmt.Printf("Image ID: %s deletion succeeded\n", id)
 }
