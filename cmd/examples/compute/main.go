@@ -10,6 +10,7 @@ import (
 
 	"github.com/MagaluCloud/mgc-sdk-go/client"
 	"github.com/MagaluCloud/mgc-sdk-go/compute"
+	"github.com/MagaluCloud/mgc-sdk-go/helpers"
 	"gopkg.in/yaml.v3"
 )
 
@@ -51,6 +52,7 @@ func main() {
 	ExampleListImagesWithJWTAndAPIKey(ctx, apiToken)
 	id := ExampleCreateCustomImage(ctx, cli)
 	ExampleRetrieveCustomImage(ctx, cli, id)
+	ExampleUpdateCustomImage(ctx, cli, id)
 	// id := "" // comment and uncomment to run the examples
 	// // id := ExampleCreateInstance() // uncomment to create a new instance
 	// // id := ExampleListInstances() // uncomment to list instances and get the id of the last instance
@@ -480,4 +482,26 @@ func ExampleRetrieveCustomImage(ctx context.Context, cli *compute.VirtualMachine
 	if image.Metadata != nil {
 		fmt.Printf("  Metadata: %v\n", *image.Metadata)
 	}
+}
+
+func ExampleUpdateCustomImage(ctx context.Context, cli *compute.VirtualMachineClient, id string) {
+	if id == "" {
+		fmt.Println("Custom image ID not set, skipping update custom image request")
+		return
+	}
+
+	req := compute.UpdateCustomImageRequest{
+		Requirements: &compute.MinimumRequirements{
+			Disk: *helpers.IntPtr(20),
+			RAM:  *helpers.IntPtr(1),
+			VCPU: *helpers.IntPtr(1)},
+		Description: helpers.StrPtr("SDK test"),
+		Version:     helpers.StrPtr("0.1.0"),
+	}
+	err := cli.Images().UpdateCustom(ctx, id, req)
+	if err != nil {
+		fmt.Printf("Failed to update custom image: %s\n", err)
+		return
+	}
+	fmt.Printf("Image ID: %s update succeeded\n", id)
 }

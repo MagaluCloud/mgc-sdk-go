@@ -6,6 +6,8 @@ import (
 	"net/http/httptest"
 	"strconv"
 	"testing"
+
+	"github.com/MagaluCloud/mgc-sdk-go/helpers"
 )
 
 func TestImageService_List(t *testing.T) {
@@ -511,6 +513,107 @@ func TestImageService_GetCustom(t *testing.T) {
 				if got.ID != tt.id {
 					t.Errorf("GetCustom() got ID %s, want %s", got.ID, tt.id)
 				}
+			}
+		})
+	}
+}
+
+func TestImageService_UpdateCustom(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name       string
+		id         string
+		req        UpdateCustomImageRequest
+		statusCode int
+		response   string
+		wantErr    bool
+	}{
+		{
+			name: "full update",
+			id:   "86a304b0-dc28-454e-9448-5275c4008dfa",
+			req: UpdateCustomImageRequest{
+				Requirements: &MinimumRequirements{
+					Disk: *helpers.IntPtr(20),
+					RAM:  *helpers.IntPtr(1),
+					VCPU: *helpers.IntPtr(1),
+				},
+				Description: helpers.StrPtr("Unit test"),
+				Version:     helpers.StrPtr("0.0.1"),
+			},
+			statusCode: http.StatusNoContent,
+			wantErr:    false,
+		},
+		{
+			name: "update requirements",
+			id:   "86a304b0-dc28-454e-9448-5275c4008dfa",
+			req: UpdateCustomImageRequest{
+				Requirements: &MinimumRequirements{
+					Disk: *helpers.IntPtr(20),
+					RAM:  *helpers.IntPtr(1),
+					VCPU: *helpers.IntPtr(1),
+				},
+			},
+			statusCode: http.StatusNoContent,
+			wantErr:    false,
+		},
+		{
+			name: "update description",
+			id:   "86a304b0-dc28-454e-9448-5275c4008dfa",
+			req: UpdateCustomImageRequest{
+				Description: helpers.StrPtr("Unit test"),
+			},
+			statusCode: http.StatusNoContent,
+			wantErr:    false,
+		},
+		{
+			name: "update version",
+			id:   "86a304b0-dc28-454e-9448-5275c4008dfa",
+			req: UpdateCustomImageRequest{
+				Version: helpers.StrPtr("0.0.1"),
+			},
+			statusCode: http.StatusNoContent,
+			wantErr:    false,
+		},
+		{
+			name:       "empty update",
+			id:         "86a304b0-dc28-454e-9448-5275c4008dfa",
+			req:        UpdateCustomImageRequest{},
+			statusCode: http.StatusNoContent,
+			wantErr:    false,
+		},
+		{
+			name:       "unknown image",
+			id:         "bee43a76-d964-48d6-82fc-218b936000a7",
+			req:        UpdateCustomImageRequest{},
+			response:   `{"message": "Image with id bee43a76-d964-48d6-82fc-218b936000a7 not foud"}`,
+			statusCode: http.StatusNotFound,
+			wantErr:    true,
+		},
+		{
+			name:       "server error",
+			id:         "86a304b0-dc28-454e-9448-5275c4008dfa",
+			req:        UpdateCustomImageRequest{},
+			response:   `{"message": "Internal server error"}`,
+			statusCode: http.StatusInternalServerError,
+			wantErr:    true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(tt.statusCode)
+				w.Write([]byte(tt.response))
+			}))
+			defer server.Close()
+
+			client := testClient(server.URL)
+			err := client.Images().UpdateCustom(context.Background(), tt.id, tt.req)
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("UpdateCustom() error = %v, wantErr %v", err, tt.wantErr)
+				return
 			}
 		})
 	}
