@@ -10,6 +10,7 @@ import (
 
 	"github.com/MagaluCloud/mgc-sdk-go/client"
 	"github.com/MagaluCloud/mgc-sdk-go/compute"
+	"github.com/MagaluCloud/mgc-sdk-go/helpers"
 	"gopkg.in/yaml.v3"
 )
 
@@ -51,6 +52,7 @@ func main() {
 	ExampleListImagesWithJWTAndAPIKey(ctx, apiToken)
 	id := ExampleCreateCustomImage(ctx, cli)
 	ExampleRetrieveCustomImage(ctx, cli, id)
+	ExampleListCustomImages(ctx, cli)
 	// id := "" // comment and uncomment to run the examples
 	// // id := ExampleCreateInstance() // uncomment to create a new instance
 	// // id := ExampleListInstances() // uncomment to list instances and get the id of the last instance
@@ -479,5 +481,31 @@ func ExampleRetrieveCustomImage(ctx context.Context, cli *compute.VirtualMachine
 	}
 	if image.Metadata != nil {
 		fmt.Printf("  Metadata: %v\n", *image.Metadata)
+	}
+}
+
+func ExampleListCustomImages(ctx context.Context, cli *compute.VirtualMachineClient) {
+	opts := compute.CustomImageListOptions{Limit: helpers.IntPtr(2)}
+	images, err := cli.Images().ListCustom(ctx, opts)
+	if err != nil {
+		fmt.Printf("Failed to list custom images: %s\n", err)
+		return
+	}
+
+	for _, image := range images.Images {
+		fmt.Printf("Image: %s (ID: %s)\n", image.Name, image.ID)
+		fmt.Printf("  Status: %s\n", image.Status)
+		fmt.Printf("  Platform: %s\n", image.Platform)
+		fmt.Printf("  License: %s\n", image.License)
+		fmt.Printf("  Requirements: %d vCPU, %d RAM, %d Disk\n", image.Requirements.VCPU, image.Requirements.RAM, image.Requirements.Disk)
+		if image.Version != nil {
+			fmt.Printf("  Version: %s\n", *image.Version)
+		}
+		if image.Description != nil {
+			fmt.Printf("  Description: %s\n", *image.Description)
+		}
+		if image.Metadata != nil {
+			fmt.Printf("  Metadata: %v\n", *image.Metadata)
+		}
 	}
 }

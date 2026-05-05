@@ -106,6 +106,22 @@ type CustomImage struct {
 	Metadata     *map[string]any      `json:"metadata,omitempty"`
 }
 
+// CustomImageList represents the response from listing custom images.
+// This structure encapsulates the API response format for custom images.
+type CustomImageList struct {
+	Meta   Meta          `json:"meta"`
+	Images []CustomImage `json:"images"`
+}
+
+// CustomImageListOptions defines the parameters for filtering and pagination of custom image lists.
+// All fields are optional and allow controlling the listing behavior.
+type CustomImageListOptions struct {
+	Limit  *int
+	Offset *int
+	Sort   *string
+	Name   *string
+}
+
 // ImageService provides operations for managing virtual machine images.
 // This interface allows listing available images with optional filtering.
 type ImageService interface {
@@ -113,6 +129,7 @@ type ImageService interface {
 	ListAll(ctx context.Context, opts ImageFilterOptions) ([]Image, error)
 	CreateCustom(ctx context.Context, req CreateCustomImageRequest) (string, error)
 	GetCustom(ctx context.Context, id string) (*CustomImage, error)
+	ListCustom(ctx context.Context, opts CustomImageListOptions) (*CustomImageList, error)
 }
 
 // imageService implements the ImageService interface.
@@ -236,4 +253,38 @@ func (s *imageService) GetCustom(ctx context.Context, id string) (*CustomImage, 
 		nil,
 		nil,
 	)
+}
+
+// ListCustom retrieves custom images matching the provided options with pagination metadata.
+// This method makes an HTTP request to get the list of custom images
+// and applies the filters specified in the options.
+func (s *imageService) ListCustom(ctx context.Context, opts CustomImageListOptions) (*CustomImageList, error) {
+	req, err := s.client.newRequest(ctx, http.MethodGet, "/v1/images/custom", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	q := req.URL.Query()
+	if opts.Limit != nil {
+		q.Add("_limit", strconv.Itoa(*opts.Limit))
+	}
+	if opts.Offset != nil {
+		q.Add("_offset", strconv.Itoa(*opts.Offset))
+	}
+	if opts.Sort != nil {
+		q.Add("_sort", *opts.Sort)
+	}
+	if opts.Name != nil {
+		q.Add("name", *opts.Name)
+	}
+	req.URL.RawQuery = q.Encode()
+
+	response := &CustomImageList{}
+
+	_, err = mgc_http.Do(s.client.GetConfig(), ctx, req, response)
+	if err != nil {
+		return nil, err
+	}
+
+	return response, nil
 }
