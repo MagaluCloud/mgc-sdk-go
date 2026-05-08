@@ -226,6 +226,28 @@ func TestQueryParam_AddReflect(t *testing.T) {
 			t.Errorf("Esperado 'negative_param=-42', obtido '%s'", encoded)
 		}
 	})
+
+	t.Run("Adicionar string pointer usando reflection", func(t *testing.T) {
+		req10, _ := http.NewRequest("GET", "http://example.com", nil)
+		qp10 := NewQueryParams(req10)
+
+		ptrValue := "pointer_value"
+		intValue := 99
+		qp10.AddReflect("ptr_string", &ptrValue)
+		qp10.AddReflect("ptr_int", &intValue)
+
+		encoded := qp10.Encode()
+		parsedValues, err := url.ParseQuery(encoded)
+		if err != nil {
+			t.Fatalf("Erro ao fazer parse do query string: %v", err)
+		}
+		if parsedValues.Get("ptr_string") != "pointer_value" {
+			t.Errorf("Esperado 'pointer_value', obtido '%s'", parsedValues.Get("ptr_string"))
+		}
+		if parsedValues.Get("ptr_int") != "99" {
+			t.Errorf("Esperado '99', obtido '%s'", parsedValues.Get("ptr_int"))
+		}
+	})
 }
 
 func TestQueryParam_Encode(t *testing.T) {
