@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/MagaluCloud/mgc-sdk-go/client"
+	"github.com/minio/minio-go/v7"
 )
 
 func TestObjectServiceUpload_InvalidBucketName(t *testing.T) {
@@ -1228,4 +1229,404 @@ func TestListVersionsOptions(t *testing.T) {
 
 func intPtr(v int) *int {
 	return &v
+}
+
+func TestObjectServiceList_WithMock(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name      string
+		opts      ObjectListOptions
+		wantCount int
+		wantKeys  []string
+		wantErr   bool
+	}{
+		{
+			name:      "list all objects",
+			opts:      ObjectListOptions{},
+			wantCount: 3,
+			wantKeys:  []string{"file1.txt", "file2.txt", "file3.txt"},
+		},
+		{
+			name: "with limit",
+			opts: ObjectListOptions{
+				Limit: intPtr(2),
+			},
+			wantCount: 2,
+			wantKeys:  []string{"file1.txt", "file2.txt"},
+		},
+		{
+			name: "with offset",
+			opts: ObjectListOptions{
+				Offset: intPtr(1),
+			},
+			wantCount: 2,
+			wantKeys:  []string{"file2.txt", "file3.txt"},
+		},
+		{
+			name: "with limit and offset",
+			opts: ObjectListOptions{
+				Limit:  intPtr(1),
+				Offset: intPtr(1),
+			},
+			wantCount: 1,
+			wantKeys:  []string{"file2.txt"},
+		},
+		{
+			name: "with prefix",
+			opts: ObjectListOptions{
+				Prefix: "file2",
+			},
+			wantCount: 1,
+			wantKeys:  []string{"file2.txt"},
+		},
+		{
+			name: "offset beyond total",
+			opts: ObjectListOptions{
+				Offset: intPtr(10),
+			},
+			wantCount: 0,
+		},
+		{
+			name: "empty bucket name",
+			opts: ObjectListOptions{
+				Limit: intPtr(10),
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mock := newMockMinioClient()
+			mock.buckets["test-bucket"] = &mockBucket{
+				name:    "test-bucket",
+				objects: make(map[string]*mockObject),
+			}
+			mock.buckets["test-bucket"].objects["file1.txt"] = &mockObject{key: "file1.txt", size: 100, etag: "etag1"}
+			mock.buckets["test-bucket"].objects["file2.txt"] = &mockObject{key: "file2.txt", size: 200, etag: "etag2"}
+			mock.buckets["test-bucket"].objects["file3.txt"] = &mockObject{key: "file3.txt", size: 300, etag: "etag3"}
+
+			core := client.NewMgcClient()
+			osClient, _ := New(core, "minioadmin", "minioadmin", WithMinioClientInterface(mock))
+			svc := osClient.Objects()
+
+			bucketName := "test-bucket"
+			if tt.wantErr {
+				bucketName = ""
+			}
+
+			objects, err := svc.List(context.Background(), bucketName, tt.opts)
+			if tt.wantErr {
+				if err == nil {
+					t.Error("List() expected error, got nil")
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("List() error = %v", err)
+			}
+			if len(objects) != tt.wantCount {
+				t.Errorf("List() got %d objects, want %d", len(objects), tt.wantCount)
+			}
+			for i, obj := range objects {
+				if i < len(tt.wantKeys) && obj.Key != tt.wantKeys[i] {
+					t.Errorf("List()[%d].Key = %q, want %q", i, obj.Key, tt.wantKeys[i])
+				}
+			}
+		})
+	}
+}
+
+func TestObjectServiceListAll_WithMock(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name      string
+		opts      ObjectFilterOptions
+		wantCount int
+		wantErr   bool
+	}{
+		{
+			name:      "list all objects",
+			opts:      ObjectFilterOptions{},
+			wantCount: 3,
+		},
+		{
+			name: "with prefix",
+			opts: ObjectFilterOptions{
+				Prefix: "file2",
+			},
+			wantCount: 1,
+		},
+		{
+			name: "empty bucket name",
+			opts: ObjectFilterOptions{
+				Prefix: "test/",
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mock := newMockMinioClient()
+			mock.buckets["test-bucket"] = &mockBucket{
+				name:    "test-bucket",
+				objects: make(map[string]*mockObject),
+			}
+			mock.buckets["test-bucket"].objects["file1.txt"] = &mockObject{key: "file1.txt", size: 100, etag: "etag1"}
+			mock.buckets["test-bucket"].objects["file2.txt"] = &mockObject{key: "file2.txt", size: 200, etag: "etag2"}
+			mock.buckets["test-bucket"].objects["file3.txt"] = &mockObject{key: "file3.txt", size: 300, etag: "etag3"}
+
+			core := client.NewMgcClient()
+			osClient, _ := New(core, "minioadmin", "minioadmin", WithMinioClientInterface(mock))
+			svc := osClient.Objects()
+
+			bucketName := "test-bucket"
+			if tt.wantErr {
+				bucketName = ""
+			}
+
+			objects, err := svc.ListAll(context.Background(), bucketName, tt.opts)
+			if tt.wantErr {
+				if err == nil {
+					t.Error("ListAll() expected error, got nil")
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("ListAll() error = %v", err)
+			}
+			if len(objects) != tt.wantCount {
+				t.Errorf("ListAll() got %d objects, want %d", len(objects), tt.wantCount)
+			}
+		})
+	}
+}
+
+func TestObjectServiceMetadata_WithMock(t *testing.T) {
+	t.Parallel()
+
+	mock := newMockMinioClient()
+	mock.buckets["test-bucket"] = &mockBucket{
+		name:    "test-bucket",
+		objects: make(map[string]*mockObject),
+	}
+	mock.buckets["test-bucket"].objects["test-key.txt"] = &mockObject{
+		key:         "test-key.txt",
+		size:        1024,
+		etag:        "abc123",
+		contentType: "text/plain",
+	}
+
+	core := client.NewMgcClient()
+	osClient, _ := New(core, "minioadmin", "minioadmin", WithMinioClientInterface(mock))
+	svc := osClient.Objects()
+
+	t.Run("valid metadata", func(t *testing.T) {
+		obj, err := svc.Metadata(context.Background(), "test-bucket", "test-key.txt")
+		if err != nil {
+			t.Fatalf("Metadata() error = %v", err)
+		}
+		if obj.Key != "test-key.txt" {
+			t.Errorf("Metadata().Key = %q, want %q", obj.Key, "test-key.txt")
+		}
+		if obj.Size != 1024 {
+			t.Errorf("Metadata().Size = %d, want 1024", obj.Size)
+		}
+		if obj.ETag != "abc123" {
+			t.Errorf("Metadata().ETag = %q, want %q", obj.ETag, "abc123")
+		}
+		if obj.ContentType != "text/plain" {
+			t.Errorf("Metadata().ContentType = %q, want %q", obj.ContentType, "text/plain")
+		}
+	})
+
+	t.Run("empty bucket name", func(t *testing.T) {
+		_, err := svc.Metadata(context.Background(), "", "test-key.txt")
+		if err == nil {
+			t.Error("Metadata() expected error for empty bucket name, got nil")
+		}
+		if _, ok := err.(*InvalidBucketNameError); !ok {
+			t.Errorf("Metadata() expected InvalidBucketNameError, got %T", err)
+		}
+	})
+
+	t.Run("empty object key", func(t *testing.T) {
+		_, err := svc.Metadata(context.Background(), "test-bucket", "")
+		if err == nil {
+			t.Error("Metadata() expected error for empty object key, got nil")
+		}
+		if _, ok := err.(*InvalidObjectKeyError); !ok {
+			t.Errorf("Metadata() expected InvalidObjectKeyError, got %T", err)
+		}
+	})
+
+	t.Run("object not found", func(t *testing.T) {
+		_, err := svc.Metadata(context.Background(), "test-bucket", "nonexistent.txt")
+		if err != nil {
+			t.Logf("Metadata() returned error for non-existent object (expected): %v", err)
+		}
+	})
+}
+
+func TestObjectServiceGetObjectLockStatus_WithMock(t *testing.T) {
+	t.Parallel()
+
+	t.Run("locked object", func(t *testing.T) {
+		mock := newMockMinioClient()
+		mock.buckets["test-bucket"] = &mockBucket{
+			name:    "test-bucket",
+			objects: make(map[string]*mockObject),
+		}
+		compliance := minio.Compliance
+		retainUntil := time.Now().Add(24 * time.Hour)
+		mock.buckets["test-bucket"].objects["locked.txt"] = &mockObject{
+			key: "locked.txt",
+			retention: &mockObjectRetention{
+				mode:            &compliance,
+				retainUntilDate: &retainUntil,
+			},
+		}
+
+		core := client.NewMgcClient()
+		osClient, _ := New(core, "minioadmin", "minioadmin", WithMinioClientInterface(mock))
+		svc := osClient.Objects()
+
+		locked, err := svc.GetObjectLockStatus(context.Background(), "test-bucket", "locked.txt")
+		if err != nil {
+			t.Fatalf("GetObjectLockStatus() error = %v", err)
+		}
+		if !locked {
+			t.Error("GetObjectLockStatus() returned false, want true for locked object")
+		}
+	})
+
+	t.Run("unlocked object", func(t *testing.T) {
+		mock := newMockMinioClient()
+		mock.buckets["test-bucket"] = &mockBucket{
+			name:    "test-bucket",
+			objects: make(map[string]*mockObject),
+		}
+		mock.buckets["test-bucket"].objects["unlocked.txt"] = &mockObject{
+			key: "unlocked.txt",
+		}
+
+		core := client.NewMgcClient()
+		osClient, _ := New(core, "minioadmin", "minioadmin", WithMinioClientInterface(mock))
+		svc := osClient.Objects()
+
+		locked, err := svc.GetObjectLockStatus(context.Background(), "test-bucket", "unlocked.txt")
+		if err != nil {
+			t.Fatalf("GetObjectLockStatus() error = %v", err)
+		}
+		if locked {
+			t.Error("GetObjectLockStatus() returned true, want false for unlocked object")
+		}
+	})
+
+	t.Run("empty bucket name", func(t *testing.T) {
+		mock := newMockMinioClient()
+		core := client.NewMgcClient()
+		osClient, _ := New(core, "minioadmin", "minioadmin", WithMinioClientInterface(mock))
+		svc := osClient.Objects()
+
+		_, err := svc.GetObjectLockStatus(context.Background(), "", "key")
+		if err == nil {
+			t.Error("GetObjectLockStatus() expected error for empty bucket name, got nil")
+		}
+	})
+
+	t.Run("empty object key", func(t *testing.T) {
+		mock := newMockMinioClient()
+		core := client.NewMgcClient()
+		osClient, _ := New(core, "minioadmin", "minioadmin", WithMinioClientInterface(mock))
+		svc := osClient.Objects()
+
+		_, err := svc.GetObjectLockStatus(context.Background(), "test-bucket", "")
+		if err == nil {
+			t.Error("GetObjectLockStatus() expected error for empty object key, got nil")
+		}
+	})
+}
+
+func TestObjectServiceListVersions_WithMock(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name      string
+		bucket    string
+		objectKey string
+		opts      *ListVersionsOptions
+		wantCount int
+		wantErr   bool
+	}{
+		{
+			name:      "list versions without options",
+			bucket:    "test-bucket",
+			objectKey: "file1.txt",
+			opts:      nil,
+			wantCount: 1,
+		},
+		{
+			name:      "list versions with limit",
+			bucket:    "test-bucket",
+			objectKey: "file1.txt",
+			opts:      &ListVersionsOptions{Limit: intPtr(5)},
+			wantCount: 1,
+		},
+		{
+			name:      "list versions with offset",
+			bucket:    "test-bucket",
+			objectKey: "file1.txt",
+			opts:      &ListVersionsOptions{Offset: intPtr(0)},
+			wantCount: 1,
+		},
+		{
+			name:      "empty bucket name",
+			bucket:    "",
+			objectKey: "file1.txt",
+			wantErr:   true,
+		},
+		{
+			name:      "empty object key",
+			bucket:    "test-bucket",
+			objectKey: "",
+			wantErr:   true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mock := newMockMinioClient()
+			mock.buckets["test-bucket"] = &mockBucket{
+				name:    "test-bucket",
+				objects: make(map[string]*mockObject),
+			}
+			mock.buckets["test-bucket"].objects["file1.txt"] = &mockObject{key: "file1.txt", size: 100, etag: "etag1"}
+			mock.buckets["test-bucket"].objects["file2.txt"] = &mockObject{key: "file2.txt", size: 200, etag: "etag2"}
+
+			core := client.NewMgcClient()
+			osClient, _ := New(core, "minioadmin", "minioadmin", WithMinioClientInterface(mock))
+			svc := osClient.Objects()
+
+			versions, err := svc.ListVersions(context.Background(), tt.bucket, tt.objectKey, tt.opts)
+			if tt.wantErr {
+				if err == nil {
+					t.Error("ListVersions() expected error, got nil")
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("ListVersions() error = %v", err)
+			}
+			if len(versions) != tt.wantCount {
+				t.Errorf("ListVersions() got %d versions, want %d", len(versions), tt.wantCount)
+			}
+			if len(versions) > 0 && versions[0].Key != tt.objectKey {
+				t.Errorf("ListVersions()[0].Key = %q, want %q", versions[0].Key, tt.objectKey)
+			}
+		})
+	}
 }
