@@ -308,6 +308,104 @@ func TestNatGatewayService_List(t *testing.T) {
 			want:       []NatGatewayResponse{},
 			wantErr:    false,
 		},
+		{
+			name:  "with sort",
+			vpcID: "vpc1",
+			opts: ListOptions{
+				Sort: helpers.StrPtr("created_at:desc"),
+			},
+			response: `{
+				"meta": {
+					"page": {
+						"limit": 25,
+						"offset": 0,
+						"count": 1,
+						"total": 1,
+						"max_items_per_page": 100
+					},
+					"links": {
+						"self": "/v1/nat_gateways?page=1&sort=created_at:desc"
+					}
+				},
+				"result": [{
+					"id": "nat1",
+					"name": "prod-nat",
+					"description": "Production NAT Gateway",
+					"vpc_id": "vpc1",
+					"zone": "zone1",
+					"nat_gateway_ip": "10.0.0.1",
+					"status": "active",
+					"created_at": "` + basetime.Format(utils.LocalDateTimeWithoutZoneLayout) + `",
+					"updated": "` + basetime.Format(utils.LocalDateTimeWithoutZoneLayout) + `"
+				}]
+			}`,
+			statusCode: http.StatusOK,
+			want: []NatGatewayResponse{
+				{
+					ID:           helpers.StrPtr("nat1"),
+					Name:         helpers.StrPtr("prod-nat"),
+					Description:  helpers.StrPtr("Production NAT Gateway"),
+					VPCID:        helpers.StrPtr("vpc1"),
+					Zone:         helpers.StrPtr("zone1"),
+					NatGatewayIP: helpers.StrPtr("10.0.0.1"),
+					Status:       "active",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:  "offset without limit",
+			vpcID: "vpc1",
+			opts: ListOptions{
+				Offset: helpers.IntPtr(5),
+			},
+			response: `{
+				"meta": {
+					"page": {
+						"limit": 25,
+						"offset": 5,
+						"count": 1,
+						"total": 2,
+						"max_items_per_page": 100
+					},
+					"links": {
+						"self": "/v1/nat_gateways?page=1"
+					}
+				},
+				"result": [{
+					"id": "nat2",
+					"name": "dev-nat",
+					"description": "Dev NAT Gateway",
+					"vpc_id": "vpc1",
+					"zone": "zone1",
+					"nat_gateway_ip": "10.0.0.2",
+					"status": "active",
+					"created_at": "` + basetime.Format(utils.LocalDateTimeWithoutZoneLayout) + `",
+					"updated": "` + basetime.Format(utils.LocalDateTimeWithoutZoneLayout) + `"
+				}]
+			}`,
+			statusCode: http.StatusOK,
+			want: []NatGatewayResponse{
+				{
+					ID:           helpers.StrPtr("nat2"),
+					Name:         helpers.StrPtr("dev-nat"),
+					Description:  helpers.StrPtr("Dev NAT Gateway"),
+					VPCID:        helpers.StrPtr("vpc1"),
+					Zone:         helpers.StrPtr("zone1"),
+					NatGatewayIP: helpers.StrPtr("10.0.0.2"),
+					Status:       "active",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:       "server error",
+			vpcID:      "vpc1",
+			opts:       ListOptions{},
+			response:   `{"error": "internal server error"}`,
+			statusCode: http.StatusInternalServerError,
+			wantErr:    true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -318,8 +416,13 @@ func TestNatGatewayService_List(t *testing.T) {
 				assertEqual(t, "/network/v1/nat_gateways", r.URL.Path)
 				assertEqual(t, http.MethodGet, r.Method)
 				assertEqual(t, tt.vpcID, r.URL.Query().Get("vpc_id"))
-				assertEqual(t, "1", r.URL.Query().Get("page"))
-				assertEqual(t, "10", r.URL.Query().Get("items_per_page"))
+
+				if tt.opts.Limit != nil {
+					assertEqual(t, strconv.Itoa(*tt.opts.Limit), r.URL.Query().Get("items_per_page"))
+				}
+				if tt.opts.Sort != nil {
+					assertEqual(t, *tt.opts.Sort, r.URL.Query().Get("sort"))
+				}
 
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(tt.statusCode)

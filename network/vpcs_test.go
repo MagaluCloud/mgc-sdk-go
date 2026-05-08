@@ -534,6 +534,13 @@ func TestVPCService_ListPublicIPs(t *testing.T) {
 			wantCount:  0,
 			wantErr:    false,
 		},
+		{
+			name:       "server error",
+			vpcID:      "vpc1",
+			response:   `{"error": "internal server error"}`,
+			statusCode: http.StatusInternalServerError,
+			wantErr:    true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -595,6 +602,16 @@ func TestVPCService_CreatePublicIP(t *testing.T) {
 			statusCode: http.StatusCreated,
 			wantID:     "ip-auto",
 			wantErr:    false,
+		},
+		{
+			name:    "server error",
+			vpcID:   "vpc1",
+			request: PublicIPCreateRequest{},
+			response: `{
+				"error": "internal server error"
+			}`,
+			statusCode: http.StatusInternalServerError,
+			wantErr:    true,
 		},
 	}
 
@@ -666,6 +683,13 @@ func TestVPCService_ListSubnets(t *testing.T) {
 			statusCode: http.StatusOK,
 			wantCount:  0,
 			wantErr:    false,
+		},
+		{
+			name:       "server error",
+			vpcID:      "vpc1",
+			response:   `{"error": "internal server error"}`,
+			statusCode: http.StatusInternalServerError,
+			wantErr:    true,
 		},
 	}
 
