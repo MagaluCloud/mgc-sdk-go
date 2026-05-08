@@ -469,3 +469,89 @@ func TestEngineService_ListAll_WithFilters(t *testing.T) {
 		assertEqual(t, "ACTIVE", engine.Status)
 	}
 }
+
+func TestEngineService_ListEngineParameters(t *testing.T) {
+	tests := []struct {
+		name       string
+		engineID   string
+		opts       ListEngineParametersOptions
+		response   string
+		statusCode int
+		wantCount  int
+		wantErr    bool
+	}{
+		{
+			name:     "basic list",
+			engineID: "postgres-16",
+			response: `{
+				"meta": {"page": {"offset": 0, "limit": 10, "count": 2, "total": 2}},
+				"results": [
+					{"allowed_values":["100","200"],"data_type":"integer","default_value":"100","description":"max connections","dynamic":true,"engine_id":"postgres-16","modifiable":true,"name":"max_connections","parameter_name":"max_connections","ranged_value":true},
+					{"allowed_values":[],"data_type":"string","default_value":"UTF8","description":"character encoding","dynamic":false,"engine_id":"postgres-16","modifiable":false,"name":"encoding","parameter_name":"encoding","ranged_value":false}
+				]
+			}`,
+			statusCode: http.StatusOK,
+			wantCount:  2,
+		},
+		{
+			name:     "with filters",
+			engineID: "postgres-16",
+			opts: ListEngineParametersOptions{
+				Dynamic:    helpers.BoolPtr(true),
+				Modifiable: helpers.BoolPtr(true),
+				Limit:      helpers.IntPtr(10),
+				Offset:     helpers.IntPtr(0),
+			},
+			response: `{
+				"meta": {"page": {"offset": 0, "limit": 10, "count": 1, "total": 1}},
+				"results": [
+					{"allowed_values":["100","200"],"data_type":"integer","default_value":"100","description":"max connections","dynamic":true,"engine_id":"postgres-16","modifiable":true,"name":"max_connections","parameter_name":"max_connections","ranged_value":true}
+				]
+			}`,
+			statusCode: http.StatusOK,
+			wantCount:  1,
+		},
+		{
+			name:       "empty engine ID",
+			engineID:   "",
+			response:   ``,
+			statusCode: http.StatusOK,
+			wantErr:    true,
+		},
+		{
+			name:       "server error",
+			engineID:   "postgres-16",
+			response:   `{"error": "internal error"}`,
+			statusCode: http.StatusInternalServerError,
+			wantErr:    true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if tt.engineID == "" {
+					return
+				}
+				assertEqual(t, fmt.Sprintf("/database/v2/engines/%s/parameters", tt.engineID), r.URL.Path)
+				assertEqual(t, http.MethodGet, r.Method)
+
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(tt.statusCode)
+				w.Write([]byte(tt.response))
+			}))
+			defer server.Close()
+
+			client := testEngineClient(server.URL)
+			params, err := client.ListEngineParameters(context.Background(), tt.engineID, tt.opts)
+
+			if tt.wantErr {
+				assertError(t, err)
+				return
+			}
+
+			assertNoError(t, err)
+			assertEqual(t, tt.wantCount, len(params))
+		})
+	}
+}

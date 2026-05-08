@@ -69,4 +69,18 @@ func TestDBaaSClient_Services(t *testing.T) {
 			t.Error("Replicas() returned nil")
 		}
 	})
+
+	t.Run("ParametersGroup service", func(t *testing.T) {
+		service := dbaas.ParametersGroup()
+		if service == nil {
+			t.Error("ParametersGroup() returned nil")
+		}
+	})
+
+	t.Run("Parameters service", func(t *testing.T) {
+		service := dbaas.Parameters()
+		if service == nil {
+			t.Error("Parameters() returned nil")
+		}
+	})
 }
