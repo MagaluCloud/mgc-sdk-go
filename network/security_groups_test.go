@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/MagaluCloud/mgc-sdk-go/client"
-	"github.com/MagaluCloud/mgc-sdk-go/helpers"
 	"github.com/MagaluCloud/mgc-sdk-go/internal/utils"
 )
 
@@ -52,7 +51,6 @@ func TestSecurityGroupService_List(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -108,15 +106,15 @@ func TestSecurityGroupService_Get(t *testing.T) {
 			statusCode: http.StatusOK,
 			want: &SecurityGroupDetailResponse{
 				SecurityGroupResponse: SecurityGroupResponse{
-					ID:        helpers.StrPtr("sg1"),
-					Name:      helpers.StrPtr("test-sg"),
+					ID:        new("sg1"),
+					Name:      new("test-sg"),
 					Status:    "ACTIVE",
 					CreatedAt: &parsedTime,
 					Updated:   &parsedTime,
 				},
-				ExternalID: helpers.StrPtr("ext123"),
+				ExternalID: new("ext123"),
 				Rules: &[]RuleResponse{
-					{ID: helpers.StrPtr("rule1"), Direction: helpers.StrPtr("ingress")},
+					{ID: new("rule1"), Direction: new("ingress")},
 				},
 			},
 			wantErr: false,
@@ -131,7 +129,6 @@ func TestSecurityGroupService_Get(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -174,7 +171,7 @@ func TestSecurityGroupService_Create(t *testing.T) {
 			name: "successful create",
 			request: SecurityGroupCreateRequest{
 				Name:        "test-sg",
-				Description: helpers.StrPtr("test description"),
+				Description: new("test description"),
 			},
 			response:   `{"id": "sg-new"}`,
 			statusCode: http.StatusOK,
@@ -185,8 +182,8 @@ func TestSecurityGroupService_Create(t *testing.T) {
 			name: "create with skip default rules",
 			request: SecurityGroupCreateRequest{
 				Name:             "test-sg-no-defaults",
-				Description:      helpers.StrPtr("test without default rules"),
-				SkipDefaultRules: helpers.BoolPtr(true),
+				Description:      new("test without default rules"),
+				SkipDefaultRules: new(true),
 			},
 			response:   `{"id": "sg-no-defaults"}`,
 			statusCode: http.StatusOK,
@@ -196,7 +193,7 @@ func TestSecurityGroupService_Create(t *testing.T) {
 		{
 			name: "missing name",
 			request: SecurityGroupCreateRequest{
-				Description: helpers.StrPtr("invalid"),
+				Description: new("invalid"),
 			},
 			response:   `{"error": "name is required"}`,
 			statusCode: http.StatusBadRequest,
@@ -205,7 +202,6 @@ func TestSecurityGroupService_Create(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -269,7 +265,6 @@ func TestSecurityGroupService_Delete(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

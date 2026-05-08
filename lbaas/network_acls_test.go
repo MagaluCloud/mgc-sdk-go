@@ -35,7 +35,7 @@ func TestNetworkACLService_Create(t *testing.T) {
 			name: "successful creation",
 			lbID: "lb-123",
 			request: CreateNetworkACLRequest{
-				Name:           stringPtr("test-acl"),
+				Name:           new("test-acl"),
 				Ethertype:      "IPv4",
 				Protocol:       "TCP",
 				RemoteIPPrefix: "192.168.1.0/24",
@@ -76,7 +76,6 @@ func TestNetworkACLService_Create(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -136,7 +135,6 @@ func TestNetworkACLService_Delete(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -175,7 +173,7 @@ func TestNetworkACLService_Replace(t *testing.T) {
 			request: UpdateNetworkACLRequest{
 				Acls: []CreateNetworkACLRequest{
 					{
-						Name:           stringPtr("acl-1"),
+						Name:           new("acl-1"),
 						Ethertype:      "IPv4",
 						Protocol:       "TCP",
 						RemoteIPPrefix: "192.168.1.0/24",
@@ -211,7 +209,6 @@ func TestNetworkACLService_Replace(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

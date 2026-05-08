@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 )
@@ -44,8 +45,8 @@ func TestSnapshotService_List(t *testing.T) {
 		{
 			name: "with pagination",
 			opts: SnapshotListOptions{
-				Limit:  intPtr(1),
-				Offset: intPtr(1),
+				Limit:  new(1),
+				Offset: new(1),
 			},
 			response: `{
 				"snapshots": [
@@ -285,7 +286,7 @@ func TestSnapshotService_Create(t *testing.T) {
 			name: "successful creation",
 			req: CreateSnapshotRequest{
 				Name:     "test-snapshot",
-				Instance: IDOrName{ID: strPtr("inst1")},
+				Instance: IDOrName{ID: new("inst1")},
 			},
 			response:   `{"id": "snap1"}`,
 			statusCode: http.StatusOK,
@@ -296,7 +297,7 @@ func TestSnapshotService_Create(t *testing.T) {
 			name: "instance not found",
 			req: CreateSnapshotRequest{
 				Name:     "test-snapshot",
-				Instance: IDOrName{ID: strPtr("invalid")},
+				Instance: IDOrName{ID: new("invalid")},
 			},
 			response:   `{"error": "instance not found"}`,
 			statusCode: http.StatusNotFound,
@@ -409,14 +410,14 @@ func generateSnapshotJSON(count, startID int, baseTime time.Time) string {
 	if count == 0 {
 		return ""
 	}
-	var result string
-	for i := 0; i < count; i++ {
+	var result strings.Builder
+	for i := range count {
 		if i > 0 {
-			result += ","
+			result.WriteString(",")
 		}
-		result += `{"id": "snap` + strconv.Itoa(startID+i+1) + `", "name": "test` + strconv.Itoa(startID+i+1) + `", "created_at": "` + baseTime.Format(time.RFC3339) + `"}`
+		result.WriteString(`{"id": "snap` + strconv.Itoa(startID+i+1) + `", "name": "test` + strconv.Itoa(startID+i+1) + `", "created_at": "` + baseTime.Format(time.RFC3339) + `"}`)
 	}
-	return result
+	return result.String()
 }
 
 func TestSnapshotService_Delete(t *testing.T) {
@@ -530,7 +531,7 @@ func TestSnapshotService_Restore(t *testing.T) {
 			id:   "snap1",
 			req: RestoreSnapshotRequest{
 				Name:        "restored-instance",
-				MachineType: IDOrName{ID: strPtr("mt1")},
+				MachineType: IDOrName{ID: new("mt1")},
 			},
 			response:   `{"id": "inst1"}`,
 			statusCode: http.StatusOK,
@@ -542,7 +543,7 @@ func TestSnapshotService_Restore(t *testing.T) {
 			id:   "snap1",
 			req: RestoreSnapshotRequest{
 				Name:        "restored-instance",
-				MachineType: IDOrName{ID: strPtr("invalid")},
+				MachineType: IDOrName{ID: new("invalid")},
 			},
 			response:   `{"error": "invalid machine type"}`,
 			statusCode: http.StatusBadRequest,

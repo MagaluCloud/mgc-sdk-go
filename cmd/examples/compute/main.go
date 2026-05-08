@@ -10,7 +10,6 @@ import (
 
 	"github.com/MagaluCloud/mgc-sdk-go/client"
 	"github.com/MagaluCloud/mgc-sdk-go/compute"
-	"github.com/MagaluCloud/mgc-sdk-go/helpers"
 	"gopkg.in/yaml.v3"
 )
 
@@ -485,7 +484,7 @@ func ExampleRetrieveCustomImage(ctx context.Context, cli *compute.VirtualMachine
 }
 
 func ExampleListCustomImages(ctx context.Context, cli *compute.VirtualMachineClient) {
-	opts := compute.CustomImageListOptions{Limit: helpers.IntPtr(2)}
+	opts := compute.CustomImageListOptions{Limit: new(2)}
 	images, err := cli.Images().ListCustom(ctx, opts)
 	if err != nil {
 		fmt.Printf("Failed to list custom images: %s\n", err)

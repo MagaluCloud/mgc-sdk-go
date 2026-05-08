@@ -28,7 +28,7 @@ func TestRoleService_List(t *testing.T) {
 		},
 		{
 			name:     "successful list with role name filter",
-			roleName: strPtr("admin"),
+			roleName: new("admin"),
 			response: `[
 				{"name": "admin", "description": "Admin role", "origin": "system"}
 			]`,
@@ -94,7 +94,7 @@ func TestRoleService_Create(t *testing.T) {
 			name: "successful create role",
 			request: CreateRole{
 				Name:        "custom-role",
-				Description: strPtr("Custom role description"),
+				Description: new("Custom role description"),
 				Permissions: []string{"read:instances"},
 			},
 			response: `[
@@ -108,7 +108,7 @@ func TestRoleService_Create(t *testing.T) {
 			name: "create role with based role",
 			request: CreateRole{
 				Name:      "derived-role",
-				BasedRole: strPtr("admin"),
+				BasedRole: new("admin"),
 			},
 			response: `[
 				{"name": "derived-role", "origin": "user"}

@@ -4,7 +4,7 @@ import "testing"
 
 func TestIntPtr(t *testing.T) {
 	value := 42
-	ptr := IntPtr(value)
+	ptr := new(value)
 	if ptr == nil {
 		t.Error("Expected non-nil pointer")
 	}
@@ -15,7 +15,7 @@ func TestIntPtr(t *testing.T) {
 
 func TestStrPtr(t *testing.T) {
 	value := "test"
-	ptr := StrPtr(value)
+	ptr := new(value)
 	if ptr == nil {
 		t.Error("Expected non-nil pointer")
 	}
@@ -26,7 +26,7 @@ func TestStrPtr(t *testing.T) {
 
 func TestBoolPtr(t *testing.T) {
 	value := true
-	ptr := BoolPtr(value)
+	ptr := new(value)
 	if ptr == nil {
 		t.Error("Expected non-nil pointer")
 	}
@@ -37,7 +37,7 @@ func TestBoolPtr(t *testing.T) {
 
 func TestFloat32Ptr(t *testing.T) {
 	value := float32(3.14)
-	ptr := Float32Ptr(value)
+	ptr := new(value)
 	if ptr == nil {
 		t.Error("Expected non-nil pointer")
 	}
@@ -48,7 +48,7 @@ func TestFloat32Ptr(t *testing.T) {
 
 func TestFloat64Ptr(t *testing.T) {
 	value := 3.14159
-	ptr := Float64Ptr(value)
+	ptr := new(value)
 	if ptr == nil {
 		t.Error("Expected non-nil pointer")
 	}
@@ -59,7 +59,7 @@ func TestFloat64Ptr(t *testing.T) {
 
 func TestInt8Ptr(t *testing.T) {
 	value := int8(8)
-	ptr := Int8Ptr(value)
+	ptr := new(value)
 	if ptr == nil {
 		t.Error("Expected non-nil pointer")
 	}
@@ -70,7 +70,7 @@ func TestInt8Ptr(t *testing.T) {
 
 func TestInt16Ptr(t *testing.T) {
 	value := int16(16)
-	ptr := Int16Ptr(value)
+	ptr := new(value)
 	if ptr == nil {
 		t.Error("Expected non-nil pointer")
 	}
@@ -81,7 +81,7 @@ func TestInt16Ptr(t *testing.T) {
 
 func TestInt32Ptr(t *testing.T) {
 	value := int32(32)
-	ptr := Int32Ptr(value)
+	ptr := new(value)
 	if ptr == nil {
 		t.Error("Expected non-nil pointer")
 	}
@@ -92,7 +92,7 @@ func TestInt32Ptr(t *testing.T) {
 
 func TestInt64Ptr(t *testing.T) {
 	value := int64(64)
-	ptr := Int64Ptr(value)
+	ptr := new(value)
 	if ptr == nil {
 		t.Error("Expected non-nil pointer")
 	}
@@ -103,7 +103,7 @@ func TestInt64Ptr(t *testing.T) {
 
 func TestUintPtr(t *testing.T) {
 	value := uint(42)
-	ptr := UintPtr(value)
+	ptr := new(value)
 	if ptr == nil {
 		t.Error("Expected non-nil pointer")
 	}
@@ -114,7 +114,7 @@ func TestUintPtr(t *testing.T) {
 
 func TestUint8Ptr(t *testing.T) {
 	value := uint8(8)
-	ptr := Uint8Ptr(value)
+	ptr := new(value)
 	if ptr == nil {
 		t.Error("Expected non-nil pointer")
 	}
@@ -125,7 +125,7 @@ func TestUint8Ptr(t *testing.T) {
 
 func TestUint16Ptr(t *testing.T) {
 	value := uint16(16)
-	ptr := Uint16Ptr(value)
+	ptr := new(value)
 	if ptr == nil {
 		t.Error("Expected non-nil pointer")
 	}
@@ -136,7 +136,7 @@ func TestUint16Ptr(t *testing.T) {
 
 func TestUint32Ptr(t *testing.T) {
 	value := uint32(32)
-	ptr := Uint32Ptr(value)
+	ptr := new(value)
 	if ptr == nil {
 		t.Error("Expected non-nil pointer")
 	}
@@ -147,7 +147,7 @@ func TestUint32Ptr(t *testing.T) {
 
 func TestUint64Ptr(t *testing.T) {
 	value := uint64(64)
-	ptr := Uint64Ptr(value)
+	ptr := new(value)
 	if ptr == nil {
 		t.Error("Expected non-nil pointer")
 	}

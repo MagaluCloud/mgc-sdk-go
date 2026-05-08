@@ -10,7 +10,6 @@ import (
 	"testing"
 
 	"github.com/MagaluCloud/mgc-sdk-go/client"
-	"github.com/MagaluCloud/mgc-sdk-go/helpers"
 )
 
 func testEngineClient(baseURL string) EngineService {
@@ -46,9 +45,9 @@ func TestEngineService_List(t *testing.T) {
 		{
 			name: "with pagination and status filter",
 			opts: ListEngineOptions{
-				Limit:  helpers.IntPtr(10),
-				Offset: helpers.IntPtr(5),
-				Status: helpers.StrPtr("PREVIEW"),
+				Limit:  new(10),
+				Offset: new(5),
+				Status: new("PREVIEW"),
 			},
 			response: `{
 				"meta": {"total": 1},
@@ -254,7 +253,7 @@ func TestEngineService_ListAll(t *testing.T) {
 		{
 			name: "with status filter",
 			filterOpts: EngineFilterOptions{
-				Status: helpers.StrPtr("PREVIEW"),
+				Status: new("PREVIEW"),
 			},
 			response: `{
 				"meta": {"page": {"offset": 0, "limit": 25, "count": 1, "total": 1, "max_limit": 100}},
@@ -323,46 +322,49 @@ func TestEngineService_ListAll_MultiplePagesWithPagination(t *testing.T) {
 
 		switch offset {
 		case "0":
-			results := `[`
-			for i := 0; i < 25; i++ {
+			var results strings.Builder
+			results.WriteString(`[`)
+			for i := range 25 {
 				if i > 0 {
-					results += ","
+					results.WriteString(",")
 				}
-				results += fmt.Sprintf(`{"id": "engine-%d", "status": "ACTIVE"}`, i+1)
+				results.WriteString(fmt.Sprintf(`{"id": "engine-%d", "status": "ACTIVE"}`, i+1))
 			}
-			results += `]`
+			results.WriteString(`]`)
 			response := fmt.Sprintf(`{
 				"meta": {"page": {"offset": 0, "limit": 25, "count": 25, "total": 75, "max_limit": 100}},
 				"results": %s
-			}`, results)
+			}`, results.String())
 			w.Write([]byte(response))
 		case "25":
-			results := `[`
-			for i := 0; i < 25; i++ {
+			var results strings.Builder
+			results.WriteString(`[`)
+			for i := range 25 {
 				if i > 0 {
-					results += ","
+					results.WriteString(",")
 				}
-				results += fmt.Sprintf(`{"id": "engine-%d", "status": "ACTIVE"}`, i+26)
+				results.WriteString(fmt.Sprintf(`{"id": "engine-%d", "status": "ACTIVE"}`, i+26))
 			}
-			results += `]`
+			results.WriteString(`]`)
 			response := fmt.Sprintf(`{
 				"meta": {"page": {"offset": 25, "limit": 25, "count": 25, "total": 75, "max_limit": 100}},
 				"results": %s
-			}`, results)
+			}`, results.String())
 			w.Write([]byte(response))
 		case "50":
-			results := `[`
-			for i := 0; i < 25; i++ {
+			var results strings.Builder
+			results.WriteString(`[`)
+			for i := range 25 {
 				if i > 0 {
-					results += ","
+					results.WriteString(",")
 				}
-				results += fmt.Sprintf(`{"id": "engine-%d", "status": "ACTIVE"}`, i+51)
+				results.WriteString(fmt.Sprintf(`{"id": "engine-%d", "status": "ACTIVE"}`, i+51))
 			}
-			results += `]`
+			results.WriteString(`]`)
 			response := fmt.Sprintf(`{
 				"meta": {"page": {"offset": 50, "limit": 25, "count": 25, "total": 75, "max_limit": 100}},
 				"results": %s
-			}`, results)
+			}`, results.String())
 			w.Write([]byte(response))
 		case "75":
 			response := `{
@@ -404,48 +406,51 @@ func TestEngineService_ListAll_WithFilters(t *testing.T) {
 		switch requestCount {
 		case 0:
 			// First page with 25 results
-			results := `[`
-			for i := 0; i < 25; i++ {
+			var results strings.Builder
+			results.WriteString(`[`)
+			for i := range 25 {
 				if i > 0 {
-					results += ","
+					results.WriteString(",")
 				}
-				results += fmt.Sprintf(`{"id": "engine-%d", "status": "ACTIVE"}`, i+1)
+				results.WriteString(fmt.Sprintf(`{"id": "engine-%d", "status": "ACTIVE"}`, i+1))
 			}
-			results += `]`
+			results.WriteString(`]`)
 			response := fmt.Sprintf(`{
 				"meta": {"page": {"offset": 0, "limit": 25, "count": 25, "total": 60, "max_limit": 100}},
 				"results": %s
-			}`, results)
+			}`, results.String())
 			w.Write([]byte(response))
 		case 1:
 			// Second page with 25 results
-			results := `[`
-			for i := 0; i < 25; i++ {
+			var results strings.Builder
+			results.WriteString(`[`)
+			for i := range 25 {
 				if i > 0 {
-					results += ","
+					results.WriteString(",")
 				}
-				results += fmt.Sprintf(`{"id": "engine-%d", "status": "ACTIVE"}`, i+26)
+				results.WriteString(fmt.Sprintf(`{"id": "engine-%d", "status": "ACTIVE"}`, i+26))
 			}
-			results += `]`
+			results.WriteString(`]`)
 			response := fmt.Sprintf(`{
 				"meta": {"page": {"offset": 25, "limit": 25, "count": 25, "total": 60, "max_limit": 100}},
 				"results": %s
-			}`, results)
+			}`, results.String())
 			w.Write([]byte(response))
 		case 2:
 			// Third page with 10 results (< limit triggers stop)
-			results := `[`
-			for i := 0; i < 10; i++ {
+			var results strings.Builder
+			results.WriteString(`[`)
+			for i := range 10 {
 				if i > 0 {
-					results += ","
+					results.WriteString(",")
 				}
-				results += fmt.Sprintf(`{"id": "engine-%d", "status": "ACTIVE"}`, i+51)
+				results.WriteString(fmt.Sprintf(`{"id": "engine-%d", "status": "ACTIVE"}`, i+51))
 			}
-			results += `]`
+			results.WriteString(`]`)
 			response := fmt.Sprintf(`{
 				"meta": {"page": {"offset": 50, "limit": 25, "count": 10, "total": 60, "max_limit": 100}},
 				"results": %s
-			}`, results)
+			}`, results.String())
 			w.Write([]byte(response))
 		default:
 			t.Errorf("unexpected extra request: %d", requestCount)
@@ -457,7 +462,7 @@ func TestEngineService_ListAll_WithFilters(t *testing.T) {
 
 	client := testEngineClient(server.URL)
 	engines, err := client.ListAll(context.Background(), EngineFilterOptions{
-		Status: helpers.StrPtr("ACTIVE"),
+		Status: new("ACTIVE"),
 	})
 
 	assertNoError(t, err)

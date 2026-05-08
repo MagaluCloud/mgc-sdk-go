@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/MagaluCloud/mgc-sdk-go/client"
-	"github.com/MagaluCloud/mgc-sdk-go/helpers"
 	"github.com/MagaluCloud/mgc-sdk-go/network"
 )
 
@@ -96,7 +95,7 @@ func createVPC(networkClient *network.NetworkClient) string {
 
 	createReq := network.CreateVPCRequest{
 		Name:        "example-vpc",
-		Description: helpers.StrPtr("VPC created via SDK example"),
+		Description: new("VPC created via SDK example"),
 	}
 
 	id, err := networkClient.VPCs().Create(ctx, createReq)
@@ -170,11 +169,11 @@ func createSubnet(networkClient *network.NetworkClient, vpcID string) string {
 		Name:        "example-subnet",
 		CIDRBlock:   "172.18.106.0/24",
 		IPVersion:   4,
-		Description: helpers.StrPtr("Subnet created via SDK example"),
+		Description: new("Subnet created via SDK example"),
 	}
 
 	options := network.SubnetCreateOptions{
-		Zone: helpers.StrPtr(defaultZone),
+		Zone: new(defaultZone),
 	}
 
 	subnetID, err := networkClient.VPCs().CreateSubnet(ctx, vpcID, createReq, options)
@@ -267,8 +266,8 @@ func listSubnetPools(networkClient *network.NetworkClient) {
 	defer cancel()
 
 	pools, err := networkClient.SubnetPools().List(ctx, network.ListOptions{
-		Limit:  helpers.IntPtr(10),
-		Offset: helpers.IntPtr(0),
+		Limit:  new(10),
+		Offset: new(0),
 	})
 	if err != nil {
 		log.Fatalf("Failed to list subnet pools: %v", err)
@@ -290,7 +289,7 @@ func createSubnetPool(networkClient *network.NetworkClient) string {
 	createReq := network.CreateSubnetPoolRequest{
 		Name:        "example-subnet-pool",
 		Description: "Subnet pool created via SDK example",
-		CIDR:        helpers.StrPtr("192.168.0.0/16"),
+		CIDR:        new("192.168.0.0/16"),
 	}
 
 	poolID, err := networkClient.SubnetPools().Create(ctx, createReq)
@@ -323,7 +322,7 @@ func bookCIDR(networkClient *network.NetworkClient, poolID string) network.BookC
 	defer cancel()
 
 	bookReq := network.BookCIDRRequest{
-		Mask: helpers.IntPtr(24),
+		Mask: new(24),
 	}
 
 	bookedCIDR, err := networkClient.SubnetPools().BookCIDR(ctx, poolID, bookReq)
@@ -396,8 +395,8 @@ func createSecurityGroup(networkClient *network.NetworkClient) string {
 
 	createReq := network.SecurityGroupCreateRequest{
 		Name:             "example-security-group",
-		Description:      helpers.StrPtr("Security group created via SDK example"),
-		SkipDefaultRules: helpers.BoolPtr(true),
+		Description:      new("Security group created via SDK example"),
+		SkipDefaultRules: new(true),
 	}
 
 	sgID, err := networkClient.SecurityGroups().Create(ctx, createReq)
@@ -466,13 +465,13 @@ func createSSHSecurityRule(networkClient *network.NetworkClient, sgID string) st
 	defer cancel()
 
 	sshRule := network.RuleCreateRequest{
-		Direction:      helpers.StrPtr("ingress"),
-		PortRangeMin:   helpers.IntPtr(22),
-		PortRangeMax:   helpers.IntPtr(22),
-		Protocol:       helpers.StrPtr("tcp"),
-		RemoteIPPrefix: helpers.StrPtr("0.0.0.0/0"),
+		Direction:      new("ingress"),
+		PortRangeMin:   new(22),
+		PortRangeMax:   new(22),
+		Protocol:       new("tcp"),
+		RemoteIPPrefix: new("0.0.0.0/0"),
 		EtherType:      "IPv4",
-		Description:    helpers.StrPtr("Allow SSH access"),
+		Description:    new("Allow SSH access"),
 	}
 
 	ruleID, err := networkClient.Rules().Create(ctx, sgID, sshRule)
@@ -489,13 +488,13 @@ func createHTTPSSecurityRule(networkClient *network.NetworkClient, sgID string) 
 	defer cancel()
 
 	httpsRule := network.RuleCreateRequest{
-		Direction:      helpers.StrPtr("ingress"),
-		PortRangeMin:   helpers.IntPtr(443),
-		PortRangeMax:   helpers.IntPtr(443),
-		Protocol:       helpers.StrPtr("tcp"),
-		RemoteIPPrefix: helpers.StrPtr("0.0.0.0/0"),
+		Direction:      new("ingress"),
+		PortRangeMin:   new(443),
+		PortRangeMax:   new(443),
+		Protocol:       new("tcp"),
+		RemoteIPPrefix: new("0.0.0.0/0"),
 		EtherType:      "IPv4",
-		Description:    helpers.StrPtr("Allow HTTPS access"),
+		Description:    new("Allow HTTPS access"),
 	}
 
 	ruleID, err := networkClient.Rules().Create(ctx, sgID, httpsRule)
@@ -603,7 +602,7 @@ func createPublicIP(networkClient *network.NetworkClient, vpcID string) string {
 	defer cancel()
 
 	pipReq := network.PublicIPCreateRequest{
-		Description: helpers.StrPtr("Public IP created via SDK example"),
+		Description: new("Public IP created via SDK example"),
 	}
 
 	pipID, err := networkClient.VPCs().CreatePublicIP(ctx, vpcID, pipReq)
@@ -697,8 +696,8 @@ func createPort(networkClient *network.NetworkClient, vpcID, name string, hasPIP
 
 	portReq := network.PortCreateRequest{
 		Name:   name,
-		HasPIP: helpers.BoolPtr(hasPIP),
-		HasSG:  helpers.BoolPtr(true),
+		HasPIP: new(hasPIP),
+		HasSG:  new(true),
 	}
 
 	if ipAddress != nil {
@@ -710,7 +709,7 @@ func createPort(networkClient *network.NetworkClient, vpcID, name string, hasPIP
 	}
 
 	options := network.PortCreateOptions{
-		Zone: helpers.StrPtr(defaultZone),
+		Zone: new(defaultZone),
 	}
 
 	portID, err := networkClient.VPCs().CreatePort(ctx, vpcID, portReq, options)
@@ -835,7 +834,7 @@ func createNATGateway(networkClient *network.NetworkClient, vpcID string) string
 
 	natGatewayID, err := networkClient.NatGateways().Create(ctx, network.CreateNatGatewayRequest{
 		Name:        "example-nat-gateway",
-		Description: helpers.StrPtr("NAT gateway created via SDK example"),
+		Description: new("NAT gateway created via SDK example"),
 		Zone:        defaultZone,
 		VPCID:       vpcID,
 	})
@@ -895,7 +894,7 @@ func updatePort(networkClient *network.NetworkClient, portID string) {
 	defer cancel()
 
 	portUpdateRequest := &network.PortUpdateRequest{
-		IPSpoofingGuard: helpers.BoolPtr(false),
+		IPSpoofingGuard: new(false),
 	}
 
 	if err := networkClient.Ports().Update(ctx, portID, *portUpdateRequest); err != nil {

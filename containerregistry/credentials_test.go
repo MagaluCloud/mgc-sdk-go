@@ -263,7 +263,7 @@ func TestCredentialsService_Concurrent(t *testing.T) {
 
 	// Test concurrent operations
 	done := make(chan bool)
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		go func() {
 			_, err := client.Credentials().Get(ctx)
 			if err != nil {
@@ -274,7 +274,7 @@ func TestCredentialsService_Concurrent(t *testing.T) {
 	}
 
 	// Wait for all goroutines
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		<-done
 	}
 }

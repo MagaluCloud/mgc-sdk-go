@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"reflect"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -40,8 +41,8 @@ func TestInstanceService_List(t *testing.T) {
 		{
 			name: "with pagination",
 			opts: ListOptions{
-				Limit:  intPtr(1),
-				Offset: intPtr(1),
+				Limit:  new(1),
+				Offset: new(1),
 			},
 			response: `{
 				"meta": {"page": {"offset": 1, "limit": 1, "count": 1, "total": 2}},
@@ -63,7 +64,7 @@ func TestInstanceService_List(t *testing.T) {
 		{
 			name: "invalid pagination",
 			opts: ListOptions{
-				Limit: intPtr(-1),
+				Limit: new(-1),
 			},
 			response:   `{"error": "invalid limit"}`,
 			statusCode: http.StatusBadRequest,
@@ -86,7 +87,7 @@ func TestInstanceService_List(t *testing.T) {
 		{
 			name: "invalid sort parameter",
 			opts: ListOptions{
-				Sort: strPtr("invalid:order"),
+				Sort: new("invalid:order"),
 			},
 			response:   `{"error": "invalid sort parameter"}`,
 			statusCode: http.StatusBadRequest,
@@ -149,37 +150,40 @@ func TestInstanceService_ListAll(t *testing.T) {
 			name: "multiple pages",
 			pages: []string{
 				func() string {
-					result := `{"meta": {"page": {"offset": 0, "limit": 50, "count": 50, "total": 125}}, "instances": [`
-					for i := 0; i < 50; i++ {
+					var result strings.Builder
+					result.WriteString(`{"meta": {"page": {"offset": 0, "limit": 50, "count": 50, "total": 125}}, "instances": [`)
+					for i := range 50 {
 						if i > 0 {
-							result += ","
+							result.WriteString(",")
 						}
-						result += fmt.Sprintf(`{"id": "inst%d", "name": "test%d"}`, i+1, i+1)
+						result.WriteString(fmt.Sprintf(`{"id": "inst%d", "name": "test%d"}`, i+1, i+1))
 					}
-					result += `]}`
-					return result
+					result.WriteString(`]}`)
+					return result.String()
 				}(),
 				func() string {
-					result := `{"meta": {"page": {"offset": 50, "limit": 50, "count": 50, "total": 125}}, "instances": [`
-					for i := 0; i < 50; i++ {
+					var result strings.Builder
+					result.WriteString(`{"meta": {"page": {"offset": 50, "limit": 50, "count": 50, "total": 125}}, "instances": [`)
+					for i := range 50 {
 						if i > 0 {
-							result += ","
+							result.WriteString(",")
 						}
-						result += fmt.Sprintf(`{"id": "inst%d", "name": "test%d"}`, i+51, i+51)
+						result.WriteString(fmt.Sprintf(`{"id": "inst%d", "name": "test%d"}`, i+51, i+51))
 					}
-					result += `]}`
-					return result
+					result.WriteString(`]}`)
+					return result.String()
 				}(),
 				func() string {
-					result := `{"meta": {"page": {"offset": 100, "limit": 50, "count": 25, "total": 125}}, "instances": [`
-					for i := 0; i < 25; i++ {
+					var result strings.Builder
+					result.WriteString(`{"meta": {"page": {"offset": 100, "limit": 50, "count": 25, "total": 125}}, "instances": [`)
+					for i := range 25 {
 						if i > 0 {
-							result += ","
+							result.WriteString(",")
 						}
-						result += fmt.Sprintf(`{"id": "inst%d", "name": "test%d"}`, i+101, i+101)
+						result.WriteString(fmt.Sprintf(`{"id": "inst%d", "name": "test%d"}`, i+101, i+101))
 					}
-					result += `]}`
-					return result
+					result.WriteString(`]}`)
+					return result.String()
 				}(),
 			},
 			statusCode: http.StatusOK,
@@ -201,7 +205,7 @@ func TestInstanceService_ListAll(t *testing.T) {
 		{
 			name: "with filters",
 			opts: InstanceFilterOptions{
-				Name: strPtr("test-instance"),
+				Name: new("test-instance"),
 			},
 			pages: []string{
 				`{
@@ -294,7 +298,7 @@ func TestInstanceService_Create(t *testing.T) {
 			req: CreateRequest{
 				Name: "test-vm",
 				MachineType: IDOrName{
-					Name: strPtr("invalid-type"),
+					Name: new("invalid-type"),
 				},
 			},
 			response:   `{"error": "invalid machine type"}`,
@@ -321,7 +325,7 @@ func TestInstanceService_Create(t *testing.T) {
 			name: "insufficient resources",
 			req: CreateRequest{
 				Name:        "test-vm",
-				MachineType: IDOrName{Name: strPtr("large")},
+				MachineType: IDOrName{Name: new("large")},
 			},
 			response:   `{"error": "insufficient resources"}`,
 			statusCode: http.StatusServiceUnavailable,
@@ -576,7 +580,7 @@ func TestInstanceService_Retype(t *testing.T) {
 			id:   "inst1",
 			req: RetypeRequest{
 				MachineType: IDOrName{
-					Name: strPtr("new-type"),
+					Name: new("new-type"),
 				},
 			},
 			statusCode: http.StatusOK,
@@ -585,7 +589,7 @@ func TestInstanceService_Retype(t *testing.T) {
 		{
 			name:       "empty id",
 			id:         "",
-			req:        RetypeRequest{MachineType: IDOrName{Name: strPtr("new-type")}},
+			req:        RetypeRequest{MachineType: IDOrName{Name: new("new-type")}},
 			statusCode: http.StatusOK,
 			wantErr:    true,
 		},
@@ -593,7 +597,7 @@ func TestInstanceService_Retype(t *testing.T) {
 			name: "instance running",
 			id:   "running",
 			req: RetypeRequest{
-				MachineType: IDOrName{Name: strPtr("new-type")},
+				MachineType: IDOrName{Name: new("new-type")},
 			},
 			response:   `{"error": "instance must be stopped"}`,
 			statusCode: http.StatusConflict,
@@ -603,7 +607,7 @@ func TestInstanceService_Retype(t *testing.T) {
 			name: "invalid machine type",
 			id:   "inst1",
 			req: RetypeRequest{
-				MachineType: IDOrName{Name: strPtr("")},
+				MachineType: IDOrName{Name: new("")},
 			},
 			response:   `{"error": "invalid machine type"}`,
 			statusCode: http.StatusBadRequest,
@@ -752,7 +756,7 @@ func TestInstanceService_Concurrent(t *testing.T) {
 
 	// Test concurrent operations
 	done := make(chan bool)
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		go func() {
 			_, err := client.Instances().List(ctx, ListOptions{})
 			if err != nil {
@@ -763,7 +767,7 @@ func TestInstanceService_Concurrent(t *testing.T) {
 	}
 
 	// Wait for all goroutines
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		<-done
 	}
 }
@@ -777,12 +781,14 @@ func testClient(baseURL string) *VirtualMachineClient {
 	return New(core)
 }
 
+//go:fix inline
 func intPtr(i int) *int {
-	return &i
+	return new(i)
 }
 
+//go:fix inline
 func strPtr(s string) *string {
-	return &s
+	return new(s)
 }
 
 // here
@@ -1077,9 +1083,9 @@ func TestInstanceService_AttachNetworkInterface(t *testing.T) {
 		{
 			name: "successful attach",
 			req: NICRequest{
-				Instance: IDOrName{ID: strPtr("inst1")},
+				Instance: IDOrName{ID: new("inst1")},
 				Network: NICRequestInterface{
-					Interface: IDOrName{ID: strPtr("nic1")},
+					Interface: IDOrName{ID: new("nic1")},
 				},
 			},
 			statusCode: http.StatusOK,
@@ -1088,9 +1094,9 @@ func TestInstanceService_AttachNetworkInterface(t *testing.T) {
 		{
 			name: "instance not found",
 			req: NICRequest{
-				Instance: IDOrName{ID: strPtr("invalid")},
+				Instance: IDOrName{ID: new("invalid")},
 				Network: NICRequestInterface{
-					Interface: IDOrName{ID: strPtr("nic1")},
+					Interface: IDOrName{ID: new("nic1")},
 				},
 			},
 			response:   `{"error": "instance not found"}`,
@@ -1100,9 +1106,9 @@ func TestInstanceService_AttachNetworkInterface(t *testing.T) {
 		{
 			name: "interface not found",
 			req: NICRequest{
-				Instance: IDOrName{ID: strPtr("inst1")},
+				Instance: IDOrName{ID: new("inst1")},
 				Network: NICRequestInterface{
-					Interface: IDOrName{ID: strPtr("invalid")},
+					Interface: IDOrName{ID: new("invalid")},
 				},
 			},
 			response:   `{"error": "network interface not found"}`,
@@ -1112,9 +1118,9 @@ func TestInstanceService_AttachNetworkInterface(t *testing.T) {
 		{
 			name: "interface already attached",
 			req: NICRequest{
-				Instance: IDOrName{ID: strPtr("inst1")},
+				Instance: IDOrName{ID: new("inst1")},
 				Network: NICRequestInterface{
-					Interface: IDOrName{ID: strPtr("nic1")},
+					Interface: IDOrName{ID: new("nic1")},
 				},
 			},
 			response:   `{"error": "interface already attached"}`,
@@ -1159,9 +1165,9 @@ func TestInstanceService_DetachNetworkInterface(t *testing.T) {
 		{
 			name: "successful detach",
 			req: NICRequest{
-				Instance: IDOrName{ID: strPtr("inst1")},
+				Instance: IDOrName{ID: new("inst1")},
 				Network: NICRequestInterface{
-					Interface: IDOrName{ID: strPtr("nic1")},
+					Interface: IDOrName{ID: new("nic1")},
 				},
 			},
 			statusCode: http.StatusOK,
@@ -1170,9 +1176,9 @@ func TestInstanceService_DetachNetworkInterface(t *testing.T) {
 		{
 			name: "instance not found",
 			req: NICRequest{
-				Instance: IDOrName{ID: strPtr("invalid")},
+				Instance: IDOrName{ID: new("invalid")},
 				Network: NICRequestInterface{
-					Interface: IDOrName{ID: strPtr("nic1")},
+					Interface: IDOrName{ID: new("nic1")},
 				},
 			},
 			response:   `{"error": "instance not found"}`,
@@ -1182,9 +1188,9 @@ func TestInstanceService_DetachNetworkInterface(t *testing.T) {
 		{
 			name: "interface not found",
 			req: NICRequest{
-				Instance: IDOrName{ID: strPtr("inst1")},
+				Instance: IDOrName{ID: new("inst1")},
 				Network: NICRequestInterface{
-					Interface: IDOrName{ID: strPtr("invalid")},
+					Interface: IDOrName{ID: new("invalid")},
 				},
 			},
 			response:   `{"error": "network interface not found"}`,
@@ -1194,9 +1200,9 @@ func TestInstanceService_DetachNetworkInterface(t *testing.T) {
 		{
 			name: "primary interface",
 			req: NICRequest{
-				Instance: IDOrName{ID: strPtr("inst1")},
+				Instance: IDOrName{ID: new("inst1")},
 				Network: NICRequestInterface{
-					Interface: IDOrName{ID: strPtr("primary")},
+					Interface: IDOrName{ID: new("primary")},
 				},
 			},
 			response:   `{"error": "cannot detach primary interface"}`,
@@ -1346,7 +1352,7 @@ func TestInstanceService_InitLog(t *testing.T) {
 		{
 			name:       "successful log retrieval",
 			id:         "inst1",
-			maxLines:   intPtr(10),
+			maxLines:   new(10),
 			response:   `{"logs": ["log line 1", "log line 2", "log line 3"]}`,
 			statusCode: http.StatusOK,
 			want: &InitLogResponse{

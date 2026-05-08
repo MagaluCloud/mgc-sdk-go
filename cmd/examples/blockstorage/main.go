@@ -11,7 +11,6 @@ import (
 
 	"github.com/MagaluCloud/mgc-sdk-go/blockstorage"
 	"github.com/MagaluCloud/mgc-sdk-go/client"
-	"github.com/MagaluCloud/mgc-sdk-go/helpers"
 )
 
 func main() {
@@ -62,8 +61,8 @@ func ExampleListVolumes() {
 
 	// List volumes with pagination and expansion (paginated)
 	resp, err := blockClient.Volumes().List(context.Background(), blockstorage.ListOptions{
-		Limit:  helpers.IntPtr(10),
-		Offset: helpers.IntPtr(0),
+		Limit:  new(10),
+		Offset: new(0),
 		Expand: []string{blockstorage.VolumeTypeExpand, blockstorage.VolumeAttachExpand},
 	})
 
@@ -134,9 +133,9 @@ func ExampleCreateVolume() string {
 		Name: "my-test-volume",
 		Size: 10,
 		Type: blockstorage.IDOrName{
-			Name: helpers.StrPtr("cloud_nvme1k"),
+			Name: new("cloud_nvme1k"),
 		},
-		Encrypted: helpers.BoolPtr(true),
+		Encrypted: new(true),
 	}
 
 	id, err := blockClient.Volumes().Create(context.Background(), createReq)
@@ -187,7 +186,7 @@ func ExampleManageVolume(id string) {
 	// Change volume type
 	retypeReq := blockstorage.RetypeVolumeRequest{
 		NewType: blockstorage.IDOrName{
-			Name: helpers.StrPtr("cloud_nvme1k"),
+			Name: new("cloud_nvme1k"),
 		},
 	}
 	if err := blockClient.Volumes().Retype(ctx, volume.ID, retypeReq); err != nil {
@@ -321,7 +320,7 @@ func ExampleSchedulers(volumeID string) {
 	// Create a new scheduler
 	schedulerReq := blockstorage.SchedulerPayload{
 		Name:        "daily-backup-scheduler",
-		Description: helpers.StrPtr("Daily backup scheduler for important volumes"),
+		Description: new("Daily backup scheduler for important volumes"),
 		Snapshot: blockstorage.SnapshotConfig{
 			Type: "instant",
 		},
@@ -369,8 +368,8 @@ func ExampleSchedulers(volumeID string) {
 
 	// List schedulers with expansion (paginated)
 	schedulerResp, err := blockClient.Schedulers().List(ctx, blockstorage.SchedulerListOptions{
-		Limit:  helpers.IntPtr(10),
-		Offset: helpers.IntPtr(0),
+		Limit:  new(10),
+		Offset: new(0),
 		Expand: []blockstorage.ExpandSchedulers{blockstorage.ExpandSchedulersVolume},
 	})
 	if err != nil {
@@ -427,8 +426,8 @@ func ExampleCreateSnapshot(volumeID string) string {
 	createReq := blockstorage.CreateSnapshotRequest{
 		Name:        "my-test-snapshot",
 		Volume:      &blockstorage.IDOrName{ID: &volumeID},
-		Description: helpers.StrPtr("Test"),
-		Type:        helpers.StrPtr("instant"),
+		Description: new("Test"),
+		Type:        new("instant"),
 	}
 
 	id, err := blockClient.Snapshots().Create(context.Background(), createReq)

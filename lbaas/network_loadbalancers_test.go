@@ -15,14 +15,14 @@ import (
 )
 
 // Helper functions
-func assertEqual(t *testing.T, expected, actual interface{}, msgAndArgs ...interface{}) {
+func assertEqual(t *testing.T, expected, actual any, msgAndArgs ...any) {
 	t.Helper()
 	if expected != actual {
 		t.Errorf("Expected %v but got %v. %v", expected, actual, msgAndArgs)
 	}
 }
 
-func assertNotEqual(t *testing.T, notExpected, actual interface{}, msgAndArgs ...interface{}) {
+func assertNotEqual(t *testing.T, notExpected, actual any, msgAndArgs ...any) {
 	t.Helper()
 	if notExpected == actual {
 		t.Errorf("Expected anything but %v. %v", notExpected, msgAndArgs)
@@ -143,7 +143,6 @@ func TestNetworkLoadBalancerService_Create(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -243,7 +242,7 @@ func TestNetworkLoadBalancerService_Get(t *testing.T) {
 			wantErr:              false,
 			expectedID:           "lb-456",
 			expectedName:         "test-lb-error",
-			expectedErrorDetails: stringPtr("Failed to provision backend"),
+			expectedErrorDetails: new("Failed to provision backend"),
 		},
 		{
 			name:                 "non-existent load balancer",
@@ -298,7 +297,6 @@ func TestNetworkLoadBalancerService_Get(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -388,7 +386,6 @@ func TestNetworkLoadBalancerService_List(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -429,8 +426,8 @@ func TestNetworkLoadBalancerService_ListWithPagination(t *testing.T) {
 		{
 			name: "list with offset and limit - validates request creation",
 			request: ListNetworkLoadBalancerRequest{
-				Offset: intPtr(10),
-				Limit:  intPtr(5),
+				Offset: new(10),
+				Limit:  new(5),
 			},
 			response: `{
 				"results": [
@@ -445,7 +442,7 @@ func TestNetworkLoadBalancerService_ListWithPagination(t *testing.T) {
 		{
 			name: "list with sort parameter",
 			request: ListNetworkLoadBalancerRequest{
-				Sort: stringPtr("created_at:desc"),
+				Sort: new("created_at:desc"),
 			},
 			response: `{
 				"results": [
@@ -463,9 +460,9 @@ func TestNetworkLoadBalancerService_ListWithPagination(t *testing.T) {
 		{
 			name: "list with all parameters - validates request creation",
 			request: ListNetworkLoadBalancerRequest{
-				Offset: intPtr(0),
-				Limit:  intPtr(20),
-				Sort:   stringPtr("name:asc"),
+				Offset: new(0),
+				Limit:  new(20),
+				Sort:   new("name:asc"),
 			},
 			response:   `{"results": []}`,
 			statusCode: http.StatusOK,
@@ -478,7 +475,6 @@ func TestNetworkLoadBalancerService_ListWithPagination(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -638,7 +634,6 @@ func TestNetworkLoadBalancerService_ListAll(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			pageIndex := 0
@@ -674,7 +669,7 @@ func TestNetworkLoadBalancerService_ListAll(t *testing.T) {
 
 func generateLoadBalancerResults(start, count int) string {
 	results := make([]string, count)
-	for i := 0; i < count; i++ {
+	for i := range count {
 		id := start + i
 		results[i] = fmt.Sprintf(`{
 			"id": "lb-%d",
@@ -708,7 +703,7 @@ func TestNetworkLoadBalancerService_Update(t *testing.T) {
 			name: "successful update",
 			lbID: "lb-123",
 			request: UpdateNetworkLoadBalancerRequest{
-				Name: stringPtr("updated-lb"),
+				Name: new("updated-lb"),
 			},
 			statusCode: http.StatusOK,
 			wantErr:    false,
@@ -717,7 +712,7 @@ func TestNetworkLoadBalancerService_Update(t *testing.T) {
 			name: "non-existent load balancer",
 			lbID: "invalid",
 			request: UpdateNetworkLoadBalancerRequest{
-				Name: stringPtr("updated-lb"),
+				Name: new("updated-lb"),
 			},
 			statusCode: http.StatusNotFound,
 			wantErr:    true,
@@ -726,7 +721,7 @@ func TestNetworkLoadBalancerService_Update(t *testing.T) {
 			name: "bad request - invalid data",
 			lbID: "lb-123",
 			request: UpdateNetworkLoadBalancerRequest{
-				Name: stringPtr(""),
+				Name: new(""),
 			},
 			statusCode: http.StatusBadRequest,
 			wantErr:    true,
@@ -735,7 +730,7 @@ func TestNetworkLoadBalancerService_Update(t *testing.T) {
 			name: "unauthorized access",
 			lbID: "lb-123",
 			request: UpdateNetworkLoadBalancerRequest{
-				Name: stringPtr("updated-lb"),
+				Name: new("updated-lb"),
 			},
 			statusCode: http.StatusUnauthorized,
 			wantErr:    true,
@@ -744,7 +739,7 @@ func TestNetworkLoadBalancerService_Update(t *testing.T) {
 			name: "forbidden access",
 			lbID: "lb-123",
 			request: UpdateNetworkLoadBalancerRequest{
-				Name: stringPtr("updated-lb"),
+				Name: new("updated-lb"),
 			},
 			statusCode: http.StatusForbidden,
 			wantErr:    true,
@@ -753,7 +748,7 @@ func TestNetworkLoadBalancerService_Update(t *testing.T) {
 			name: "conflict - name already exists",
 			lbID: "lb-123",
 			request: UpdateNetworkLoadBalancerRequest{
-				Name: stringPtr("existing-name"),
+				Name: new("existing-name"),
 			},
 			statusCode: http.StatusConflict,
 			wantErr:    true,
@@ -762,7 +757,7 @@ func TestNetworkLoadBalancerService_Update(t *testing.T) {
 			name: "server error",
 			lbID: "lb-123",
 			request: UpdateNetworkLoadBalancerRequest{
-				Name: stringPtr("updated-lb"),
+				Name: new("updated-lb"),
 			},
 			statusCode: http.StatusInternalServerError,
 			wantErr:    true,
@@ -770,7 +765,6 @@ func TestNetworkLoadBalancerService_Update(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -778,7 +772,7 @@ func TestNetworkLoadBalancerService_Update(t *testing.T) {
 				assertEqual(t, http.MethodPut, r.Method)
 				w.WriteHeader(tt.statusCode)
 				if tt.statusCode == http.StatusOK {
-					w.Write([]byte(fmt.Sprintf(`{"id": "%s"}`, tt.lbID)))
+					w.Write(fmt.Appendf(nil, `{"id": "%s"}`, tt.lbID))
 				}
 			}))
 			defer server.Close()
@@ -819,7 +813,7 @@ func TestNetworkLoadBalancerService_Delete(t *testing.T) {
 			name: "deletion with delete public IP",
 			lbID: "lb-123",
 			request: DeleteNetworkLoadBalancerRequest{
-				DeletePublicIP: boolPtr(true),
+				DeletePublicIP: new(true),
 			},
 			statusCode: http.StatusOK,
 			wantErr:    false,
@@ -828,7 +822,7 @@ func TestNetworkLoadBalancerService_Delete(t *testing.T) {
 			name: "deletion without deleting public IP",
 			lbID: "lb-123",
 			request: DeleteNetworkLoadBalancerRequest{
-				DeletePublicIP: boolPtr(false),
+				DeletePublicIP: new(false),
 			},
 			statusCode: http.StatusOK,
 			wantErr:    false,
@@ -871,7 +865,6 @@ func TestNetworkLoadBalancerService_Delete(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -906,12 +899,15 @@ func TestNetworkLoadBalancerService_Delete(t *testing.T) {
 }
 
 // Helper functions for pointer values
+//
+//go:fix inline
 func stringPtr(s string) *string {
-	return &s
+	return new(s)
 }
 
+//go:fix inline
 func boolPtr(b bool) *bool {
-	return &b
+	return new(b)
 }
 
 func TestNetworkLoadBalancerService_ContextCancellation(t *testing.T) {
@@ -1072,7 +1068,7 @@ func TestNetworkLoadBalancerService_Update_NewRequestError(t *testing.T) {
 	client := testLoadBalancerClient("http://dummy-url")
 
 	req := UpdateNetworkLoadBalancerRequest{
-		Name: stringPtr("updated-lb"),
+		Name: new("updated-lb"),
 	}
 
 	_, err := client.Update(ctx, "lb-123", req)

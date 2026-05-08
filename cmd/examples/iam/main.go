@@ -257,7 +257,7 @@ func ExampleCreateRole(iamClient *iam.IAMClient) string {
 	fmt.Println("\n=== Criando Role ===")
 	createReq := iam.CreateRole{
 		Name:        "custom-role",
-		Description: strPtr("Role customizada para exemplo"),
+		Description: new("Role customizada para exemplo"),
 		Permissions: []string{"read:instances", "read:networks"},
 	}
 
@@ -402,8 +402,8 @@ func ExampleCreateAccessControl(iamClient *iam.IAMClient) {
 
 	fmt.Println("\n=== Criando Configuração de Controle de Acesso ===")
 	createReq := iam.AccessControlCreate{
-		Name:        strPtr("custom-ac"),
-		Description: strPtr("Configuração customizada"),
+		Name:        new("custom-ac"),
+		Description: new("Configuração customizada"),
 	}
 
 	ac, err := iamClient.AccessControl().Create(ctx, createReq)
@@ -424,8 +424,8 @@ func ExampleUpdateAccessControl(iamClient *iam.IAMClient) {
 
 	fmt.Println("\n=== Atualizando Configuração de Controle de Acesso ===")
 	updateReq := iam.AccessControlStatus{
-		Status:     boolPtr(true),
-		EnforceMFA: boolPtr(true),
+		Status:     new(true),
+		EnforceMFA: new(true),
 	}
 
 	ac, err := iamClient.AccessControl().Update(ctx, updateReq)
@@ -491,8 +491,8 @@ func ExampleEditServiceAccount(iamClient *iam.IAMClient, saUUID string) {
 
 	fmt.Println("\n=== Editando Service Account ===")
 	editReq := iam.ServiceAccountEdit{
-		Name:        strPtr("updated-service-account"),
-		Description: strPtr("Descrição atualizada"),
+		Name:        new("updated-service-account"),
+		Description: new("Descrição atualizada"),
 	}
 
 	sa, err := iamClient.ServiceAccounts().Edit(ctx, saUUID, editReq)
@@ -529,7 +529,7 @@ func ExampleServiceAccountAPIKeys(iamClient *iam.IAMClient, saUUID string) {
 	fmt.Println("\n=== Criando API Key ===")
 	createKeyReq := iam.APIKeyServiceAccountCreate{
 		Name:        "my-api-key",
-		Description: strPtr("API key para exemplo"),
+		Description: new("API key para exemplo"),
 		Scopes:      []string{"read:instances", "read:networks"},
 	}
 
@@ -551,8 +551,8 @@ func ExampleServiceAccountAPIKeys(iamClient *iam.IAMClient, saUUID string) {
 	// Editar API key
 	fmt.Println("\n=== Editando API Key ===")
 	editKeyReq := iam.APIKeyServiceAccountEditInput{
-		Name:        strPtr("updated-api-key"),
-		Description: strPtr("Descrição atualizada"),
+		Name:        new("updated-api-key"),
+		Description: new("Descrição atualizada"),
 		Scopes:      []string{"read:instances", "write:instances"},
 	}
 
@@ -614,10 +614,13 @@ func ExampleListScopes(iamClient *iam.IAMClient) {
 }
 
 // Funções auxiliares
+//
+//go:fix inline
 func strPtr(s string) *string {
-	return &s
+	return new(s)
 }
 
+//go:fix inline
 func boolPtr(b bool) *bool {
-	return &b
+	return new(b)
 }

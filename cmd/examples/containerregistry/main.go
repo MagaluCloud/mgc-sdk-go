@@ -12,7 +12,6 @@ import (
 
 	"github.com/MagaluCloud/mgc-sdk-go/client"
 	"github.com/MagaluCloud/mgc-sdk-go/containerregistry"
-	"github.com/MagaluCloud/mgc-sdk-go/helpers"
 )
 
 func main() {
@@ -76,8 +75,8 @@ func resetPassword(c *client.CoreClient) {
 func listRegistries(c *client.CoreClient) {
 	containerRegistryClient := containerregistry.New(c)
 	registries, err := containerRegistryClient.Registries().List(context.Background(), containerregistry.RegistryListOptions{
-		Limit:  helpers.IntPtr(10),
-		Offset: helpers.IntPtr(0),
+		Limit:  new(10),
+		Offset: new(0),
 	})
 	if err != nil {
 		log.Fatal(err)
@@ -98,7 +97,7 @@ func createRegistry(c *client.CoreClient) string {
 	containerRegistryClient := containerregistry.New(c)
 	registry, err := containerRegistryClient.Registries().Create(context.Background(), &containerregistry.RegistryRequest{
 		Name:         "test-registry" + strconv.Itoa(int(time.Now().Unix())),
-		ProxyCacheID: helpers.StrPtr("proxy-cache-id"),
+		ProxyCacheID: new("proxy-cache-id"),
 	})
 	if err != nil {
 		log.Fatal(err)
@@ -133,8 +132,8 @@ func deleteRegistry(c *client.CoreClient, id string) {
 func listRepositories(c *client.CoreClient, id string) string {
 	containerRegistryClient := containerregistry.New(c)
 	repositories, err := containerRegistryClient.Repositories().List(context.Background(), id, containerregistry.RepositoryListOptions{
-		Limit:  helpers.IntPtr(10),
-		Offset: helpers.IntPtr(0),
+		Limit:  new(10),
+		Offset: new(0),
 	})
 	if err != nil {
 		log.Fatal(err)
@@ -170,8 +169,8 @@ func deleteRepository(c *client.CoreClient, id string, name string) {
 func getImages(c *client.CoreClient, id string, name string) {
 	containerRegistryClient := containerregistry.New(c)
 	images, err := containerRegistryClient.Images().List(context.Background(), id, name, containerregistry.ImageListOptions{
-		Limit:  helpers.IntPtr(10),
-		Offset: helpers.IntPtr(0),
+		Limit:  new(10),
+		Offset: new(0),
 	})
 	if err != nil {
 		log.Fatal(err)
@@ -185,9 +184,9 @@ func getImages(c *client.CoreClient, id string, name string) {
 func listProxyCaches(crClient *containerregistry.ContainerRegistryClient) {
 	// List proxy caches with pagination
 	resp, err := crClient.ProxyCaches().List(context.Background(), containerregistry.ProxyCacheListOptions{
-		Limit:  helpers.IntPtr(10),
-		Offset: helpers.IntPtr(0),
-		Sort:   helpers.StrPtr("name:desc"),
+		Limit:  new(10),
+		Offset: new(0),
+		Sort:   new("name:desc"),
 	})
 
 	if err != nil {
@@ -226,7 +225,7 @@ func listProxyCaches(crClient *containerregistry.ContainerRegistryClient) {
 func listAllProxyCaches(crClient *containerregistry.ContainerRegistryClient) {
 	// List proxy caches with pagination
 	resp, err := crClient.ProxyCaches().ListAll(context.Background(), containerregistry.ProxyCacheListAllOptions{
-		Sort: helpers.StrPtr("name:desc"),
+		Sort: new("name:desc"),
 	})
 
 	if err != nil {
@@ -259,7 +258,7 @@ func createProxyCache(crClient *containerregistry.ContainerRegistryClient) strin
 		Name:        "test-proxy-cache",
 		Provider:    "docker-hub",
 		URL:         "https://hub.docker.com/repositories",
-		Description: helpers.StrPtr("Proxy-cache description"),
+		Description: new("Proxy-cache description"),
 	})
 
 	if err != nil {
@@ -295,7 +294,7 @@ func deleteProxyCache(crClient *containerregistry.ContainerRegistryClient, id st
 
 func updateProxyCache(crClient *containerregistry.ContainerRegistryClient, id string) {
 	resp, err := crClient.ProxyCaches().Update(context.Background(), id, containerregistry.UpdateProxyCacheRequest{
-		Name: helpers.StrPtr("new-test-proxy-cache"),
+		Name: new("new-test-proxy-cache"),
 	})
 
 	if err != nil {

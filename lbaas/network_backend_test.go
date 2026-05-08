@@ -20,8 +20,9 @@ func testBackendClient(baseURL string) NetworkBackendService {
 	return New(core).NetworkBackends()
 }
 
+//go:fix inline
 func floatPtr(f float64) *float64 {
-	return &f
+	return new(f)
 }
 
 func TestNetworkBackendService_Create(t *testing.T) {
@@ -53,17 +54,17 @@ func TestNetworkBackendService_Create(t *testing.T) {
 			lbID: "lb-123",
 			request: CreateBackendRequest{
 				Name:                                "test-backend",
-				Description:                         stringPtr("Test backend description"),
+				Description:                         new("Test backend description"),
 				BalanceAlgorithm:                    "least_connections",
 				TargetsType:                         "raw",
-				PanicThreshold:                      floatPtr(75.0),
-				HealthCheckName:                     stringPtr("hc-test"),
-				HealthCheckID:                       stringPtr("hc-123"),
-				CloseConnectionsOnHostHealthFailure: boolPtr(true),
+				PanicThreshold:                      new(75.0),
+				HealthCheckName:                     new("hc-test"),
+				HealthCheckID:                       new("hc-123"),
+				CloseConnectionsOnHostHealthFailure: new(true),
 				Targets: &[]NetworkBackendInstanceTargetRequest{
 					{
-						NicID:     stringPtr("nic-123"),
-						IPAddress: stringPtr("192.168.1.10"),
+						NicID:     new("nic-123"),
+						IPAddress: new("192.168.1.10"),
 						Port:      8080,
 					},
 				},
@@ -148,7 +149,6 @@ func TestNetworkBackendService_Create(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -230,7 +230,6 @@ func TestNetworkBackendService_Get(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -277,9 +276,9 @@ func TestNetworkBackendService_List(t *testing.T) {
 			name: "successful list with multiple backends",
 			lbID: "lb-123",
 			options: ListNetworkLoadBalancerRequest{
-				Limit:  intPtr(10),
-				Offset: intPtr(0),
-				Sort:   stringPtr(sorted),
+				Limit:  new(10),
+				Offset: new(0),
+				Sort:   new(sorted),
 			},
 			response: `{
 				"meta": {
@@ -319,8 +318,8 @@ func TestNetworkBackendService_List(t *testing.T) {
 			name: "empty list",
 			lbID: "lb-123",
 			options: ListNetworkLoadBalancerRequest{
-				Limit:  intPtr(10),
-				Offset: intPtr(0),
+				Limit:  new(10),
+				Offset: new(0),
 			},
 			response: `{
 				"meta": {
@@ -339,8 +338,8 @@ func TestNetworkBackendService_List(t *testing.T) {
 			name: "list with pagination",
 			lbID: "lb-123",
 			options: ListNetworkLoadBalancerRequest{
-				Limit:  intPtr(1),
-				Offset: intPtr(1),
+				Limit:  new(1),
+				Offset: new(1),
 				Sort:   &sorted,
 			},
 			response: `{
@@ -386,7 +385,6 @@ func TestNetworkBackendService_List(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -545,7 +543,6 @@ func TestNetworkBackendService_ListAll(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			pageIndex := 0
@@ -582,7 +579,7 @@ func TestNetworkBackendService_ListAll(t *testing.T) {
 
 func generateBackendResults(start, count int) string {
 	results := make([]string, count)
-	for i := 0; i < count; i++ {
+	for i := range count {
 		id := start + i
 		results[i] = fmt.Sprintf(`{
 			"id": "backend-%d",
@@ -615,7 +612,7 @@ func TestNetworkBackendService_Update(t *testing.T) {
 			lbID:      "lb-123",
 			backendID: "backend-123",
 			request: UpdateNetworkBackendRequest{
-				PanicThreshold: floatPtr(50.0),
+				PanicThreshold: new(50.0),
 			},
 			response:   `{"id": "backend-123"}`,
 			statusCode: http.StatusOK,
@@ -627,7 +624,7 @@ func TestNetworkBackendService_Update(t *testing.T) {
 			lbID:      "lb-123",
 			backendID: "backend-123",
 			request: UpdateNetworkBackendRequest{
-				HealthCheckID: stringPtr("hc-456"),
+				HealthCheckID: new("hc-456"),
 			},
 			response:   `{"id": "backend-123"}`,
 			statusCode: http.StatusOK,
@@ -639,9 +636,9 @@ func TestNetworkBackendService_Update(t *testing.T) {
 			lbID:      "lb-123",
 			backendID: "backend-123",
 			request: UpdateNetworkBackendRequest{
-				HealthCheckID:                       stringPtr("hc-789"),
-				PanicThreshold:                      floatPtr(75.0),
-				CloseConnectionsOnHostHealthFailure: boolPtr(true),
+				HealthCheckID:                       new("hc-789"),
+				PanicThreshold:                      new(75.0),
+				CloseConnectionsOnHostHealthFailure: new(true),
 			},
 			response:   `{"id": "backend-123"}`,
 			statusCode: http.StatusOK,
@@ -653,7 +650,7 @@ func TestNetworkBackendService_Update(t *testing.T) {
 			lbID:      "lb-123",
 			backendID: "invalid",
 			request: UpdateNetworkBackendRequest{
-				PanicThreshold: floatPtr(50.0),
+				PanicThreshold: new(50.0),
 			},
 			response:   `{"error": "backend not found"}`,
 			statusCode: http.StatusNotFound,
@@ -664,7 +661,7 @@ func TestNetworkBackendService_Update(t *testing.T) {
 			lbID:      "lb-123",
 			backendID: "backend-123",
 			request: UpdateNetworkBackendRequest{
-				PanicThreshold: floatPtr(-10.0),
+				PanicThreshold: new(-10.0),
 			},
 			response:   `{"error": "invalid panic threshold"}`,
 			statusCode: http.StatusBadRequest,
@@ -675,7 +672,7 @@ func TestNetworkBackendService_Update(t *testing.T) {
 			lbID:      "lb-123",
 			backendID: "backend-123",
 			request: UpdateNetworkBackendRequest{
-				PanicThreshold: floatPtr(50.0),
+				PanicThreshold: new(50.0),
 			},
 			response:   `{"error": "unauthorized"}`,
 			statusCode: http.StatusUnauthorized,
@@ -684,7 +681,6 @@ func TestNetworkBackendService_Update(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -766,7 +762,6 @@ func TestNetworkBackendService_Delete(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -886,7 +881,7 @@ func TestNetworkBackendService_Update_NewRequestError(t *testing.T) {
 	client := testBackendClient("http://dummy-url")
 
 	req := UpdateNetworkBackendRequest{
-		PanicThreshold: floatPtr(50.0),
+		PanicThreshold: new(50.0),
 	}
 
 	_, err := client.Update(ctx, "lb-123", "backend-123", req)
@@ -897,6 +892,8 @@ func TestNetworkBackendService_Update_NewRequestError(t *testing.T) {
 }
 
 // Helper function for int pointers
+//
+//go:fix inline
 func intPtr(i int) *int {
-	return &i
+	return new(i)
 }

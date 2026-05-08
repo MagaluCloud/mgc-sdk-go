@@ -119,7 +119,6 @@ func TestNetworkHealthCheckService_Create(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -222,7 +221,6 @@ func TestNetworkHealthCheckService_Get(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -305,7 +303,6 @@ func TestNetworkHealthCheckService_List(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -460,7 +457,6 @@ func TestNetworkHealthCheckService_ListAll(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			pageIndex := 0
@@ -496,7 +492,7 @@ func TestNetworkHealthCheckService_ListAll(t *testing.T) {
 
 func generateHealthCheckResults(start, count int) string {
 	results := make([]string, count)
-	for i := 0; i < count; i++ {
+	for i := range count {
 		id := start + i
 		results[i] = fmt.Sprintf(`{
 			"id": "hc-%d",
@@ -531,7 +527,7 @@ func TestNetworkHealthCheckService_Update(t *testing.T) {
 			lbID: "lb-123",
 			hcID: "hc-123",
 			request: UpdateNetworkHealthCheckRequest{
-				Path: stringPtr("updated-hc"),
+				Path: new("updated-hc"),
 			},
 			statusCode: http.StatusOK,
 			wantErr:    false,
@@ -541,7 +537,7 @@ func TestNetworkHealthCheckService_Update(t *testing.T) {
 			lbID: "lb-123",
 			hcID: "invalid",
 			request: UpdateNetworkHealthCheckRequest{
-				Path: stringPtr("updated-hc"),
+				Path: new("updated-hc"),
 			},
 			statusCode: http.StatusNotFound,
 			wantErr:    true,
@@ -549,7 +545,6 @@ func TestNetworkHealthCheckService_Update(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -599,7 +594,6 @@ func TestNetworkHealthCheckService_Delete(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -699,7 +693,7 @@ func TestNetworkHealthCheckService_Update_NewRequestError(t *testing.T) {
 	client := testHealthCheckClient("http://dummy-url")
 
 	req := UpdateNetworkHealthCheckRequest{
-		Path: stringPtr("updated-hc"),
+		Path: new("updated-hc"),
 	}
 
 	err := client.Update(ctx, "lb-123", "hc-123", req)

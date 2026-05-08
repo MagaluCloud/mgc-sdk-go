@@ -40,7 +40,7 @@ func TestNetworkBackendTargetService_Create(t *testing.T) {
 				TargetsType: "instance",
 				Targets: []NetworkBackendInstanceTargetRequest{
 					{
-						NicID: stringPtr("nic-1"),
+						NicID: new("nic-1"),
 						Port:  80,
 					},
 				},
@@ -58,7 +58,7 @@ func TestNetworkBackendTargetService_Create(t *testing.T) {
 				TargetsType: "instance",
 				Targets: []NetworkBackendInstanceTargetRequest{
 					{
-						NicID: stringPtr("nic-1"),
+						NicID: new("nic-1"),
 						Port:  80,
 					},
 				},
@@ -70,7 +70,6 @@ func TestNetworkBackendTargetService_Create(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -116,11 +115,11 @@ func TestNetworkBackendTargetService_Replace(t *testing.T) {
 				TargetsType: "instance",
 				Targets: []NetworkBackendInstanceTargetRequest{
 					{
-						NicID: stringPtr("nic-1"),
+						NicID: new("nic-1"),
 						Port:  80,
 					},
 					{
-						NicID: stringPtr("nic-2"),
+						NicID: new("nic-2"),
 						Port:  8080,
 					},
 				},
@@ -138,7 +137,7 @@ func TestNetworkBackendTargetService_Replace(t *testing.T) {
 				TargetsType: "instance",
 				Targets: []NetworkBackendInstanceTargetRequest{
 					{
-						NicID: stringPtr("nic-1"),
+						NicID: new("nic-1"),
 						Port:  80,
 					},
 				},
@@ -150,7 +149,6 @@ func TestNetworkBackendTargetService_Replace(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -205,7 +203,6 @@ func TestNetworkBackendTargetService_Delete(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -242,7 +239,7 @@ func TestNetworkBackendTargetService_Create_NewRequestError(t *testing.T) {
 		TargetsType: "instance",
 		Targets: []NetworkBackendInstanceTargetRequest{
 			{
-				NicID: stringPtr("nic-1"),
+				NicID: new("nic-1"),
 				Port:  80,
 			},
 		},
@@ -268,7 +265,7 @@ func TestNetworkBackendTargetService_Replace_NewRequestError(t *testing.T) {
 		TargetsType: "instance",
 		Targets: []NetworkBackendInstanceTargetRequest{
 			{
-				NicID: stringPtr("nic-1"),
+				NicID: new("nic-1"),
 				Port:  80,
 			},
 		},

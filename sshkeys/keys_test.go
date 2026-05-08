@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/MagaluCloud/mgc-sdk-go/client"
-	"github.com/MagaluCloud/mgc-sdk-go/helpers"
 )
 
 func TestKeyService(t *testing.T) {
@@ -20,11 +19,12 @@ func TestKeyService(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/profile/v0/ssh-keys":
-			if r.Method == http.MethodGet {
+			switch r.Method {
+			case http.MethodGet:
 				handleListKeys(w, r)
-			} else if r.Method == http.MethodPost {
+			case http.MethodPost:
 				handleCreateKey(w, r)
-			} else {
+			default:
 				http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 			}
 		case "/profile/v0/ssh-keys/123":
@@ -254,9 +254,9 @@ func errorTestServer() *httptest.Server {
 
 func TestListOptionsQueryParams(t *testing.T) {
 	opts := ListOptions{
-		Limit:  helpers.IntPtr(10),
-		Offset: helpers.IntPtr(20),
-		Sort:   helpers.StrPtr("name"),
+		Limit:  new(10),
+		Offset: new(20),
+		Sort:   new("name"),
 	}
 
 	query := make(url.Values)

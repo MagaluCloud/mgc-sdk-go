@@ -8,7 +8,6 @@ import (
 
 	"github.com/MagaluCloud/mgc-sdk-go/client"
 	"github.com/MagaluCloud/mgc-sdk-go/dbaas"
-	"github.com/MagaluCloud/mgc-sdk-go/helpers"
 )
 
 func main() {
@@ -49,7 +48,7 @@ func ExampleListEngines() {
 	dbaasClient := dbaas.New(c)
 
 	resp, err := dbaasClient.Engines().List(context.Background(), dbaas.ListEngineOptions{
-		Limit: helpers.IntPtr(10),
+		Limit: new(10),
 	})
 	if err != nil {
 		log.Fatal(err)
@@ -98,7 +97,7 @@ func ExampleListInstanceTypes() {
 	dbaasClient := dbaas.New(c)
 
 	resp, err := dbaasClient.InstanceTypes().List(context.Background(), dbaas.ListInstanceTypeOptions{
-		Limit: helpers.IntPtr(10),
+		Limit: new(10),
 	})
 	if err != nil {
 		log.Fatal(err)
@@ -150,7 +149,7 @@ func ExampleListInstances() {
 	dbaasClient := dbaas.New(c)
 
 	resp, err := dbaasClient.Instances().List(context.Background(), dbaas.ListInstanceOptions{
-		Limit: helpers.IntPtr(10),
+		Limit: new(10),
 	})
 	if err != nil {
 		log.Fatal(err)
@@ -211,16 +210,16 @@ func ExampleCreateInstance() {
 	// Create a new database instance
 	instance, err := dbaasClient.Instances().Create(context.Background(), dbaas.InstanceCreateRequest{
 		Name:           "example-db-instance",
-		EngineID:       helpers.StrPtr("063f3994-b6c2-4c37-96c9-bab8d82d36f7"), // Replace with actual engine ID
-		InstanceTypeID: helpers.StrPtr("6111d89a-3bc0-41e6-98c2-fb23bfa5a56a"), // Replace with actual instance type ID
+		EngineID:       new("063f3994-b6c2-4c37-96c9-bab8d82d36f7"), // Replace with actual engine ID
+		InstanceTypeID: new("6111d89a-3bc0-41e6-98c2-fb23bfa5a56a"), // Replace with actual instance type ID
 		User:           "dbadmin",
 		Password:       "YourStrongPassword123!",
 		Volume: dbaas.InstanceVolumeRequest{
 			Size: 20, // Size in GiB
 			Type: "CLOUD_NVME15K",
 		},
-		BackupStartAt:     helpers.StrPtr("02:00"), // Start backup at 2 AM
-		DeletionProtected: helpers.BoolPtr(true),
+		BackupStartAt:     new("02:00"), // Start backup at 2 AM
+		DeletionProtected: new(true),
 	})
 	if err != nil {
 		log.Fatal(err)
@@ -244,7 +243,7 @@ func ExampleUpdateInstance() {
 		context.Background(),
 		instanceId,
 		dbaas.DatabaseInstanceUpdateRequest{
-			DeletionProtected: helpers.BoolPtr(true),
+			DeletionProtected: new(true),
 		},
 	)
 	if err != nil {
@@ -297,7 +296,7 @@ func ExampleListClusters() {
 	dbaasClient := dbaas.New(c)
 
 	resp, err := dbaasClient.Clusters().List(context.Background(), dbaas.ListClustersOptions{
-		Limit: helpers.IntPtr(10),
+		Limit: new(10),
 	})
 	if err != nil {
 		log.Fatal(err)
@@ -374,8 +373,8 @@ func ExampleCreateCluster() {
 		},
 		// ParameterGroupID:    &paramGroupID,
 		BackupRetentionDays: &backupRetention,
-		BackupStartAt:       helpers.StrPtr("03:00"), // Start backup at 3 AM
-		DeletionProtected:   helpers.BoolPtr(true),
+		BackupStartAt:       new("03:00"), // Start backup at 3 AM
+		DeletionProtected:   new(true),
 	})
 	if err != nil {
 		log.Fatal(err)
@@ -424,8 +423,8 @@ func ExampleUpdateCluster() {
 	updatedCluster, err := dbaasClient.Clusters().Update(context.Background(), clusterID, dbaas.ClusterUpdateRequest{
 		ParameterGroupID:    &newParamGroupID,
 		BackupRetentionDays: &newBackupRetention,
-		BackupStartAt:       helpers.StrPtr("04:30"),
-		DeletionProtected:   helpers.BoolPtr(true),
+		BackupStartAt:       new("04:30"),
+		DeletionProtected:   new(true),
 	})
 	if err != nil {
 		log.Fatal(err)
@@ -448,7 +447,7 @@ func ExampleListParametersGroup() {
 	dbaasClient := dbaas.New(c)
 
 	resp, err := dbaasClient.ParametersGroup().List(context.Background(), dbaas.ListParameterGroupsOptions{
-		Limit: helpers.IntPtr(10),
+		Limit: new(10),
 	})
 	if err != nil {
 		log.Fatal(err)
@@ -566,7 +565,7 @@ func ExampleListParameters() {
 
 	resp, err := dbaasClient.Parameters().List(context.Background(), dbaas.ListParametersOptions{
 		ParameterGroupID: "88bd17e0-779c-43a5-9695-5cb9f6f918c0",
-		Limit:            helpers.IntPtr(10),
+		Limit:            new(10),
 	})
 	if err != nil {
 		log.Fatal(err)

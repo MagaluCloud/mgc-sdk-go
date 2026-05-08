@@ -7,8 +7,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
-
-	"github.com/MagaluCloud/mgc-sdk-go/helpers"
 )
 
 func TestNodePoolService_List(t *testing.T) {
@@ -25,9 +23,9 @@ func TestNodePoolService_List(t *testing.T) {
 			name:      "successful list node pools",
 			clusterID: "cluster-123",
 			opts: ListOptions{
-				Limit:  intPtr(2),
-				Offset: intPtr(1),
-				Sort:   strPtr("name"),
+				Limit:  new(2),
+				Offset: new(1),
+				Sort:   new("name"),
 			},
 			response: `{
 				"results": [
@@ -272,7 +270,7 @@ func TestNodePoolService_List_InvalidOptions(t *testing.T) {
 
 	client := testClient(server.URL)
 	_, err := client.Nodepools().List(context.Background(), "cluster-123", ListOptions{
-		Limit: helpers.IntPtr(-1),
+		Limit: new(-1),
 	})
 
 	if err == nil {
@@ -409,7 +407,7 @@ func TestNodePoolService_Scale(t *testing.T) {
 
 			client := testClient(server.URL)
 			result, err := client.Nodepools().Update(context.Background(), tt.clusterID, tt.nodePoolID, PatchNodePoolRequest{
-				Replicas: helpers.IntPtr(tt.replicas),
+				Replicas: new(tt.replicas),
 			})
 
 			if (err != nil) != tt.wantErr {
@@ -440,7 +438,7 @@ func TestNodePoolService_Update(t *testing.T) {
 			clusterID:  "cluster-123",
 			nodePoolID: "pool-456",
 			request: PatchNodePoolRequest{
-				Replicas: helpers.IntPtr(3),
+				Replicas: new(3),
 			},
 			response:     `{"replicas": 3}`,
 			statusCode:   http.StatusOK,

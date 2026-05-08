@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/MagaluCloud/mgc-sdk-go/client"
-	"github.com/MagaluCloud/mgc-sdk-go/helpers"
 	"github.com/MagaluCloud/mgc-sdk-go/internal/utils"
 )
 
@@ -29,7 +28,7 @@ func TestVPCService_Create(t *testing.T) {
 			name: "successful create",
 			request: CreateVPCRequest{
 				Name:        "prod-vpc",
-				Description: helpers.StrPtr("Production VPC"),
+				Description: new("Production VPC"),
 			},
 			response:   `{"id": "vpc1", "status": "creating"}`,
 			statusCode: http.StatusCreated,
@@ -39,7 +38,7 @@ func TestVPCService_Create(t *testing.T) {
 		{
 			name: "missing name",
 			request: CreateVPCRequest{
-				Description: helpers.StrPtr("Invalid VPC"),
+				Description: new("Invalid VPC"),
 			},
 			response:   `{"error": "name is required"}`,
 			statusCode: http.StatusBadRequest,
@@ -48,7 +47,6 @@ func TestVPCService_Create(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -106,7 +104,6 @@ func TestVPCService_Delete(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -160,7 +157,6 @@ func TestVPCService_Rename(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -209,8 +205,8 @@ func TestVPCService_ListPorts(t *testing.T) {
 			vpcID:    "vpc1",
 			detailed: true,
 			opts: ListOptions{
-				Limit:  helpers.IntPtr(10),
-				Offset: helpers.IntPtr(20),
+				Limit:  new(10),
+				Offset: new(20),
 			},
 			response: `{
 				"ports": [
@@ -241,7 +237,7 @@ func TestVPCService_ListPorts(t *testing.T) {
 			vpcID:    "vpc1",
 			detailed: true,
 			opts: ListOptions{
-				Sort: helpers.StrPtr("name:asc"),
+				Sort: new("name:asc"),
 			},
 			response: `{
 				"ports": [
@@ -258,9 +254,9 @@ func TestVPCService_ListPorts(t *testing.T) {
 			vpcID:    "vpc1",
 			detailed: true,
 			opts: ListOptions{
-				Limit:  helpers.IntPtr(5),
-				Offset: helpers.IntPtr(10),
-				Sort:   helpers.StrPtr("created_at:desc"),
+				Limit:  new(5),
+				Offset: new(10),
+				Sort:   new("created_at:desc"),
 			},
 			response: `{
 				"ports": [
@@ -275,7 +271,6 @@ func TestVPCService_ListPorts(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -336,13 +331,13 @@ func TestVPCService_CreatePort(t *testing.T) {
 			vpcID: "vpc1",
 			request: PortCreateRequest{
 				Name:           "web-port",
-				HasPIP:         helpers.BoolPtr(true),
+				HasPIP:         new(true),
 				Subnets:        &[]string{"subnet1"},
 				SecurityGroups: &[]string{"sg1"},
-				IPAddress:      helpers.StrPtr("172.18.10.155"),
+				IPAddress:      new("172.18.10.155"),
 			},
 			opts: PortCreateOptions{
-				Zone: helpers.StrPtr("zone1"),
+				Zone: new("zone1"),
 			},
 			response:   `{"id": "port-new"}`,
 			statusCode: http.StatusCreated,
@@ -418,8 +413,8 @@ func TestVPCService_CreatePort_AdditionalCases(t *testing.T) {
 			vpcID: "vpc1",
 			request: PortCreateRequest{
 				Name:           "app-port",
-				HasPIP:         helpers.BoolPtr(false),
-				HasSG:          helpers.BoolPtr(true),
+				HasPIP:         new(false),
+				HasSG:          new(true),
 				Subnets:        &[]string{"subnet1"},
 				SecurityGroups: &[]string{"sg1", "sg2"},
 			},
@@ -435,10 +430,10 @@ func TestVPCService_CreatePort_AdditionalCases(t *testing.T) {
 			request: PortCreateRequest{
 				Name:    "zoned-port",
 				Subnets: &[]string{"subnet1"},
-				HasPIP:  helpers.BoolPtr(false),
+				HasPIP:  new(false),
 			},
 			opts: PortCreateOptions{
-				Zone: helpers.StrPtr("zone-a"),
+				Zone: new("zone-a"),
 			},
 			response:   `{"id": "port-zoned"}`,
 			statusCode: http.StatusCreated,
@@ -460,7 +455,6 @@ func TestVPCService_CreatePort_AdditionalCases(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -537,7 +531,6 @@ func TestVPCService_ListPublicIPs(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -578,7 +571,7 @@ func TestVPCService_CreatePublicIP(t *testing.T) {
 			name:  "successful create",
 			vpcID: "vpc1",
 			request: PublicIPCreateRequest{
-				Description: helpers.StrPtr("Web server IP"),
+				Description: new("Web server IP"),
 			},
 			response:   `{"id": "ip-new"}`,
 			statusCode: http.StatusCreated,
@@ -599,7 +592,6 @@ func TestVPCService_CreatePublicIP(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -670,7 +662,6 @@ func TestVPCService_ListSubnets(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -717,7 +708,7 @@ func TestVPCService_CreateSubnet(t *testing.T) {
 				IPVersion: 4,
 			},
 			opts: SubnetCreateOptions{
-				Zone: helpers.StrPtr("zone2"),
+				Zone: new("zone2"),
 			},
 			response:   `{"id": "subnet-new"}`,
 			statusCode: http.StatusCreated,
@@ -739,7 +730,6 @@ func TestVPCService_CreateSubnet(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -796,7 +786,7 @@ func TestVPCService_CreateSubnet_AdditionalCases(t *testing.T) {
 				Name:        "ipv6-subnet",
 				CIDRBlock:   "2001:db8::/64",
 				IPVersion:   6,
-				Description: helpers.StrPtr("IPv6 subnet"),
+				Description: new("IPv6 subnet"),
 			},
 			opts:       SubnetCreateOptions{},
 			response:   `{"id": "subnet-ipv6"}`,
@@ -811,10 +801,10 @@ func TestVPCService_CreateSubnet_AdditionalCases(t *testing.T) {
 				Name:        "zone-subnet",
 				CIDRBlock:   "10.1.0.0/24",
 				IPVersion:   4,
-				Description: helpers.StrPtr("Zoned subnet"),
+				Description: new("Zoned subnet"),
 			},
 			opts: SubnetCreateOptions{
-				Zone: helpers.StrPtr("zone-b"),
+				Zone: new("zone-b"),
 			},
 			response:   `{"id": "subnet-zoned"}`,
 			statusCode: http.StatusCreated,
@@ -850,7 +840,6 @@ func TestVPCService_CreateSubnet_AdditionalCases(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -946,7 +935,6 @@ func TestVPCService_List(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -1005,12 +993,12 @@ func TestVPCService_Get(t *testing.T) {
 			}`,
 			statusCode: http.StatusOK,
 			want: &VPC{
-				ID:             helpers.StrPtr("vpc1"),
-				Name:           helpers.StrPtr("prod-vpc"),
+				ID:             new("vpc1"),
+				Name:           new("prod-vpc"),
 				SecurityGroups: &[]string{"sg1", "sg2"},
 				Subnets:        &[]string{"subnet1"},
 				CreatedAt:      &createdAt,
-				IsDefault:      helpers.BoolPtr(true),
+				IsDefault:      new(true),
 			},
 			wantErr: false,
 		},
@@ -1024,10 +1012,10 @@ func TestVPCService_Get(t *testing.T) {
 			}`,
 			statusCode: http.StatusOK,
 			want: &VPC{
-				ID:        helpers.StrPtr("vpc2"),
-				Name:      helpers.StrPtr("test-vpc"),
+				ID:        new("vpc2"),
+				Name:      new("test-vpc"),
 				Status:    "active",
-				IsDefault: helpers.BoolPtr(false),
+				IsDefault: new(false),
 			},
 			wantErr: false,
 		},
@@ -1041,7 +1029,6 @@ func TestVPCService_Get(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

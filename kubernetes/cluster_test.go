@@ -41,10 +41,10 @@ func TestClusterService_List(t *testing.T) {
 				]
 			}`,
 			opts: ListOptions{
-				Limit:  intPtr(10),
-				Offset: intPtr(0),
+				Limit:  new(10),
+				Offset: new(0),
 				Expand: []string{"network"},
-				Sort:   strPtr("name"),
+				Sort:   new("name"),
 			},
 			statusCode: http.StatusOK,
 			want:       2,
@@ -103,7 +103,7 @@ func TestClusterService_Create(t *testing.T) {
 			name: "successful create cluster",
 			request: ClusterRequest{
 				Name:    "new-cluster",
-				Version: strPtr("v1.30.2"),
+				Version: new("v1.30.2"),
 			},
 			response:   `{"id": "cluster-new"}`,
 			statusCode: http.StatusCreated,
@@ -114,7 +114,7 @@ func TestClusterService_Create(t *testing.T) {
 			name: "invalid request",
 			request: ClusterRequest{
 				Name:    "",
-				Version: strPtr("v1.30.2"),
+				Version: new("v1.30.2"),
 			},
 			wantErr: true,
 		},
@@ -122,7 +122,7 @@ func TestClusterService_Create(t *testing.T) {
 			name: "server error",
 			request: ClusterRequest{
 				Name:    "new-cluster",
-				Version: strPtr("v1.30.2"),
+				Version: new("v1.30.2"),
 			},
 			wantErr: true,
 		},

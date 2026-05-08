@@ -11,7 +11,6 @@ import (
 	"testing"
 
 	"github.com/MagaluCloud/mgc-sdk-go/client"
-	"github.com/MagaluCloud/mgc-sdk-go/helpers"
 )
 
 func testClusterClient(baseURL string) ClusterService {
@@ -75,16 +74,16 @@ func TestClusterService_List(t *testing.T) {
 		{
 			name: "with filters",
 			opts: ListClustersOptions{
-				Limit:            helpers.IntPtr(10),
-				Offset:           helpers.IntPtr(5),
-				Status:           Ptr(ClusterStatusActive),
-				EngineID:         helpers.StrPtr("postgres-13"),
-				VolumeSize:       helpers.IntPtr(20),
-				VolumeSizeGt:     helpers.IntPtr(10),
-				VolumeSizeGte:    helpers.IntPtr(15),
-				VolumeSizeLt:     helpers.IntPtr(100),
-				VolumeSizeLte:    helpers.IntPtr(50),
-				ParameterGroupID: helpers.StrPtr("pg-1"),
+				Limit:            new(10),
+				Offset:           new(5),
+				Status:           new(ClusterStatusActive),
+				EngineID:         new("postgres-13"),
+				VolumeSize:       new(20),
+				VolumeSizeGt:     new(10),
+				VolumeSizeGte:    new(15),
+				VolumeSizeLt:     new(100),
+				VolumeSizeLte:    new(50),
+				ParameterGroupID: new("pg-1"),
 			},
 			response: `{
 				"meta": {"page": {"offset": 5, "limit": 10, "count": 1, "total": 1, "max_limit": 100}},
@@ -190,11 +189,11 @@ func TestClusterService_Create(t *testing.T) {
 				Password:       "password123",
 				Volume: ClusterVolumeRequest{
 					Size: 20,
-					Type: helpers.StrPtr("gp2"),
+					Type: new("gp2"),
 				},
-				ParameterGroupID:    helpers.StrPtr("pg-1"),
-				BackupRetentionDays: helpers.IntPtr(7),
-				BackupStartAt:       helpers.StrPtr("01:00"),
+				ParameterGroupID:    new("pg-1"),
+				BackupRetentionDays: new(7),
+				BackupStartAt:       new("01:00"),
 			},
 			response: `{
 				"id": "cluster-1"
@@ -213,12 +212,12 @@ func TestClusterService_Create(t *testing.T) {
 				Password:       "password123",
 				Volume: ClusterVolumeRequest{
 					Size: 20,
-					Type: helpers.StrPtr("gp2"),
+					Type: new("gp2"),
 				},
-				ParameterGroupID:    helpers.StrPtr("pg-1"),
-				BackupRetentionDays: helpers.IntPtr(7),
-				BackupStartAt:       helpers.StrPtr("01:00"),
-				DeletionProtected:   helpers.BoolPtr(true),
+				ParameterGroupID:    new("pg-1"),
+				BackupRetentionDays: new(7),
+				BackupStartAt:       new("01:00"),
+				DeletionProtected:   new(true),
 			},
 			response: `{
 				"id": "cluster-1"
@@ -363,10 +362,10 @@ func TestClusterService_Update(t *testing.T) {
 			name:      "successful update",
 			clusterID: "cluster-1",
 			request: ClusterUpdateRequest{
-				ParameterGroupID:    helpers.StrPtr("pg-2"),
-				BackupRetentionDays: helpers.IntPtr(14),
-				BackupStartAt:       helpers.StrPtr("02:00"),
-				DeletionProtected:   helpers.BoolPtr(true),
+				ParameterGroupID:    new("pg-2"),
+				BackupRetentionDays: new(14),
+				BackupStartAt:       new("02:00"),
+				DeletionProtected:   new(true),
 			},
 			response: `{
 				"id": "cluster-1",
@@ -384,7 +383,7 @@ func TestClusterService_Update(t *testing.T) {
 		{
 			name:       "not found",
 			clusterID:  "invalid",
-			request:    ClusterUpdateRequest{ParameterGroupID: helpers.StrPtr("pg-2")},
+			request:    ClusterUpdateRequest{ParameterGroupID: new("pg-2")},
 			response:   `{"error": "cluster not found"}`,
 			statusCode: http.StatusNotFound,
 			wantErr:    true,
@@ -451,7 +450,7 @@ func TestClusterService_Resize(t *testing.T) {
 			name: "resize simultaneously instance-type and volume",
 			id:   "cluster-1",
 			request: ClusterResizeRequest{
-				InstanceTypeID: helpers.StrPtr("type-large"),
+				InstanceTypeID: new("type-large"),
 				Volume: &ClusterVolumeResizeRequest{
 					Size: 200,
 					Type: "nvme",
@@ -752,7 +751,7 @@ func TestClusterService_ListAll_MultiplePagesWithPagination(t *testing.T) {
 		case "0":
 			// First page: 25 items
 			clusters := make([]string, 25)
-			for i := 0; i < 25; i++ {
+			for i := range 25 {
 				clusters[i] = fmt.Sprintf(`{"id": "cluster%d", "name": "Cluster%d"}`, i+1, i+1)
 			}
 			response := fmt.Sprintf(`{"meta": {"page": {"offset": 0, "limit": 25, "count": 25, "total": 75, "max_limit": 100}}, "results": [%s]}`,
@@ -761,7 +760,7 @@ func TestClusterService_ListAll_MultiplePagesWithPagination(t *testing.T) {
 		case "25":
 			// Second page: 25 items
 			clusters := make([]string, 25)
-			for i := 0; i < 25; i++ {
+			for i := range 25 {
 				clusters[i] = fmt.Sprintf(`{"id": "cluster%d", "name": "Cluster%d"}`, i+26, i+26)
 			}
 			response := fmt.Sprintf(`{"meta": {"page": {"offset": 25, "limit": 25, "count": 25, "total": 75, "max_limit": 100}}, "results": [%s]}`,
@@ -770,7 +769,7 @@ func TestClusterService_ListAll_MultiplePagesWithPagination(t *testing.T) {
 		case "50":
 			// Third page: 25 items
 			clusters := make([]string, 25)
-			for i := 0; i < 25; i++ {
+			for i := range 25 {
 				clusters[i] = fmt.Sprintf(`{"id": "cluster%d", "name": "Cluster%d"}`, i+51, i+51)
 			}
 			response := fmt.Sprintf(`{"meta": {"page": {"offset": 50, "limit": 25, "count": 25, "total": 75, "max_limit": 100}}, "results": [%s]}`,
@@ -832,7 +831,7 @@ func TestClusterService_ListAll_WithFilters(t *testing.T) {
 		switch offset {
 		case "0":
 			clusters := make([]string, 25)
-			for i := 0; i < 25; i++ {
+			for i := range 25 {
 				clusters[i] = fmt.Sprintf(`{"id": "cluster%d", "name": "Cluster%d", "status": "ACTIVE", "engine_id": "postgres-13"}`, i+1, i+1)
 			}
 			response := fmt.Sprintf(`{
@@ -848,7 +847,7 @@ func TestClusterService_ListAll_WithFilters(t *testing.T) {
 			w.Write([]byte(response))
 		case "25":
 			clusters := make([]string, 25)
-			for i := 0; i < 25; i++ {
+			for i := range 25 {
 				clusters[i] = fmt.Sprintf(`{"id": "cluster%d", "name": "Cluster%d", "status": "ACTIVE", "engine_id": "postgres-13"}`, i+26, i+26)
 			}
 			response := fmt.Sprintf(`{
@@ -864,7 +863,7 @@ func TestClusterService_ListAll_WithFilters(t *testing.T) {
 			w.Write([]byte(response))
 		case "50":
 			clusters := make([]string, 25)
-			for i := 0; i < 25; i++ {
+			for i := range 25 {
 				clusters[i] = fmt.Sprintf(`{"id": "cluster%d", "name": "Cluster%d", "status": "ACTIVE", "engine_id": "postgres-13"}`, i+51, i+51)
 			}
 			response := fmt.Sprintf(`{
@@ -898,8 +897,8 @@ func TestClusterService_ListAll_WithFilters(t *testing.T) {
 
 	client := testClusterClient(server.URL)
 	clusters, err := client.ListAll(context.Background(), ClusterFilterOptions{
-		Status:   Ptr(ClusterStatusActive),
-		EngineID: helpers.StrPtr("postgres-13"),
+		Status:   new(ClusterStatusActive),
+		EngineID: new("postgres-13"),
 	})
 
 	assertNoError(t, err)
@@ -952,7 +951,7 @@ func TestClusterService_StartImportMode(t *testing.T) {
 			response:     "ID cannot be empty",
 			statusCode:   http.StatusAccepted,
 			wantErr:      true,
-			errorMessage: helpers.StrPtr("ID cannot be empty"),
+			errorMessage: new("ID cannot be empty"),
 		},
 		{
 			name:       "not found",
@@ -1028,7 +1027,7 @@ func TestClusterService_StopImportMode(t *testing.T) {
 			response:     "ID cannot be empty",
 			statusCode:   http.StatusAccepted,
 			wantErr:      true,
-			errorMessage: helpers.StrPtr("ID cannot be empty"),
+			errorMessage: new("ID cannot be empty"),
 		},
 		{
 			name:       "not found",
@@ -1075,6 +1074,7 @@ func TestClusterService_StopImportMode(t *testing.T) {
 	}
 }
 
+//go:fix inline
 func Ptr[T any](v T) *T {
-	return &v
+	return new(v)
 }

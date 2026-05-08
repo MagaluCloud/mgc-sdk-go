@@ -6,8 +6,6 @@ import (
 	"net/http/httptest"
 	"testing"
 	"time"
-
-	"github.com/MagaluCloud/mgc-sdk-go/helpers"
 )
 
 func TestFlavorService_List(t *testing.T) {
@@ -22,8 +20,8 @@ func TestFlavorService_List(t *testing.T) {
 		{
 			name: "successful list flavors with pagination",
 			opts: ListOptions{
-				Limit:  helpers.IntPtr(2),
-				Offset: helpers.IntPtr(1),
+				Limit:  new(2),
+				Offset: new(1),
 			},
 			response: `{
 				"results": [
@@ -39,9 +37,9 @@ func TestFlavorService_List(t *testing.T) {
 		},
 		{
 			opts: ListOptions{
-				Limit:  helpers.IntPtr(2),
-				Offset: helpers.IntPtr(1),
-				Sort:   helpers.StrPtr("name"),
+				Limit:  new(2),
+				Offset: new(1),
+				Sort:   new("name"),
 				Expand: []string{"controlplane", "nodepool"},
 			},
 			name:       "invalid response format",
@@ -111,7 +109,7 @@ func TestFlavorService_List_InvalidOptions(t *testing.T) {
 
 	client := testClient(server.URL)
 	_, err := client.Flavors().List(context.Background(), ListOptions{
-		Limit: helpers.IntPtr(-1),
+		Limit: new(-1),
 	})
 
 	if err == nil {

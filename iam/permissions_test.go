@@ -39,7 +39,7 @@ func TestPermissionService_ProductsAndPermissions(t *testing.T) {
 		},
 		{
 			name:        "successful get with product name filter",
-			productName: strPtr("compute"),
+			productName: new("compute"),
 			response: `[
 				{
 					"name": "compute",

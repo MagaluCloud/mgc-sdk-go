@@ -19,7 +19,7 @@ If you are new to Go, here are some resources to help you get started:
 
 ### 1. Getting Started: Your Development Environment
 
-1.  **Install Go**: Ensure you have Go version 1.22 or higher. You can find the latest version on the [official Go download page](https://go.dev/dl/).
+1.  **Install Go**: Ensure you have Go version 1.26.3 or higher. You can find the latest version on the [official Go download page](https://go.dev/dl/).
 
 2.  **Fork and Clone the Repository**:
 

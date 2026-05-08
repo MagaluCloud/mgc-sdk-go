@@ -38,7 +38,7 @@ func (q *queryParam) AddReflect(name string, value any) {
 		typeOf := reflect.TypeOf(value)
 
 		// Handle pointer types by dereferencing them
-		if typeOf.Kind() == reflect.Ptr && !valueOf.IsNil() {
+		if typeOf.Kind() == reflect.Pointer && !valueOf.IsNil() {
 			valueOf = valueOf.Elem()
 			typeOf = valueOf.Type()
 		}

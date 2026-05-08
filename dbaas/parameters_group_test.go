@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/MagaluCloud/mgc-sdk-go/client"
-	"github.com/MagaluCloud/mgc-sdk-go/helpers"
 )
 
 func TestParameterGroupService_List(t *testing.T) {
@@ -38,8 +38,8 @@ func TestParameterGroupService_List(t *testing.T) {
 		{
 			name: "with pagination",
 			opts: ListParameterGroupsOptions{
-				Limit:  helpers.IntPtr(1),
-				Offset: helpers.IntPtr(1),
+				Limit:  new(1),
+				Offset: new(1),
 			},
 			response: `{
 				"meta": {"total": 2},
@@ -54,7 +54,7 @@ func TestParameterGroupService_List(t *testing.T) {
 		{
 			name: "filter by type",
 			opts: ListParameterGroupsOptions{
-				Type: paramGroupTypePtr(ParameterGroupTypeUser),
+				Type: new(ParameterGroupTypeUser),
 			},
 			response: `{
 				"meta": {"total": 1},
@@ -69,7 +69,7 @@ func TestParameterGroupService_List(t *testing.T) {
 		{
 			name: "filter by engine id",
 			opts: ListParameterGroupsOptions{
-				EngineID: helpers.StrPtr("eng2"),
+				EngineID: new("eng2"),
 			},
 			response: `{
 				"meta": {"total": 1},
@@ -91,7 +91,7 @@ func TestParameterGroupService_List(t *testing.T) {
 		{
 			name: "invalid pagination",
 			opts: ListParameterGroupsOptions{
-				Limit: helpers.IntPtr(-1),
+				Limit: new(-1),
 			},
 			response:   `{"error": "invalid limit"}`,
 			statusCode: http.StatusBadRequest,
@@ -151,7 +151,7 @@ func TestParameterGroupService_Create(t *testing.T) {
 			req: ParameterGroupCreateRequest{
 				Name:        "test-param-group",
 				EngineID:    "eng1",
-				Description: helpers.StrPtr("Test parameter group"),
+				Description: new("Test parameter group"),
 			},
 			response:   `{"id": "pg1"}`,
 			statusCode: http.StatusOK,
@@ -338,8 +338,8 @@ func TestParameterGroupService_Update(t *testing.T) {
 			name: "successful update",
 			id:   "pg1",
 			req: ParameterGroupUpdateRequest{
-				Name:        helpers.StrPtr("updated-name"),
-				Description: helpers.StrPtr("Updated description"),
+				Name:        new("updated-name"),
+				Description: new("Updated description"),
 			},
 			response: `{
 				"id": "pg1",
@@ -355,7 +355,7 @@ func TestParameterGroupService_Update(t *testing.T) {
 			name: "update name only",
 			id:   "pg1",
 			req: ParameterGroupUpdateRequest{
-				Name: helpers.StrPtr("updated-name"),
+				Name: new("updated-name"),
 			},
 			response: `{
 				"id": "pg1",
@@ -371,7 +371,7 @@ func TestParameterGroupService_Update(t *testing.T) {
 			name: "update description only",
 			id:   "pg1",
 			req: ParameterGroupUpdateRequest{
-				Description: helpers.StrPtr("Updated description"),
+				Description: new("Updated description"),
 			},
 			response: `{
 				"id": "pg1",
@@ -386,7 +386,7 @@ func TestParameterGroupService_Update(t *testing.T) {
 		{
 			name:       "empty id",
 			id:         "",
-			req:        ParameterGroupUpdateRequest{Name: helpers.StrPtr("updated-name")},
+			req:        ParameterGroupUpdateRequest{Name: new("updated-name")},
 			response:   `{"error": "ID cannot be empty"}`,
 			statusCode: http.StatusBadRequest,
 			wantErr:    true,
@@ -395,7 +395,7 @@ func TestParameterGroupService_Update(t *testing.T) {
 			name: "system parameter group",
 			id:   "sys1",
 			req: ParameterGroupUpdateRequest{
-				Name: helpers.StrPtr("updated-name"),
+				Name: new("updated-name"),
 			},
 			response:   `{"error": "cannot update system parameter group"}`,
 			statusCode: http.StatusBadRequest,
@@ -405,7 +405,7 @@ func TestParameterGroupService_Update(t *testing.T) {
 			name: "non-existing parameter group",
 			id:   "invalid",
 			req: ParameterGroupUpdateRequest{
-				Name: helpers.StrPtr("updated-name"),
+				Name: new("updated-name"),
 			},
 			response:   `{"error": "parameter group not found"}`,
 			statusCode: http.StatusNotFound,
@@ -415,7 +415,7 @@ func TestParameterGroupService_Update(t *testing.T) {
 			name: "duplicate name",
 			id:   "pg1",
 			req: ParameterGroupUpdateRequest{
-				Name: helpers.StrPtr("existing-name"),
+				Name: new("existing-name"),
 			},
 			response:   `{"error": "parameter group name already exists"}`,
 			statusCode: http.StatusConflict,
@@ -425,7 +425,7 @@ func TestParameterGroupService_Update(t *testing.T) {
 			name: "server error",
 			id:   "pg1",
 			req: ParameterGroupUpdateRequest{
-				Name: helpers.StrPtr("updated-name"),
+				Name: new("updated-name"),
 			},
 			response:   `{"error": "internal server error"}`,
 			statusCode: http.StatusInternalServerError,
@@ -575,8 +575,9 @@ func TestParameterGroupService_Concurrent(t *testing.T) {
 	}
 }
 
+//go:fix inline
 func paramGroupTypePtr(t ParameterGroupType) *ParameterGroupType {
-	return &t
+	return new(t)
 }
 
 func testClientParamerts(baseURL string) ParameterGroupService {
@@ -682,21 +683,22 @@ func TestParameterGroupService_ListAll(t *testing.T) {
 		{
 			name: "multiple pages",
 			filterOpts: ParameterGroupFilterOptions{
-				Type: paramGroupTypePtr(ParameterGroupTypeUser),
+				Type: new(ParameterGroupTypeUser),
 			},
 			pages: []string{
 				func() string {
-					results := `[`
-					for i := 0; i < 50; i++ {
+					var results strings.Builder
+					results.WriteString(`[`)
+					for i := range 50 {
 						if i > 0 {
-							results += ","
+							results.WriteString(",")
 						}
-						results += `{"id": "pg` + fmt.Sprintf("%d", i) + `", "name": "group` + fmt.Sprintf("%d", i) + `", "type": "USER", "engine_id": "eng1"}`
+						results.WriteString(`{"id": "pg` + fmt.Sprintf("%d", i) + `", "name": "group` + fmt.Sprintf("%d", i) + `", "type": "USER", "engine_id": "eng1"}`)
 					}
-					results += `]`
+					results.WriteString(`]`)
 					return `{
 						"meta": {"page": {"offset": 0, "limit": 25, "count": 50, "total": 60}},
-						"results": ` + results + `
+						"results": ` + results.String() + `
 					}`
 				}(),
 				`{
@@ -720,7 +722,7 @@ func TestParameterGroupService_ListAll(t *testing.T) {
 		{
 			name: "with engine filter",
 			filterOpts: ParameterGroupFilterOptions{
-				EngineID: helpers.StrPtr("eng2"),
+				EngineID: new("eng2"),
 			},
 			pages: []string{
 				`{

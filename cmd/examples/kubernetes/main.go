@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/MagaluCloud/mgc-sdk-go/client"
-	"github.com/MagaluCloud/mgc-sdk-go/helpers"
 	"github.com/MagaluCloud/mgc-sdk-go/kubernetes"
 )
 
@@ -36,20 +35,16 @@ func main() {
 	var idSemNodePool string
 
 	fmt.Println("Creating clusters")
-	wg.Add(1)
-	go func() {
+	wg.Go(func() {
 		idComNodePool = ""
 		fmt.Println("Creating cluster with node pool")
 		idComNodePool = ExampleCreateCluster(k8sClient)
-		wg.Done()
-	}()
-	wg.Add(1)
-	go func() {
+	})
+	wg.Go(func() {
 		idSemNodePool = ""
 		fmt.Println("Creating cluster without node pool")
 		idSemNodePool = ExampleCreateClusterWithoutNodepool(k8sClient)
-		wg.Done()
-	}()
+	})
 
 	wg.Wait()
 	time.Sleep(10 * time.Second)
@@ -59,16 +54,12 @@ func main() {
 	ExampleListClusters(k8sClient)
 
 	fmt.Println("Waiting for clusters to be ready")
-	wg.Add(1)
-	go func() {
+	wg.Go(func() {
 		WaitClusterRunning(k8sClient, idComNodePool)
-		wg.Done()
-	}()
-	wg.Add(1)
-	go func() {
+	})
+	wg.Go(func() {
 		WaitClusterRunning(k8sClient, idSemNodePool)
-		wg.Done()
-	}()
+	})
 
 	wg.Wait()
 
@@ -143,8 +134,8 @@ func ExampleCreateClusterWithoutNodepool(k8sClient *kubernetes.KubernetesClient)
 
 	createReq := kubernetes.ClusterRequest{
 		Name:         randomString(),
-		Version:      strPtr("v1.30.2"),
-		Description:  strPtr("Cluster de exemplo"),
+		Version:      new("v1.30.2"),
+		Description:  new("Cluster de exemplo"),
 		NodePools:    &[]kubernetes.CreateNodePoolRequest{},
 		AllowedCIDRs: &[]string{"192.168.0.0/24"},
 	}
@@ -159,16 +150,17 @@ func ExampleCreateClusterWithoutNodepool(k8sClient *kubernetes.KubernetesClient)
 	return cluster.ID
 }
 
+//go:fix inline
 func strPtr(s string) *string {
-	return &s
+	return new(s)
 }
 
 func ExampleCreateCluster(k8sClient *kubernetes.KubernetesClient) string {
 
 	createReq := kubernetes.ClusterRequest{
 		Name:        randomString(),
-		Version:     strPtr("v1.30.2"),
-		Description: strPtr("Cluster de exemplo"),
+		Version:     new("v1.30.2"),
+		Description: new("Cluster de exemplo"),
 		NodePools: &[]kubernetes.CreateNodePoolRequest{
 			{
 				Name:     randomString(),
@@ -192,8 +184,8 @@ func ExampleCreateCluster(k8sClient *kubernetes.KubernetesClient) string {
 func ExampleListClusters(k8sClient *kubernetes.KubernetesClient) {
 
 	clusters, err := k8sClient.Clusters().List(context.Background(), kubernetes.ListOptions{
-		Limit:  helpers.IntPtr(10),
-		Offset: helpers.IntPtr(0),
+		Limit:  new(10),
+		Offset: new(0),
 		Expand: []string{"node_pools"},
 	})
 
@@ -361,7 +353,7 @@ func ExampleNodePoolOperations(k8sClient *kubernetes.KubernetesClient, clusterID
 	}
 
 	updateReq := kubernetes.PatchNodePoolRequest{
-		Replicas: helpers.IntPtr(3),
+		Replicas: new(3),
 	}
 
 	updatedPool, err := k8sClient.Nodepools().Update(ctx, clusterID, newPool.ID, updateReq)

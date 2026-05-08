@@ -10,7 +10,6 @@ import (
 	"testing"
 
 	"github.com/MagaluCloud/mgc-sdk-go/client"
-	"github.com/MagaluCloud/mgc-sdk-go/helpers"
 )
 
 func testInstanceTypeClient(baseURL string) InstanceTypeService {
@@ -50,11 +49,11 @@ func TestInstanceTypeService_List(t *testing.T) {
 		{
 			name: "with filters and pagination",
 			opts: ListInstanceTypeOptions{
-				Limit:             helpers.IntPtr(10),
-				Offset:            helpers.IntPtr(5),
-				Status:            helpers.StrPtr("ACTIVE"),
-				EngineID:          helpers.StrPtr("mysql8_id"),
-				CompatibleProduct: helpers.StrPtr("SINGLE_INSTANCE"),
+				Limit:             new(10),
+				Offset:            new(5),
+				Status:            new("ACTIVE"),
+				EngineID:          new("mysql8_id"),
+				CompatibleProduct: new("SINGLE_INSTANCE"),
 			},
 			response: `{
 				"meta": {"total": 1},
@@ -269,7 +268,7 @@ func TestInstanceTypeService_ListAll(t *testing.T) {
 		{
 			name: "with status filter",
 			filterOpts: InstanceTypeFilterOptions{
-				Status: helpers.StrPtr("ACTIVE"),
+				Status: new("ACTIVE"),
 			},
 			response: `{
 				"meta": {"page": {"offset": 0, "limit": 25, "count": 2, "total": 2, "max_limit": 100}},
@@ -284,7 +283,7 @@ func TestInstanceTypeService_ListAll(t *testing.T) {
 		{
 			name: "with engine_id filter",
 			filterOpts: InstanceTypeFilterOptions{
-				EngineID: helpers.StrPtr("mysql8_id"),
+				EngineID: new("mysql8_id"),
 			},
 			response: `{
 				"meta": {"page": {"offset": 0, "limit": 25, "count": 1, "total": 1, "max_limit": 100}},
@@ -298,7 +297,7 @@ func TestInstanceTypeService_ListAll(t *testing.T) {
 		{
 			name: "with compatible_product filter",
 			filterOpts: InstanceTypeFilterOptions{
-				CompatibleProduct: helpers.StrPtr("SINGLE_INSTANCE"),
+				CompatibleProduct: new("SINGLE_INSTANCE"),
 			},
 			response: `{
 				"meta": {"page": {"offset": 0, "limit": 25, "count": 1, "total": 1, "max_limit": 100}},
@@ -374,63 +373,67 @@ func TestInstanceTypeService_ListAll_MultiplePagesWithPagination(t *testing.T) {
 		switch offset {
 		case "0":
 			// First page: 25 items
-			results := `[`
-			for i := 0; i < 25; i++ {
+			var results strings.Builder
+			results.WriteString(`[`)
+			for i := range 25 {
 				if i > 0 {
-					results += ","
+					results.WriteString(",")
 				}
-				results += fmt.Sprintf(`{"id": "type-%d", "status": "ACTIVE"}`, i+1)
+				results.WriteString(fmt.Sprintf(`{"id": "type-%d", "status": "ACTIVE"}`, i+1))
 			}
-			results += `]`
+			results.WriteString(`]`)
 			response := fmt.Sprintf(`{
 				"meta": {"page": {"offset": 0, "limit": 25, "count": 25, "total": 80, "max_limit": 100}},
 				"results": %s
-			}`, results)
+			}`, results.String())
 			w.Write([]byte(response))
 		case "25":
 			// Second page: 25 items
-			results := `[`
-			for i := 0; i < 25; i++ {
+			var results strings.Builder
+			results.WriteString(`[`)
+			for i := range 25 {
 				if i > 0 {
-					results += ","
+					results.WriteString(",")
 				}
-				results += fmt.Sprintf(`{"id": "type-%d", "status": "ACTIVE"}`, i+26)
+				results.WriteString(fmt.Sprintf(`{"id": "type-%d", "status": "ACTIVE"}`, i+26))
 			}
-			results += `]`
+			results.WriteString(`]`)
 			response := fmt.Sprintf(`{
 				"meta": {"page": {"offset": 25, "limit": 25, "count": 25, "total": 80, "max_limit": 100}},
 				"results": %s
-			}`, results)
+			}`, results.String())
 			w.Write([]byte(response))
 		case "50":
 			// Third page: 25 items
-			results := `[`
-			for i := 0; i < 25; i++ {
+			var results strings.Builder
+			results.WriteString(`[`)
+			for i := range 25 {
 				if i > 0 {
-					results += ","
+					results.WriteString(",")
 				}
-				results += fmt.Sprintf(`{"id": "type-%d", "status": "ACTIVE"}`, i+51)
+				results.WriteString(fmt.Sprintf(`{"id": "type-%d", "status": "ACTIVE"}`, i+51))
 			}
-			results += `]`
+			results.WriteString(`]`)
 			response := fmt.Sprintf(`{
 				"meta": {"page": {"offset": 50, "limit": 25, "count": 25, "total": 80, "max_limit": 100}},
 				"results": %s
-			}`, results)
+			}`, results.String())
 			w.Write([]byte(response))
 		case "75":
 			// Fourth page: remaining 5 items (break condition)
-			results := `[`
-			for i := 0; i < 5; i++ {
+			var results strings.Builder
+			results.WriteString(`[`)
+			for i := range 5 {
 				if i > 0 {
-					results += ","
+					results.WriteString(",")
 				}
-				results += fmt.Sprintf(`{"id": "type-%d", "status": "ACTIVE"}`, i+76)
+				results.WriteString(fmt.Sprintf(`{"id": "type-%d", "status": "ACTIVE"}`, i+76))
 			}
-			results += `]`
+			results.WriteString(`]`)
 			response := fmt.Sprintf(`{
 				"meta": {"page": {"offset": 75, "limit": 25, "count": 5, "total": 80, "max_limit": 100}},
 				"results": %s
-			}`, results)
+			}`, results.String())
 			w.Write([]byte(response))
 		default:
 			t.Errorf("unexpected offset: %s", offset)
@@ -472,48 +475,51 @@ func TestInstanceTypeService_ListAll_WithFilters(t *testing.T) {
 		switch requestCount {
 		case 0:
 			// First page with 25 results
-			results := `[`
-			for i := 0; i < 25; i++ {
+			var results strings.Builder
+			results.WriteString(`[`)
+			for i := range 25 {
 				if i > 0 {
-					results += ","
+					results.WriteString(",")
 				}
-				results += fmt.Sprintf(`{"id": "type-%d", "status": "ACTIVE", "engine_id": "mysql8_id", "compatible_product": "SINGLE_INSTANCE"}`, i+1)
+				results.WriteString(fmt.Sprintf(`{"id": "type-%d", "status": "ACTIVE", "engine_id": "mysql8_id", "compatible_product": "SINGLE_INSTANCE"}`, i+1))
 			}
-			results += `]`
+			results.WriteString(`]`)
 			response := fmt.Sprintf(`{
 				"meta": {"page": {"offset": 0, "limit": 25, "count": 25, "total": 65, "max_limit": 100}},
 				"results": %s
-			}`, results)
+			}`, results.String())
 			w.Write([]byte(response))
 		case 1:
 			// Second page with 25 results
-			results := `[`
-			for i := 0; i < 25; i++ {
+			var results strings.Builder
+			results.WriteString(`[`)
+			for i := range 25 {
 				if i > 0 {
-					results += ","
+					results.WriteString(",")
 				}
-				results += fmt.Sprintf(`{"id": "type-%d", "status": "ACTIVE", "engine_id": "mysql8_id", "compatible_product": "SINGLE_INSTANCE"}`, i+26)
+				results.WriteString(fmt.Sprintf(`{"id": "type-%d", "status": "ACTIVE", "engine_id": "mysql8_id", "compatible_product": "SINGLE_INSTANCE"}`, i+26))
 			}
-			results += `]`
+			results.WriteString(`]`)
 			response := fmt.Sprintf(`{
 				"meta": {"page": {"offset": 25, "limit": 25, "count": 25, "total": 65, "max_limit": 100}},
 				"results": %s
-			}`, results)
+			}`, results.String())
 			w.Write([]byte(response))
 		case 2:
 			// Third page with 15 results
-			results := `[`
-			for i := 0; i < 15; i++ {
+			var results strings.Builder
+			results.WriteString(`[`)
+			for i := range 15 {
 				if i > 0 {
-					results += ","
+					results.WriteString(",")
 				}
-				results += fmt.Sprintf(`{"id": "type-%d", "status": "ACTIVE", "engine_id": "mysql8_id", "compatible_product": "SINGLE_INSTANCE"}`, i+51)
+				results.WriteString(fmt.Sprintf(`{"id": "type-%d", "status": "ACTIVE", "engine_id": "mysql8_id", "compatible_product": "SINGLE_INSTANCE"}`, i+51))
 			}
-			results += `]`
+			results.WriteString(`]`)
 			response := fmt.Sprintf(`{
 				"meta": {"page": {"offset": 50, "limit": 25, "count": 15, "total": 65, "max_limit": 100}},
 				"results": %s
-			}`, results)
+			}`, results.String())
 			w.Write([]byte(response))
 		default:
 			t.Errorf("unexpected extra request: %d", requestCount)
@@ -525,9 +531,9 @@ func TestInstanceTypeService_ListAll_WithFilters(t *testing.T) {
 
 	client := testInstanceTypeClient(server.URL)
 	instanceTypes, err := client.ListAll(context.Background(), InstanceTypeFilterOptions{
-		Status:            helpers.StrPtr("ACTIVE"),
-		EngineID:          helpers.StrPtr("mysql8_id"),
-		CompatibleProduct: helpers.StrPtr("SINGLE_INSTANCE"),
+		Status:            new("ACTIVE"),
+		EngineID:          new("mysql8_id"),
+		CompatibleProduct: new("SINGLE_INSTANCE"),
 	})
 
 	assertNoError(t, err)

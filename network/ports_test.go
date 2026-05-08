@@ -11,11 +11,10 @@ import (
 	"testing"
 
 	"github.com/MagaluCloud/mgc-sdk-go/client"
-	"github.com/MagaluCloud/mgc-sdk-go/helpers"
 )
 
 // Helper functions
-func assertEqual(t *testing.T, expected, actual interface{}, msgAndArgs ...interface{}) {
+func assertEqual(t *testing.T, expected, actual any, msgAndArgs ...any) {
 	t.Helper()
 	if expected != actual {
 		t.Errorf("Expected %v but got %v. %v", expected, actual, msgAndArgs)
@@ -79,7 +78,6 @@ func TestPortService_List(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt // capture range variable
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -130,15 +128,15 @@ func TestPortService_Get(t *testing.T) {
 			}`,
 			statusCode: http.StatusOK,
 			want: &PortResponse{
-				ID:              helpers.StrPtr("port1"),
-				Name:            helpers.StrPtr("test-port"),
-				VPCID:           helpers.StrPtr("vpc1"),
+				ID:              new("port1"),
+				Name:            new("test-port"),
+				VPCID:           new("vpc1"),
 				SecurityGroups:  &[]string{"sg1", "sg2"},
-				IPSpoofingGuard: helpers.BoolPtr(true),
+				IPSpoofingGuard: new(true),
 				PublicIP: &[]PublicIpResponsePort{
 					{
-						PublicIPID: helpers.StrPtr("ip1"),
-						PublicIP:   helpers.StrPtr("203.0.113.5"),
+						PublicIPID: new("ip1"),
+						PublicIP:   new("203.0.113.5"),
 					},
 				},
 				IPAddress: &[]IpAddress{
@@ -167,7 +165,6 @@ func TestPortService_Get(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt // capture range variable
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -232,7 +229,6 @@ func TestPortService_Delete(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt // capture range variable
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -301,7 +297,6 @@ func TestPortService_AttachSecurityGroup(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt // capture range variable
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -371,7 +366,6 @@ func TestPortService_DetachSecurityGroup(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt // capture range variable
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -409,20 +403,19 @@ func TestPortService_Update(t *testing.T) {
 		{
 			name:       "successful update",
 			portID:     "port1",
-			request:    PortUpdateRequest{IPSpoofingGuard: helpers.BoolPtr(false)},
+			request:    PortUpdateRequest{IPSpoofingGuard: new(false)},
 			statusCode: http.StatusNoContent,
 		},
 		{
 			name:       "update failed - port not found",
 			portID:     "port2",
-			request:    PortUpdateRequest{IPSpoofingGuard: helpers.BoolPtr(true)},
+			request:    PortUpdateRequest{IPSpoofingGuard: new(true)},
 			statusCode: http.StatusNotFound,
 			wantErr:    true,
 		},
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

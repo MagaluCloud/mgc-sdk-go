@@ -182,8 +182,8 @@ func TestEventService_ListAll(t *testing.T) {
 		{
 			name: "with filters",
 			params: &EventFilterParams{
-				SourceLike:  strPtr("test%"),
-				ProductLike: strPtr("product%"),
+				SourceLike:  new("test%"),
+				ProductLike: new("product%"),
 			},
 			responses: []string{
 				`{
@@ -278,19 +278,20 @@ func generateEventJSON(count, startID int) string {
 	if count == 0 {
 		return ""
 	}
-	var result string
-	for i := 0; i < count; i++ {
+	var result strings.Builder
+	for i := range count {
 		if i > 0 {
-			result += ","
+			result.WriteString(",")
 		}
 		id := startID + i + 1
-		result += fmt.Sprintf(`{"id": "%d", "source": "source%d", "type": "type%d", "specversion": "1.0", "subject": "subject%d", "time": "2024-01-01T00:00:00", "authid": "auth%d", "authtype": "type%d", "product": "product%d", "tenantid": "tenant%d", "data": {}}`, id, id, id, id, id, id, id, id)
+		result.WriteString(fmt.Sprintf(`{"id": "%d", "source": "source%d", "type": "type%d", "specversion": "1.0", "subject": "subject%d", "time": "2024-01-01T00:00:00", "authid": "auth%d", "authtype": "type%d", "product": "product%d", "tenantid": "tenant%d", "data": {}}`, id, id, id, id, id, id, id, id))
 	}
-	return result
+	return result.String()
 }
 
+//go:fix inline
 func strPtr(s string) *string {
-	return &s
+	return new(s)
 }
 
 func TestListEventsParamsQuery(t *testing.T) {

@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strconv"
+	"strings"
 	"testing"
 )
 
@@ -21,7 +22,7 @@ func TestImageService_List(t *testing.T) {
 		{
 			name: "basic list",
 			opts: ImageListOptions{},
-			response: strPtr(`{
+			response: new(`{
 				"meta": {"page": {"offset": 0, "limit": 50, "count": 2, "total": 2}},
 				"images": [
 					{"id": "img1", "name": "ubuntu-20.04", "status": "active"},
@@ -35,10 +36,10 @@ func TestImageService_List(t *testing.T) {
 		{
 			name: "with pagination",
 			opts: ImageListOptions{
-				Limit:  intPtr(1),
-				Offset: intPtr(1),
+				Limit:  new(1),
+				Offset: new(1),
 			},
-			response: strPtr(`{
+			response: new(`{
 				"meta": {"page": {"offset": 1, "limit": 1, "count": 1, "total": 2}},
 				"images": [
 					{"id": "img2", "name": "centos-8", "status": "active"}
@@ -59,9 +60,9 @@ func TestImageService_List(t *testing.T) {
 		{
 			name: "with sorting",
 			opts: ImageListOptions{
-				Sort: strPtr("platform:asc"),
+				Sort: new("platform:asc"),
 			},
-			response: strPtr(`{
+			response: new(`{
 				"meta": {"page": {"offset": 0, "limit": 50, "count": 2, "total": 2}},
 				"images": [
 					{"id": "img1", "name": "ubuntu-20.04", "status": "active"},
@@ -81,9 +82,9 @@ func TestImageService_List(t *testing.T) {
 		{
 			name: "with availability zone",
 			opts: ImageListOptions{
-				AvailabilityZone: strPtr("zone1"),
+				AvailabilityZone: new("zone1"),
 			},
-			response: strPtr(`{
+			response: new(`{
 				"meta": {"page": {"offset": 0, "limit": 50, "count": 1, "total": 1}},
 				"images": [
 					{"id": "img1", "name": "ubuntu-20.04", "status": "active", "availability_zones": ["zone1"]}
@@ -101,14 +102,14 @@ func TestImageService_List(t *testing.T) {
 		{
 			name:       "server error",
 			opts:       ImageListOptions{},
-			response:   strPtr(`{"error": "internal server error"}`),
+			response:   new(`{"error": "internal server error"}`),
 			statusCode: http.StatusInternalServerError,
 			wantErr:    true,
 		},
 		{
 			name:       "empty response",
 			opts:       ImageListOptions{},
-			response:   strPtr(""),
+			response:   new(""),
 			statusCode: http.StatusOK,
 			wantErr:    true,
 		},
@@ -122,17 +123,17 @@ func TestImageService_List(t *testing.T) {
 		{
 			name:       "malformed json",
 			opts:       ImageListOptions{},
-			response:   strPtr(`{"images": [{"id": "broken"}`),
+			response:   new(`{"images": [{"id": "broken"}`),
 			statusCode: http.StatusOK,
 			wantErr:    true,
 		},
 		{
 			name: "invalid pagination values",
 			opts: ImageListOptions{
-				Limit:  intPtr(-1),
-				Offset: intPtr(-1),
+				Limit:  new(-1),
+				Offset: new(-1),
 			},
-			response:   strPtr(`{"error": "invalid pagination parameters"}`),
+			response:   new(`{"error": "invalid pagination parameters"}`),
 			statusCode: http.StatusBadRequest,
 			wantErr:    true,
 			checkQuery: func(t *testing.T, r *http.Request) {
@@ -188,7 +189,7 @@ func TestImageService_Concurrent(t *testing.T) {
 
 	// Test concurrent operations
 	done := make(chan bool)
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		go func() {
 			_, err := client.Images().List(ctx, ImageListOptions{})
 			if err != nil {
@@ -199,7 +200,7 @@ func TestImageService_Concurrent(t *testing.T) {
 	}
 
 	// Wait for all goroutines
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		<-done
 	}
 }
@@ -263,7 +264,7 @@ func TestImageService_ListAll(t *testing.T) {
 		{
 			name: "with filters",
 			opts: ImageFilterOptions{
-				AvailabilityZone: strPtr("zone1"),
+				AvailabilityZone: new("zone1"),
 			},
 			pages: []string{
 				`{
@@ -325,14 +326,14 @@ func TestImageService_ListAll(t *testing.T) {
 }
 
 func generateImageListJSON(start, count int) string {
-	result := ""
-	for i := 0; i < count; i++ {
+	var result strings.Builder
+	for i := range count {
 		if i > 0 {
-			result += ","
+			result.WriteString(",")
 		}
-		result += `{"id": "img` + strconv.Itoa(start+i) + `", "name": "image-` + strconv.Itoa(start+i) + `", "status": "active"}`
+		result.WriteString(`{"id": "img` + strconv.Itoa(start+i) + `", "name": "image-` + strconv.Itoa(start+i) + `", "status": "active"}`)
 	}
-	return result
+	return result.String()
 }
 
 func TestImageService_CreateCustom(t *testing.T) {
@@ -529,7 +530,7 @@ func TestImageService_ListCustom(t *testing.T) {
 		{
 			name: "basic list",
 			opts: CustomImageListOptions{},
-			response: strPtr(`{
+			response: new(`{
 				"meta": {"page": {"offset": 0, "limit": 50, "count": 2, "total": 2}},
 				"images": [
 					{"id": "img1", "name": "custom-ubuntu-24_04", "status": "active", "platform": "linux", "license": "unlicensed"},
@@ -543,10 +544,10 @@ func TestImageService_ListCustom(t *testing.T) {
 		{
 			name: "with pagination",
 			opts: CustomImageListOptions{
-				Limit:  intPtr(1),
-				Offset: intPtr(1),
+				Limit:  new(1),
+				Offset: new(1),
 			},
-			response: strPtr(`{
+			response: new(`{
 				"meta": {"page": {"offset": 1, "limit": 1, "count": 1, "total": 2}},
 				"images": [
 					{"id": "img2", "name": "centos-8", "status": "active", "platform": "linux", "license": "unlicensed"}
@@ -567,9 +568,9 @@ func TestImageService_ListCustom(t *testing.T) {
 		{
 			name: "with sorting",
 			opts: CustomImageListOptions{
-				Sort: strPtr("platform:asc"),
+				Sort: new("platform:asc"),
 			},
-			response: strPtr(`{
+			response: new(`{
 				"meta": {"page": {"offset": 0, "limit": 50, "count": 2, "total": 2}},
 				"images": [
 					{"id": "img1", "name": "custom-ubuntu-24_04", "status": "active", "platform": "linux", "license": "unlicensed"},
@@ -589,9 +590,9 @@ func TestImageService_ListCustom(t *testing.T) {
 		{
 			name: "with name",
 			opts: CustomImageListOptions{
-				Name: strPtr("custom-ubuntu-24_04"),
+				Name: new("custom-ubuntu-24_04"),
 			},
-			response: strPtr(`{
+			response: new(`{
 				"meta": {"page": {"offset": 0, "limit": 50, "count": 1, "total": 1}},
 				"images": [
 					{"id": "img1", "name": "custom-ubuntu-24_04", "status": "active", "platform": "linux", "license": "unlicensed"}
@@ -609,14 +610,14 @@ func TestImageService_ListCustom(t *testing.T) {
 		{
 			name:       "server error",
 			opts:       CustomImageListOptions{},
-			response:   strPtr(`{"error": "internal server error"}`),
+			response:   new(`{"error": "internal server error"}`),
 			statusCode: http.StatusInternalServerError,
 			wantErr:    true,
 		},
 		{
 			name:       "empty response",
 			opts:       CustomImageListOptions{},
-			response:   strPtr(""),
+			response:   new(""),
 			statusCode: http.StatusOK,
 			wantErr:    true,
 		},
@@ -630,17 +631,17 @@ func TestImageService_ListCustom(t *testing.T) {
 		{
 			name:       "malformed json",
 			opts:       CustomImageListOptions{},
-			response:   strPtr(`{"images": [{"id": "broken"}`),
+			response:   new(`{"images": [{"id": "broken"}`),
 			statusCode: http.StatusOK,
 			wantErr:    true,
 		},
 		{
 			name: "invalid pagination values",
 			opts: CustomImageListOptions{
-				Limit:  intPtr(-1),
-				Offset: intPtr(-1),
+				Limit:  new(-1),
+				Offset: new(-1),
 			},
-			response:   strPtr(`{"error": "invalid pagination parameters"}`),
+			response:   new(`{"error": "invalid pagination parameters"}`),
 			statusCode: http.StatusBadRequest,
 			wantErr:    true,
 			checkQuery: func(t *testing.T, r *http.Request) {

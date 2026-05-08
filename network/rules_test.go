@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/MagaluCloud/mgc-sdk-go/client"
-	"github.com/MagaluCloud/mgc-sdk-go/helpers"
 	"github.com/MagaluCloud/mgc-sdk-go/internal/utils"
 )
 
@@ -56,7 +55,6 @@ func TestRuleService_List(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt // capture range variable
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -110,11 +108,11 @@ func TestRuleService_Get(t *testing.T) {
 			}`,
 			statusCode: http.StatusOK,
 			want: &RuleResponse{
-				ID:           helpers.StrPtr("rule1"),
-				Direction:    helpers.StrPtr("ingress"),
-				Protocol:     helpers.StrPtr("tcp"),
-				PortRangeMin: helpers.IntPtr(80),
-				PortRangeMax: helpers.IntPtr(80),
+				ID:           new("rule1"),
+				Direction:    new("ingress"),
+				Protocol:     new("tcp"),
+				PortRangeMin: new(80),
+				PortRangeMax: new(80),
 				CreatedAt:    &parsedTime,
 				Status:       "ACTIVE",
 			},
@@ -137,7 +135,6 @@ func TestRuleService_Get(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt // capture range variable
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -180,10 +177,10 @@ func TestRuleService_Create(t *testing.T) {
 			name:            "successful create",
 			securityGroupID: "sg1",
 			request: RuleCreateRequest{
-				Direction:    helpers.StrPtr("ingress"),
-				Protocol:     helpers.StrPtr("tcp"),
-				PortRangeMin: helpers.IntPtr(80),
-				PortRangeMax: helpers.IntPtr(80),
+				Direction:    new("ingress"),
+				Protocol:     new("tcp"),
+				PortRangeMin: new(80),
+				PortRangeMax: new(80),
 				EtherType:    "IPv4",
 			},
 			response:   `{"id": "rule-new"}`,
@@ -195,8 +192,8 @@ func TestRuleService_Create(t *testing.T) {
 			name:            "invalid protocol",
 			securityGroupID: "sg1",
 			request: RuleCreateRequest{
-				Direction: helpers.StrPtr("ingress"),
-				Protocol:  helpers.StrPtr("invalid"),
+				Direction: new("ingress"),
+				Protocol:  new("invalid"),
 			},
 			response:   `{"error": "invalid protocol"}`,
 			statusCode: http.StatusBadRequest,
@@ -206,8 +203,8 @@ func TestRuleService_Create(t *testing.T) {
 			name:            "invalid security group",
 			securityGroupID: "invalid",
 			request: RuleCreateRequest{
-				Direction: helpers.StrPtr("ingress"),
-				Protocol:  helpers.StrPtr("tcp"),
+				Direction: new("ingress"),
+				Protocol:  new("tcp"),
 			},
 			response:   `{"error": "security group not found"}`,
 			statusCode: http.StatusNotFound,
@@ -216,7 +213,6 @@ func TestRuleService_Create(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt // capture range variable
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -282,7 +278,6 @@ func TestRuleService_Delete(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt // capture range variable
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

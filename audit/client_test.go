@@ -33,7 +33,7 @@ func TestAuditClient_newRequest(t *testing.T) {
 		name    string
 		method  string
 		path    string
-		body    interface{}
+		body    any
 		wantErr bool
 	}{
 		{

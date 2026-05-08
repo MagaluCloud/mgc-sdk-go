@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/MagaluCloud/mgc-sdk-go/client"
-	"github.com/MagaluCloud/mgc-sdk-go/helpers"
 )
 
 func TestParameterService_List(t *testing.T) {
@@ -46,8 +46,8 @@ func TestParameterService_List(t *testing.T) {
 			name: "with pagination",
 			opts: ListParametersOptions{
 				ParameterGroupID: "g1",
-				Offset:           helpers.IntPtr(1),
-				Limit:            helpers.IntPtr(1),
+				Offset:           new(1),
+				Limit:            new(1),
 			},
 			response: `{
                 "meta": {
@@ -88,7 +88,6 @@ func TestParameterService_List(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -209,32 +208,34 @@ func TestParameterService_ListAll(t *testing.T) {
 			},
 			pages: []string{
 				func() string {
-					results := `[`
-					for i := 0; i < 50; i++ {
+					var results strings.Builder
+					results.WriteString(`[`)
+					for i := range 50 {
 						if i > 0 {
-							results += ","
+							results.WriteString(",")
 						}
-						results += fmt.Sprintf(`{"id": "p%d", "name": "param%d", "value": %d}`, i+1, i+1, i+1)
+						results.WriteString(fmt.Sprintf(`{"id": "p%d", "name": "param%d", "value": %d}`, i+1, i+1, i+1))
 					}
-					results += `]`
+					results.WriteString(`]`)
 					return fmt.Sprintf(`{
 						"meta": {"page": {"offset": 0, "limit": 25, "count": 50, "total": 75}},
 						"results": %s
-					}`, results)
+					}`, results.String())
 				}(),
 				func() string {
-					results := `[`
-					for i := 0; i < 25; i++ {
+					var results strings.Builder
+					results.WriteString(`[`)
+					for i := range 25 {
 						if i > 0 {
-							results += ","
+							results.WriteString(",")
 						}
-						results += fmt.Sprintf(`{"id": "p%d", "name": "param%d", "value": %d}`, i+51, i+51, i+51)
+						results.WriteString(fmt.Sprintf(`{"id": "p%d", "name": "param%d", "value": %d}`, i+51, i+51, i+51))
 					}
-					results += `]`
+					results.WriteString(`]`)
 					return fmt.Sprintf(`{
 						"meta": {"page": {"offset": 50, "limit": 25, "count": 25, "total": 75}},
 						"results": %s
-					}`, results)
+					}`, results.String())
 				}(),
 			},
 			wantCount: 75,
@@ -255,7 +256,6 @@ func TestParameterService_ListAll(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			requestCount := 0
@@ -321,7 +321,6 @@ func TestParameterService_Create(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -383,7 +382,6 @@ func TestParameterService_Update(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -437,7 +435,6 @@ func TestParameterService_Delete(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

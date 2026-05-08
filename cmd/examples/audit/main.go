@@ -8,7 +8,6 @@ import (
 
 	"github.com/MagaluCloud/mgc-sdk-go/audit"
 	"github.com/MagaluCloud/mgc-sdk-go/client"
-	"github.com/MagaluCloud/mgc-sdk-go/helpers"
 )
 
 func main() {
@@ -25,9 +24,9 @@ func ExampleListEvents() {
 	eventsClient := audit.New(c)
 
 	eventsList, err := eventsClient.Events().List(context.Background(), &audit.ListEventsParams{
-		Limit: helpers.IntPtr(1),
+		Limit: new(1),
 		EventFilterParams: audit.EventFilterParams{
-			TypeLike: helpers.StrPtr("cloud.magalu.block-storage.snapshot.create"),
+			TypeLike: new("cloud.magalu.block-storage.snapshot.create"),
 		},
 	})
 	if err != nil {
@@ -58,7 +57,7 @@ func ExampleListEventTypes() {
 	eventsClient := audit.New(c)
 
 	types, err := eventsClient.EventTypes().List(context.Background(), &audit.ListEventTypesParams{
-		Limit: helpers.IntPtr(10),
+		Limit: new(10),
 	})
 	if err != nil {
 		log.Fatal(err)

@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/MagaluCloud/mgc-sdk-go/client"
-	"github.com/MagaluCloud/mgc-sdk-go/helpers"
 	"github.com/MagaluCloud/mgc-sdk-go/internal/utils"
 )
 
@@ -46,7 +45,7 @@ func TestSubnetService_Get(t *testing.T) {
 			want: &SubnetResponseDetail{
 				SubnetResponse: SubnetResponse{
 					ID:        "subnet1",
-					Name:      helpers.StrPtr("prod-subnet"),
+					Name:      new("prod-subnet"),
 					VPCID:     "vpc1",
 					CIDRBlock: "10.0.0.0/24",
 					CreatedAt: &localDatew,
@@ -77,7 +76,6 @@ func TestSubnetService_Get(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -139,7 +137,6 @@ func TestSubnetService_Delete(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -221,7 +218,6 @@ func TestSubnetService_Update(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
