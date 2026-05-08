@@ -200,6 +200,17 @@ func TestLbaasClient_Services(t *testing.T) {
 			t.Error("expected NetworkLoadBalancerService to be of type *networkLoadBalancerService")
 		}
 	})
+
+	t.Run("NetworkBackendTargets", func(t *testing.T) {
+		t.Parallel()
+		svc := lbaasClient.NetworkBackendTargets()
+		if svc == nil {
+			t.Error("expected NetworkBackendTargetService to not be nil")
+		}
+		if _, ok := svc.(*networkBackendTargetService); !ok {
+			t.Error("expected NetworkBackendTargetService to be of type *networkBackendTargetService")
+		}
+	})
 }
 
 func TestLbaasClient_DefaultBasePath(t *testing.T) {

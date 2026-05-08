@@ -302,6 +302,20 @@ func TestNetworkHealthCheckService_List(t *testing.T) {
 			statusCode: http.StatusInternalServerError,
 			wantErr:    true,
 		},
+		{
+			name:       "unauthorized",
+			lbID:       "lb-123",
+			response:   `{"error": "unauthorized"}`,
+			statusCode: http.StatusUnauthorized,
+			wantErr:    true,
+		},
+		{
+			name:       "forbidden",
+			lbID:       "lb-123",
+			response:   `{"error": "forbidden"}`,
+			statusCode: http.StatusForbidden,
+			wantErr:    true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -546,6 +560,46 @@ func TestNetworkHealthCheckService_Update(t *testing.T) {
 			statusCode: http.StatusNotFound,
 			wantErr:    true,
 		},
+		{
+			name: "bad request",
+			lbID: "lb-123",
+			hcID: "hc-123",
+			request: UpdateNetworkHealthCheckRequest{
+				Path: stringPtr("updated-hc"),
+			},
+			statusCode: http.StatusBadRequest,
+			wantErr:    true,
+		},
+		{
+			name: "unauthorized",
+			lbID: "lb-123",
+			hcID: "hc-123",
+			request: UpdateNetworkHealthCheckRequest{
+				Path: stringPtr("updated-hc"),
+			},
+			statusCode: http.StatusUnauthorized,
+			wantErr:    true,
+		},
+		{
+			name: "forbidden",
+			lbID: "lb-123",
+			hcID: "hc-123",
+			request: UpdateNetworkHealthCheckRequest{
+				Path: stringPtr("updated-hc"),
+			},
+			statusCode: http.StatusForbidden,
+			wantErr:    true,
+		},
+		{
+			name: "server error",
+			lbID: "lb-123",
+			hcID: "hc-123",
+			request: UpdateNetworkHealthCheckRequest{
+				Path: stringPtr("updated-hc"),
+			},
+			statusCode: http.StatusInternalServerError,
+			wantErr:    true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -594,6 +648,27 @@ func TestNetworkHealthCheckService_Delete(t *testing.T) {
 			lbID:       "lb-123",
 			hcID:       "invalid",
 			statusCode: http.StatusNotFound,
+			wantErr:    true,
+		},
+		{
+			name:       "unauthorized",
+			lbID:       "lb-123",
+			hcID:       "hc-123",
+			statusCode: http.StatusUnauthorized,
+			wantErr:    true,
+		},
+		{
+			name:       "forbidden",
+			lbID:       "lb-123",
+			hcID:       "hc-123",
+			statusCode: http.StatusForbidden,
+			wantErr:    true,
+		},
+		{
+			name:       "server error",
+			lbID:       "lb-123",
+			hcID:       "hc-123",
+			statusCode: http.StatusInternalServerError,
 			wantErr:    true,
 		},
 	}

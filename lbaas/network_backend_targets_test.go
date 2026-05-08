@@ -67,6 +67,91 @@ func TestNetworkBackendTargetService_Create(t *testing.T) {
 			statusCode: http.StatusInternalServerError,
 			wantErr:    true,
 		},
+		{
+			name:      "bad request",
+			lbID:      "lb-123",
+			backendID: "backend-123",
+			request: CreateNetworkBackendTargetRequest{
+				TargetsType: "instance",
+				Targets: []NetworkBackendInstanceTargetRequest{
+					{
+						NicID: stringPtr("nic-1"),
+						Port:  80,
+					},
+				},
+			},
+			response:   `{"error": "bad request"}`,
+			statusCode: http.StatusBadRequest,
+			wantErr:    true,
+		},
+		{
+			name:      "unauthorized",
+			lbID:      "lb-123",
+			backendID: "backend-123",
+			request: CreateNetworkBackendTargetRequest{
+				TargetsType: "instance",
+				Targets: []NetworkBackendInstanceTargetRequest{
+					{
+						NicID: stringPtr("nic-1"),
+						Port:  80,
+					},
+				},
+			},
+			response:   `{"error": "unauthorized"}`,
+			statusCode: http.StatusUnauthorized,
+			wantErr:    true,
+		},
+		{
+			name:      "forbidden",
+			lbID:      "lb-123",
+			backendID: "backend-123",
+			request: CreateNetworkBackendTargetRequest{
+				TargetsType: "instance",
+				Targets: []NetworkBackendInstanceTargetRequest{
+					{
+						NicID: stringPtr("nic-1"),
+						Port:  80,
+					},
+				},
+			},
+			response:   `{"error": "forbidden"}`,
+			statusCode: http.StatusForbidden,
+			wantErr:    true,
+		},
+		{
+			name:      "not found",
+			lbID:      "lb-123",
+			backendID: "backend-123",
+			request: CreateNetworkBackendTargetRequest{
+				TargetsType: "instance",
+				Targets: []NetworkBackendInstanceTargetRequest{
+					{
+						NicID: stringPtr("nic-1"),
+						Port:  80,
+					},
+				},
+			},
+			response:   `{"error": "not found"}`,
+			statusCode: http.StatusNotFound,
+			wantErr:    true,
+		},
+		{
+			name:      "conflict",
+			lbID:      "lb-123",
+			backendID: "backend-123",
+			request: CreateNetworkBackendTargetRequest{
+				TargetsType: "instance",
+				Targets: []NetworkBackendInstanceTargetRequest{
+					{
+						NicID: stringPtr("nic-1"),
+						Port:  80,
+					},
+				},
+			},
+			response:   `{"error": "conflict"}`,
+			statusCode: http.StatusConflict,
+			wantErr:    true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -147,6 +232,91 @@ func TestNetworkBackendTargetService_Replace(t *testing.T) {
 			statusCode: http.StatusInternalServerError,
 			wantErr:    true,
 		},
+		{
+			name:      "bad request",
+			lbID:      "lb-123",
+			backendID: "backend-123",
+			request: CreateNetworkBackendTargetRequest{
+				TargetsType: "instance",
+				Targets: []NetworkBackendInstanceTargetRequest{
+					{
+						NicID: stringPtr("nic-1"),
+						Port:  80,
+					},
+				},
+			},
+			response:   `{"error": "bad request"}`,
+			statusCode: http.StatusBadRequest,
+			wantErr:    true,
+		},
+		{
+			name:      "unauthorized",
+			lbID:      "lb-123",
+			backendID: "backend-123",
+			request: CreateNetworkBackendTargetRequest{
+				TargetsType: "instance",
+				Targets: []NetworkBackendInstanceTargetRequest{
+					{
+						NicID: stringPtr("nic-1"),
+						Port:  80,
+					},
+				},
+			},
+			response:   `{"error": "unauthorized"}`,
+			statusCode: http.StatusUnauthorized,
+			wantErr:    true,
+		},
+		{
+			name:      "forbidden",
+			lbID:      "lb-123",
+			backendID: "backend-123",
+			request: CreateNetworkBackendTargetRequest{
+				TargetsType: "instance",
+				Targets: []NetworkBackendInstanceTargetRequest{
+					{
+						NicID: stringPtr("nic-1"),
+						Port:  80,
+					},
+				},
+			},
+			response:   `{"error": "forbidden"}`,
+			statusCode: http.StatusForbidden,
+			wantErr:    true,
+		},
+		{
+			name:      "not found",
+			lbID:      "lb-123",
+			backendID: "backend-123",
+			request: CreateNetworkBackendTargetRequest{
+				TargetsType: "instance",
+				Targets: []NetworkBackendInstanceTargetRequest{
+					{
+						NicID: stringPtr("nic-1"),
+						Port:  80,
+					},
+				},
+			},
+			response:   `{"error": "not found"}`,
+			statusCode: http.StatusNotFound,
+			wantErr:    true,
+		},
+		{
+			name:      "conflict",
+			lbID:      "lb-123",
+			backendID: "backend-123",
+			request: CreateNetworkBackendTargetRequest{
+				TargetsType: "instance",
+				Targets: []NetworkBackendInstanceTargetRequest{
+					{
+						NicID: stringPtr("nic-1"),
+						Port:  80,
+					},
+				},
+			},
+			response:   `{"error": "conflict"}`,
+			statusCode: http.StatusConflict,
+			wantErr:    true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -200,6 +370,30 @@ func TestNetworkBackendTargetService_Delete(t *testing.T) {
 			backendID:  "backend-123",
 			targetID:   "invalid",
 			statusCode: http.StatusNotFound,
+			wantErr:    true,
+		},
+		{
+			name:       "unauthorized",
+			lbID:       "lb-123",
+			backendID:  "backend-123",
+			targetID:   "target-123",
+			statusCode: http.StatusUnauthorized,
+			wantErr:    true,
+		},
+		{
+			name:       "forbidden",
+			lbID:       "lb-123",
+			backendID:  "backend-123",
+			targetID:   "target-123",
+			statusCode: http.StatusForbidden,
+			wantErr:    true,
+		},
+		{
+			name:       "server error",
+			lbID:       "lb-123",
+			backendID:  "backend-123",
+			targetID:   "target-123",
+			statusCode: http.StatusInternalServerError,
 			wantErr:    true,
 		},
 	}

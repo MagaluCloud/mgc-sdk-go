@@ -73,6 +73,71 @@ func TestNetworkACLService_Create(t *testing.T) {
 			statusCode: http.StatusInternalServerError,
 			wantErr:    true,
 		},
+		{
+			name: "bad request",
+			lbID: "lb-789",
+			request: CreateNetworkACLRequest{
+				Ethertype:      "IPv4",
+				Protocol:       "TCP",
+				RemoteIPPrefix: "192.168.1.0/24",
+				Action:         "allow",
+			},
+			response:   `{"error": "bad request"}`,
+			statusCode: http.StatusBadRequest,
+			wantErr:    true,
+		},
+		{
+			name: "unauthorized",
+			lbID: "lb-789",
+			request: CreateNetworkACLRequest{
+				Ethertype:      "IPv4",
+				Protocol:       "TCP",
+				RemoteIPPrefix: "192.168.1.0/24",
+				Action:         "allow",
+			},
+			response:   `{"error": "unauthorized"}`,
+			statusCode: http.StatusUnauthorized,
+			wantErr:    true,
+		},
+		{
+			name: "forbidden",
+			lbID: "lb-789",
+			request: CreateNetworkACLRequest{
+				Ethertype:      "IPv4",
+				Protocol:       "TCP",
+				RemoteIPPrefix: "192.168.1.0/24",
+				Action:         "allow",
+			},
+			response:   `{"error": "forbidden"}`,
+			statusCode: http.StatusForbidden,
+			wantErr:    true,
+		},
+		{
+			name: "not found",
+			lbID: "lb-789",
+			request: CreateNetworkACLRequest{
+				Ethertype:      "IPv4",
+				Protocol:       "TCP",
+				RemoteIPPrefix: "192.168.1.0/24",
+				Action:         "allow",
+			},
+			response:   `{"error": "not found"}`,
+			statusCode: http.StatusNotFound,
+			wantErr:    true,
+		},
+		{
+			name: "conflict",
+			lbID: "lb-789",
+			request: CreateNetworkACLRequest{
+				Ethertype:      "IPv4",
+				Protocol:       "TCP",
+				RemoteIPPrefix: "192.168.1.0/24",
+				Action:         "allow",
+			},
+			response:   `{"error": "conflict"}`,
+			statusCode: http.StatusConflict,
+			wantErr:    true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -131,6 +196,20 @@ func TestNetworkACLService_Delete(t *testing.T) {
 			lbID:       "lb-456",
 			aclID:      "acl-456",
 			statusCode: http.StatusInternalServerError,
+			wantErr:    true,
+		},
+		{
+			name:       "unauthorized",
+			lbID:       "lb-456",
+			aclID:      "acl-456",
+			statusCode: http.StatusUnauthorized,
+			wantErr:    true,
+		},
+		{
+			name:       "forbidden",
+			lbID:       "lb-456",
+			aclID:      "acl-456",
+			statusCode: http.StatusForbidden,
 			wantErr:    true,
 		},
 	}
@@ -206,6 +285,70 @@ func TestNetworkACLService_Replace(t *testing.T) {
 				},
 			},
 			statusCode: http.StatusInternalServerError,
+			wantErr:    true,
+		},
+		{
+			name: "bad request",
+			lbID: "lb-456",
+			request: UpdateNetworkACLRequest{
+				Acls: []CreateNetworkACLRequest{
+					{
+						Ethertype:      "IPv4",
+						Protocol:       "TCP",
+						RemoteIPPrefix: "192.168.1.0/24",
+						Action:         "allow",
+					},
+				},
+			},
+			statusCode: http.StatusBadRequest,
+			wantErr:    true,
+		},
+		{
+			name: "unauthorized",
+			lbID: "lb-456",
+			request: UpdateNetworkACLRequest{
+				Acls: []CreateNetworkACLRequest{
+					{
+						Ethertype:      "IPv4",
+						Protocol:       "TCP",
+						RemoteIPPrefix: "192.168.1.0/24",
+						Action:         "allow",
+					},
+				},
+			},
+			statusCode: http.StatusUnauthorized,
+			wantErr:    true,
+		},
+		{
+			name: "forbidden",
+			lbID: "lb-456",
+			request: UpdateNetworkACLRequest{
+				Acls: []CreateNetworkACLRequest{
+					{
+						Ethertype:      "IPv4",
+						Protocol:       "TCP",
+						RemoteIPPrefix: "192.168.1.0/24",
+						Action:         "allow",
+					},
+				},
+			},
+			statusCode: http.StatusForbidden,
+			wantErr:    true,
+		},
+		{
+			name: "not found",
+			lbID: "lb-456",
+			request: UpdateNetworkACLRequest{
+				Acls: []CreateNetworkACLRequest{
+					{
+						Ethertype:      "IPv4",
+						Protocol:       "TCP",
+						RemoteIPPrefix: "192.168.1.0/24",
+						Action:         "allow",
+					},
+				},
+			},
+			statusCode: http.StatusNotFound,
 			wantErr:    true,
 		},
 	}

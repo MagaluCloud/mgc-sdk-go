@@ -215,6 +215,30 @@ func TestNetworkCertificateService_Get(t *testing.T) {
 			statusCode: http.StatusNotFound,
 			wantErr:    true,
 		},
+		{
+			name:       "unauthorized",
+			lbID:       "lb-123",
+			certID:     "cert-123",
+			response:   `{"error": "unauthorized"}`,
+			statusCode: http.StatusUnauthorized,
+			wantErr:    true,
+		},
+		{
+			name:       "forbidden",
+			lbID:       "lb-123",
+			certID:     "cert-123",
+			response:   `{"error": "forbidden"}`,
+			statusCode: http.StatusForbidden,
+			wantErr:    true,
+		},
+		{
+			name:       "server error",
+			lbID:       "lb-123",
+			certID:     "cert-123",
+			response:   `{"error": "internal server error"}`,
+			statusCode: http.StatusInternalServerError,
+			wantErr:    true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -296,6 +320,20 @@ func TestNetworkCertificateService_List(t *testing.T) {
 			lbID:       "lb-123",
 			response:   `{"error": "internal server error"}`,
 			statusCode: http.StatusInternalServerError,
+			wantErr:    true,
+		},
+		{
+			name:       "unauthorized",
+			lbID:       "lb-123",
+			response:   `{"error": "unauthorized"}`,
+			statusCode: http.StatusUnauthorized,
+			wantErr:    true,
+		},
+		{
+			name:       "forbidden",
+			lbID:       "lb-123",
+			response:   `{"error": "forbidden"}`,
+			statusCode: http.StatusForbidden,
 			wantErr:    true,
 		},
 	}
@@ -521,6 +559,50 @@ func TestNetworkCertificateService_Update(t *testing.T) {
 			statusCode: http.StatusNotFound,
 			wantErr:    true,
 		},
+		{
+			name:   "bad request",
+			lbID:   "lb-123",
+			certID: "cert-123",
+			request: UpdateNetworkCertificateRequest{
+				Certificate: "updated-cert",
+				PrivateKey:  "updated-key",
+			},
+			statusCode: http.StatusBadRequest,
+			wantErr:    true,
+		},
+		{
+			name:   "unauthorized",
+			lbID:   "lb-123",
+			certID: "cert-123",
+			request: UpdateNetworkCertificateRequest{
+				Certificate: "updated-cert",
+				PrivateKey:  "updated-key",
+			},
+			statusCode: http.StatusUnauthorized,
+			wantErr:    true,
+		},
+		{
+			name:   "forbidden",
+			lbID:   "lb-123",
+			certID: "cert-123",
+			request: UpdateNetworkCertificateRequest{
+				Certificate: "updated-cert",
+				PrivateKey:  "updated-key",
+			},
+			statusCode: http.StatusForbidden,
+			wantErr:    true,
+		},
+		{
+			name:   "server error",
+			lbID:   "lb-123",
+			certID: "cert-123",
+			request: UpdateNetworkCertificateRequest{
+				Certificate: "updated-cert",
+				PrivateKey:  "updated-key",
+			},
+			statusCode: http.StatusInternalServerError,
+			wantErr:    true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -569,6 +651,27 @@ func TestNetworkCertificateService_Delete(t *testing.T) {
 			lbID:       "lb-123",
 			certID:     "invalid",
 			statusCode: http.StatusNotFound,
+			wantErr:    true,
+		},
+		{
+			name:       "unauthorized",
+			lbID:       "lb-123",
+			certID:     "cert-123",
+			statusCode: http.StatusUnauthorized,
+			wantErr:    true,
+		},
+		{
+			name:       "forbidden",
+			lbID:       "lb-123",
+			certID:     "cert-123",
+			statusCode: http.StatusForbidden,
+			wantErr:    true,
+		},
+		{
+			name:       "server error",
+			lbID:       "lb-123",
+			certID:     "cert-123",
+			statusCode: http.StatusInternalServerError,
 			wantErr:    true,
 		},
 	}
