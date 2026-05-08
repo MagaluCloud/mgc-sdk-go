@@ -218,6 +218,30 @@ func TestNetworkListenerService_Get(t *testing.T) {
 			statusCode: http.StatusNotFound,
 			wantErr:    true,
 		},
+		{
+			name:       "unauthorized",
+			lbID:       "lb-123",
+			listenerID: "listener-123",
+			response:   `{"error": "unauthorized"}`,
+			statusCode: http.StatusUnauthorized,
+			wantErr:    true,
+		},
+		{
+			name:       "forbidden",
+			lbID:       "lb-123",
+			listenerID: "listener-123",
+			response:   `{"error": "forbidden"}`,
+			statusCode: http.StatusForbidden,
+			wantErr:    true,
+		},
+		{
+			name:       "server error",
+			lbID:       "lb-123",
+			listenerID: "listener-123",
+			response:   `{"error": "internal server error"}`,
+			statusCode: http.StatusInternalServerError,
+			wantErr:    true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -299,6 +323,20 @@ func TestNetworkListenerService_List(t *testing.T) {
 			lbID:       "lb-123",
 			response:   `{"error": "internal server error"}`,
 			statusCode: http.StatusInternalServerError,
+			wantErr:    true,
+		},
+		{
+			name:       "unauthorized",
+			lbID:       "lb-123",
+			response:   `{"error": "unauthorized"}`,
+			statusCode: http.StatusUnauthorized,
+			wantErr:    true,
+		},
+		{
+			name:       "forbidden",
+			lbID:       "lb-123",
+			response:   `{"error": "forbidden"}`,
+			statusCode: http.StatusForbidden,
 			wantErr:    true,
 		},
 	}
@@ -530,6 +568,46 @@ func TestNetworkListenerService_Update(t *testing.T) {
 			statusCode: http.StatusNotFound,
 			wantErr:    true,
 		},
+		{
+			name:       "bad request",
+			lbID:       "lb-123",
+			listenerID: "listener-123",
+			request: UpdateNetworkListenerRequest{
+				TLSCertificateID: stringPtr("updated-listener"),
+			},
+			statusCode: http.StatusBadRequest,
+			wantErr:    true,
+		},
+		{
+			name:       "unauthorized",
+			lbID:       "lb-123",
+			listenerID: "listener-123",
+			request: UpdateNetworkListenerRequest{
+				TLSCertificateID: stringPtr("updated-listener"),
+			},
+			statusCode: http.StatusUnauthorized,
+			wantErr:    true,
+		},
+		{
+			name:       "forbidden",
+			lbID:       "lb-123",
+			listenerID: "listener-123",
+			request: UpdateNetworkListenerRequest{
+				TLSCertificateID: stringPtr("updated-listener"),
+			},
+			statusCode: http.StatusForbidden,
+			wantErr:    true,
+		},
+		{
+			name:       "server error",
+			lbID:       "lb-123",
+			listenerID: "listener-123",
+			request: UpdateNetworkListenerRequest{
+				TLSCertificateID: stringPtr("updated-listener"),
+			},
+			statusCode: http.StatusInternalServerError,
+			wantErr:    true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -578,6 +656,27 @@ func TestNetworkListenerService_Delete(t *testing.T) {
 			lbID:       "lb-123",
 			listenerID: "invalid",
 			statusCode: http.StatusNotFound,
+			wantErr:    true,
+		},
+		{
+			name:       "unauthorized",
+			lbID:       "lb-123",
+			listenerID: "listener-123",
+			statusCode: http.StatusUnauthorized,
+			wantErr:    true,
+		},
+		{
+			name:       "forbidden",
+			lbID:       "lb-123",
+			listenerID: "listener-123",
+			statusCode: http.StatusForbidden,
+			wantErr:    true,
+		},
+		{
+			name:       "server error",
+			lbID:       "lb-123",
+			listenerID: "listener-123",
+			statusCode: http.StatusInternalServerError,
 			wantErr:    true,
 		},
 	}

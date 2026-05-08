@@ -3,6 +3,8 @@ package objectstorage
 import (
 	"context"
 	"io"
+	"sort"
+	"strings"
 	"time"
 
 	"github.com/minio/minio-go/v7"
@@ -311,7 +313,16 @@ func (m *mockMinioClient) ListObjects(ctx context.Context, bucketName string, op
 			return
 		}
 
-		for _, obj := range bucket.objects {
+		keys := make([]string, 0, len(bucket.objects))
+		for k := range bucket.objects {
+			if opts.Prefix == "" || strings.HasPrefix(k, opts.Prefix) {
+				keys = append(keys, k)
+			}
+		}
+		sort.Strings(keys)
+
+		for _, k := range keys {
+			obj := bucket.objects[k]
 			ch <- minio.ObjectInfo{
 				Key:          obj.key,
 				Size:         obj.size,
