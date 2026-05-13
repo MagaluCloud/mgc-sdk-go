@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net/http"
 	"os"
 	"strings"
 	"time"
@@ -142,11 +143,15 @@ func runE2ETest(ctx context.Context, osClient *objectstorage.ObjectStorageClient
 	testDeleteBucketCORS(ctx, osClient)
 	pause()
 
-	// Step 16: Delete object
+	// Step 16: Get presigned URL
+	testGetPresignedURL(ctx, osClient)
+	pause()
+
+	// Step 17: Delete object
 	testDeleteObject(ctx, osClient)
 	pause()
 
-	// Step 17: Delete bucket
+	// Step 18: Delete bucket
 	testDeleteBucket(ctx, osClient)
 	pause()
 
@@ -464,8 +469,36 @@ func testDeleteBucketCORS(ctx context.Context, osClient *objectstorage.ObjectSto
 	fmt.Printf("✅ Bucket cors deleted successfully\n\n")
 }
 
+func testGetPresignedURL(ctx context.Context, osClient *objectstorage.ObjectStorageClient) {
+	fmt.Println("📝 Test 16: Get presigned URL")
+	fmt.Println("─────────────────────────────────────────────────────────────")
+
+	presignedURL, err := osClient.Objects().GetPresignedURL(ctx, testBucketName, testObjectKey, objectstorage.GetPresignedURLOptions{
+		Method: http.MethodGet,
+	})
+	if err != nil {
+		fmt.Printf("❌ Failed to get presigned GET URL: %v\n\n", err)
+		return
+	}
+
+	fmt.Printf("✅ Presigned GET URL retrieved: %s\n\n", presignedURL.URL)
+
+	expiry := 10 * time.Minute
+
+	presignedURL, err = osClient.Objects().GetPresignedURL(ctx, testBucketName, testObjectKey, objectstorage.GetPresignedURLOptions{
+		Method:          http.MethodPut,
+		ExpiryInSeconds: &expiry,
+	})
+	if err != nil {
+		fmt.Printf("❌ Failed to get presigned PUT URL: %v\n\n", err)
+		return
+	}
+
+	fmt.Printf("✅ Presigned PUT URL retrieved: %s\n\n", presignedURL.URL)
+}
+
 func testDeleteObject(ctx context.Context, osClient *objectstorage.ObjectStorageClient) {
-	fmt.Println("📝 Test 16: Delete Object")
+	fmt.Println("📝 Test 17: Delete Object")
 	fmt.Println("─────────────────────────────────────────────────────────────")
 
 	err := osClient.Objects().Delete(ctx, testBucketName, testObjectKey, nil)
@@ -478,7 +511,7 @@ func testDeleteObject(ctx context.Context, osClient *objectstorage.ObjectStorage
 }
 
 func testDeleteBucket(ctx context.Context, osClient *objectstorage.ObjectStorageClient) {
-	fmt.Println("📝 Test 17: Delete Bucket")
+	fmt.Println("📝 Test 18: Delete Bucket")
 	fmt.Println("─────────────────────────────────────────────────────────────")
 
 	err := osClient.Buckets().Delete(ctx, testBucketName, true)

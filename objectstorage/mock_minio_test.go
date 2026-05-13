@@ -3,6 +3,7 @@ package objectstorage
 import (
 	"context"
 	"io"
+	"net/url"
 	"time"
 
 	"github.com/minio/minio-go/v7"
@@ -33,6 +34,8 @@ type mockMinioClient struct {
 	statObjectFunc         func(ctx context.Context, bucketName string, objectName string, opts minio.StatObjectOptions) (minio.ObjectInfo, error)
 	putObjectRetentionFunc func(ctx context.Context, bucketName string, objectName string, opts minio.PutObjectRetentionOptions) error
 	getObjectRetentionFunc func(ctx context.Context, bucketName string, objectName string, versionID string) (*minio.RetentionMode, *time.Time, error)
+	presignedGetObjectFunc func(ctx context.Context, bucketName string, objectName string, expiry time.Duration, reqParams url.Values) (*url.URL, error)
+	presignedPutObjectFunc func(ctx context.Context, bucketName string, objectName string, expiry time.Duration) (*url.URL, error)
 	setAppInfoCalls        int
 	lastAppName            string
 	lastAppVersion         string
@@ -403,6 +406,56 @@ func (m *mockMinioClient) GetObjectRetention(ctx context.Context, bucketName str
 	}
 
 	return obj.retention.mode, obj.retention.retainUntilDate, nil
+}
+
+func (m *mockMinioClient) PresignedGetObject(ctx context.Context, bucketName string, objectName string, expiry time.Duration, reqParams url.Values) (*url.URL, error) {
+	if m.presignedGetObjectFunc != nil {
+		return m.presignedGetObjectFunc(ctx, bucketName, objectName, expiry, reqParams)
+	}
+
+	bucket, exists := m.buckets[bucketName]
+	if !exists {
+		return nil, nil
+	}
+
+	obj, exists := bucket.objects[objectName]
+	if !exists {
+		return nil, nil
+	}
+
+	mockURL := "https://mock-minio/" + bucketName + "/" + obj.key + "?expiry=" + expiry.String()
+
+	parsedURL, err := url.Parse(mockURL)
+	if err != nil {
+		return nil, err
+	}
+
+	return parsedURL, nil
+}
+
+func (m *mockMinioClient) PresignedPutObject(ctx context.Context, bucketName string, objectName string, expiry time.Duration) (*url.URL, error) {
+	if m.presignedPutObjectFunc != nil {
+		return m.presignedPutObjectFunc(ctx, bucketName, objectName, expiry)
+	}
+
+	bucket, exists := m.buckets[bucketName]
+	if !exists {
+		return nil, nil
+	}
+
+	obj, exists := bucket.objects[objectName]
+	if !exists {
+		return nil, nil
+	}
+
+	mockURL := "https://mock-minio/" + bucketName + "/" + obj.key + "?expiry=" + expiry.String()
+
+	parsedURL, err := url.Parse(mockURL)
+	if err != nil {
+		return nil, err
+	}
+
+	return parsedURL, nil
 }
 
 func (m *mockMinioClient) SetAppInfo(appName string, appVersion string) {

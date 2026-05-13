@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"io"
+	"net/http"
 	"testing"
 	"time"
 
@@ -1228,4 +1229,115 @@ func TestListVersionsOptions(t *testing.T) {
 
 func intPtr(v int) *int {
 	return &v
+}
+
+func TestObjectServiceGetPresignedURL_InvalidBucketName(t *testing.T) {
+	t.Parallel()
+
+	core := client.NewMgcClient()
+	osClient, _ := New(core, "minioadmin", "minioadmin")
+	svc := osClient.Objects()
+
+	_, err := svc.GetPresignedURL(context.Background(), "", "test-key", GetPresignedURLOptions{
+		Method: http.MethodGet,
+	})
+
+	if err == nil {
+		t.Error("GetPresignedURL() expected error for empty bucket name, got nil")
+	}
+
+	if _, ok := err.(*InvalidBucketNameError); !ok {
+		t.Errorf("GetPresignedURL() expected InvalidBucketNameError, got %T", err)
+	}
+}
+
+func TestObjectServiceGetPresignedURL_InvalidObjectKey(t *testing.T) {
+	t.Parallel()
+
+	core := client.NewMgcClient()
+	osClient, _ := New(core, "minioadmin", "minioadmin")
+	svc := osClient.Objects()
+
+	_, err := svc.GetPresignedURL(context.Background(), "test-bucket", "", GetPresignedURLOptions{
+		Method: http.MethodGet,
+	})
+
+	if err == nil {
+		t.Error("GetPresignedURL() expected error for empty object key, got nil")
+	}
+
+	if _, ok := err.(*InvalidObjectKeyError); !ok {
+		t.Errorf("GetPresignedURL() expected InvalidObjectKeyError, got %T", err)
+	}
+}
+
+func TestObjectServiceGetPresignedURL_InvalidMethod(t *testing.T) {
+	t.Parallel()
+
+	core := client.NewMgcClient()
+	osClient, _ := New(core, "minioadmin", "minioadmin")
+	svc := osClient.Objects()
+
+	_, err := svc.GetPresignedURL(context.Background(), "test-bucket", "test-object", GetPresignedURLOptions{
+		Method: http.MethodPost,
+	})
+
+	if err == nil {
+		t.Error("GetPresignedURL() expected error for invalid method, got nil")
+	}
+
+	if _, ok := err.(*InvalidObjectDataError); !ok {
+		t.Errorf("GetPresignedURL() expected InvalidObjectDataError, got %T", err)
+	}
+}
+
+func TestObjectServiceGetPresignedURL_PUTMethod(t *testing.T) {
+	t.Parallel()
+
+	core := client.NewMgcClient()
+	osClient, _ := New(core, "minioadmin", "minioadmin")
+	svc := osClient.Objects()
+
+	_, err := svc.GetPresignedURL(context.Background(), "test-bucket", "test-key", GetPresignedURLOptions{
+		Method: http.MethodPut,
+	})
+
+	if err != nil {
+		t.Error("GetPresignedURL() expected presigned URL, got nil")
+	}
+}
+
+func TestObjectServiceGetPresignedURL_GETMethod(t *testing.T) {
+	t.Parallel()
+
+	core := client.NewMgcClient()
+	osClient, _ := New(core, "minioadmin", "minioadmin")
+	svc := osClient.Objects()
+
+	_, err := svc.GetPresignedURL(context.Background(), "test-bucket", "test-key", GetPresignedURLOptions{
+		Method: http.MethodGet,
+	})
+
+	if err != nil {
+		t.Error("GetPresignedURL() expected presigned URL, got nil")
+	}
+}
+
+func TestObjectServiceGetPresignedURL_WithExpiry(t *testing.T) {
+	t.Parallel()
+
+	core := client.NewMgcClient()
+	osClient, _ := New(core, "minioadmin", "minioadmin")
+	svc := osClient.Objects()
+
+	expire := 5 * time.Minute
+
+	_, err := svc.GetPresignedURL(context.Background(), "test-bucket", "test-key", GetPresignedURLOptions{
+		Method:          http.MethodPut,
+		ExpiryInSeconds: &expire,
+	})
+
+	if err != nil {
+		t.Error("GetPresignedURL() expected presigned URL, got nil")
+	}
 }

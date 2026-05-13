@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"context"
 	"io"
+	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/minio/minio-go/v7"
@@ -23,11 +25,26 @@ type ObjectService interface {
 	LockObject(ctx context.Context, bucketName string, objectKey string, retainUntilDate time.Time) error
 	UnlockObject(ctx context.Context, bucketName string, objectKey string) error
 	GetObjectLockStatus(ctx context.Context, bucketName string, objectKey string) (bool, error)
+	GetPresignedURL(ctx context.Context, bucketName string, objectKey string, opts GetPresignedURLOptions) (*PresignedURL, error)
 }
 
 // objectService implements the ObjectService interface.
 type objectService struct {
 	client *ObjectStorageClient
+}
+
+func validateBucket(bucket string) error {
+	if bucket == "" {
+		return &InvalidBucketNameError{Name: bucket}
+	}
+	return nil
+}
+
+func validateObjectKey(key string) error {
+	if key == "" {
+		return &InvalidObjectKeyError{Key: key}
+	}
+	return nil
 }
 
 // Upload uploads an object to a bucket.
@@ -359,4 +376,40 @@ func (s *objectService) ListVersions(ctx context.Context, bucketName string, obj
 	}
 
 	return result, nil
+}
+
+func (s *objectService) GetPresignedURL(ctx context.Context, bucketName string, objectKey string, opts GetPresignedURLOptions) (*PresignedURL, error) {
+	if err := validateBucket(bucketName); err != nil {
+		return nil, err
+	}
+
+	if err := validateObjectKey(objectKey); err != nil {
+		return nil, err
+	}
+
+	if opts.Method != http.MethodGet && opts.Method != http.MethodPut {
+		return nil, &InvalidObjectDataError{Message: "Invalid HTTP method"}
+	}
+
+	var presignedURL *url.URL
+	var err error
+
+	expiryInSeconds := 5 * time.Minute
+
+	if opts.ExpiryInSeconds != nil {
+		expiryInSeconds = *opts.ExpiryInSeconds
+	}
+
+	switch opts.Method {
+	case http.MethodGet:
+		presignedURL, err = s.client.minioClient.PresignedGetObject(ctx, bucketName, objectKey, expiryInSeconds, url.Values{})
+	case http.MethodPut:
+		presignedURL, err = s.client.minioClient.PresignedPutObject(ctx, bucketName, objectKey, expiryInSeconds)
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &PresignedURL{URL: presignedURL.String()}, nil
 }
