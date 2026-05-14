@@ -11,7 +11,6 @@ import (
 	"testing"
 
 	"github.com/MagaluCloud/mgc-sdk-go/client"
-	"github.com/MagaluCloud/mgc-sdk-go/helpers"
 )
 
 // Helper functions
@@ -69,8 +68,8 @@ func TestReplicaService_List(t *testing.T) {
 		{
 			name: "with pagination",
 			opts: ListReplicaOptions{
-				Limit:  helpers.IntPtr(1),
-				Offset: helpers.IntPtr(1),
+				Limit:  new(1),
+				Offset: new(1),
 			},
 			response: `{
 				"meta": {"total": 1},
@@ -83,7 +82,7 @@ func TestReplicaService_List(t *testing.T) {
 		{
 			name: "filter by source",
 			opts: ListReplicaOptions{
-				SourceID: helpers.StrPtr("src1"),
+				SourceID: new("src1"),
 			},
 			response: `{
 				"meta": {"total": 1},
@@ -319,7 +318,7 @@ func TestReplicaService_Resize(t *testing.T) {
 			name: "resize instance type",
 			id:   "rep1",
 			request: ReplicaResizeRequest{
-				InstanceTypeID: helpers.StrPtr("type-large"),
+				InstanceTypeID: new("type-large"),
 				Volume: &InstanceVolumeResizeRequest{
 					Size: 200,
 					Type: "nvme",
@@ -483,46 +482,49 @@ func TestReplicaService_ListAll(t *testing.T) {
 			name: "multiple pages",
 			pages: []string{
 				func() string {
-					results := `[`
-					for i := 0; i < 25; i++ {
+					var results strings.Builder
+					results.WriteString(`[`)
+					for i := range 25 {
 						if i > 0 {
-							results += ","
+							results.WriteString(",")
 						}
-						results += fmt.Sprintf(`{"id": "rep%d", "name": "replica%d"}`, i+1, i+1)
+						results.WriteString(fmt.Sprintf(`{"id": "rep%d", "name": "replica%d"}`, i+1, i+1))
 					}
-					results += `]`
+					results.WriteString(`]`)
 					return fmt.Sprintf(`{
 						"meta": {"page": {"offset": 0, "limit": 25, "count": 25, "total": 60}},
 						"results": %s
-					}`, results)
+					}`, results.String())
 				}(),
 				func() string {
-					results := `[`
-					for i := 0; i < 25; i++ {
+					var results strings.Builder
+					results.WriteString(`[`)
+					for i := range 25 {
 						if i > 0 {
-							results += ","
+							results.WriteString(",")
 						}
-						results += fmt.Sprintf(`{"id": "rep%d", "name": "replica%d"}`, i+26, i+26)
+						results.WriteString(fmt.Sprintf(`{"id": "rep%d", "name": "replica%d"}`, i+26, i+26))
 					}
-					results += `]`
+					results.WriteString(`]`)
 					return fmt.Sprintf(`{
 						"meta": {"page": {"offset": 25, "limit": 25, "count": 25, "total": 60}},
 						"results": %s
-					}`, results)
+					}`, results.String())
 				}(),
 				func() string {
-					results := `[`
-					for i := 0; i < 10; i++ {
+					var results strings.Builder
+					results.WriteString(`[`)
+					for i := range 10 {
 						if i > 0 {
-							results += ","
+							results.WriteString(",")
 						}
-						results += fmt.Sprintf(`{"id": "rep%d", "name": "replica%d"}`, i+51, i+51)
+						results.WriteString(fmt.Sprintf(`{"id": "rep%d", "name": "replica%d"}`, i+51, i+51))
 					}
-					results += `]`
+					results.WriteString(`]`)
 					return fmt.Sprintf(`{
 						"meta": {"page": {"offset": 50, "limit": 25, "count": 10, "total": 60}},
 						"results": %s
-					}`, results)
+					}`, results.String())
 				}(),
 			},
 			statusCode: http.StatusOK,
@@ -546,7 +548,7 @@ func TestReplicaService_ListAll(t *testing.T) {
 		{
 			name: "with source filter",
 			opts: ReplicaFilterOptions{
-				SourceID: helpers.StrPtr("src1"),
+				SourceID: new("src1"),
 			},
 			pages: []string{
 				`{

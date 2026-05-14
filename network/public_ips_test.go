@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/MagaluCloud/mgc-sdk-go/client"
-	"github.com/MagaluCloud/mgc-sdk-go/helpers"
 	"github.com/MagaluCloud/mgc-sdk-go/internal/utils"
 )
 
@@ -52,7 +51,6 @@ func TestPublicIPService_List(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt // capture range variable
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -104,10 +102,10 @@ func TestPublicIPService_Get(t *testing.T) {
 			}`,
 			statusCode: http.StatusOK,
 			want: &PublicIPResponse{
-				ID:        helpers.StrPtr("ip1"),
-				PublicIP:  helpers.StrPtr("203.0.113.5"),
-				VPCID:     helpers.StrPtr("vpc1"),
-				Status:    helpers.StrPtr("ACTIVE"),
+				ID:        new("ip1"),
+				PublicIP:  new("203.0.113.5"),
+				VPCID:     new("vpc1"),
+				Status:    new("ACTIVE"),
 				Updated:   &parsedTime,
 				CreatedAt: &parsedTime,
 			},
@@ -130,7 +128,6 @@ func TestPublicIPService_Get(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt // capture range variable
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -198,7 +195,6 @@ func TestPublicIPService_Delete(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt // capture range variable
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -289,7 +285,6 @@ func TestPublicIPService_AttachDetach(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt // capture range variable
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

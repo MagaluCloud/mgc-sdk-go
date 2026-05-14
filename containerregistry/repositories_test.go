@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
@@ -114,8 +115,8 @@ func TestRepositoriesService_List(t *testing.T) {
 			name:       "list with pagination",
 			registryID: "reg-123",
 			opts: RepositoryListOptions{
-				Limit:  intPtr(10),
-				Offset: intPtr(20),
+				Limit:  new(10),
+				Offset: new(20),
 			},
 			expectedQuery: map[string]string{
 				"_limit":  "10",
@@ -160,7 +161,7 @@ func TestRepositoriesService_List(t *testing.T) {
 			registryID: "reg-123",
 			opts: RepositoryListOptions{
 				RepositoryFilterOptions: RepositoryFilterOptions{
-					Sort: strPtr("name:asc"),
+					Sort: new("name:asc"),
 				},
 			},
 			expectedQuery: map[string]string{
@@ -408,7 +409,7 @@ func TestRepositoriesService_Concurrent(t *testing.T) {
 
 	// Test concurrent operations
 	done := make(chan bool)
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		go func() {
 			_, err := client.Repositories().List(ctx, "reg-123", RepositoryListOptions{})
 			if err != nil {
@@ -419,7 +420,7 @@ func TestRepositoriesService_Concurrent(t *testing.T) {
 	}
 
 	// Wait for all goroutines
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		<-done
 	}
 }
@@ -567,7 +568,7 @@ func TestRepositoriesService_ListAll(t *testing.T) {
 // Helper function to generate repository JSON array for testing pagination
 func generateRepositoryJSONArray(count int) string {
 	var repositories []string
-	for i := 0; i < count; i++ {
+	for i := range count {
 		repositories = append(repositories, fmt.Sprintf(`{
 			"registry_name": "test-registry",
 			"name": "repo-%d",
@@ -576,12 +577,12 @@ func generateRepositoryJSONArray(count int) string {
 			"updated_at": "2024-01-01T00:00:00Z"
 		}`, i, i+1))
 	}
-	result := ""
+	var result strings.Builder
 	for i, repo := range repositories {
 		if i > 0 {
-			result += ","
+			result.WriteString(",")
 		}
-		result += repo
+		result.WriteString(repo)
 	}
-	return result
+	return result.String()
 }

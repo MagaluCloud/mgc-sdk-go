@@ -155,7 +155,7 @@ func runCreateLoadBalancerExample(ctx context.Context, client *client.CoreClient
 	// Prepare the load balancer configuration
 	createRequest := lbaas.CreateNetworkLoadBalancerRequest{
 		Name:        "example-web-lb",
-		Description: stringPtr("Example web application load balancer with HTTPS support"),
+		Description: new("Example web application load balancer with HTTPS support"),
 		Visibility:  lbaas.LoadBalancerVisibilityExternal,
 		VPCID:       ExampleVPCID,
 
@@ -167,20 +167,20 @@ func runCreateLoadBalancerExample(ctx context.Context, client *client.CoreClient
 		Backends: []lbaas.CreateNetworkBackendRequest{
 			{
 				Name:                                "web-servers",
-				Description:                         stringPtr("Backend pool for web servers"),
+				Description:                         new("Backend pool for web servers"),
 				BalanceAlgorithm:                    lbaas.BackendBalanceAlgorithmRoundRobin,
 				TargetsType:                         lbaas.BackendTypeInstance,
-				PanicThreshold:                      floatPtr(50.0), // Panic when 50% of targets are unhealthy
-				CloseConnectionsOnHostHealthFailure: boolPtr(true),
+				PanicThreshold:                      new(50.0), // Panic when 50% of targets are unhealthy
+				CloseConnectionsOnHostHealthFailure: new(true),
 				// Health check will be linked later
 			},
 			{
 				Name:                                "api-servers",
-				Description:                         stringPtr("Backend pool for API servers"),
+				Description:                         new("Backend pool for API servers"),
 				BalanceAlgorithm:                    lbaas.BackendBalanceAlgorithmRoundRobin,
 				TargetsType:                         lbaas.BackendTypeInstance,
-				PanicThreshold:                      floatPtr(30.0),
-				CloseConnectionsOnHostHealthFailure: boolPtr(false),
+				PanicThreshold:                      new(30.0),
+				CloseConnectionsOnHostHealthFailure: new(false),
 			},
 		},
 
@@ -188,29 +188,29 @@ func runCreateLoadBalancerExample(ctx context.Context, client *client.CoreClient
 		HealthChecks: []lbaas.CreateNetworkHealthCheckRequest{
 			{
 				Name:                    "web-health-check",
-				Description:             stringPtr("HTTP health check for web servers"),
+				Description:             new("HTTP health check for web servers"),
 				Protocol:                lbaas.HealthCheckProtocolHTTP,
 				Port:                    80,
-				Path:                    stringPtr("/health"),
-				HealthyStatusCode:       intPtr(200),
-				IntervalSeconds:         intPtr(30),
-				TimeoutSeconds:          intPtr(5),
-				InitialDelaySeconds:     intPtr(10),
-				HealthyThresholdCount:   intPtr(3),
-				UnhealthyThresholdCount: intPtr(3),
+				Path:                    new("/health"),
+				HealthyStatusCode:       new(200),
+				IntervalSeconds:         new(30),
+				TimeoutSeconds:          new(5),
+				InitialDelaySeconds:     new(10),
+				HealthyThresholdCount:   new(3),
+				UnhealthyThresholdCount: new(3),
 			},
 			{
 				Name:                    "api-health-check",
-				Description:             stringPtr("HTTP health check for API servers"),
+				Description:             new("HTTP health check for API servers"),
 				Protocol:                lbaas.HealthCheckProtocolHTTP,
 				Port:                    8080,
-				Path:                    stringPtr("/api/health"),
-				HealthyStatusCode:       intPtr(200),
-				IntervalSeconds:         intPtr(15),
-				TimeoutSeconds:          intPtr(3),
-				InitialDelaySeconds:     intPtr(5),
-				HealthyThresholdCount:   intPtr(2),
-				UnhealthyThresholdCount: intPtr(2),
+				Path:                    new("/api/health"),
+				HealthyStatusCode:       new(200),
+				IntervalSeconds:         new(15),
+				TimeoutSeconds:          new(3),
+				InitialDelaySeconds:     new(5),
+				HealthyThresholdCount:   new(2),
+				UnhealthyThresholdCount: new(2),
 			},
 		},
 
@@ -218,7 +218,7 @@ func runCreateLoadBalancerExample(ctx context.Context, client *client.CoreClient
 		TLSCertificates: []lbaas.CreateNetworkCertificateRequest{
 			{
 				Name:        "web-ssl-cert",
-				Description: stringPtr("SSL certificate for web application"),
+				Description: new("SSL certificate for web application"),
 				Certificate: cert,
 				PrivateKey:  key,
 			},
@@ -229,22 +229,22 @@ func runCreateLoadBalancerExample(ctx context.Context, client *client.CoreClient
 			{
 				BackendName: "web-servers", // Links to the backend defined above
 				Name:        "http-listener",
-				Description: stringPtr("HTTP listener for web traffic"),
+				Description: new("HTTP listener for web traffic"),
 				Protocol:    lbaas.ListenerProtocolTCP,
 				Port:        80,
 			},
 			{
 				BackendName:        "web-servers",
 				Name:               "https-listener",
-				Description:        stringPtr("HTTPS listener for secure web traffic"),
+				Description:        new("HTTPS listener for secure web traffic"),
 				Protocol:           lbaas.ListenerProtocolTLS,
 				Port:               443,
-				TLSCertificateName: stringPtr("web-ssl-cert"), // Links to certificate by name
+				TLSCertificateName: new("web-ssl-cert"), // Links to certificate by name
 			},
 			{
 				BackendName: "api-servers",
 				Name:        "api-listener",
-				Description: stringPtr("API listener"),
+				Description: new("API listener"),
 				Protocol:    lbaas.ListenerProtocolTCP,
 				Port:        8080,
 			},
@@ -253,14 +253,14 @@ func runCreateLoadBalancerExample(ctx context.Context, client *client.CoreClient
 		// Define Access Control Lists for security
 		ACLs: []lbaas.CreateNetworkACLRequest{
 			{
-				Name:           stringPtr("allow-web-traffic"),
+				Name:           new("allow-web-traffic"),
 				Ethertype:      lbaas.AclEtherTypeIPv4,
 				Protocol:       lbaas.AclProtocolTCP,
 				Action:         lbaas.AclActionTypeAllow,
 				RemoteIPPrefix: "0.0.0.0/0", // Allow from anywhere (adjust as needed)
 			},
 			{
-				Name:           stringPtr("allow-api-internal"),
+				Name:           new("allow-api-internal"),
 				Ethertype:      lbaas.AclEtherTypeIPv4,
 				Protocol:       lbaas.AclProtocolTCP,
 				Action:         lbaas.AclActionTypeAllow,
@@ -297,9 +297,9 @@ func runListLoadBalancersExample(ctx context.Context, client *client.CoreClient)
 
 	// Example 1: List with pagination options
 	listOptions := lbaas.ListNetworkLoadBalancerRequest{
-		Limit:  intPtr(10),                   // Get up to 10 results per page
-		Offset: intPtr(0),                    // Start from the beginning
-		Sort:   stringPtr("created_at:desc"), // Sort by creation date, newest first
+		Limit:  new(10),                // Get up to 10 results per page
+		Offset: new(0),                 // Start from the beginning
+		Sort:   new("created_at:desc"), // Sort by creation date, newest first
 	}
 
 	paginatedResp, err := lbService.List(ctx, listOptions)
@@ -424,8 +424,8 @@ func runUpdateLoadBalancerExample(ctx context.Context, client *client.CoreClient
 
 	// Update the load balancer name and description
 	updateRequest := lbaas.UpdateNetworkLoadBalancerRequest{
-		Name:        stringPtr("updated-web-lb"),
-		Description: stringPtr("Updated description with enhanced features"),
+		Name:        new("updated-web-lb"),
+		Description: new("Updated description with enhanced features"),
 	}
 
 	updatedID, err := lbService.Update(ctx, lbID, updateRequest)
@@ -455,11 +455,11 @@ func runManageBackendsExample(ctx context.Context, client *client.CoreClient, lb
 	fmt.Println("Creating a new backend...")
 	createBackendReq := lbaas.CreateBackendRequest{
 		Name:                                "new-backend-pool",
-		Description:                         stringPtr("Additional backend pool for scaling"),
+		Description:                         new("Additional backend pool for scaling"),
 		BalanceAlgorithm:                    lbaas.BackendBalanceAlgorithmRoundRobin,
 		TargetsType:                         lbaas.BackendTypeInstance,
-		PanicThreshold:                      floatPtr(40.0),
-		CloseConnectionsOnHostHealthFailure: boolPtr(true),
+		PanicThreshold:                      new(40.0),
+		CloseConnectionsOnHostHealthFailure: new(true),
 	}
 
 	backendID, err := backendService.Create(ctx, lbID, createBackendReq)
@@ -505,8 +505,8 @@ func runManageBackendsExample(ctx context.Context, client *client.CoreClient, lb
 	// Update the backend
 	fmt.Printf("\nUpdating backend: %s\n", backendID)
 	updateBackendReq := lbaas.UpdateNetworkBackendRequest{
-		PanicThreshold:                      floatPtr(60.0),
-		CloseConnectionsOnHostHealthFailure: boolPtr(false),
+		PanicThreshold:                      new(60.0),
+		CloseConnectionsOnHostHealthFailure: new(false),
 	}
 
 	_, err = backendService.Update(ctx, lbID, backendID, updateBackendReq)
@@ -535,7 +535,7 @@ func runManageListenersExample(ctx context.Context, client *client.CoreClient, l
 	fmt.Println("Creating a new listener...")
 	createListenerReq := lbaas.CreateNetworkListenerRequest{
 		Name:        "admin-listener",
-		Description: stringPtr("Administrative interface listener"),
+		Description: new("Administrative interface listener"),
 		Protocol:    lbaas.ListenerProtocolTCP,
 		Port:        9090,
 	}
@@ -580,7 +580,7 @@ func runManageListenersExample(ctx context.Context, client *client.CoreClient, l
 	// Update the listener
 	fmt.Printf("\nUpdating listener: %s\n", listener.ID)
 	updateListenerReq := lbaas.UpdateNetworkListenerRequest{
-		Name: stringPtr("updated-admin-listener"),
+		Name: new("updated-admin-listener"),
 	}
 
 	err = listenerService.Update(ctx, lbID, listener.ID, updateListenerReq)
@@ -601,14 +601,14 @@ func runManageHealthChecksExample(ctx context.Context, client *client.CoreClient
 	fmt.Println("Creating a new health check...")
 	createHCReq := lbaas.CreateNetworkHealthCheckRequest{
 		Name:                    "tcp-health-check",
-		Description:             stringPtr("Simple TCP health check"),
+		Description:             new("Simple TCP health check"),
 		Protocol:                lbaas.HealthCheckProtocolTCP,
 		Port:                    3306, // MySQL port example
-		IntervalSeconds:         intPtr(20),
-		TimeoutSeconds:          intPtr(5),
-		InitialDelaySeconds:     intPtr(15),
-		HealthyThresholdCount:   intPtr(2),
-		UnhealthyThresholdCount: intPtr(3),
+		IntervalSeconds:         new(20),
+		TimeoutSeconds:          new(5),
+		InitialDelaySeconds:     new(15),
+		HealthyThresholdCount:   new(2),
+		UnhealthyThresholdCount: new(3),
 	}
 
 	hc, err := hcService.Create(ctx, lbID, createHCReq)
@@ -656,8 +656,8 @@ func runManageHealthChecksExample(ctx context.Context, client *client.CoreClient
 	updateHCReq := lbaas.UpdateNetworkHealthCheckRequest{
 		Protocol:        lbaas.HealthCheckProtocolHTTP,
 		Port:            8080,
-		Path:            stringPtr("/status"),
-		IntervalSeconds: intPtr(15),
+		Path:            new("/status"),
+		IntervalSeconds: new(15),
 	}
 
 	err = hcService.Update(ctx, lbID, hc.ID, updateHCReq)
@@ -686,7 +686,7 @@ func runManageCertificatesExample(ctx context.Context, client *client.CoreClient
 	fmt.Println("Creating a new TLS certificate...")
 	createCertReq := lbaas.CreateNetworkCertificateRequest{
 		Name:        "api-ssl-cert",
-		Description: stringPtr("SSL certificate for API endpoints"),
+		Description: new("SSL certificate for API endpoints"),
 		Certificate: cert,
 		PrivateKey:  key,
 	}
@@ -764,7 +764,7 @@ func runManageACLsExample(ctx context.Context, client *client.CoreClient, lbID s
 
 	// Allow HTTP from anywhere
 	httpACLID, err := aclService.Create(ctx, lbID, lbaas.CreateNetworkACLRequest{
-		Name:           stringPtr("allow-http-global"),
+		Name:           new("allow-http-global"),
 		Ethertype:      lbaas.AclEtherTypeIPv4,
 		Protocol:       lbaas.AclProtocolTCP,
 		Action:         lbaas.AclActionTypeAllow,
@@ -779,7 +779,7 @@ func runManageACLsExample(ctx context.Context, client *client.CoreClient, lbID s
 
 	// Allow HTTPS from anywhere
 	httpsACLID, err := aclService.Create(ctx, lbID, lbaas.CreateNetworkACLRequest{
-		Name:           stringPtr("allow-https-global"),
+		Name:           new("allow-https-global"),
 		Ethertype:      lbaas.AclEtherTypeIPv4,
 		Protocol:       lbaas.AclProtocolTLS,
 		Action:         lbaas.AclActionTypeAllow,
@@ -794,7 +794,7 @@ func runManageACLsExample(ctx context.Context, client *client.CoreClient, lbID s
 
 	// Deny access from a specific IP range
 	denyACLID, err := aclService.Create(ctx, lbID, lbaas.CreateNetworkACLRequest{
-		Name:           stringPtr("deny-suspicious-range"),
+		Name:           new("deny-suspicious-range"),
 		Ethertype:      lbaas.AclEtherTypeIPv4,
 		Protocol:       lbaas.AclProtocolTCP,
 		Action:         lbaas.AclActionTypeDeny,
@@ -812,21 +812,21 @@ func runManageACLsExample(ctx context.Context, client *client.CoreClient, lbID s
 	replaceACLsReq := lbaas.UpdateNetworkACLRequest{
 		Acls: []lbaas.CreateNetworkACLRequest{
 			{
-				Name:           stringPtr("allow-web-traffic"),
+				Name:           new("allow-web-traffic"),
 				Ethertype:      lbaas.AclEtherTypeIPv4,
 				Protocol:       lbaas.AclProtocolTCP,
 				Action:         lbaas.AclActionTypeAllow,
 				RemoteIPPrefix: "0.0.0.0/0",
 			},
 			{
-				Name:           stringPtr("allow-office-network"),
+				Name:           new("allow-office-network"),
 				Ethertype:      lbaas.AclEtherTypeIPv4,
 				Protocol:       lbaas.AclProtocolTCP,
 				Action:         lbaas.AclActionTypeAllow,
 				RemoteIPPrefix: "10.0.0.0/8",
 			},
 			{
-				Name:           stringPtr("deny-blacklisted-range"),
+				Name:           new("deny-blacklisted-range"),
 				Ethertype:      lbaas.AclEtherTypeIPv4,
 				Protocol:       lbaas.AclProtocolTCP,
 				Action:         lbaas.AclActionTypeDeny,
@@ -858,7 +858,7 @@ func runCleanupExample(ctx context.Context, client *client.CoreClient, lbID stri
 	// Delete the load balancer (this will cascade delete most sub-resources)
 	fmt.Println("Deleting load balancer...")
 	deleteRequest := lbaas.DeleteNetworkLoadBalancerRequest{
-		DeletePublicIP: boolPtr(true), // Also delete the associated public IP
+		DeletePublicIP: new(true), // Also delete the associated public IP
 	}
 
 	err := lbService.Delete(ctx, lbID, deleteRequest)
@@ -945,18 +945,23 @@ func generateSelfSignedCertificate() (string, string, error) {
 }
 
 // Helper functions for pointer conversions
+//
+//go:fix inline
 func stringPtr(s string) *string {
-	return &s
+	return new(s)
 }
 
+//go:fix inline
 func intPtr(i int) *int {
-	return &i
+	return new(i)
 }
 
+//go:fix inline
 func floatPtr(f float64) *float64 {
-	return &f
+	return new(f)
 }
 
+//go:fix inline
 func boolPtr(b bool) *bool {
-	return &b
+	return new(b)
 }

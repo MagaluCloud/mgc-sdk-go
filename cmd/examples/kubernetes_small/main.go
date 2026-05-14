@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/MagaluCloud/mgc-sdk-go/client"
-	"github.com/MagaluCloud/mgc-sdk-go/helpers"
 	"github.com/MagaluCloud/mgc-sdk-go/kubernetes"
 )
 
@@ -76,8 +75,8 @@ func ExampleCreateClusterWithoutNodepool(k8sClient *kubernetes.KubernetesClient)
 
 	createReq := kubernetes.ClusterRequest{
 		Name:         randomString(),
-		Version:      strPtr("v1.30.2"),
-		Description:  strPtr("Cluster de exemplo"),
+		Version:      new("v1.30.2"),
+		Description:  new("Cluster de exemplo"),
 		NodePools:    &[]kubernetes.CreateNodePoolRequest{},
 		AllowedCIDRs: &[]string{"192.168.0.0/24"},
 	}
@@ -96,8 +95,8 @@ func ExampleCreateCluster(k8sClient *kubernetes.KubernetesClient) string {
 
 	createReq := kubernetes.ClusterRequest{
 		Name:        randomString(),
-		Version:     strPtr("v1.30.2"),
-		Description: strPtr("Cluster de exemplo"),
+		Version:     new("v1.30.2"),
+		Description: new("Cluster de exemplo"),
 		NodePools: &[]kubernetes.CreateNodePoolRequest{
 			{
 				Name:     randomString(),
@@ -118,15 +117,16 @@ func ExampleCreateCluster(k8sClient *kubernetes.KubernetesClient) string {
 	return cluster.ID
 }
 
+//go:fix inline
 func strPtr(s string) *string {
-	return &s
+	return new(s)
 }
 
 func ExampleListClusters(k8sClient *kubernetes.KubernetesClient) {
 
 	clusters, err := k8sClient.Clusters().List(context.Background(), kubernetes.ListOptions{
-		Limit:  helpers.IntPtr(10),
-		Offset: helpers.IntPtr(0),
+		Limit:  new(10),
+		Offset: new(0),
 		Expand: []string{"node_pools"},
 	})
 
@@ -294,7 +294,7 @@ func ExampleNodePoolOperations(k8sClient *kubernetes.KubernetesClient, clusterID
 	}
 
 	updateReq := kubernetes.PatchNodePoolRequest{
-		Replicas: helpers.IntPtr(3),
+		Replicas: new(3),
 	}
 
 	updatedPool, err := k8sClient.Nodepools().Update(ctx, clusterID, newPool.ID, updateReq)

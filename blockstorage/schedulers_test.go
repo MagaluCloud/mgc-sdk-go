@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/MagaluCloud/mgc-sdk-go/client"
-	"github.com/MagaluCloud/mgc-sdk-go/helpers"
 )
 
 func TestSchedulerService_List(t *testing.T) {
@@ -77,8 +76,8 @@ func TestSchedulerService_List(t *testing.T) {
 		{
 			name: "with pagination",
 			opts: SchedulerListOptions{
-				Limit:  helpers.IntPtr(1),
-				Offset: helpers.IntPtr(1),
+				Limit:  new(1),
+				Offset: new(1),
 			},
 			response: `{
 				"meta": {
@@ -153,7 +152,7 @@ func TestSchedulerService_List(t *testing.T) {
 		{
 			name: "with sorting",
 			opts: SchedulerListOptions{
-				Sort: helpers.StrPtr("created_at:desc"),
+				Sort: new("created_at:desc"),
 			},
 			response: `{
 				"meta": {
@@ -233,7 +232,7 @@ func TestSchedulerService_Create(t *testing.T) {
 			name: "successful creation",
 			request: SchedulerPayload{
 				Name:        "test-scheduler",
-				Description: helpers.StrPtr("Test scheduler description"),
+				Description: new("Test scheduler description"),
 				Snapshot: SnapshotConfig{
 					Type: "instant",
 				},
@@ -352,7 +351,7 @@ func TestSchedulerService_Get(t *testing.T) {
 			want: &SchedulerResponse{
 				ID:          "scheduler1",
 				Name:        "test-scheduler",
-				Description: helpers.StrPtr("Test description"),
+				Description: new("Test description"),
 				State:       SchedulerStateAvailable,
 				Policy: Policy{
 					RetentionInDays: 7,
@@ -517,7 +516,7 @@ func TestSchedulerService_AttachVolume(t *testing.T) {
 			id:   "scheduler1",
 			request: SchedulerVolumeIdentifierPayload{
 				Volume: IDOrName{
-					ID: helpers.StrPtr("volume1"),
+					ID: new("volume1"),
 				},
 			},
 			statusCode: http.StatusNoContent,
@@ -528,7 +527,7 @@ func TestSchedulerService_AttachVolume(t *testing.T) {
 			id:   "scheduler1",
 			request: SchedulerVolumeIdentifierPayload{
 				Volume: IDOrName{
-					Name: helpers.StrPtr("test-volume"),
+					Name: new("test-volume"),
 				},
 			},
 			statusCode: http.StatusNoContent,
@@ -539,7 +538,7 @@ func TestSchedulerService_AttachVolume(t *testing.T) {
 			id:   "scheduler1",
 			request: SchedulerVolumeIdentifierPayload{
 				Volume: IDOrName{
-					ID: helpers.StrPtr("invalid-volume"),
+					ID: new("invalid-volume"),
 				},
 			},
 			statusCode: http.StatusNotFound,
@@ -551,7 +550,7 @@ func TestSchedulerService_AttachVolume(t *testing.T) {
 			id:   "scheduler1",
 			request: SchedulerVolumeIdentifierPayload{
 				Volume: IDOrName{
-					ID: helpers.StrPtr("attached-volume"),
+					ID: new("attached-volume"),
 				},
 			},
 			statusCode: http.StatusConflict,
@@ -608,7 +607,7 @@ func TestSchedulerService_DetachVolume(t *testing.T) {
 			id:   "scheduler1",
 			request: SchedulerVolumeIdentifierPayload{
 				Volume: IDOrName{
-					ID: helpers.StrPtr("volume1"),
+					ID: new("volume1"),
 				},
 			},
 			statusCode: http.StatusNoContent,
@@ -619,7 +618,7 @@ func TestSchedulerService_DetachVolume(t *testing.T) {
 			id:   "scheduler1",
 			request: SchedulerVolumeIdentifierPayload{
 				Volume: IDOrName{
-					Name: helpers.StrPtr("test-volume"),
+					Name: new("test-volume"),
 				},
 			},
 			statusCode: http.StatusNoContent,
@@ -630,7 +629,7 @@ func TestSchedulerService_DetachVolume(t *testing.T) {
 			id:   "scheduler1",
 			request: SchedulerVolumeIdentifierPayload{
 				Volume: IDOrName{
-					ID: helpers.StrPtr("invalid-volume"),
+					ID: new("invalid-volume"),
 				},
 			},
 			statusCode: http.StatusNotFound,
@@ -642,7 +641,7 @@ func TestSchedulerService_DetachVolume(t *testing.T) {
 			id:   "scheduler1",
 			request: SchedulerVolumeIdentifierPayload{
 				Volume: IDOrName{
-					ID: helpers.StrPtr("unattached-volume"),
+					ID: new("unattached-volume"),
 				},
 			},
 			statusCode: http.StatusConflict,
@@ -846,7 +845,7 @@ func TestSchedulerService_ListAll(t *testing.T) {
 
 func generateSchedulerResults(start, count int) string {
 	results := make([]string, count)
-	for i := 0; i < count; i++ {
+	for i := range count {
 		id := start + i
 		results[i] = `{
 			"id": "scheduler` + strconv.Itoa(id) + `",

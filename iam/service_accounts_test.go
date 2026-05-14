@@ -198,8 +198,8 @@ func TestServiceAccountService_Edit(t *testing.T) {
 			name:   "successful edit",
 			saUUID: "sa-uuid",
 			request: ServiceAccountEdit{
-				Name:        strPtr("Updated Name"),
-				Description: strPtr("Updated Description"),
+				Name:        new("Updated Name"),
+				Description: new("Updated Description"),
 			},
 			response: `{
 				"uuid": "sa-uuid",
@@ -214,7 +214,7 @@ func TestServiceAccountService_Edit(t *testing.T) {
 		{
 			name:       "empty uuid",
 			saUUID:     "",
-			request:    ServiceAccountEdit{Name: strPtr("New Name")},
+			request:    ServiceAccountEdit{Name: new("New Name")},
 			statusCode: http.StatusBadRequest,
 			wantErr:    true,
 		},
@@ -322,7 +322,7 @@ func TestServiceAccountService_CreateAPIKey(t *testing.T) {
 			saUUID: "sa-uuid",
 			request: APIKeyServiceAccountCreate{
 				Name:        "New API Key",
-				Description: strPtr("Description"),
+				Description: new("Description"),
 				Scopes:      []string{"read:instances"},
 			},
 			response: `{
@@ -434,8 +434,8 @@ func TestServiceAccountService_EditAPIKey(t *testing.T) {
 			saUUID:     "sa-uuid",
 			apikeyUUID: "key-uuid",
 			request: APIKeyServiceAccountEditInput{
-				Name:        strPtr("Updated Key Name"),
-				Description: strPtr("Updated Description"),
+				Name:        new("Updated Key Name"),
+				Description: new("Updated Description"),
 				Scopes:      []string{"read:instances", "write:instances"},
 			},
 			response: `{
@@ -451,7 +451,7 @@ func TestServiceAccountService_EditAPIKey(t *testing.T) {
 			name:       "empty sa uuid",
 			saUUID:     "",
 			apikeyUUID: "key-uuid",
-			request:    APIKeyServiceAccountEditInput{Name: strPtr("New Name")},
+			request:    APIKeyServiceAccountEditInput{Name: new("New Name")},
 			statusCode: http.StatusBadRequest,
 			wantErr:    true,
 		},
@@ -459,7 +459,7 @@ func TestServiceAccountService_EditAPIKey(t *testing.T) {
 			name:       "empty apikey uuid",
 			saUUID:     "sa-uuid",
 			apikeyUUID: "",
-			request:    APIKeyServiceAccountEditInput{Name: strPtr("New Name")},
+			request:    APIKeyServiceAccountEditInput{Name: new("New Name")},
 			statusCode: http.StatusBadRequest,
 			wantErr:    true,
 		},

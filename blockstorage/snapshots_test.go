@@ -11,7 +11,6 @@ import (
 	"testing"
 
 	"github.com/MagaluCloud/mgc-sdk-go/client"
-	"github.com/MagaluCloud/mgc-sdk-go/helpers"
 )
 
 func TestSnapshotService_List(t *testing.T) {
@@ -38,9 +37,9 @@ func TestSnapshotService_List(t *testing.T) {
 		{
 			name: "with pagination",
 			opts: SnaphotListOptions{
-				Limit:  helpers.IntPtr(1),
-				Offset: helpers.IntPtr(1),
-				Sort:   helpers.StrPtr("name:desc"),
+				Limit:  new(1),
+				Offset: new(1),
+				Sort:   new("name:desc"),
 			},
 			response:   `{"snapshots": [{"id": "snap2"}]}`,
 			statusCode: http.StatusOK,
@@ -125,9 +124,9 @@ func TestSnapshotService_Create(t *testing.T) {
 			name: "successful creation",
 			request: CreateSnapshotRequest{
 				Name:        "backup",
-				Volume:      &IDOrName{ID: helpers.StrPtr("vol1")},
-				Description: helpers.StrPtr("test backup"),
-				Type:        helpers.StrPtr("daily"),
+				Volume:      &IDOrName{ID: new("vol1")},
+				Description: new("test backup"),
+				Type:        new("daily"),
 			},
 			response:   `{"id": "snap1"}`,
 			statusCode: http.StatusOK,
@@ -491,7 +490,7 @@ func TestSnapshotService_ListAll(t *testing.T) {
 
 func generateSnapshotResults(start, count int) string {
 	results := make([]string, count)
-	for i := 0; i < count; i++ {
+	for i := range count {
 		id := start + i
 		results[i] = `{
 			"id": "snap` + strconv.Itoa(id) + `",

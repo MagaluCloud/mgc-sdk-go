@@ -14,6 +14,7 @@ func testClient(baseURL string) *IAMClient {
 	return New(core, WithGlobalBasePath(client.MgcUrl(baseURL)))
 }
 
+//go:fix inline
 func strPtr(s string) *string {
-	return &s
+	return new(s)
 }

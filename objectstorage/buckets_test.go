@@ -549,7 +549,7 @@ func TestMarshalPolicy(t *testing.T) {
 					Effect:    "Allow",
 					Action:    []string{"s3:GetObject", "s3:PutObject"},
 					Resource:  "arn:aws:s3:::bucket/*",
-					Principal: map[string]interface{}{"AWS": "*"},
+					Principal: map[string]any{"AWS": "*"},
 				},
 				{
 					Sid:      "Statement2",
@@ -674,7 +674,7 @@ func TestPolicy(t *testing.T) {
 			{
 				Sid:       "AllowGetObject",
 				Effect:    "Allow",
-				Principal: map[string]interface{}{"AWS": "*"},
+				Principal: map[string]any{"AWS": "*"},
 				Action:    "s3:GetObject",
 				Resource:  "arn:aws:s3:::bucket/*",
 			},
@@ -704,7 +704,7 @@ func TestStatement(t *testing.T) {
 	statement := Statement{
 		Sid:       "TestStatement",
 		Effect:    "Deny",
-		Principal: map[string]interface{}{"AWS": "arn:aws:iam::123456789012:user/testuser"},
+		Principal: map[string]any{"AWS": "arn:aws:iam::123456789012:user/testuser"},
 		Action:    []string{"s3:DeleteObject", "s3:PutObject"},
 		Resource:  "arn:aws:s3:::bucket/*",
 	}

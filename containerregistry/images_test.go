@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
@@ -83,7 +84,7 @@ func TestImagesService_List(t *testing.T) {
 			registryID:     "reg-123",
 			repositoryName: "repo-test",
 			opts: ImageListOptions{
-				Limit: intPtr(10),
+				Limit: new(10),
 			},
 			response: `{
 				"meta": {
@@ -108,7 +109,7 @@ func TestImagesService_List(t *testing.T) {
 			registryID:     "reg-123",
 			repositoryName: "repo-test",
 			opts: ImageListOptions{
-				Offset: intPtr(5),
+				Offset: new(5),
 			},
 			response: `{
 				"meta": {
@@ -134,7 +135,7 @@ func TestImagesService_List(t *testing.T) {
 			repositoryName: "repo-test",
 			opts: ImageListOptions{
 				ImageFilterOptions: ImageFilterOptions{
-					Sort: strPtr("pushed_at"),
+					Sort: new("pushed_at"),
 				},
 			},
 			response: `{
@@ -187,10 +188,10 @@ func TestImagesService_List(t *testing.T) {
 			registryID:     "reg-123",
 			repositoryName: "repo-test",
 			opts: ImageListOptions{
-				Limit:  intPtr(20),
-				Offset: intPtr(10),
+				Limit:  new(20),
+				Offset: new(10),
 				ImageFilterOptions: ImageFilterOptions{
-					Sort:   strPtr("created_at"),
+					Sort:   new("created_at"),
 					Expand: []ImageExpand{ImageTagsDetailsExpand},
 				},
 			},
@@ -512,7 +513,7 @@ func TestImagesService_Concurrent(t *testing.T) {
 
 	// Test concurrent operations
 	done := make(chan bool)
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		go func() {
 			_, err := client.Images().List(ctx, "reg-123", "repo-test", ImageListOptions{})
 			if err != nil {
@@ -523,7 +524,7 @@ func TestImagesService_Concurrent(t *testing.T) {
 	}
 
 	// Wait for all goroutines
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		<-done
 	}
 }
@@ -680,7 +681,7 @@ func TestImagesService_ListAll(t *testing.T) {
 // Helper function to generate image JSON array for testing pagination
 func generateImageJSONArray(count int) string {
 	var images []string
-	for i := 0; i < count; i++ {
+	for i := range count {
 		images = append(images, fmt.Sprintf(`{
 			"digest": "sha256:abc%d",
 			"size_bytes": 1024,
@@ -691,12 +692,12 @@ func generateImageJSONArray(count int) string {
 			"tags": ["tag%d"]
 		}`, i, i))
 	}
-	result := ""
+	var result strings.Builder
 	for i, img := range images {
 		if i > 0 {
-			result += ","
+			result.WriteString(",")
 		}
-		result += img
+		result.WriteString(img)
 	}
-	return result
+	return result.String()
 }

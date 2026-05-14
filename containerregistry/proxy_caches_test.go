@@ -6,9 +6,8 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
-
-	"github.com/MagaluCloud/mgc-sdk-go/helpers"
 )
 
 func TestProxyCachesService_List(t *testing.T) {
@@ -106,8 +105,8 @@ func TestProxyCachesService_List(t *testing.T) {
 		{
 			name: "list with pagination",
 			opts: ProxyCacheListOptions{
-				Limit:  intPtr(10),
-				Offset: intPtr(20),
+				Limit:  new(10),
+				Offset: new(20),
 			},
 			expectedQuery: map[string]string{
 				"_limit":  "10",
@@ -152,7 +151,7 @@ func TestProxyCachesService_List(t *testing.T) {
 		{
 			name: "list with sorting",
 			opts: ProxyCacheListOptions{
-				Sort: strPtr("name:asc"),
+				Sort: new("name:asc"),
 			},
 			expectedQuery: map[string]string{
 				"_sort": "name:asc",
@@ -350,7 +349,7 @@ func TestProxyCachesService_ListAll(t *testing.T) {
 		{
 			name: "successful list all - with sorting",
 			opts: ProxyCacheListAllOptions{
-				Sort: strPtr("name:asc"),
+				Sort: new("name:asc"),
 			},
 			expectedQuery: map[string]string{
 				"_sort": "name:asc",
@@ -714,7 +713,7 @@ func TestProxyCachesService_Update(t *testing.T) {
 			name:         "successful update",
 			proxyCacheID: "id-1",
 			request: UpdateProxyCacheRequest{
-				Name: helpers.StrPtr("new-proxy-cache"),
+				Name: new("new-proxy-cache"),
 			},
 			response: `{
 				"id": "id-1",
@@ -731,7 +730,7 @@ func TestProxyCachesService_Update(t *testing.T) {
 			name:         "proxy-cache not found",
 			proxyCacheID: "invalid-id",
 			request: UpdateProxyCacheRequest{
-				URL: helpers.StrPtr("https://hub.docker.com/repositories"),
+				URL: new("https://hub.docker.com/repositories"),
 			},
 			response:   `{"error": "invalid id"}`,
 			statusCode: http.StatusNotFound,
@@ -1028,7 +1027,7 @@ func TestProxyCachesService_CreateStatus(t *testing.T) {
 // Helper function to generate proxy-caches JSON array for testing pagination
 func generateProxyCachesJSONArray(count int) string {
 	var repositories []string
-	for i := 0; i < count; i++ {
+	for i := range count {
 		repositories = append(repositories, fmt.Sprintf(`{
 			"id": "id-%d",
 			"name": "test-proxy-cache",
@@ -1039,15 +1038,15 @@ func generateProxyCachesJSONArray(count int) string {
 		}`, i+1))
 	}
 
-	result := ""
+	var result strings.Builder
 
 	for i, repo := range repositories {
 		if i > 0 {
-			result += ","
+			result.WriteString(",")
 		}
 
-		result += repo
+		result.WriteString(repo)
 	}
 
-	return result
+	return result.String()
 }

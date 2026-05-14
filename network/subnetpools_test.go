@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/MagaluCloud/mgc-sdk-go/client"
-	"github.com/MagaluCloud/mgc-sdk-go/helpers"
 	"github.com/MagaluCloud/mgc-sdk-go/internal/utils"
 )
 
@@ -28,9 +27,9 @@ func TestSubnetPoolService_List(t *testing.T) {
 		{
 			name: "successful list with pagination",
 			opts: ListOptions{
-				Limit:  helpers.IntPtr(10),
-				Offset: helpers.IntPtr(20),
-				Sort:   helpers.StrPtr("name"),
+				Limit:  new(10),
+				Offset: new(20),
+				Sort:   new("name"),
 			},
 			response: `{
 				"meta": {
@@ -55,7 +54,7 @@ func TestSubnetPoolService_List(t *testing.T) {
 		},
 		{
 			name:       "invalid parameters",
-			opts:       ListOptions{Limit: helpers.IntPtr(1000)},
+			opts:       ListOptions{Limit: new(1000)},
 			response:   `{"error": "invalid limit"}`,
 			statusCode: http.StatusBadRequest,
 			wantErr:    true,
@@ -63,7 +62,6 @@ func TestSubnetPoolService_List(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -127,7 +125,7 @@ func TestSubnetPoolService_Get(t *testing.T) {
 			want: &SubnetPoolDetailsResponse{
 				ID:        "pool1",
 				Name:      "test-pool",
-				CIDR:      helpers.StrPtr("10.0.0.0/16"),
+				CIDR:      new("10.0.0.0/16"),
 				IPVersion: 4,
 				CreatedAt: utils.LocalDateTimeWithoutZone(createdAt),
 			},
@@ -143,7 +141,6 @@ func TestSubnetPoolService_Get(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -186,7 +183,7 @@ func TestSubnetPoolService_Create(t *testing.T) {
 			request: CreateSubnetPoolRequest{
 				Name:        "test-pool",
 				Description: "test description",
-				CIDR:        helpers.StrPtr("10.0.0.0/16"),
+				CIDR:        new("10.0.0.0/16"),
 			},
 			response:   `{"id": "pool-new"}`,
 			statusCode: http.StatusOK,
@@ -205,7 +202,6 @@ func TestSubnetPoolService_Create(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -265,7 +261,6 @@ func TestSubnetPoolService_Delete(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -306,7 +301,7 @@ func TestSubnetPoolService_BookCIDR(t *testing.T) {
 			name: "book by cidr",
 			id:   "pool1",
 			request: BookCIDRRequest{
-				CIDR: helpers.StrPtr("10.0.1.0/24"),
+				CIDR: new("10.0.1.0/24"),
 			},
 			response:   `{"cidr": "10.0.1.0/24"}`,
 			statusCode: http.StatusOK,
@@ -324,7 +319,6 @@ func TestSubnetPoolService_BookCIDR(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -389,7 +383,6 @@ func TestSubnetPoolService_UnbookCIDR(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

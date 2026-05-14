@@ -43,7 +43,7 @@ func TestLbaasClient_newRequest(t *testing.T) {
 		name    string
 		method  string
 		path    string
-		body    interface{}
+		body    any
 		wantErr bool
 	}{
 		{
@@ -70,7 +70,6 @@ func TestLbaasClient_newRequest(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt // capture range variable
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			core := newTestCoreClient()

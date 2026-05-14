@@ -153,7 +153,6 @@ func TestNetworkListenerService_Create(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -221,7 +220,6 @@ func TestNetworkListenerService_Get(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -304,7 +302,6 @@ func TestNetworkListenerService_List(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -449,7 +446,6 @@ func TestNetworkListenerService_ListAll(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			pageIndex := 0
@@ -485,7 +481,7 @@ func TestNetworkListenerService_ListAll(t *testing.T) {
 
 func generateListenerResults(start, count int) string {
 	results := make([]string, count)
-	for i := 0; i < count; i++ {
+	for i := range count {
 		id := start + i
 		results[i] = fmt.Sprintf(`{
 			"id": "listener-%d",
@@ -515,7 +511,7 @@ func TestNetworkListenerService_Update(t *testing.T) {
 			lbID:       "lb-123",
 			listenerID: "listener-123",
 			request: UpdateNetworkListenerRequest{
-				TLSCertificateID: stringPtr("updated-listener"),
+				TLSCertificateID: new("updated-listener"),
 			},
 			statusCode: http.StatusOK,
 			wantErr:    false,
@@ -525,7 +521,7 @@ func TestNetworkListenerService_Update(t *testing.T) {
 			lbID:       "lb-123",
 			listenerID: "invalid",
 			request: UpdateNetworkListenerRequest{
-				TLSCertificateID: stringPtr("updated-listener"),
+				TLSCertificateID: new("updated-listener"),
 			},
 			statusCode: http.StatusNotFound,
 			wantErr:    true,
@@ -533,7 +529,6 @@ func TestNetworkListenerService_Update(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -583,7 +578,6 @@ func TestNetworkListenerService_Delete(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -683,7 +677,7 @@ func TestNetworkListenerService_Update_NewRequestError(t *testing.T) {
 	client := testListenerClient("http://dummy-url")
 
 	req := UpdateNetworkListenerRequest{
-		TLSCertificateID: stringPtr("updated-listener"),
+		TLSCertificateID: new("updated-listener"),
 	}
 
 	err := client.Update(ctx, "lb-123", "listener-123", req)

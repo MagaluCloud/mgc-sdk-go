@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strconv"
+	"strings"
 	"testing"
 )
 
@@ -42,8 +43,8 @@ func TestMachineTypeService_List(t *testing.T) {
 		{
 			name: "with pagination",
 			opts: InstanceTypeListOptions{
-				Limit:  intPtr(1),
-				Offset: intPtr(1),
+				Limit:  new(1),
+				Offset: new(1),
 			},
 			response: `{
 				"instance_types": [
@@ -73,7 +74,7 @@ func TestMachineTypeService_List(t *testing.T) {
 		{
 			name: "with sorting",
 			opts: InstanceTypeListOptions{
-				Sort: strPtr("vcpus:asc"),
+				Sort: new("vcpus:asc"),
 			},
 			response: `{
 				"instance_types": [
@@ -149,8 +150,8 @@ func TestMachineTypeService_List(t *testing.T) {
 		{
 			name: "invalid pagination values",
 			opts: InstanceTypeListOptions{
-				Limit:  intPtr(-1),
-				Offset: intPtr(-1),
+				Limit:  new(-1),
+				Offset: new(-1),
 			},
 			response:   `{"error": "invalid pagination parameters"}`,
 			statusCode: http.StatusBadRequest,
@@ -293,7 +294,7 @@ func TestInstanceTypeService_ListAll(t *testing.T) {
 		{
 			name: "with sorting",
 			opts: InstanceTypeFilterOptions{
-				Sort: strPtr("vcpus:asc"),
+				Sort: new("vcpus:asc"),
 			},
 			responses: []string{
 				`{
@@ -387,13 +388,13 @@ func generateInstanceTypeJSON(count, startID int) string {
 	if count == 0 {
 		return ""
 	}
-	var result string
-	for i := 0; i < count; i++ {
+	var result strings.Builder
+	for i := range count {
 		if i > 0 {
-			result += ","
+			result.WriteString(",")
 		}
 		id := startID + i + 1
-		result += `{"id": "mt` + strconv.Itoa(id) + `", "name": "type` + strconv.Itoa(id) + `", "vcpus": 2, "ram": 4096, "disk": 50}`
+		result.WriteString(`{"id": "mt` + strconv.Itoa(id) + `", "name": "type` + strconv.Itoa(id) + `", "vcpus": 2, "ram": 4096, "disk": 50}`)
 	}
-	return result
+	return result.String()
 }

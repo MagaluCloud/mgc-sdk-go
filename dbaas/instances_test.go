@@ -11,7 +11,6 @@ import (
 	"testing"
 
 	"github.com/MagaluCloud/mgc-sdk-go/client"
-	"github.com/MagaluCloud/mgc-sdk-go/helpers"
 )
 
 func testInstanceClient(baseURL string) InstanceService {
@@ -47,11 +46,11 @@ func TestInstanceService_List(t *testing.T) {
 		{
 			name: "with filters and pagination",
 			opts: ListInstanceOptions{
-				Limit:          helpers.IntPtr(10),
-				Offset:         helpers.IntPtr(5),
-				Status:         instanceStatusPtr(InstanceStatusActive),
-				EngineID:       helpers.StrPtr("postgres"),
-				VolumeSize:     helpers.IntPtr(100),
+				Limit:          new(10),
+				Offset:         new(5),
+				Status:         new(InstanceStatusActive),
+				EngineID:       new("postgres"),
+				VolumeSize:     new(100),
 				ExpandedFields: []string{"replicas", "parameters"},
 			},
 			response: `{
@@ -116,8 +115,9 @@ func TestInstanceService_List(t *testing.T) {
 	}
 }
 
+//go:fix inline
 func instanceStatusPtr(InstanceStatusActive InstanceStatus) *InstanceStatus {
-	return &InstanceStatusActive
+	return new(InstanceStatusActive)
 }
 
 func TestInstanceService_Get(t *testing.T) {
@@ -265,7 +265,7 @@ func TestInstanceService_Create(t *testing.T) {
 					Size: 100,
 					Type: "nvme",
 				},
-				DeletionProtected: helpers.BoolPtr(true),
+				DeletionProtected: new(true),
 			},
 			response:   `{"id": "inst-new"}`,
 			statusCode: http.StatusOK,
@@ -395,10 +395,10 @@ func TestInstanceService_Update(t *testing.T) {
 			name: "update backup settings",
 			id:   "inst1",
 			request: DatabaseInstanceUpdateRequest{
-				BackupRetentionDays: helpers.IntPtr(7),
-				BackupStartAt:       helpers.StrPtr("02:00"),
-				ParameterGroupID:    helpers.StrPtr("pg-id"),
-				DeletionProtected:   helpers.BoolPtr(false),
+				BackupRetentionDays: new(7),
+				BackupStartAt:       new("02:00"),
+				ParameterGroupID:    new("pg-id"),
+				DeletionProtected:   new(false),
 			},
 			response: `{
 				"id": "inst1",
@@ -461,7 +461,7 @@ func TestInstanceService_Resize(t *testing.T) {
 			name: "resize instance type",
 			id:   "inst1",
 			request: InstanceResizeRequest{
-				InstanceTypeID: helpers.StrPtr("type-large"),
+				InstanceTypeID: new("type-large"),
 				Volume: &InstanceVolumeResizeRequest{
 					Size: 200,
 					Type: "nvme",
@@ -597,8 +597,8 @@ func TestInstanceService_Snapshots(t *testing.T) {
 
 		client := testInstanceClient(server.URL)
 		result, err := client.ListSnapshots(context.Background(), "inst1", ListSnapshotOptions{
-			Limit: helpers.IntPtr(10),
-			Type:  snapshotTypePtr(SnapshotTypeAutomated),
+			Limit: new(10),
+			Type:  new(SnapshotTypeAutomated),
 		})
 
 		assertNoError(t, err)
@@ -680,7 +680,7 @@ func TestInstanceService_Snapshots(t *testing.T) {
 		client := testInstanceClient(server.URL)
 		result, err := client.UpdateSnapshot(context.Background(), "inst1", "snap1", SnapshotUpdateRequest{
 			Name:        "updated-name",
-			Description: helpers.StrPtr("updated description"),
+			Description: new("updated description"),
 		})
 
 		assertNoError(t, err)
@@ -722,8 +722,9 @@ func TestInstanceService_Snapshots(t *testing.T) {
 	})
 }
 
+//go:fix inline
 func snapshotTypePtr(SnapshotTypeAutomated SnapshotType) *SnapshotType {
-	return &SnapshotTypeAutomated
+	return new(SnapshotTypeAutomated)
 }
 
 func TestInstanceService_ListAll(t *testing.T) {
@@ -759,7 +760,7 @@ func TestInstanceService_ListAll(t *testing.T) {
 		{
 			name: "with status filter",
 			filterOpts: InstanceFilterOptions{
-				Status: instanceStatusPtr(InstanceStatusActive),
+				Status: new(InstanceStatusActive),
 			},
 			response: `{
 				"meta": {"page": {"offset": 0, "limit": 25, "count": 1, "total": 1, "max_limit": 100}},
@@ -773,7 +774,7 @@ func TestInstanceService_ListAll(t *testing.T) {
 		{
 			name: "with engine_id filter",
 			filterOpts: InstanceFilterOptions{
-				EngineID: helpers.StrPtr("postgres-16"),
+				EngineID: new("postgres-16"),
 			},
 			response: `{
 				"meta": {"page": {"offset": 0, "limit": 25, "count": 1, "total": 1, "max_limit": 100}},
@@ -787,8 +788,8 @@ func TestInstanceService_ListAll(t *testing.T) {
 		{
 			name: "with volume size filters",
 			filterOpts: InstanceFilterOptions{
-				VolumeSizeGte: helpers.IntPtr(100),
-				VolumeSizeLte: helpers.IntPtr(500),
+				VolumeSizeGte: new(100),
+				VolumeSizeLte: new(500),
 			},
 			response: `{
 				"meta": {"page": {"offset": 0, "limit": 25, "count": 2, "total": 2, "max_limit": 100}},
@@ -896,54 +897,57 @@ func TestInstanceService_ListAll_MultiplePagesWithPagination(t *testing.T) {
 			if offset != "0" {
 				t.Errorf("expected offset 0, got %s", offset)
 			}
-			results := `[`
-			for i := 0; i < 25; i++ {
+			var results strings.Builder
+			results.WriteString(`[`)
+			for i := range 25 {
 				if i > 0 {
-					results += ","
+					results.WriteString(",")
 				}
-				results += fmt.Sprintf(`{"id": "inst-%d", "name": "instance-%d", "status": "ACTIVE"}`, i+1, i+1)
+				results.WriteString(fmt.Sprintf(`{"id": "inst-%d", "name": "instance-%d", "status": "ACTIVE"}`, i+1, i+1))
 			}
-			results += `]`
+			results.WriteString(`]`)
 			response := fmt.Sprintf(`{
 				"meta": {"page": {"offset": 0, "limit": 25, "count": 25, "total": 70, "max_limit": 100}},
 				"results": %s
-			}`, results)
+			}`, results.String())
 			w.Write([]byte(response))
 		} else if requestCount == 1 {
 			// Second page (25 items)
 			if offset != "25" {
 				t.Errorf("expected offset 25, got %s", offset)
 			}
-			results := `[`
-			for i := 0; i < 25; i++ {
+			var results strings.Builder
+			results.WriteString(`[`)
+			for i := range 25 {
 				if i > 0 {
-					results += ","
+					results.WriteString(",")
 				}
-				results += fmt.Sprintf(`{"id": "inst-%d", "name": "instance-%d", "status": "ACTIVE"}`, i+26, i+26)
+				results.WriteString(fmt.Sprintf(`{"id": "inst-%d", "name": "instance-%d", "status": "ACTIVE"}`, i+26, i+26))
 			}
-			results += `]`
+			results.WriteString(`]`)
 			response := fmt.Sprintf(`{
 				"meta": {"page": {"offset": 25, "limit": 25, "count": 25, "total": 70, "max_limit": 100}},
 				"results": %s
-			}`, results)
+			}`, results.String())
 			w.Write([]byte(response))
 		} else if requestCount == 2 {
 			// Third (final) page (20 items < limit triggers stop)
 			if offset != "50" {
 				t.Errorf("expected offset 50, got %s", offset)
 			}
-			results := `[`
-			for i := 0; i < 20; i++ {
+			var results strings.Builder
+			results.WriteString(`[`)
+			for i := range 20 {
 				if i > 0 {
-					results += ","
+					results.WriteString(",")
 				}
-				results += fmt.Sprintf(`{"id": "inst-%d", "name": "instance-%d", "status": "ACTIVE"}`, i+51, i+51)
+				results.WriteString(fmt.Sprintf(`{"id": "inst-%d", "name": "instance-%d", "status": "ACTIVE"}`, i+51, i+51))
 			}
-			results += `]`
+			results.WriteString(`]`)
 			response := fmt.Sprintf(`{
 				"meta": {"page": {"offset": 50, "limit": 25, "count": 20, "total": 70, "max_limit": 100}},
 				"results": %s
-			}`, results)
+			}`, results.String())
 			w.Write([]byte(response))
 		}
 
@@ -982,48 +986,51 @@ func TestInstanceService_ListAll_WithFilters(t *testing.T) {
 
 		if requestCount == 0 {
 			// First page with 25 results
-			results := `[`
-			for i := 0; i < 25; i++ {
+			var results strings.Builder
+			results.WriteString(`[`)
+			for i := range 25 {
 				if i > 0 {
-					results += ","
+					results.WriteString(",")
 				}
-				results += fmt.Sprintf(`{"id": "inst-%d", "status": "ACTIVE", "engine_id": "postgres-16", "replicas": []}`, i+1)
+				results.WriteString(fmt.Sprintf(`{"id": "inst-%d", "status": "ACTIVE", "engine_id": "postgres-16", "replicas": []}`, i+1))
 			}
-			results += `]`
+			results.WriteString(`]`)
 			response := fmt.Sprintf(`{
 				"meta": {"page": {"offset": 0, "limit": 25, "count": 25, "total": 55, "max_limit": 100}},
 				"results": %s
-			}`, results)
+			}`, results.String())
 			w.Write([]byte(response))
 		} else if requestCount == 1 {
 			// Second page with 25 results
-			results := `[`
-			for i := 0; i < 25; i++ {
+			var results strings.Builder
+			results.WriteString(`[`)
+			for i := range 25 {
 				if i > 0 {
-					results += ","
+					results.WriteString(",")
 				}
-				results += fmt.Sprintf(`{"id": "inst-%d", "status": "ACTIVE", "engine_id": "postgres-16", "replicas": []}`, i+26)
+				results.WriteString(fmt.Sprintf(`{"id": "inst-%d", "status": "ACTIVE", "engine_id": "postgres-16", "replicas": []}`, i+26))
 			}
-			results += `]`
+			results.WriteString(`]`)
 			response := fmt.Sprintf(`{
 				"meta": {"page": {"offset": 25, "limit": 25, "count": 25, "total": 55, "max_limit": 100}},
 				"results": %s
-			}`, results)
+			}`, results.String())
 			w.Write([]byte(response))
 		} else if requestCount == 2 {
 			// Third page with 5 results
-			results := `[`
-			for i := 0; i < 5; i++ {
+			var results strings.Builder
+			results.WriteString(`[`)
+			for i := range 5 {
 				if i > 0 {
-					results += ","
+					results.WriteString(",")
 				}
-				results += fmt.Sprintf(`{"id": "inst-%d", "status": "ACTIVE", "engine_id": "postgres-16", "replicas": []}`, i+51)
+				results.WriteString(fmt.Sprintf(`{"id": "inst-%d", "status": "ACTIVE", "engine_id": "postgres-16", "replicas": []}`, i+51))
 			}
-			results += `]`
+			results.WriteString(`]`)
 			response := fmt.Sprintf(`{
 				"meta": {"page": {"offset": 50, "limit": 25, "count": 5, "total": 55, "max_limit": 100}},
 				"results": %s
-			}`, results)
+			}`, results.String())
 			w.Write([]byte(response))
 		}
 
@@ -1033,8 +1040,8 @@ func TestInstanceService_ListAll_WithFilters(t *testing.T) {
 
 	client := testInstanceClient(server.URL)
 	instances, err := client.ListAll(context.Background(), InstanceFilterOptions{
-		Status:         instanceStatusPtr(InstanceStatusActive),
-		EngineID:       helpers.StrPtr("postgres-16"),
+		Status:         new(InstanceStatusActive),
+		EngineID:       new("postgres-16"),
 		ExpandedFields: []string{"replicas"},
 	})
 
@@ -1085,7 +1092,7 @@ func TestInstanceService_ListAllSnapshots(t *testing.T) {
 			name:       "with type filter",
 			instanceID: "inst-123",
 			filterOpts: SnapshotFilterOptions{
-				Type: snapshotTypePtr(SnapshotTypeOnDemand),
+				Type: new(SnapshotTypeOnDemand),
 			},
 			response: `{
 				"meta": {"page": {"offset": 0, "limit": 25, "count": 1, "total": 1, "max_limit": 100}},
@@ -1100,7 +1107,7 @@ func TestInstanceService_ListAllSnapshots(t *testing.T) {
 			name:       "with status filter",
 			instanceID: "inst-123",
 			filterOpts: SnapshotFilterOptions{
-				Status: snapshotStatusPtr(SnapshotStatusAvailable),
+				Status: new(SnapshotStatusAvailable),
 			},
 			response: `{
 				"meta": {"page": {"offset": 0, "limit": 50, "count": 2, "total": 2, "max_limit": 100}},
@@ -1178,54 +1185,57 @@ func TestInstanceService_ListAllSnapshots_MultiplePagesWithPagination(t *testing
 			if offset != "0" {
 				t.Errorf("expected offset 0, got %s", offset)
 			}
-			results := `[`
-			for i := 0; i < 25; i++ {
+			var results strings.Builder
+			results.WriteString(`[`)
+			for i := range 25 {
 				if i > 0 {
-					results += ","
+					results.WriteString(",")
 				}
-				results += fmt.Sprintf(`{"id": "snap-%d", "name": "snapshot-%d", "status": "AVAILABLE", "type": "AUTOMATED"}`, i+1, i+1)
+				results.WriteString(fmt.Sprintf(`{"id": "snap-%d", "name": "snapshot-%d", "status": "AVAILABLE", "type": "AUTOMATED"}`, i+1, i+1))
 			}
-			results += `]`
+			results.WriteString(`]`)
 			response := fmt.Sprintf(`{
 				"meta": {"page": {"offset": 0, "limit": 25, "count": 25, "total": 75, "max_limit": 100}},
 				"results": %s
-			}`, results)
+			}`, results.String())
 			w.Write([]byte(response))
 		} else if requestCount == 1 {
 			// Second page (25 snapshots)
 			if offset != "25" {
 				t.Errorf("expected offset 25, got %s", offset)
 			}
-			results := `[`
-			for i := 0; i < 25; i++ {
+			var results strings.Builder
+			results.WriteString(`[`)
+			for i := range 25 {
 				if i > 0 {
-					results += ","
+					results.WriteString(",")
 				}
-				results += fmt.Sprintf(`{"id": "snap-%d", "name": "snapshot-%d", "status": "AVAILABLE", "type": "AUTOMATED"}`, i+26, i+26)
+				results.WriteString(fmt.Sprintf(`{"id": "snap-%d", "name": "snapshot-%d", "status": "AVAILABLE", "type": "AUTOMATED"}`, i+26, i+26))
 			}
-			results += `]`
+			results.WriteString(`]`)
 			response := fmt.Sprintf(`{
 				"meta": {"page": {"offset": 25, "limit": 25, "count": 25, "total": 75, "max_limit": 100}},
 				"results": %s
-			}`, results)
+			}`, results.String())
 			w.Write([]byte(response))
 		} else if requestCount == 2 {
 			// Third page (25 snapshots)
 			if offset != "50" {
 				t.Errorf("expected offset 50, got %s", offset)
 			}
-			results := `[`
-			for i := 0; i < 25; i++ {
+			var results strings.Builder
+			results.WriteString(`[`)
+			for i := range 25 {
 				if i > 0 {
-					results += ","
+					results.WriteString(",")
 				}
-				results += fmt.Sprintf(`{"id": "snap-%d", "name": "snapshot-%d", "status": "AVAILABLE", "type": "AUTOMATED"}`, i+51, i+51)
+				results.WriteString(fmt.Sprintf(`{"id": "snap-%d", "name": "snapshot-%d", "status": "AVAILABLE", "type": "AUTOMATED"}`, i+51, i+51))
 			}
-			results += `]`
+			results.WriteString(`]`)
 			response := fmt.Sprintf(`{
 				"meta": {"page": {"offset": 50, "limit": 25, "count": 25, "total": 75, "max_limit": 100}},
 				"results": %s
-			}`, results)
+			}`, results.String())
 			w.Write([]byte(response))
 		} else if requestCount == 3 {
 			// Fourth (final) empty page to confirm stop condition
@@ -1272,48 +1282,51 @@ func TestInstanceService_ListAllSnapshots_WithFilters(t *testing.T) {
 
 		if requestCount == 0 {
 			// First page with 25 results
-			results := `[`
-			for i := 0; i < 25; i++ {
+			var results strings.Builder
+			results.WriteString(`[`)
+			for i := range 25 {
 				if i > 0 {
-					results += ","
+					results.WriteString(",")
 				}
-				results += fmt.Sprintf(`{"id": "snap-%d", "status": "AVAILABLE", "type": "ON_DEMAND"}`, i+1)
+				results.WriteString(fmt.Sprintf(`{"id": "snap-%d", "status": "AVAILABLE", "type": "ON_DEMAND"}`, i+1))
 			}
-			results += `]`
+			results.WriteString(`]`)
 			response := fmt.Sprintf(`{
 				"meta": {"page": {"offset": 0, "limit": 25, "count": 25, "total": 60, "max_limit": 100}},
 				"results": %s
-			}`, results)
+			}`, results.String())
 			w.Write([]byte(response))
 		} else if requestCount == 1 {
 			// Second page with 25 results
-			results := `[`
-			for i := 0; i < 25; i++ {
+			var results strings.Builder
+			results.WriteString(`[`)
+			for i := range 25 {
 				if i > 0 {
-					results += ","
+					results.WriteString(",")
 				}
-				results += fmt.Sprintf(`{"id": "snap-%d", "status": "AVAILABLE", "type": "ON_DEMAND"}`, i+26)
+				results.WriteString(fmt.Sprintf(`{"id": "snap-%d", "status": "AVAILABLE", "type": "ON_DEMAND"}`, i+26))
 			}
-			results += `]`
+			results.WriteString(`]`)
 			response := fmt.Sprintf(`{
 				"meta": {"page": {"offset": 25, "limit": 25, "count": 25, "total": 60, "max_limit": 100}},
 				"results": %s
-			}`, results)
+			}`, results.String())
 			w.Write([]byte(response))
 		} else if requestCount == 2 {
 			// Third page with 10 results (< limit triggers stop)
-			results := `[`
-			for i := 0; i < 10; i++ {
+			var results strings.Builder
+			results.WriteString(`[`)
+			for i := range 10 {
 				if i > 0 {
-					results += ","
+					results.WriteString(",")
 				}
-				results += fmt.Sprintf(`{"id": "snap-%d", "status": "AVAILABLE", "type": "ON_DEMAND"}`, i+51)
+				results.WriteString(fmt.Sprintf(`{"id": "snap-%d", "status": "AVAILABLE", "type": "ON_DEMAND"}`, i+51))
 			}
-			results += `]`
+			results.WriteString(`]`)
 			response := fmt.Sprintf(`{
 				"meta": {"page": {"offset": 50, "limit": 25, "count": 10, "total": 60, "max_limit": 100}},
 				"results": %s
-			}`, results)
+			}`, results.String())
 			w.Write([]byte(response))
 		}
 
@@ -1323,8 +1336,8 @@ func TestInstanceService_ListAllSnapshots_WithFilters(t *testing.T) {
 
 	client := testInstanceClient(server.URL)
 	snapshots, err := client.ListAllSnapshots(context.Background(), instanceID, SnapshotFilterOptions{
-		Type:   snapshotTypePtr(SnapshotTypeOnDemand),
-		Status: snapshotStatusPtr(SnapshotStatusAvailable),
+		Type:   new(SnapshotTypeOnDemand),
+		Status: new(SnapshotStatusAvailable),
 	})
 
 	assertNoError(t, err)
@@ -1338,6 +1351,7 @@ func TestInstanceService_ListAllSnapshots_WithFilters(t *testing.T) {
 	}
 }
 
+//go:fix inline
 func snapshotStatusPtr(status SnapshotStatus) *SnapshotStatus {
-	return &status
+	return new(status)
 }

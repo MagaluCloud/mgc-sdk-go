@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/MagaluCloud/mgc-sdk-go/client"
-	"github.com/MagaluCloud/mgc-sdk-go/helpers"
 	"github.com/MagaluCloud/mgc-sdk-go/internal/utils"
 )
 
@@ -28,7 +27,7 @@ func TestNatGatewayService_Create(t *testing.T) {
 			name: "successful create",
 			request: CreateNatGatewayRequest{
 				Name:        "prod-nat",
-				Description: helpers.StrPtr("Production NAT Gateway"),
+				Description: new("Production NAT Gateway"),
 				Zone:        "zone1",
 				VPCID:       "vpc1",
 			},
@@ -40,7 +39,7 @@ func TestNatGatewayService_Create(t *testing.T) {
 		{
 			name: "missing required fields",
 			request: CreateNatGatewayRequest{
-				Description: helpers.StrPtr("Invalid NAT Gateway"),
+				Description: new("Invalid NAT Gateway"),
 			},
 			response:   `{"error": "name, zone and vpc_id are required"}`,
 			statusCode: http.StatusBadRequest,
@@ -49,7 +48,6 @@ func TestNatGatewayService_Create(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -111,7 +109,6 @@ func TestNatGatewayService_Delete(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -166,12 +163,12 @@ func TestNatGatewayService_Get(t *testing.T) {
 			}`,
 			statusCode: http.StatusOK,
 			want: &NatGatewayDetailsResponse{
-				ID:           helpers.StrPtr("nat1"),
-				Name:         helpers.StrPtr("prod-nat"),
-				Description:  helpers.StrPtr("Production NAT Gateway"),
-				VPCID:        helpers.StrPtr("vpc1"),
-				Zone:         helpers.StrPtr("zone1"),
-				NatGatewayIP: helpers.StrPtr("10.0.0.1"),
+				ID:           new("nat1"),
+				Name:         new("prod-nat"),
+				Description:  new("Production NAT Gateway"),
+				VPCID:        new("vpc1"),
+				Zone:         new("zone1"),
+				NatGatewayIP: new("10.0.0.1"),
 				Status:       "active",
 				CreatedAt:    &basetimeWithoutZone,
 				Updated:      &basetimeWithoutZone,
@@ -188,7 +185,6 @@ func TestNatGatewayService_Get(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -238,8 +234,8 @@ func TestNatGatewayService_List(t *testing.T) {
 			name:  "successful list",
 			vpcID: "vpc1",
 			opts: ListOptions{
-				Limit:  helpers.IntPtr(10),
-				Offset: helpers.IntPtr(0),
+				Limit:  new(10),
+				Offset: new(0),
 			},
 			response: `{
 				"meta": {
@@ -269,12 +265,12 @@ func TestNatGatewayService_List(t *testing.T) {
 			statusCode: http.StatusOK,
 			want: []NatGatewayResponse{
 				{
-					ID:           helpers.StrPtr("nat1"),
-					Name:         helpers.StrPtr("prod-nat"),
-					Description:  helpers.StrPtr("Production NAT Gateway"),
-					VPCID:        helpers.StrPtr("vpc1"),
-					Zone:         helpers.StrPtr("zone1"),
-					NatGatewayIP: helpers.StrPtr("10.0.0.1"),
+					ID:           new("nat1"),
+					Name:         new("prod-nat"),
+					Description:  new("Production NAT Gateway"),
+					VPCID:        new("vpc1"),
+					Zone:         new("zone1"),
+					NatGatewayIP: new("10.0.0.1"),
 					Status:       "active",
 					CreatedAt:    &basetimeWithoutZone,
 					Updated:      &basetimeWithoutZone,
@@ -286,8 +282,8 @@ func TestNatGatewayService_List(t *testing.T) {
 			name:  "empty list",
 			vpcID: "vpc2",
 			opts: ListOptions{
-				Limit:  helpers.IntPtr(10),
-				Offset: helpers.IntPtr(0),
+				Limit:  new(10),
+				Offset: new(0),
 			},
 			response: `{
 				"meta": {
@@ -311,7 +307,6 @@ func TestNatGatewayService_List(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

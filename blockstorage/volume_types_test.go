@@ -9,7 +9,6 @@ import (
 	"testing"
 
 	"github.com/MagaluCloud/mgc-sdk-go/client"
-	"github.com/MagaluCloud/mgc-sdk-go/helpers"
 )
 
 func TestVolumeTypeService_List(t *testing.T) {
@@ -75,7 +74,7 @@ func TestVolumeTypeService_List(t *testing.T) {
 		{
 			name: "filter by encryption support",
 			opts: ListVolumeTypesOptions{
-				AllowsEncryption: helpers.BoolPtr(true),
+				AllowsEncryption: new(true),
 			},
 			response:       `{"meta": {"page": {"offset": 0, "limit": 50, "count": 1, "total": 1, "max_limit": 100}}, "types": [{"id": "type3", "name": "Encrypted"}]}`,
 			statusCode:     http.StatusOK,
@@ -92,7 +91,7 @@ func TestVolumeTypeService_List(t *testing.T) {
 			opts: ListVolumeTypesOptions{
 				AvailabilityZone: "zone-b",
 				Name:             "NVMe",
-				AllowsEncryption: helpers.BoolPtr(false),
+				AllowsEncryption: new(false),
 			},
 			response:       `{"meta": {"page": {"offset": 0, "limit": 50, "count": 1, "total": 1, "max_limit": 100}}, "types": [{"id": "type4", "name": "NVMe"}]}`,
 			statusCode:     http.StatusOK,
@@ -195,7 +194,7 @@ func TestVolumeTypeService_List_QueryParams(t *testing.T) {
 		{
 			name: "allows encryption true",
 			opts: ListVolumeTypesOptions{
-				AllowsEncryption: helpers.BoolPtr(true),
+				AllowsEncryption: new(true),
 			},
 			expectParams: map[string]string{
 				"allows-encryption": "true",
@@ -204,7 +203,7 @@ func TestVolumeTypeService_List_QueryParams(t *testing.T) {
 		{
 			name: "allows encryption false",
 			opts: ListVolumeTypesOptions{
-				AllowsEncryption: helpers.BoolPtr(false),
+				AllowsEncryption: new(false),
 			},
 			expectParams: map[string]string{
 				"allows-encryption": "false",
@@ -215,7 +214,7 @@ func TestVolumeTypeService_List_QueryParams(t *testing.T) {
 			opts: ListVolumeTypesOptions{
 				AvailabilityZone: "zone-c",
 				Name:             "Fast",
-				AllowsEncryption: helpers.BoolPtr(true),
+				AllowsEncryption: new(true),
 			},
 			expectParams: map[string]string{
 				"availability-zone": "zone-c",
@@ -338,7 +337,7 @@ func TestVolumeTypeService_ListAll_MultiplePagesWithPagination(t *testing.T) {
 		case "0":
 			// First page: 50 items
 			types := make([]string, 50)
-			for i := 0; i < 50; i++ {
+			for i := range 50 {
 				types[i] = fmt.Sprintf(`{"id": "type%d", "name": "Type%d"}`, i+1, i+1)
 			}
 			response := fmt.Sprintf(`{"meta": {"page": {"offset": 0, "limit": 50, "count": 50, "total": 75, "max_limit": 100}}, "types": [%s]}`,
@@ -347,7 +346,7 @@ func TestVolumeTypeService_ListAll_MultiplePagesWithPagination(t *testing.T) {
 		case "50":
 			// Second page: 25 items
 			types := make([]string, 25)
-			for i := 0; i < 25; i++ {
+			for i := range 25 {
 				types[i] = fmt.Sprintf(`{"id": "type%d", "name": "Type%d"}`, i+51, i+51)
 			}
 			response := fmt.Sprintf(`{"meta": {"page": {"offset": 50, "limit": 50, "count": 25, "total": 75, "max_limit": 100}}, "types": [%s]}`,
@@ -415,7 +414,7 @@ func TestVolumeTypeService_ListAll_WithFilters(t *testing.T) {
 		switch offset {
 		case "0":
 			types := make([]string, 50)
-			for i := 0; i < 50; i++ {
+			for i := range 50 {
 				types[i] = fmt.Sprintf(`{"id": "type%d", "name": "Type%d", "availability_zones": ["zone-a"], "allows_encryption": true}`, i+1, i+1)
 			}
 			response := fmt.Sprintf(`{
@@ -431,7 +430,7 @@ func TestVolumeTypeService_ListAll_WithFilters(t *testing.T) {
 			w.Write([]byte(response))
 		case "50":
 			types := make([]string, 25)
-			for i := 0; i < 25; i++ {
+			for i := range 25 {
 				types[i] = fmt.Sprintf(`{"id": "type%d", "name": "Type%d", "availability_zones": ["zone-a"], "allows_encryption": true}`, i+51, i+51)
 			}
 			response := fmt.Sprintf(`{
@@ -454,8 +453,8 @@ func TestVolumeTypeService_ListAll_WithFilters(t *testing.T) {
 	client := testClientTypes(server.URL)
 	types, err := client.ListAll(context.Background(), VolumeTypeFilterOptions{
 		AvailabilityZone: "zone-a",
-		AllowsEncryption: helpers.BoolPtr(true),
-		Sort:             helpers.StrPtr("name:asc"),
+		AllowsEncryption: new(true),
+		Sort:             new("name:asc"),
 	})
 
 	if err != nil {

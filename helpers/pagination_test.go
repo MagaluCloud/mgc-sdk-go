@@ -9,7 +9,7 @@ func TestPaginatedResponse(t *testing.T) {
 	tests := []struct {
 		name    string
 		json    string
-		want    *PaginatedResponse[map[string]interface{}]
+		want    *PaginatedResponse[map[string]any]
 		wantErr bool
 	}{
 		{
@@ -28,7 +28,7 @@ func TestPaginatedResponse(t *testing.T) {
 					{"id": "2", "name": "item2"}
 				]
 			}`,
-			want: &PaginatedResponse[map[string]interface{}]{
+			want: &PaginatedResponse[map[string]any]{
 				Meta: PaginatedMeta{
 					Page: PaginatedPage{
 						Count:  2,
@@ -37,7 +37,7 @@ func TestPaginatedResponse(t *testing.T) {
 						Total:  42,
 					},
 				},
-				Results: []map[string]interface{}{
+				Results: []map[string]any{
 					{"id": "1", "name": "item1"},
 					{"id": "2", "name": "item2"},
 				},
@@ -57,7 +57,7 @@ func TestPaginatedResponse(t *testing.T) {
 				},
 				"results": []
 			}`,
-			want: &PaginatedResponse[map[string]interface{}]{
+			want: &PaginatedResponse[map[string]any]{
 				Meta: PaginatedMeta{
 					Page: PaginatedPage{
 						Count:  0,
@@ -66,7 +66,7 @@ func TestPaginatedResponse(t *testing.T) {
 						Total:  0,
 					},
 				},
-				Results: []map[string]interface{}{},
+				Results: []map[string]any{},
 			},
 			wantErr: false,
 		},
@@ -80,7 +80,7 @@ func TestPaginatedResponse(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var got *PaginatedResponse[map[string]interface{}]
+			var got *PaginatedResponse[map[string]any]
 			err := json.Unmarshal([]byte(tt.json), &got)
 
 			if (err != nil) != tt.wantErr {

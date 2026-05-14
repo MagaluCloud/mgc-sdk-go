@@ -5,15 +5,18 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
+//go:fix inline
 func intPtr(i int) *int {
-	return &i
+	return new(i)
 }
 
+//go:fix inline
 func strPtr(s string) *string {
-	return &s
+	return new(s)
 }
 func TestRegistriesService_Create(t *testing.T) {
 	tests := []struct {
@@ -50,7 +53,7 @@ func TestRegistriesService_Create(t *testing.T) {
 			name: "successful create with proxy cache id",
 			request: &RegistryRequest{
 				Name:         "test-registry",
-				ProxyCacheID: strPtr("proxy-cache-id"),
+				ProxyCacheID: new("proxy-cache-id"),
 			},
 			response: `{
 				"id": "reg-123",
@@ -65,7 +68,7 @@ func TestRegistriesService_Create(t *testing.T) {
 				ID:           "reg-123",
 				Name:         "test-registry",
 				Storage:      1024,
-				ProxyCacheID: strPtr("proxy-cache-id"),
+				ProxyCacheID: new("proxy-cache-id"),
 				CreatedAt:    "2024-01-01T00:00:00Z",
 				UpdatedAt:    "2024-01-01T00:00:00Z",
 			},
@@ -181,7 +184,7 @@ func TestRegistriesService_List(t *testing.T) {
 						ID:           "reg-123",
 						Name:         "test-registry",
 						Storage:      1024,
-						ProxyCacheID: strPtr("proxy-cache-id"),
+						ProxyCacheID: new("proxy-cache-id"),
 						CreatedAt:    "2024-01-01T00:00:00Z",
 						UpdatedAt:    "2024-01-01T00:00:00Z",
 					},
@@ -219,8 +222,8 @@ func TestRegistriesService_List(t *testing.T) {
 		{
 			name: "list with pagination",
 			opts: RegistryListOptions{
-				Limit:  intPtr(10),
-				Offset: intPtr(20),
+				Limit:  new(10),
+				Offset: new(20),
 			},
 			response: `{
 				"meta": {
@@ -263,7 +266,7 @@ func TestRegistriesService_List(t *testing.T) {
 			name: "list with sorting",
 			opts: RegistryListOptions{
 				RegistryFilterOptions: RegistryFilterOptions{
-					Sort: strPtr("name:asc"),
+					Sort: new("name:asc"),
 				},
 			},
 			response: `{
@@ -305,10 +308,10 @@ func TestRegistriesService_List(t *testing.T) {
 		{
 			name: "list with multiple options",
 			opts: RegistryListOptions{
-				Limit:  intPtr(20),
-				Offset: intPtr(10),
+				Limit:  new(20),
+				Offset: new(10),
 				RegistryFilterOptions: RegistryFilterOptions{
-					Sort: strPtr("created_at"),
+					Sort: new("created_at"),
 				},
 			},
 			response: `{
@@ -424,7 +427,7 @@ func TestRegistriesService_Get(t *testing.T) {
 				ID:           "reg-123",
 				Name:         "test-registry",
 				Storage:      1024,
-				ProxyCacheID: strPtr("proxy-cache-id"),
+				ProxyCacheID: new("proxy-cache-id"),
 				CreatedAt:    "2024-01-01T00:00:00Z",
 				UpdatedAt:    "2024-01-01T00:00:00Z",
 			},
@@ -590,7 +593,7 @@ func TestRegistriesService_Concurrent(t *testing.T) {
 
 	// Test concurrent operations
 	done := make(chan bool)
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		go func() {
 			_, err := client.Registries().List(ctx, RegistryListOptions{})
 			if err != nil {
@@ -601,7 +604,7 @@ func TestRegistriesService_Concurrent(t *testing.T) {
 	}
 
 	// Wait for all goroutines
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		<-done
 	}
 }
@@ -703,7 +706,7 @@ func TestRegistriesService_ListAll(t *testing.T) {
 		},
 		{
 			name:       "list all with sort",
-			filterOpts: RegistryFilterOptions{Sort: strPtr("name")},
+			filterOpts: RegistryFilterOptions{Sort: new("name")},
 			responses: []string{
 				`{
 					"meta": {
@@ -772,7 +775,7 @@ func TestRegistriesService_ListAll(t *testing.T) {
 // Helper function to generate registry JSON array for testing pagination
 func generateRegistryJSONArray(count int) string {
 	var registries []string
-	for i := 0; i < count; i++ {
+	for i := range count {
 		registries = append(registries, fmt.Sprintf(`{
 			"id": "reg-%d",
 			"name": "test-registry-%d",
@@ -781,12 +784,12 @@ func generateRegistryJSONArray(count int) string {
 			"updated_at": "2024-01-01T00:00:00Z"
 		}`, i, i, 1024*(i+1)))
 	}
-	result := ""
+	var result strings.Builder
 	for i, reg := range registries {
 		if i > 0 {
-			result += ","
+			result.WriteString(",")
 		}
-		result += reg
+		result.WriteString(reg)
 	}
-	return result
+	return result.String()
 }

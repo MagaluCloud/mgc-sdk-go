@@ -28,7 +28,7 @@ func TestMemberService_List(t *testing.T) {
 		},
 		{
 			name:  "successful list with email filter",
-			email: strPtr("user1@example.com"),
+			email: new("user1@example.com"),
 			response: `[
 				{"uuid": "uuid1", "email": "user1@example.com", "name": "User 1", "tenant_id": "tenant1"}
 			]`,

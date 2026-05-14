@@ -1,57 +1,71 @@
 package helpers
 
+//go:fix inline
 func IntPtr(i int) *int {
-	return &i
+	return new(i)
 }
 
+//go:fix inline
 func StrPtr(s string) *string {
-	return &s
+	return new(s)
 }
 
+//go:fix inline
 func BoolPtr(b bool) *bool {
-	return &b
+	return new(b)
 }
 
+//go:fix inline
 func Float32Ptr(f float32) *float32 {
-	return &f
+	return new(f)
 }
 
+//go:fix inline
 func Float64Ptr(f float64) *float64 {
-	return &f
+	return new(f)
 }
 
+//go:fix inline
 func Int8Ptr(i int8) *int8 {
-	return &i
+	return new(i)
 }
 
+//go:fix inline
 func Int16Ptr(i int16) *int16 {
-	return &i
+	return new(i)
 }
 
+//go:fix inline
 func Int32Ptr(i int32) *int32 {
-	return &i
+	return new(i)
 }
 
+//go:fix inline
 func Int64Ptr(i int64) *int64 {
-	return &i
+	return new(i)
 }
 
+//go:fix inline
 func UintPtr(u uint) *uint {
-	return &u
+	return new(u)
 }
 
+//go:fix inline
 func Uint8Ptr(u uint8) *uint8 {
-	return &u
+	return new(u)
 }
 
+//go:fix inline
 func Uint16Ptr(u uint16) *uint16 {
-	return &u
+	return new(u)
 }
 
+//go:fix inline
 func Uint32Ptr(u uint32) *uint32 {
-	return &u
+	return new(u)
 }
 
+//go:fix inline
 func Uint64Ptr(u uint64) *uint64 {
-	return &u
+	return new(u)
 }

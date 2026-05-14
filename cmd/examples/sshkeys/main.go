@@ -7,7 +7,6 @@ import (
 	"os"
 
 	"github.com/MagaluCloud/mgc-sdk-go/client"
-	"github.com/MagaluCloud/mgc-sdk-go/helpers"
 	"github.com/MagaluCloud/mgc-sdk-go/sshkeys"
 )
 
@@ -27,7 +26,7 @@ func ExampleListSSHKeys() {
 	sshClient := sshkeys.New(c)
 
 	keys, err := sshClient.Keys().List(context.Background(), sshkeys.ListOptions{
-		Limit: helpers.IntPtr(10),
+		Limit: new(10),
 	})
 	if err != nil {
 		log.Fatal(err)

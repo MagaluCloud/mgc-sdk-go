@@ -8,11 +8,11 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/MagaluCloud/mgc-sdk-go/client"
-	"github.com/MagaluCloud/mgc-sdk-go/helpers"
 )
 
 func TestEventTypeService(t *testing.T) {
@@ -167,7 +167,7 @@ func TestEventTypeService_ListAll(t *testing.T) {
 		{
 			name: "with tenant filter",
 			params: &EventTypeFilterParams{
-				TenantID: strPtr("tenant123"),
+				TenantID: new("tenant123"),
 			},
 			responses: []string{
 				`{
@@ -262,15 +262,15 @@ func generateEventTypeJSON(count, startID int) string {
 	if count == 0 {
 		return ""
 	}
-	var result string
-	for i := 0; i < count; i++ {
+	var result strings.Builder
+	for i := range count {
 		if i > 0 {
-			result += ","
+			result.WriteString(",")
 		}
 		id := startID + i + 1
-		result += fmt.Sprintf(`{"type": "type%d"}`, id)
+		result.WriteString(fmt.Sprintf(`{"type": "type%d"}`, id))
 	}
-	return result
+	return result.String()
 }
 
 // handleListEventTypes handles GET requests to /v0/event-types and returns mock data
@@ -295,10 +295,10 @@ func handleListEventTypes(w http.ResponseWriter, r *http.Request) {
 // TestListEventTypesParamsQuery verifies query parameter construction from ListEventTypesParams
 func TestListEventTypesParamsQuery(t *testing.T) {
 	params := ListEventTypesParams{
-		Limit:  helpers.IntPtr(10),
-		Offset: helpers.IntPtr(20),
+		Limit:  new(10),
+		Offset: new(20),
 		EventTypeFilterParams: EventTypeFilterParams{
-			TenantID: helpers.StrPtr("tenant123"),
+			TenantID: new("tenant123"),
 		},
 	}
 

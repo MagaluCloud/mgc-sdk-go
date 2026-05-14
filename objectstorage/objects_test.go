@@ -347,8 +347,8 @@ func TestObjectServiceList(t *testing.T) {
 			name:       "with pagination",
 			bucketName: "test-bucket",
 			opts: ObjectListOptions{
-				Limit:  intPtr(10),
-				Offset: intPtr(0),
+				Limit:  new(10),
+				Offset: new(0),
 			},
 			wantErr: false,
 		},
@@ -1227,8 +1227,9 @@ func TestListVersionsOptions(t *testing.T) {
 	}
 }
 
+//go:fix inline
 func intPtr(v int) *int {
-	return &v
+	return new(v)
 }
 
 func TestObjectServiceGetPresignedURL_InvalidBucketName(t *testing.T) {

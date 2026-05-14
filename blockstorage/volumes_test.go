@@ -11,11 +11,10 @@ import (
 	"testing"
 
 	"github.com/MagaluCloud/mgc-sdk-go/client"
-	"github.com/MagaluCloud/mgc-sdk-go/helpers"
 )
 
 // Helper functions for testing
-func assertEqual(t *testing.T, expected, actual interface{}, msgAndArgs ...interface{}) {
+func assertEqual(t *testing.T, expected, actual any, msgAndArgs ...any) {
 	t.Helper()
 	if expected != actual {
 		t.Errorf("Expected %v but got %v. %v", expected, actual, msgAndArgs)
@@ -62,8 +61,8 @@ func TestVolumeService_List(t *testing.T) {
 		{
 			name: "with pagination",
 			opts: ListOptions{
-				Limit:  helpers.IntPtr(1),
-				Offset: helpers.IntPtr(1),
+				Limit:  new(1),
+				Offset: new(1),
 			},
 			response: `{
 				"meta": {"page": {"offset": 1, "limit": 1, "count": 1, "total": 2, "max_limit": 100}},
@@ -141,7 +140,7 @@ func TestVolumeService_Create(t *testing.T) {
 			request: CreateVolumeRequest{
 				Name: "test-vol",
 				Size: 100,
-				Type: IDOrName{Name: helpers.StrPtr("ssd")},
+				Type: IDOrName{Name: new("ssd")},
 			},
 			response:   `{"id": "vol1"}`,
 			statusCode: http.StatusOK,
@@ -261,7 +260,7 @@ func TestVolumeService_Get(t *testing.T) {
 				ID:     "vol1",
 				Status: "completed",
 				Attachment: &VolumeAttachment{
-					Serial: helpers.StrPtr("12345"),
+					Serial: new("12345"),
 				},
 			},
 			wantErr: false,
@@ -484,7 +483,7 @@ func TestVolumeService_Retype(t *testing.T) {
 			name: "successful retype",
 			id:   "vol1",
 			request: RetypeVolumeRequest{
-				NewType: IDOrName{ID: helpers.StrPtr("type2")},
+				NewType: IDOrName{ID: new("type2")},
 			},
 			statusCode: http.StatusOK,
 			wantErr:    false,
@@ -676,7 +675,7 @@ func TestVolumeService_ListAll_MultiplePagesWithPagination(t *testing.T) {
 		case "0":
 			// First page: 50 items
 			volumes := make([]string, 50)
-			for i := 0; i < 50; i++ {
+			for i := range 50 {
 				volumes[i] = fmt.Sprintf(`{"id": "vol%d", "name": "Volume%d"}`, i+1, i+1)
 			}
 			response := fmt.Sprintf(`{"meta": {"page": {"offset": 0, "limit": 50, "count": 50, "total": 75, "max_limit": 100}}, "volumes": [%s]}`,
@@ -685,7 +684,7 @@ func TestVolumeService_ListAll_MultiplePagesWithPagination(t *testing.T) {
 		case "50":
 			// Second page: 25 items
 			volumes := make([]string, 25)
-			for i := 0; i < 25; i++ {
+			for i := range 25 {
 				volumes[i] = fmt.Sprintf(`{"id": "vol%d", "name": "Volume%d"}`, i+51, i+51)
 			}
 			response := fmt.Sprintf(`{"meta": {"page": {"offset": 50, "limit": 50, "count": 25, "total": 75, "max_limit": 100}}, "volumes": [%s]}`,
@@ -755,7 +754,7 @@ func TestVolumeService_ListAll_WithExpand(t *testing.T) {
 		case "0":
 			// First page: 50 items
 			volumes := make([]string, 50)
-			for i := 0; i < 50; i++ {
+			for i := range 50 {
 				volumes[i] = fmt.Sprintf(`{"id": "vol%d", "name": "Volume%d"}`, i+1, i+1)
 			}
 			response := fmt.Sprintf(`{"meta": {"page": {"offset": 0, "limit": 50, "count": 50, "total": 75, "max_limit": 100}}, "volumes": [%s]}`,
@@ -764,7 +763,7 @@ func TestVolumeService_ListAll_WithExpand(t *testing.T) {
 		case "50":
 			// Second page: 25 items
 			volumes := make([]string, 25)
-			for i := 0; i < 25; i++ {
+			for i := range 25 {
 				volumes[i] = fmt.Sprintf(`{"id": "vol%d", "name": "Volume%d"}`, i+51, i+51)
 			}
 			response := fmt.Sprintf(`{"meta": {"page": {"offset": 50, "limit": 50, "count": 25, "total": 75, "max_limit": 100}}, "volumes": [%s]}`,

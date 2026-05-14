@@ -70,8 +70,8 @@ func TestAccessControlService_Create(t *testing.T) {
 		{
 			name: "successful create access control",
 			request: AccessControlCreate{
-				Name:        strPtr("custom-ac"),
-				Description: strPtr("Custom access control"),
+				Name:        new("custom-ac"),
+				Description: new("Custom access control"),
 			},
 			response: `{
 				"name": "custom-ac",
@@ -86,7 +86,7 @@ func TestAccessControlService_Create(t *testing.T) {
 		{
 			name: "create with minimal fields",
 			request: AccessControlCreate{
-				Name: strPtr("minimal-ac"),
+				Name: new("minimal-ac"),
 			},
 			response: `{
 				"name": "minimal-ac",
@@ -100,7 +100,7 @@ func TestAccessControlService_Create(t *testing.T) {
 		{
 			name: "server error",
 			request: AccessControlCreate{
-				Name: strPtr("invalid-ac"),
+				Name: new("invalid-ac"),
 			},
 			response:   `{"error": "internal server error"}`,
 			statusCode: http.StatusInternalServerError,
@@ -144,8 +144,8 @@ func TestAccessControlService_Update(t *testing.T) {
 		{
 			name: "successful update status",
 			request: AccessControlStatus{
-				Status:     boolPtr(true),
-				EnforceMFA: boolPtr(false),
+				Status:     new(true),
+				EnforceMFA: new(false),
 			},
 			response: `{
 				"name": "default",
@@ -158,7 +158,7 @@ func TestAccessControlService_Update(t *testing.T) {
 		{
 			name: "update only status",
 			request: AccessControlStatus{
-				Status: boolPtr(false),
+				Status: new(false),
 			},
 			response: `{
 				"name": "default",
@@ -171,7 +171,7 @@ func TestAccessControlService_Update(t *testing.T) {
 		{
 			name: "update only enforce_mfa",
 			request: AccessControlStatus{
-				EnforceMFA: boolPtr(true),
+				EnforceMFA: new(true),
 			},
 			response: `{
 				"name": "default",
@@ -184,7 +184,7 @@ func TestAccessControlService_Update(t *testing.T) {
 		{
 			name: "server error",
 			request: AccessControlStatus{
-				Status: boolPtr(true),
+				Status: new(true),
 			},
 			response:   `{"error": "internal server error"}`,
 			statusCode: http.StatusInternalServerError,
@@ -217,6 +217,7 @@ func TestAccessControlService_Update(t *testing.T) {
 	}
 }
 
+//go:fix inline
 func boolPtr(b bool) *bool {
-	return &b
+	return new(b)
 }

@@ -15,10 +15,12 @@ func testClient(baseURL string) *KubernetesClient {
 	return New(core)
 }
 
+//go:fix inline
 func intPtr(i int) *int {
-	return &i
+	return new(i)
 }
 
+//go:fix inline
 func strPtr(s string) *string {
-	return &s
+	return new(s)
 }

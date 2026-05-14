@@ -4,8 +4,6 @@ import (
 	"net/url"
 	"reflect"
 	"testing"
-
-	"github.com/MagaluCloud/mgc-sdk-go/helpers"
 )
 
 func TestCreateImageQueryParams(t *testing.T) {
@@ -22,7 +20,7 @@ func TestCreateImageQueryParams(t *testing.T) {
 		{
 			name: "with limit",
 			opts: ImageListOptions{
-				Limit: helpers.IntPtr(10),
+				Limit: new(10),
 			},
 			want: url.Values{
 				"_limit": []string{"10"},
@@ -31,7 +29,7 @@ func TestCreateImageQueryParams(t *testing.T) {
 		{
 			name: "with offset",
 			opts: ImageListOptions{
-				Offset: helpers.IntPtr(5),
+				Offset: new(5),
 			},
 			want: url.Values{
 				"_offset": []string{"5"},
@@ -41,7 +39,7 @@ func TestCreateImageQueryParams(t *testing.T) {
 			name: "with sort",
 			opts: ImageListOptions{
 				ImageFilterOptions: ImageFilterOptions{
-					Sort: helpers.StrPtr("name:asc"),
+					Sort: new("name:asc"),
 				},
 			},
 			want: url.Values{
@@ -82,10 +80,10 @@ func TestCreateImageQueryParams(t *testing.T) {
 		{
 			name: "with all options",
 			opts: ImageListOptions{
-				Limit:  helpers.IntPtr(20),
-				Offset: helpers.IntPtr(10),
+				Limit:  new(20),
+				Offset: new(10),
 				ImageFilterOptions: ImageFilterOptions{
-					Sort:   helpers.StrPtr("created_at:desc"),
+					Sort:   new("created_at:desc"),
 					Expand: []ImageExpand{ImageTagsDetailsExpand, ImageExtraAttrExpand},
 				},
 			},
@@ -99,8 +97,8 @@ func TestCreateImageQueryParams(t *testing.T) {
 		{
 			name: "with zero limit and offset",
 			opts: ImageListOptions{
-				Limit:  helpers.IntPtr(0),
-				Offset: helpers.IntPtr(0),
+				Limit:  new(0),
+				Offset: new(0),
 			},
 			want: url.Values{
 				"_limit":  []string{"0"},
@@ -111,7 +109,7 @@ func TestCreateImageQueryParams(t *testing.T) {
 			name: "with empty sort string",
 			opts: ImageListOptions{
 				ImageFilterOptions: ImageFilterOptions{
-					Sort: helpers.StrPtr(""),
+					Sort: new(""),
 				},
 			},
 			want: url.Values{
