@@ -362,6 +362,7 @@ func ExampleNodePoolOperations(k8sClient *kubernetes.KubernetesClient, clusterID
 
 	updateReq := kubernetes.PatchNodePoolRequest{
 		Replicas: helpers.IntPtr(3),
+		Flavor:   helpers.StrPtr("DP64-128-500"),
 	}
 
 	updatedPool, err := k8sClient.Nodepools().Update(ctx, clusterID, newPool.ID, updateReq)
@@ -369,7 +370,10 @@ func ExampleNodePoolOperations(k8sClient *kubernetes.KubernetesClient, clusterID
 		log.Fatal(err)
 	}
 
-	fmt.Printf("\nNode Pool atualizado: %d replicas\n", updatedPool.Replicas)
+	fmt.Println("\nNode Pool atualizado:")
+	fmt.Printf("Replicas: %d\n", updatedPool.Replicas)
+	fmt.Printf("Flavor: %s\n", updatedPool.InstanceTemplate.Flavor.Name)
+
 	pool, err := k8sClient.Nodepools().Get(ctx, clusterID, newPool.ID)
 	if err != nil {
 		log.Fatal(err)
