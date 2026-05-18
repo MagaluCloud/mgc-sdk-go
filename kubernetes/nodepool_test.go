@@ -505,13 +505,12 @@ func TestNodePoolService_Update(t *testing.T) {
 				return
 			}
 
-			if !tt.wantErr {
-				if tt.wantReplicas != nil && result.Replicas != *tt.wantReplicas {
-					t.Errorf("Update() replicas = %d, want %d", result.Replicas, *tt.wantReplicas)
-				}
-				if tt.wantFlavor != nil && result.Flavor != *tt.wantFlavor {
-					t.Errorf("Update() flavor = %s, want %s", result.Flavor, *tt.wantFlavor)
-				}
+			if !tt.wantErr && tt.wantReplicas != nil && result.Replicas != *tt.wantReplicas {
+				t.Errorf("Update() replicas = %d, want %d", result.Replicas, *tt.wantReplicas)
+			}
+
+			if !tt.wantErr && tt.wantFlavor != nil && result.Flavor != *tt.wantFlavor {
+				t.Errorf("Update() flavor = %s, want %s", result.Flavor, *tt.wantFlavor)
 			}
 		})
 	}
