@@ -432,7 +432,8 @@ func TestNodePoolService_Update(t *testing.T) {
 		request      PatchNodePoolRequest
 		response     string
 		statusCode   int
-		wantReplicas int
+		wantReplicas *int
+		wantFlavor   *string
 		wantErr      bool
 	}{
 		{
@@ -444,8 +445,20 @@ func TestNodePoolService_Update(t *testing.T) {
 			},
 			response:     `{"replicas": 3}`,
 			statusCode:   http.StatusOK,
-			wantReplicas: 3,
+			wantReplicas: helpers.IntPtr(3),
 			wantErr:      false,
+		},
+		{
+			name:       "successful flavor update",
+			clusterID:  "cluster-123",
+			nodePoolID: "pool-456",
+			request: PatchNodePoolRequest{
+				Flavor: helpers.StrPtr("BV4-8-40"),
+			},
+			response:   `{"flavor": "BV4-8-40"}`,
+			statusCode: http.StatusOK,
+			wantFlavor: helpers.StrPtr("BV4-8-40"),
+			wantErr:    false,
 		},
 		{
 			name:       "invalid cluster ID",
@@ -492,8 +505,12 @@ func TestNodePoolService_Update(t *testing.T) {
 				return
 			}
 
-			if !tt.wantErr && result.Replicas != tt.wantReplicas {
-				t.Errorf("Update() replicas = %d, want %d", result.Replicas, tt.wantReplicas)
+			if !tt.wantErr && tt.wantReplicas != nil && result.Replicas != *tt.wantReplicas {
+				t.Errorf("Update() replicas = %d, want %d", result.Replicas, *tt.wantReplicas)
+			}
+
+			if !tt.wantErr && tt.wantFlavor != nil && result.Flavor != *tt.wantFlavor {
+				t.Errorf("Update() flavor = %s, want %s", result.Flavor, *tt.wantFlavor)
 			}
 		})
 	}
