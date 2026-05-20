@@ -65,3 +65,18 @@ func (c *ContainerRegistryClient) Images() ImagesService {
 func (c *ContainerRegistryClient) ProxyCaches() ProxyCachesService {
 	return &proxyCachesService{client: c}
 }
+
+// Users returns a service for managing the container registry users
+func (c *ContainerRegistryClient) Users() UsersService {
+	return &usersService{client: c}
+}
+
+// Members returns a service for managing user membership in a registry
+func (c *ContainerRegistryClient) Members() MembersService {
+	return &membersService{client: c}
+}
+
+// Scans returns a service for managing the image scan lifecycle
+func (c *ContainerRegistryClient) Scans() ScansService {
+	return &scansService{client: c}
+}
