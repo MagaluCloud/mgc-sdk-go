@@ -11,6 +11,10 @@ import (
 	mgc_http "github.com/MagaluCloud/mgc-sdk-go/internal/http"
 )
 
+const (
+	registriesMemberPath = "/v0/registries/%s/members/%s"
+)
+
 type (
 	// MembersService manages the membership of users in a container registry.
 	MembersService interface {
@@ -110,7 +114,7 @@ func (s *membersService) ListAll(ctx context.Context, registryID string, filterO
 func (s *membersService) Get(ctx context.Context, registryID, memberID string) (*MemberResponse, error) {
 	return mgc_http.ExecuteSimpleRequestWithRespBody[MemberResponse](
 		ctx, s.client.newRequest, s.client.GetConfig(),
-		http.MethodGet, fmt.Sprintf("/v0/registries/%s/members/%s", registryID, memberID), nil, nil,
+		http.MethodGet, fmt.Sprintf(registriesMemberPath, registryID, memberID), nil, nil,
 	)
 }
 
@@ -118,7 +122,7 @@ func (s *membersService) Get(ctx context.Context, registryID, memberID string) (
 func (s *membersService) Update(ctx context.Context, registryID, memberID string, request MemberUpdateRequest) (*MemberResponse, error) {
 	return mgc_http.ExecuteSimpleRequestWithRespBody[MemberResponse](
 		ctx, s.client.newRequest, s.client.GetConfig(),
-		http.MethodPatch, fmt.Sprintf("/v0/registries/%s/members/%s", registryID, memberID), request, nil,
+		http.MethodPatch, fmt.Sprintf(registriesMemberPath, registryID, memberID), request, nil,
 	)
 }
 
@@ -126,7 +130,7 @@ func (s *membersService) Update(ctx context.Context, registryID, memberID string
 func (s *membersService) Delete(ctx context.Context, registryID, memberID string) error {
 	return mgc_http.ExecuteSimpleRequest(
 		ctx, s.client.newRequest, s.client.GetConfig(),
-		http.MethodDelete, fmt.Sprintf("/v0/registries/%s/members/%s", registryID, memberID), nil, nil,
+		http.MethodDelete, fmt.Sprintf(registriesMemberPath, registryID, memberID), nil, nil,
 	)
 }
 
