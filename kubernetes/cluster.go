@@ -128,6 +128,7 @@ type (
 	PatchClusterRequest struct {
 		AllowedCIDRs *[]string `json:"allowed_cidrs,omitempty"`
 		Description  *string   `json:"description,omitempty"`
+		Version      *string   `json:"version,omitempty"`
 	}
 
 	// PatchClusterResponse represents the response when patching a cluster
