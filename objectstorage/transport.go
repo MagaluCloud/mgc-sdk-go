@@ -44,7 +44,7 @@ func (t *objectStorageTransport) RoundTrip(req *http.Request) (*http.Response, e
 }
 
 func fixRetentionTime(body []byte) []byte {
-	var tzFix = regexp.MustCompile(`([+-]\d{2})(\d{2})`)
+	var tzFix = regexp.MustCompile(`(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})([+-]\d{2})(\d{2})`)
 
-	return tzFix.ReplaceAll(body, []byte(`$1:$2`))
+	return tzFix.ReplaceAll(body, []byte("$1$2:$3"))
 }
