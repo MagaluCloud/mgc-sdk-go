@@ -29,12 +29,11 @@ func (t *objectStorageTransport) RoundTrip(req *http.Request) (*http.Response, e
 
 	if req.Method == http.MethodGet && strings.Contains(req.URL.RawQuery, "retention") && HasFixRetentionTime(req.Context()) {
 		body, err := io.ReadAll(resp.Body)
+		resp.Body.Close()
 
 		if err != nil {
-			return resp, nil
+			return nil, err
 		}
-
-		resp.Body.Close()
 
 		fixed := fixRetentionTime(body)
 
