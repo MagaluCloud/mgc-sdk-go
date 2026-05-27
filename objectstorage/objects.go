@@ -25,6 +25,7 @@ type ObjectService interface {
 	LockObject(ctx context.Context, bucketName string, objectKey string, retainUntilDate time.Time) error
 	UnlockObject(ctx context.Context, bucketName string, objectKey string) error
 	GetObjectLockStatus(ctx context.Context, bucketName string, objectKey string) (bool, error)
+	GetObjectLockInfo(ctx context.Context, bucketName string, objectKey string) (*ObjectLockInfo, error)
 	GetPresignedURL(ctx context.Context, bucketName string, objectKey string, opts GetPresignedURLOptions) (*PresignedURL, error)
 }
 
@@ -412,4 +413,34 @@ func (s *objectService) GetPresignedURL(ctx context.Context, bucketName string, 
 	}
 
 	return &PresignedURL{URL: presignedURL.String()}, nil
+}
+
+// GetObjectLockInfo retrieves the lock information of an object.
+func (s *objectService) GetObjectLockInfo(ctx context.Context, bucketName string, objectKey string) (*ObjectLockInfo, error) {
+	if err := validateBucket(bucketName); err != nil {
+		return nil, err
+	}
+
+	if err := validateObjectKey(objectKey); err != nil {
+		return nil, err
+	}
+
+	ctx = WithFixRetentionTime(ctx)
+
+	mode, retentionUntilDate, err := s.client.minioClient.GetObjectRetention(ctx, bucketName, objectKey, "")
+	if err != nil {
+		return nil, err
+	}
+
+	if mode == nil {
+		return &ObjectLockInfo{
+			Locked: false,
+		}, nil
+	}
+
+	return &ObjectLockInfo{
+		Locked:          true,
+		Mode:            mode.String(),
+		RetainUntilDate: retentionUntilDate,
+	}, nil
 }

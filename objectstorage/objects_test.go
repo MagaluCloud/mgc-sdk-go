@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/MagaluCloud/mgc-sdk-go/client"
+	"github.com/minio/minio-go/v7"
 )
 
 func TestObjectServiceUpload_InvalidBucketName(t *testing.T) {
@@ -1339,5 +1340,160 @@ func TestObjectServiceGetPresignedURL_WithExpiry(t *testing.T) {
 
 	if err != nil {
 		t.Error("GetPresignedURL() expected presigned URL, got nil")
+	}
+}
+
+func TestObjectServiceGetObjectLockInfo_InvalidBucketName(t *testing.T) {
+	t.Parallel()
+
+	core := client.NewMgcClient()
+	osClient, _ := New(core, "minioadmin", "minioadmin")
+	svc := osClient.Objects()
+
+	_, err := svc.GetObjectLockInfo(context.Background(), "", "test-key")
+
+	if err == nil {
+		t.Error("GetObjectLockInfo() expected error for empty bucket name, got nil")
+	}
+
+	if _, ok := err.(*InvalidBucketNameError); !ok {
+		t.Errorf("GetObjectLockInfo() expected InvalidBucketNameError, got %T", err)
+	}
+}
+
+func TestObjectServiceGetObjectLockInfo_InvalidObjectKey(t *testing.T) {
+	t.Parallel()
+
+	core := client.NewMgcClient()
+	osClient, _ := New(core, "minioadmin", "minioadmin")
+	svc := osClient.Objects()
+
+	_, err := svc.GetObjectLockInfo(context.Background(), "test-bucket", "")
+
+	if err == nil {
+		t.Error("GetObjectLockInfo() expected error for empty object key, got nil")
+	}
+
+	if _, ok := err.(*InvalidObjectKeyError); !ok {
+		t.Errorf("GetObjectLockInfo() expected InvalidObjectKeyError, got %T", err)
+	}
+}
+
+func TestObjectServiceGetObjectLockInfo(t *testing.T) {
+	t.Parallel()
+
+	core := client.NewMgcClient()
+	osClient, _ := New(core, "minioadmin", "minioadmin")
+	svc := osClient.Objects()
+
+	_, err := svc.GetObjectLockInfo(context.Background(), "test-bucket", "test-key")
+
+	if err == nil {
+		t.Error("GetObjectLockInfo() expected error due to no connection, got nil")
+	}
+}
+
+func TestObjectServiceGetObjectLockInfo_Unlocked(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+
+	mock := newMockMinioClient()
+
+	mock.getObjectRetentionFunc = func(
+		ctx context.Context,
+		bucketName string,
+		objectKey string,
+		versionID string,
+	) (*minio.RetentionMode, *time.Time, error) {
+		return nil, nil, nil
+	}
+
+	core := client.NewMgcClient()
+	osClient, _ := New(
+		core,
+		"minioadmin",
+		"minioadmin",
+		WithMinioClientInterface(mock),
+	)
+
+	info, err := osClient.Objects().GetObjectLockInfo(
+		ctx,
+		"bucket-name",
+		"file.txt",
+	)
+
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	if info == nil {
+		t.Fatalf("expected ObjectLockInfo, got nil")
+	}
+
+	if info.Locked {
+		t.Errorf("expected Locked=false, got true")
+	}
+
+	if info.Mode != "" {
+		t.Errorf("expected empty Mode, got %v", info.Mode)
+	}
+
+	if info.RetainUntilDate != nil {
+		t.Errorf("expected RetainUntilDate to be nil, got %v", info.RetainUntilDate)
+	}
+}
+
+func TestObjectServiceGetObjectLockInfo_Locked(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+
+	mock := newMockMinioClient()
+
+	retainUntil := time.Now().Add(24 * time.Hour)
+	mode := minio.RetentionMode("COMPLIANCE")
+
+	mock.getObjectRetentionFunc = func(
+		ctx context.Context,
+		bucketName string,
+		objectKey string,
+		versionID string,
+	) (*minio.RetentionMode, *time.Time, error) {
+		return &mode, &retainUntil, nil
+	}
+
+	core := client.NewMgcClient()
+	osClient, _ := New(
+		core,
+		"minioadmin",
+		"minioadmin",
+		WithMinioClientInterface(mock),
+	)
+
+	info, err := osClient.Objects().GetObjectLockInfo(
+		ctx,
+		"bucket-name",
+		"file.txt",
+	)
+
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if info == nil {
+		t.Fatalf("expected ObjectLockInfo, got nil")
+	}
+	if !info.Locked {
+		t.Errorf("expected Locked=true, got false")
+	}
+	if info.Mode != mode.String() {
+		t.Errorf("expected Mode=%v, got %v", mode.String(), info.Mode)
+	}
+	if !info.RetainUntilDate.Equal(retainUntil) {
+		t.Errorf(
+			"expected RetainUntilDate=%v, got %v",
+			retainUntil,
+			*info.RetainUntilDate,
+		)
 	}
 }
