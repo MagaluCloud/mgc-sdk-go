@@ -123,3 +123,9 @@ type GetPresignedURLOptions struct {
 type PresignedURL struct {
 	URL string `json:"url"`
 }
+
+type ObjectLockInfo struct {
+	Mode            string     `json:"mode,omitempty"`
+	RetainUntilDate *time.Time `json:"retain_until_date,omitempty"`
+	Locked          bool       `json:"locked"`
+}
