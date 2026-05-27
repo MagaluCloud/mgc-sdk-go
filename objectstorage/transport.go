@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -28,23 +29,26 @@ func (t *objectStorageTransport) RoundTrip(req *http.Request) (*http.Response, e
 
 	if req.Method == http.MethodGet && strings.Contains(req.URL.RawQuery, "retention") && HasFixRetentionTime(req.Context()) {
 		body, err := io.ReadAll(resp.Body)
-		resp.Body.Close()
 
 		if err != nil {
 			return resp, nil
 		}
 
+		resp.Body.Close()
+
 		fixed := fixRetentionTime(body)
 
 		resp.Body = io.NopCloser(bytes.NewReader(fixed))
 		resp.ContentLength = int64(len(fixed))
+		resp.Header.Set("Content-Length", strconv.Itoa(len(fixed)))
 	}
 
 	return resp, nil
 }
 
+var tzFix = regexp.MustCompile(`(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})([+-]\d{2})(\d{2})`)
+
 func fixRetentionTime(body []byte) []byte {
-	var tzFix = regexp.MustCompile(`(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})([+-]\d{2})(\d{2})`)
 
 	return tzFix.ReplaceAll(body, []byte("$1$2:$3"))
 }
