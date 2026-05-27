@@ -1,9 +1,11 @@
 package objectstorage
 
 import (
+	"context"
 	"errors"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 	"testing"
 )
@@ -86,6 +88,64 @@ func TestRoundTrip_DoNotFixRetentionTimeWithoutContext(t *testing.T) {
 
 	if string(body) != original {
 		t.Errorf("expected original body %q, got %q", original, string(body))
+	}
+}
+
+func TestRoundTrip_ReplacesBodyAndContentLength(t *testing.T) {
+	original := `{"retention":"2026-05-29T00:12:12+0000"}`
+	expected := `{"retention":"2026-05-29T00:12:12+00:00"}`
+
+	transport := &objectStorageTransport{
+		base: roundTripperFunc(func(req *http.Request) (*http.Response, error) {
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				Body:       io.NopCloser(strings.NewReader(original)),
+				Header:     make(http.Header),
+			}, nil
+		}),
+	}
+
+	req, err := http.NewRequest(
+		http.MethodGet,
+		"http://example.com?retention=true",
+		nil,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	req = req.WithContext(WithFixRetentionTime(context.Background()))
+
+	resp, err := transport.RoundTrip(req)
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		t.Errorf("unexpected read error: %v", err)
+	}
+
+	if string(body) != expected {
+		t.Errorf("expected body %q, got %q", expected, string(body))
+	}
+
+	expectedLen := int64(len(expected))
+
+	if resp.ContentLength != expectedLen {
+		t.Errorf(
+			"expected ContentLength %d, got %d",
+			expectedLen,
+			resp.ContentLength,
+		)
+	}
+
+	if got := resp.Header.Get("Content-Length"); got != strconv.Itoa(len(expected)) {
+		t.Errorf(
+			"expected Content-Length header %q, got %q",
+			strconv.Itoa(len(expected)),
+			got,
+		)
 	}
 }
 
