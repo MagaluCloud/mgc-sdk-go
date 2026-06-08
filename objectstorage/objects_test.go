@@ -4,10 +4,12 @@ import (
 	"bytes"
 	"context"
 	"io"
+	"net/http"
 	"testing"
 	"time"
 
 	"github.com/MagaluCloud/mgc-sdk-go/client"
+	"github.com/minio/minio-go/v7"
 )
 
 func TestObjectServiceUpload_InvalidBucketName(t *testing.T) {
@@ -73,6 +75,75 @@ func TestObjectServiceUpload_ValidParameters(t *testing.T) {
 
 	data := []byte("test data")
 	err := svc.Upload(context.Background(), "test-bucket", "test-key", data, "text/plain")
+
+	if err == nil {
+		t.Error("Upload() expected error due to no connection, got nil")
+	}
+}
+
+func TestObjectServiceUploadStream_InvalidBucketName(t *testing.T) {
+	t.Parallel()
+
+	core := client.NewMgcClient()
+	osClient, _ := New(core, "minioadmin", "minioadmin")
+	svc := osClient.Objects()
+
+	err := svc.UploadStream(context.Background(), "", "test-key", bytes.NewBuffer([]byte("test-data")), 3, "text/plain")
+
+	if err == nil {
+		t.Error("Upload() expected error for empty bucket name, got nil")
+	}
+
+	if _, ok := err.(*InvalidBucketNameError); !ok {
+		t.Errorf("Upload() expected InvalidBucketNameError, got %T", err)
+	}
+}
+
+func TestObjectServiceUploadStream_InvalidObjectKey(t *testing.T) {
+	t.Parallel()
+
+	core := client.NewMgcClient()
+	osClient, _ := New(core, "minioadmin", "minioadmin")
+	svc := osClient.Objects()
+
+	err := svc.UploadStream(context.Background(), "test-bucket", "", bytes.NewBuffer([]byte("test-data")), 3, "text/plain")
+
+	if err == nil {
+		t.Error("Upload() expected error for empty object key, got nil")
+	}
+
+	if _, ok := err.(*InvalidObjectKeyError); !ok {
+		t.Errorf("Upload() expected InvalidObjectKeyError, got %T", err)
+	}
+}
+
+func TestObjectServiceUploadStream_EmptySize(t *testing.T) {
+	t.Parallel()
+
+	core := client.NewMgcClient()
+	osClient, _ := New(core, "minioadmin", "minioadmin")
+	svc := osClient.Objects()
+
+	err := svc.UploadStream(context.Background(), "test-bucket", "test-key", bytes.NewBuffer([]byte{}), 0, "text/plain")
+
+	if err == nil {
+		t.Error("Upload() expected error for empty data, got nil")
+	}
+
+	if _, ok := err.(*InvalidObjectDataError); !ok {
+		t.Errorf("Upload() expected InvalidObjectDataError, got %T", err)
+	}
+}
+
+func TestObjectServiceUploadStream_ValidParameters(t *testing.T) {
+	t.Parallel()
+
+	core := client.NewMgcClient()
+	osClient, _ := New(core, "minioadmin", "minioadmin")
+	svc := osClient.Objects()
+
+	data := []byte("test data")
+	err := svc.UploadStream(context.Background(), "test-bucket", "test-key", bytes.NewBuffer(data), 3, "text/plain")
 
 	if err == nil {
 		t.Error("Upload() expected error due to no connection, got nil")
@@ -1159,4 +1230,270 @@ func TestListVersionsOptions(t *testing.T) {
 
 func intPtr(v int) *int {
 	return &v
+}
+
+func TestObjectServiceGetPresignedURL_InvalidBucketName(t *testing.T) {
+	t.Parallel()
+
+	core := client.NewMgcClient()
+	osClient, _ := New(core, "minioadmin", "minioadmin")
+	svc := osClient.Objects()
+
+	_, err := svc.GetPresignedURL(context.Background(), "", "test-key", GetPresignedURLOptions{
+		Method: http.MethodGet,
+	})
+
+	if err == nil {
+		t.Error("GetPresignedURL() expected error for empty bucket name, got nil")
+	}
+
+	if _, ok := err.(*InvalidBucketNameError); !ok {
+		t.Errorf("GetPresignedURL() expected InvalidBucketNameError, got %T", err)
+	}
+}
+
+func TestObjectServiceGetPresignedURL_InvalidObjectKey(t *testing.T) {
+	t.Parallel()
+
+	core := client.NewMgcClient()
+	osClient, _ := New(core, "minioadmin", "minioadmin")
+	svc := osClient.Objects()
+
+	_, err := svc.GetPresignedURL(context.Background(), "test-bucket", "", GetPresignedURLOptions{
+		Method: http.MethodGet,
+	})
+
+	if err == nil {
+		t.Error("GetPresignedURL() expected error for empty object key, got nil")
+	}
+
+	if _, ok := err.(*InvalidObjectKeyError); !ok {
+		t.Errorf("GetPresignedURL() expected InvalidObjectKeyError, got %T", err)
+	}
+}
+
+func TestObjectServiceGetPresignedURL_InvalidMethod(t *testing.T) {
+	t.Parallel()
+
+	core := client.NewMgcClient()
+	osClient, _ := New(core, "minioadmin", "minioadmin")
+	svc := osClient.Objects()
+
+	_, err := svc.GetPresignedURL(context.Background(), "test-bucket", "test-object", GetPresignedURLOptions{
+		Method: http.MethodPost,
+	})
+
+	if err == nil {
+		t.Error("GetPresignedURL() expected error for invalid method, got nil")
+	}
+
+	if _, ok := err.(*InvalidObjectDataError); !ok {
+		t.Errorf("GetPresignedURL() expected InvalidObjectDataError, got %T", err)
+	}
+}
+
+func TestObjectServiceGetPresignedURL_PUTMethod(t *testing.T) {
+	t.Parallel()
+
+	core := client.NewMgcClient()
+	osClient, _ := New(core, "minioadmin", "minioadmin")
+	svc := osClient.Objects()
+
+	_, err := svc.GetPresignedURL(context.Background(), "test-bucket", "test-key", GetPresignedURLOptions{
+		Method: http.MethodPut,
+	})
+
+	if err != nil {
+		t.Error("GetPresignedURL() expected presigned URL, got nil")
+	}
+}
+
+func TestObjectServiceGetPresignedURL_GETMethod(t *testing.T) {
+	t.Parallel()
+
+	core := client.NewMgcClient()
+	osClient, _ := New(core, "minioadmin", "minioadmin")
+	svc := osClient.Objects()
+
+	_, err := svc.GetPresignedURL(context.Background(), "test-bucket", "test-key", GetPresignedURLOptions{
+		Method: http.MethodGet,
+	})
+
+	if err != nil {
+		t.Error("GetPresignedURL() expected presigned URL, got nil")
+	}
+}
+
+func TestObjectServiceGetPresignedURL_WithExpiry(t *testing.T) {
+	t.Parallel()
+
+	core := client.NewMgcClient()
+	osClient, _ := New(core, "minioadmin", "minioadmin")
+	svc := osClient.Objects()
+
+	expire := 5 * time.Minute
+
+	_, err := svc.GetPresignedURL(context.Background(), "test-bucket", "test-key", GetPresignedURLOptions{
+		Method:          http.MethodPut,
+		ExpiryInSeconds: &expire,
+	})
+
+	if err != nil {
+		t.Error("GetPresignedURL() expected presigned URL, got nil")
+	}
+}
+
+func TestObjectServiceGetObjectLockInfo_InvalidBucketName(t *testing.T) {
+	t.Parallel()
+
+	core := client.NewMgcClient()
+	osClient, _ := New(core, "minioadmin", "minioadmin")
+	svc := osClient.Objects()
+
+	_, err := svc.GetObjectLockInfo(context.Background(), "", "test-key")
+
+	if err == nil {
+		t.Error("GetObjectLockInfo() expected error for empty bucket name, got nil")
+	}
+
+	if _, ok := err.(*InvalidBucketNameError); !ok {
+		t.Errorf("GetObjectLockInfo() expected InvalidBucketNameError, got %T", err)
+	}
+}
+
+func TestObjectServiceGetObjectLockInfo_InvalidObjectKey(t *testing.T) {
+	t.Parallel()
+
+	core := client.NewMgcClient()
+	osClient, _ := New(core, "minioadmin", "minioadmin")
+	svc := osClient.Objects()
+
+	_, err := svc.GetObjectLockInfo(context.Background(), "test-bucket", "")
+
+	if err == nil {
+		t.Error("GetObjectLockInfo() expected error for empty object key, got nil")
+	}
+
+	if _, ok := err.(*InvalidObjectKeyError); !ok {
+		t.Errorf("GetObjectLockInfo() expected InvalidObjectKeyError, got %T", err)
+	}
+}
+
+func TestObjectServiceGetObjectLockInfo(t *testing.T) {
+	t.Parallel()
+
+	core := client.NewMgcClient()
+	osClient, _ := New(core, "minioadmin", "minioadmin")
+	svc := osClient.Objects()
+
+	_, err := svc.GetObjectLockInfo(context.Background(), "test-bucket", "test-key")
+
+	if err == nil {
+		t.Error("GetObjectLockInfo() expected error due to no connection, got nil")
+	}
+}
+
+func TestObjectServiceGetObjectLockInfo_Unlocked(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+
+	mock := newMockMinioClient()
+
+	mock.getObjectRetentionFunc = func(
+		ctx context.Context,
+		bucketName string,
+		objectKey string,
+		versionID string,
+	) (*minio.RetentionMode, *time.Time, error) {
+		return nil, nil, nil
+	}
+
+	core := client.NewMgcClient()
+	osClient, _ := New(
+		core,
+		"minioadmin",
+		"minioadmin",
+		WithMinioClientInterface(mock),
+	)
+
+	info, err := osClient.Objects().GetObjectLockInfo(
+		ctx,
+		"bucket-name",
+		"file.txt",
+	)
+
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	if info == nil {
+		t.Fatalf("expected ObjectLockInfo, got nil")
+	}
+
+	if info.Locked {
+		t.Errorf("expected Locked=false, got true")
+	}
+
+	if info.Mode != "" {
+		t.Errorf("expected empty Mode, got %v", info.Mode)
+	}
+
+	if info.RetainUntilDate != nil {
+		t.Errorf("expected RetainUntilDate to be nil, got %v", info.RetainUntilDate)
+	}
+}
+
+func TestObjectServiceGetObjectLockInfo_Locked(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+
+	mock := newMockMinioClient()
+
+	retainUntil := time.Now().Add(24 * time.Hour)
+	mode := minio.RetentionMode("COMPLIANCE")
+
+	mock.getObjectRetentionFunc = func(
+		ctx context.Context,
+		bucketName string,
+		objectKey string,
+		versionID string,
+	) (*minio.RetentionMode, *time.Time, error) {
+		return &mode, &retainUntil, nil
+	}
+
+	core := client.NewMgcClient()
+	osClient, _ := New(
+		core,
+		"minioadmin",
+		"minioadmin",
+		WithMinioClientInterface(mock),
+	)
+
+	info, err := osClient.Objects().GetObjectLockInfo(
+		ctx,
+		"bucket-name",
+		"file.txt",
+	)
+
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if info == nil {
+		t.Fatalf("expected ObjectLockInfo, got nil")
+	}
+	if !info.Locked {
+		t.Errorf("expected Locked=true, got false")
+	}
+	if info.Mode != mode.String() {
+		t.Errorf("expected Mode=%v, got %v", mode.String(), info.Mode)
+	}
+	if !info.RetainUntilDate.Equal(retainUntil) {
+		t.Errorf(
+			"expected RetainUntilDate=%v, got %v",
+			retainUntil,
+			*info.RetainUntilDate,
+		)
+	}
 }

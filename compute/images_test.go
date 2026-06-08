@@ -2,10 +2,15 @@ package compute
 
 import (
 	"context"
+	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"strconv"
 	"testing"
+
+	"github.com/MagaluCloud/mgc-sdk-go/helpers"
 )
 
 func TestImageService_List(t *testing.T) {
@@ -333,4 +338,511 @@ func generateImageListJSON(start, count int) string {
 		result += `{"id": "img` + strconv.Itoa(start+i) + `", "name": "image-` + strconv.Itoa(start+i) + `", "status": "active"}`
 	}
 	return result
+}
+
+func TestImageService_CreateCustom(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name       string
+		req        CreateCustomImageRequest
+		response   string
+		statusCode int
+		wantID     string
+		wantErr    bool
+	}{
+		{
+			name: "successful creation",
+			req: CreateCustomImageRequest{
+				Name:         "test-image",
+				Platform:     PlatformLinux,
+				Architecture: ArchitectureX86_64,
+				License:      LicenseUnlicensed,
+				URL:          "https://br-se1.magaluobjects.com/bucket/image.qcow2",
+			},
+			response:   `{"id": "8cf5c6d9-d5c5-4af9-bd1b-c17d032dc761"}`,
+			statusCode: http.StatusOK,
+			wantID:     "8cf5c6d9-d5c5-4af9-bd1b-c17d032dc761",
+			wantErr:    false,
+		},
+		{
+			name: "empty name",
+			req: CreateCustomImageRequest{
+				Platform:     PlatformLinux,
+				Architecture: ArchitectureX86_64,
+				License:      LicenseUnlicensed,
+				URL:          "https://br-se1.magaluobjects.com/bucket/image.qcow2",
+			},
+			response:   `{"error": "name is required"}`,
+			statusCode: http.StatusBadRequest,
+			wantErr:    true,
+		},
+		{
+			name: "invalid architecture",
+			req: CreateCustomImageRequest{
+				Name:         "test-image",
+				Platform:     PlatformLinux,
+				Architecture: Architecture("arm64"),
+				License:      LicenseUnlicensed,
+				URL:          "https://br-se1.magaluobjects.com/bucket/image.qcow2",
+			},
+			response:   `{"error": "invalid architecture"}`,
+			statusCode: http.StatusBadRequest,
+			wantErr:    true,
+		},
+		{
+			name: "server error",
+			req: CreateCustomImageRequest{
+				Name:         "test-image",
+				Platform:     PlatformLinux,
+				Architecture: ArchitectureX86_64,
+				License:      LicenseUnlicensed,
+				URL:          "https://br-se1.magaluobjects.com/bucket/image.qcow2",
+			},
+			response:   `{"error": "internal error"}`,
+			statusCode: http.StatusInternalServerError,
+			wantErr:    true,
+		},
+		{
+			name: "duplicate name",
+			req: CreateCustomImageRequest{
+				Name:         "test-duplicated-image",
+				Platform:     PlatformLinux,
+				Architecture: ArchitectureX86_64,
+				License:      LicenseUnlicensed,
+				URL:          "https://br-se1.magaluobjects.com/bucket/image.qcow2",
+			},
+			response:   `{"error": "image name already exists"}`,
+			statusCode: http.StatusConflict,
+			wantErr:    true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(tt.statusCode)
+				w.Write([]byte(tt.response))
+			}))
+			defer server.Close()
+
+			client := testClient(server.URL)
+			gotID, err := client.Images().CreateCustom(context.Background(), tt.req)
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Create() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if gotID != tt.wantID {
+				t.Errorf("Create() got = %v, want %v", gotID, tt.wantID)
+			}
+		})
+	}
+}
+
+func TestImageService_GetCustom(t *testing.T) {
+	tests := []struct {
+		name       string
+		id         string
+		response   string
+		statusCode int
+		wantErr    bool
+	}{
+		{
+			name: "successful request",
+			id:   "86a304b0-dc28-454e-9448-5275c4008dfa",
+			response: `{
+				 "id": "86a304b0-dc28-454e-9448-5275c4008dfa",
+				 "name": "test",
+				 "status": "active",
+				 "platform": "linux",
+				 "license": "unlicensed",
+				 "requirements": {
+				  "vcpu": 1,
+				  "ram": 1,
+				  "disk": 3
+				 },
+				 "version": "1.0.0",
+				 "description": "Test",
+				 "metadata": {
+				  "uefi": "true"
+				 }
+			}`,
+			statusCode: http.StatusOK,
+			wantErr:    false,
+		},
+		{
+			name:       "image not found",
+			id:         "a0db5832-3767-4335-8a89-9b46ce636790",
+			response:   `{"message": "Image not found"}`,
+			statusCode: http.StatusNotFound,
+			wantErr:    true,
+		},
+		{
+			name:       "server error",
+			id:         "86a304b0-dc28-454e-9448-5275c4008dfa",
+			response:   `{"message": "Internal server error"}`,
+			statusCode: http.StatusInternalServerError,
+			wantErr:    true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(
+				http.HandlerFunc(
+					func(w http.ResponseWriter, r *http.Request) {
+						w.Header().Set("Content-Type", "application/json")
+						w.WriteHeader(tt.statusCode)
+						w.Write([]byte(tt.response))
+					},
+				),
+			)
+			defer server.Close()
+
+			client := testClient(server.URL)
+			got, err := client.Images().GetCustom(context.Background(), tt.id)
+
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("GetCustom() expected erro, got nil")
+					return
+				}
+			} else {
+				if err != nil {
+					t.Errorf("GetCustom() unexpected error: %v", err)
+					return
+				}
+				if got.ID != tt.id {
+					t.Errorf("GetCustom() got ID %s, want %s", got.ID, tt.id)
+				}
+			}
+		})
+	}
+}
+
+func TestImageService_ListCustom(t *testing.T) {
+	tests := []struct {
+		name       string
+		opts       CustomImageListOptions
+		response   *string
+		statusCode int
+		want       int
+		wantErr    bool
+		checkQuery func(*testing.T, *http.Request)
+	}{
+		{
+			name: "basic list",
+			opts: CustomImageListOptions{},
+			response: strPtr(`{
+				"meta": {"page": {"offset": 0, "limit": 50, "count": 2, "total": 2}},
+				"images": [
+					{"id": "img1", "name": "custom-ubuntu-24_04", "status": "active", "platform": "linux", "license": "unlicensed"},
+					{"id": "img2", "name": "centos-8", "status": "active", "platform": "linux", "license": "unlicensed"}
+				]
+			}`),
+			statusCode: http.StatusOK,
+			want:       2,
+			wantErr:    false,
+		},
+		{
+			name: "with pagination",
+			opts: CustomImageListOptions{
+				Limit:  intPtr(1),
+				Offset: intPtr(1),
+			},
+			response: strPtr(`{
+				"meta": {"page": {"offset": 1, "limit": 1, "count": 1, "total": 2}},
+				"images": [
+					{"id": "img2", "name": "centos-8", "status": "active", "platform": "linux", "license": "unlicensed"}
+				]
+			}`),
+			statusCode: http.StatusOK,
+			want:       1,
+			wantErr:    false,
+			checkQuery: func(t *testing.T, r *http.Request) {
+				if r.URL.Query().Get("_limit") != "1" {
+					t.Errorf("expected limit=1, got %s", r.URL.Query().Get("_limit"))
+				}
+				if r.URL.Query().Get("_offset") != "1" {
+					t.Errorf("expected offset=1, got %s", r.URL.Query().Get("_offset"))
+				}
+			},
+		},
+		{
+			name: "with sorting",
+			opts: CustomImageListOptions{
+				Sort: strPtr("platform:asc"),
+			},
+			response: strPtr(`{
+				"meta": {"page": {"offset": 0, "limit": 50, "count": 2, "total": 2}},
+				"images": [
+					{"id": "img1", "name": "custom-ubuntu-24_04", "status": "active", "platform": "linux", "license": "unlicensed"},
+					{"id": "img2", "name": "centos-8", "status": "active", "platform": "linux", "license": "unlicensed"}
+				]
+			}`),
+			statusCode: http.StatusOK,
+			want:       2,
+			wantErr:    false,
+			checkQuery: func(t *testing.T, r *http.Request) {
+				if r.URL.Query().Get("_sort") != "platform:asc" {
+					t.Errorf("expected sort=platform:asc, got %s", r.URL.Query().Get("_sort"))
+				}
+			},
+		},
+
+		{
+			name: "with name",
+			opts: CustomImageListOptions{
+				Name: strPtr("custom-ubuntu-24_04"),
+			},
+			response: strPtr(`{
+				"meta": {"page": {"offset": 0, "limit": 50, "count": 1, "total": 1}},
+				"images": [
+					{"id": "img1", "name": "custom-ubuntu-24_04", "status": "active", "platform": "linux", "license": "unlicensed"}
+				]
+			}`),
+			statusCode: http.StatusOK,
+			want:       1,
+			wantErr:    false,
+			checkQuery: func(t *testing.T, r *http.Request) {
+				if r.URL.Query().Get("name") != "custom-ubuntu-24_04" {
+					t.Errorf("expected name=custom-ubuntu-24_04, got %s", r.URL.Query().Get("name"))
+				}
+			},
+		},
+		{
+			name:       "server error",
+			opts:       CustomImageListOptions{},
+			response:   strPtr(`{"error": "internal server error"}`),
+			statusCode: http.StatusInternalServerError,
+			wantErr:    true,
+		},
+		{
+			name:       "empty response",
+			opts:       CustomImageListOptions{},
+			response:   strPtr(""),
+			statusCode: http.StatusOK,
+			wantErr:    true,
+		},
+		{
+			name:       "response is nil",
+			opts:       CustomImageListOptions{},
+			response:   nil,
+			statusCode: http.StatusOK,
+			wantErr:    true,
+		},
+		{
+			name:       "malformed json",
+			opts:       CustomImageListOptions{},
+			response:   strPtr(`{"images": [{"id": "broken"}`),
+			statusCode: http.StatusOK,
+			wantErr:    true,
+		},
+		{
+			name: "invalid pagination values",
+			opts: CustomImageListOptions{
+				Limit:  intPtr(-1),
+				Offset: intPtr(-1),
+			},
+			response:   strPtr(`{"error": "invalid pagination parameters"}`),
+			statusCode: http.StatusBadRequest,
+			wantErr:    true,
+			checkQuery: func(t *testing.T, r *http.Request) {
+				if r.URL.Query().Get("_limit") != "-1" {
+					t.Errorf("expected limit=-1, got %s", r.URL.Query().Get("_limit"))
+				}
+				if r.URL.Query().Get("_offset") != "-1" {
+					t.Errorf("expected offset=-1, got %s", r.URL.Query().Get("_offset"))
+				}
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if tt.checkQuery != nil {
+					tt.checkQuery(t, r)
+				}
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(tt.statusCode)
+				w.Write([]byte(*tt.response))
+			}))
+			defer server.Close()
+
+			client := testClient(server.URL)
+			got, err := client.Images().ListCustom(context.Background(), tt.opts)
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ListCustom() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !tt.wantErr && len(got.Images) != tt.want {
+				t.Errorf("ListCustom() got %v images, want %v", len(got.Images), tt.want)
+			}
+			if !tt.wantErr && got.Meta.Page.Total < 0 {
+				t.Errorf("ListCustom() missing metadata")
+			}
+		})
+	}
+}
+
+func TestImageService_DeleteCustom(t *testing.T) {
+	tests := []struct {
+		name       string
+		id         string
+		response   string
+		statusCode int
+		wantErr    bool
+	}{
+		{
+			name:       "successful request",
+			id:         "86a304b0-dc28-454e-9448-5275c4008dfa",
+			statusCode: http.StatusNoContent,
+			wantErr:    false,
+		},
+		{
+			name:       "image not found",
+			id:         "a0db5832-3767-4335-8a89-9b46ce636790",
+			response:   `{"message": "Image with id a0db5832-3767-4335-8a89-9b46ce636790 not found"}`,
+			statusCode: http.StatusNotFound,
+			wantErr:    true,
+		},
+		{
+			name:       "server error",
+			id:         "86a304b0-dc28-454e-9448-5275c4008dfa",
+			response:   `{"message": "Internal server error"}`,
+			statusCode: http.StatusInternalServerError,
+			wantErr:    true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(
+				http.HandlerFunc(
+					func(w http.ResponseWriter, r *http.Request) {
+						w.Header().Set("Content-Type", "application/json")
+						w.WriteHeader(tt.statusCode)
+						w.Write([]byte(tt.response))
+					},
+				),
+			)
+			defer server.Close()
+
+			client := testClient(server.URL)
+			err := client.Images().DeleteCustom(context.Background(), tt.id)
+
+			if tt.wantErr && err == nil {
+				t.Errorf("DeleteCustom() expected erro, got nil")
+				return
+			}
+			if !tt.wantErr && err != nil {
+				t.Errorf("DeleteCustom() unexpected error: %v", err)
+				return
+			}
+		})
+	}
+}
+
+func TestImageService_UpdateCustom(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name       string
+		id         string
+		req        UpdateCustomImageRequest
+		statusCode int
+		response   string
+		wantErr    bool
+	}{
+		{
+			name: "full update",
+			id:   "86a304b0-dc28-454e-9448-5275c4008dfa",
+			req: UpdateCustomImageRequest{
+				Description: helpers.StrPtr("Unit test"),
+				Version:     helpers.StrPtr("0.0.1"),
+			},
+			statusCode: http.StatusNoContent,
+			wantErr:    false,
+		},
+		{
+			name: "update description",
+			id:   "86a304b0-dc28-454e-9448-5275c4008dfa",
+			req: UpdateCustomImageRequest{
+				Description: helpers.StrPtr("Unit test"),
+			},
+			statusCode: http.StatusNoContent,
+			wantErr:    false,
+		},
+		{
+			name: "update version",
+			id:   "86a304b0-dc28-454e-9448-5275c4008dfa",
+			req: UpdateCustomImageRequest{
+				Version: helpers.StrPtr("0.0.1"),
+			},
+			statusCode: http.StatusNoContent,
+			wantErr:    false,
+		},
+		{
+			name:       "empty update",
+			id:         "86a304b0-dc28-454e-9448-5275c4008dfa",
+			req:        UpdateCustomImageRequest{},
+			statusCode: http.StatusNoContent,
+			wantErr:    false,
+		},
+		{
+			name:       "unknown image",
+			id:         "bee43a76-d964-48d6-82fc-218b936000a7",
+			req:        UpdateCustomImageRequest{},
+			response:   `{"message": "Image with id bee43a76-d964-48d6-82fc-218b936000a7 not foud"}`,
+			statusCode: http.StatusNotFound,
+			wantErr:    true,
+		},
+		{
+			name:       "server error",
+			id:         "86a304b0-dc28-454e-9448-5275c4008dfa",
+			req:        UpdateCustomImageRequest{},
+			response:   `{"message": "Internal server error"}`,
+			statusCode: http.StatusInternalServerError,
+			wantErr:    true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				defer r.Body.Close()
+
+				data, err := io.ReadAll(r.Body)
+				if err != nil {
+					t.Errorf("failed to read request body: %s", err)
+				}
+
+				body := UpdateCustomImageRequest{}
+				err = json.Unmarshal(data, &body)
+				if err != nil {
+					t.Errorf("failed to decode body: %s", err)
+				}
+
+				if !reflect.DeepEqual(body, tt.req) {
+					expected, _ := json.Marshal(tt.req)
+					t.Errorf("expected body %s, got %s", string(expected), string(data))
+				}
+
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(tt.statusCode)
+				w.Write([]byte(tt.response))
+			}))
+			defer server.Close()
+
+			client := testClient(server.URL)
+			err := client.Images().UpdateCustom(context.Background(), tt.id, tt.req)
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("UpdateCustom() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+		})
+	}
 }

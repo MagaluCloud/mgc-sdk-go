@@ -247,6 +247,25 @@ func TestVolumeService_Get(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name:   "with attachment expansion",
+			id:     "vol1",
+			expand: []string{VolumeAttachExpand},
+			response: `{
+				"id": "vol1",
+				"attachment": {"serial": "12345"},
+				"status": "completed"
+			}`,
+			statusCode: http.StatusOK,
+			want: &Volume{
+				ID:     "vol1",
+				Status: "completed",
+				Attachment: &VolumeAttachment{
+					Serial: helpers.StrPtr("12345"),
+				},
+			},
+			wantErr: false,
+		},
 	}
 
 	for _, tt := range tests {
@@ -271,6 +290,10 @@ func TestVolumeService_Get(t *testing.T) {
 			assertNoError(t, err)
 			if volume.ID != tt.want.ID || volume.Status != tt.want.Status {
 				t.Errorf("Got volume %+v, want %+v", volume, tt.want)
+			}
+
+			if tt.want.Attachment != nil && tt.want.Attachment.Serial != nil && *tt.want.Attachment.Serial != *volume.Attachment.Serial {
+				t.Errorf("Got attachment serial %+v, want %+v", volume.Attachment.Serial, tt.want.Attachment.Serial)
 			}
 		})
 	}

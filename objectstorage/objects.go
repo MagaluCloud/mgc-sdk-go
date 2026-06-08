@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"context"
 	"io"
+	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/minio/minio-go/v7"
@@ -12,6 +14,7 @@ import (
 // ObjectService provides operations for managing objects.
 type ObjectService interface {
 	Upload(ctx context.Context, bucketName string, objectKey string, data []byte, contentType string) error
+	UploadStream(ctx context.Context, bucketName string, objectKey string, data io.Reader, size int64, contentType string) error
 	Download(ctx context.Context, bucketName string, objectKey string, opts *DownloadOptions) ([]byte, error)
 	DownloadStream(ctx context.Context, bucketName string, objectKey string, opts *DownloadStreamOptions) (io.Reader, error)
 	List(ctx context.Context, bucketName string, opts ObjectListOptions) ([]Object, error)
@@ -22,11 +25,27 @@ type ObjectService interface {
 	LockObject(ctx context.Context, bucketName string, objectKey string, retainUntilDate time.Time) error
 	UnlockObject(ctx context.Context, bucketName string, objectKey string) error
 	GetObjectLockStatus(ctx context.Context, bucketName string, objectKey string) (bool, error)
+	GetObjectLockInfo(ctx context.Context, bucketName string, objectKey string) (*ObjectLockInfo, error)
+	GetPresignedURL(ctx context.Context, bucketName string, objectKey string, opts GetPresignedURLOptions) (*PresignedURL, error)
 }
 
 // objectService implements the ObjectService interface.
 type objectService struct {
 	client *ObjectStorageClient
+}
+
+func validateBucket(bucket string) error {
+	if bucket == "" {
+		return &InvalidBucketNameError{Name: bucket}
+	}
+	return nil
+}
+
+func validateObjectKey(key string) error {
+	if key == "" {
+		return &InvalidObjectKeyError{Key: key}
+	}
+	return nil
 }
 
 // Upload uploads an object to a bucket.
@@ -44,6 +63,27 @@ func (s *objectService) Upload(ctx context.Context, bucketName string, objectKey
 	}
 
 	_, err := s.client.minioClient.PutObject(ctx, bucketName, objectKey, bytes.NewReader(data), int64(len(data)), minio.PutObjectOptions{
+		ContentType: contentType,
+	})
+
+	return err
+}
+
+// UploadStream uploads an object to a bucket from a reader.
+func (s *objectService) UploadStream(ctx context.Context, bucketName string, objectKey string, data io.Reader, size int64, contentType string) error {
+	if bucketName == "" {
+		return &InvalidBucketNameError{Name: bucketName}
+	}
+
+	if objectKey == "" {
+		return &InvalidObjectKeyError{Key: objectKey}
+	}
+
+	if size == 0 {
+		return &InvalidObjectDataError{Message: "object size cannot be zero"}
+	}
+
+	_, err := s.client.minioClient.PutObject(ctx, bucketName, objectKey, data, size, minio.PutObjectOptions{
 		ContentType: contentType,
 	})
 
@@ -337,4 +377,70 @@ func (s *objectService) ListVersions(ctx context.Context, bucketName string, obj
 	}
 
 	return result, nil
+}
+
+func (s *objectService) GetPresignedURL(ctx context.Context, bucketName string, objectKey string, opts GetPresignedURLOptions) (*PresignedURL, error) {
+	if err := validateBucket(bucketName); err != nil {
+		return nil, err
+	}
+
+	if err := validateObjectKey(objectKey); err != nil {
+		return nil, err
+	}
+
+	if opts.Method != http.MethodGet && opts.Method != http.MethodPut {
+		return nil, &InvalidObjectDataError{Message: "Invalid HTTP method"}
+	}
+
+	var presignedURL *url.URL
+	var err error
+
+	expiryInSeconds := 5 * time.Minute
+
+	if opts.ExpiryInSeconds != nil {
+		expiryInSeconds = *opts.ExpiryInSeconds
+	}
+
+	switch opts.Method {
+	case http.MethodGet:
+		presignedURL, err = s.client.minioClient.PresignedGetObject(ctx, bucketName, objectKey, expiryInSeconds, url.Values{})
+	case http.MethodPut:
+		presignedURL, err = s.client.minioClient.PresignedPutObject(ctx, bucketName, objectKey, expiryInSeconds)
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &PresignedURL{URL: presignedURL.String()}, nil
+}
+
+// GetObjectLockInfo retrieves the lock information of an object.
+func (s *objectService) GetObjectLockInfo(ctx context.Context, bucketName string, objectKey string) (*ObjectLockInfo, error) {
+	if err := validateBucket(bucketName); err != nil {
+		return nil, err
+	}
+
+	if err := validateObjectKey(objectKey); err != nil {
+		return nil, err
+	}
+
+	ctx = WithFixRetentionTime(ctx)
+
+	mode, retentionUntilDate, err := s.client.minioClient.GetObjectRetention(ctx, bucketName, objectKey, "")
+	if err != nil {
+		return nil, err
+	}
+
+	if mode == nil {
+		return &ObjectLockInfo{
+			Locked: false,
+		}, nil
+	}
+
+	return &ObjectLockInfo{
+		Locked:          true,
+		Mode:            mode.String(),
+		RetainUntilDate: retentionUntilDate,
+	}, nil
 }

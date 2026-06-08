@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -45,6 +46,9 @@ func ExampleGetVolume(id string) {
 	}
 
 	fmt.Printf("Volume: %s (ID: %s)\n", volume.Name, volume.ID)
+
+	data, _ := json.MarshalIndent(volume, "", "  ")
+	fmt.Println(string(data))
 }
 
 func ExampleListVolumes() {
@@ -221,6 +225,10 @@ func ExampleVolumeAttachments(volumeID string) {
 		fmt.Printf("  Instance: %s\n", *volume.Attachment.Instance.ID)
 		fmt.Printf("  Device: %s\n", *volume.Attachment.Device)
 		fmt.Printf("  Attached At: %s\n", volume.Attachment.AttachedAt)
+
+		if volume.Attachment.Serial != nil {
+			fmt.Printf("  Serial: %s\n", *volume.Attachment.Serial)
+		}
 	}
 
 	// Detach volume

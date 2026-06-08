@@ -17,6 +17,7 @@ type (
 		List(ctx context.Context, registryID string, opts RepositoryListOptions) (*RepositoriesResponse, error)
 		ListAll(ctx context.Context, registryID string, filterOpts RepositoryFilterOptions) ([]RepositoryResponse, error)
 		Get(ctx context.Context, registryID, repositoryName string) (*RepositoryResponse, error)
+		GetByID(ctx context.Context, registryID, repositoryID string) (*RepositoryResponse, error)
 		Delete(ctx context.Context, registryID, repositoryName string) error
 	}
 
@@ -34,6 +35,7 @@ type (
 
 	// RepositoryResponse represents a repository within a container registry
 	RepositoryResponse struct {
+		ID           string `json:"id,omitempty"`
 		RegistryName string `json:"registry_name"`
 		Name         string `json:"name"`
 		ImageCount   int    `json:"image_count"`
@@ -119,6 +121,17 @@ func (c *repositoriesService) createRepositoryQueryParams(opts RepositoryListOpt
 // Get retrieves a specific repository within a registry
 func (c *repositoriesService) Get(ctx context.Context, registryID, repositoryName string) (*RepositoryResponse, error) {
 	path := fmt.Sprintf("/v0/registries/%s/repositories/%s", registryID, repositoryName)
+
+	res, err := mgc_http.ExecuteSimpleRequestWithRespBody[RepositoryResponse](ctx, c.client.newRequest, c.client.GetConfig(), http.MethodGet, path, nil, nil)
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
+// GetByID retrieves a specific repository within a registry by its UUID
+func (c *repositoriesService) GetByID(ctx context.Context, registryID, repositoryID string) (*RepositoryResponse, error) {
+	path := fmt.Sprintf("/v1/registries/%s/repositories/%s", registryID, repositoryID)
 
 	res, err := mgc_http.ExecuteSimpleRequestWithRespBody[RepositoryResponse](ctx, c.client.newRequest, c.client.GetConfig(), http.MethodGet, path, nil, nil)
 	if err != nil {

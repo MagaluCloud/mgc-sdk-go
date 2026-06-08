@@ -82,6 +82,7 @@ go get github.com/MagaluCloud/mgc-sdk-go
   - Public IPs
   - Subnet Pools
   - NAT Gateways
+  - Routes
 
 ## Authentication
 

@@ -114,3 +114,18 @@ type ListVersionsOptions struct {
 	Limit  *int `json:"_limit,omitempty"`
 	Offset *int `json:"_offset,omitempty"`
 }
+
+type GetPresignedURLOptions struct {
+	Method          string         `json:"method,omitempty"`
+	ExpiryInSeconds *time.Duration `json:"expiry_in_seconds,omitempty"`
+}
+
+type PresignedURL struct {
+	URL string `json:"url"`
+}
+
+type ObjectLockInfo struct {
+	Mode            string     `json:"mode,omitempty"`
+	RetainUntilDate *time.Time `json:"retain_until_date,omitempty"`
+	Locked          bool       `json:"locked"`
+}

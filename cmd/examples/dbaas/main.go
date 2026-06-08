@@ -36,6 +36,8 @@ func main() {
 	ExampleCreateParameter()
 	ExampleUpdateParameter()
 	ExampleDeleteParameter()
+	ExampleStartImportMode()
+	ExampleStopImportMode()
 }
 
 func ExampleListEngines() {
@@ -664,4 +666,36 @@ func ExampleDeleteParameter() {
 	}
 
 	fmt.Println("Parameter deleted successfully")
+}
+
+func ExampleStartImportMode() {
+	apiToken := os.Getenv("MGC_API_TOKEN")
+	if apiToken == "" {
+		log.Fatal("MGC_API_TOKEN environment variable is not set")
+	}
+	c := client.NewMgcClient(client.WithAPIKey(apiToken))
+	dbaasClient := dbaas.New(c)
+
+	updated, err := dbaasClient.Clusters().StartImportMode(context.Background(), "your-cluster-id")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Printf("Updated cluster %s (ID: %s) to %v\n", updated.Name, updated.ID, updated.Status)
+}
+
+func ExampleStopImportMode() {
+	apiToken := os.Getenv("MGC_API_TOKEN")
+	if apiToken == "" {
+		log.Fatal("MGC_API_TOKEN environment variable is not set")
+	}
+	c := client.NewMgcClient(client.WithAPIKey(apiToken))
+	dbaasClient := dbaas.New(c)
+
+	updated, err := dbaasClient.Clusters().StopImportMode(context.Background(), "your-cluster-id")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Printf("Updated cluster %s (ID: %s) to %v\n", updated.Name, updated.ID, updated.Status)
 }
