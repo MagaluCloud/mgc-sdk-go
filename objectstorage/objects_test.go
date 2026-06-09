@@ -3833,6 +3833,312 @@ func TestProcessStreamInBatches_FlushOnChannelClose(t *testing.T) {
 	}
 }
 
+func TestObjectServiceUpload_WithProgress_CallsStartAndFinish(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	content := []byte("hello progress")
+
+	mock := newMockMinioClient()
+
+	mock.putObjectFunc = func(
+		ctx context.Context,
+		bucketName string,
+		objectName string,
+		reader io.Reader,
+		objectSize int64,
+		opts minio.PutObjectOptions,
+	) (minio.UploadInfo, error) {
+		_, _ = io.ReadAll(reader)
+		return minio.UploadInfo{}, nil
+	}
+
+	core := client.NewMgcClient()
+	osClient, _ := New(core, "minioadmin", "minioadmin", WithMinioClientInterface(mock))
+	svc := osClient.Objects()
+
+	p := &mockProgressReporter{}
+	ctx = WithProgress(ctx, p)
+
+	err := svc.Upload(ctx, "test-bucket", "test-key", content, "text/plain", nil)
+
+	if err != nil {
+		t.Fatalf("Upload() unexpected error: %v", err)
+	}
+
+	if !p.startCalled {
+		t.Error("Start() was not called")
+	}
+
+	if p.startTotal != int64(len(content)) {
+		t.Errorf("Start() called with %d, expected %d", p.startTotal, len(content))
+	}
+
+	if !p.addCalled {
+		t.Error("Add() was not called during read")
+	}
+
+	if !p.finishCalled {
+		t.Error("Finish() was not called")
+	}
+}
+
+func TestObjectServiceUpload_WithoutProgress_NoProgressCalls(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	content := []byte("no progress")
+
+	mock := newMockMinioClient()
+
+	mock.putObjectFunc = func(
+		ctx context.Context,
+		bucketName string,
+		objectName string,
+		reader io.Reader,
+		objectSize int64,
+		opts minio.PutObjectOptions,
+	) (minio.UploadInfo, error) {
+		_, _ = io.ReadAll(reader)
+		return minio.UploadInfo{}, nil
+	}
+
+	core := client.NewMgcClient()
+	osClient, _ := New(core, "minioadmin", "minioadmin", WithMinioClientInterface(mock))
+	svc := osClient.Objects()
+
+	p := &mockProgressReporter{}
+
+	err := svc.Upload(ctx, "test-bucket", "test-key", content, "text/plain", nil)
+
+	if err != nil {
+		t.Fatalf("Upload() unexpected error: %v", err)
+	}
+
+	if p.startCalled || p.addCalled || p.finishCalled {
+		t.Error("progress methods should not be called when no ProgressReporter is in context")
+	}
+}
+
+func TestObjectServiceUpload_WithProgress_AddAccumulatesBytes(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	content := []byte("some data to track")
+
+	mock := newMockMinioClient()
+
+	mock.putObjectFunc = func(
+		ctx context.Context,
+		bucketName string,
+		objectName string,
+		reader io.Reader,
+		objectSize int64,
+		opts minio.PutObjectOptions,
+	) (minio.UploadInfo, error) {
+		_, _ = io.ReadAll(reader)
+		return minio.UploadInfo{}, nil
+	}
+
+	core := client.NewMgcClient()
+	osClient, _ := New(core, "minioadmin", "minioadmin", WithMinioClientInterface(mock))
+	svc := osClient.Objects()
+
+	var totalAdded int64
+	p := &trackingProgressReporter{
+		onAdd: func(delta int64) { totalAdded += delta },
+	}
+	ctx = WithProgress(ctx, p)
+
+	err := svc.Upload(ctx, "test-bucket", "test-key", content, "text/plain", nil)
+
+	if err != nil {
+		t.Fatalf("Upload() unexpected error: %v", err)
+	}
+
+	if totalAdded != int64(len(content)) {
+		t.Errorf("expected total Add() bytes %d, got %d", len(content), totalAdded)
+	}
+}
+
+type trackingProgressReporter struct {
+	onAdd func(int64)
+}
+
+func (r *trackingProgressReporter) Start(total int64) {}
+func (r *trackingProgressReporter) Add(delta int64)   { r.onAdd(delta) }
+func (r *trackingProgressReporter) Finish()           {}
+
+func TestObjectServiceUploadDir_WithProgress_CallsStartWithFileCount(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	srcDir := t.TempDir()
+
+	for _, name := range []string{"a.txt", "b.txt", "c.txt"} {
+		if err := os.WriteFile(filepath.Join(srcDir, name), []byte("x"), 0644); err != nil {
+			t.Fatalf("failed to create temp file: %v", err)
+		}
+	}
+
+	mock := newMockMinioClient()
+	mock.putObjectFunc = func(_ context.Context, _, _ string, r io.Reader, _ int64, _ minio.PutObjectOptions) (minio.UploadInfo, error) {
+		return minio.UploadInfo{}, nil
+	}
+
+	core := client.NewMgcClient()
+	osClient, _ := New(core, "minioadmin", "minioadmin", WithMinioClientInterface(mock))
+
+	p := &mockProgressReporter{}
+	ctx = WithProgress(ctx, p)
+
+	_, err := osClient.Objects().UploadDir(ctx, "bucket/dst", srcDir, nil)
+	if err != nil {
+		t.Fatalf("UploadDir() unexpected error: %v", err)
+	}
+
+	if !p.startCalled {
+		t.Error("Start() was not called")
+	}
+
+	if p.startTotal != 3 {
+		t.Errorf("Start() called with %d, expected 3", p.startTotal)
+	}
+}
+
+func TestObjectServiceUploadDir_WithProgress_CallsFinish(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	srcDir := t.TempDir()
+
+	if err := os.WriteFile(filepath.Join(srcDir, "file.txt"), []byte("data"), 0644); err != nil {
+		t.Fatalf("failed to create temp file: %v", err)
+	}
+
+	mock := newMockMinioClient()
+	mock.putObjectFunc = func(_ context.Context, _, _ string, r io.Reader, _ int64, _ minio.PutObjectOptions) (minio.UploadInfo, error) {
+		return minio.UploadInfo{}, nil
+	}
+
+	core := client.NewMgcClient()
+	osClient, _ := New(core, "minioadmin", "minioadmin", WithMinioClientInterface(mock))
+
+	p := &mockProgressReporter{}
+	ctx = WithProgress(ctx, p)
+
+	_, err := osClient.Objects().UploadDir(ctx, "bucket/dst", srcDir, nil)
+	if err != nil {
+		t.Fatalf("UploadDir() unexpected error: %v", err)
+	}
+
+	if !p.finishCalled {
+		t.Error("Finish() was not called")
+	}
+}
+
+func TestObjectServiceUploadDir_WithProgress_AddCalledPerFile(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	srcDir := t.TempDir()
+
+	for _, name := range []string{"one.txt", "two.txt"} {
+		if err := os.WriteFile(filepath.Join(srcDir, name), []byte("x"), 0644); err != nil {
+			t.Fatalf("failed to create temp file: %v", err)
+		}
+	}
+
+	mock := newMockMinioClient()
+	mock.putObjectFunc = func(_ context.Context, _, _ string, r io.Reader, _ int64, _ minio.PutObjectOptions) (minio.UploadInfo, error) {
+		return minio.UploadInfo{}, nil
+	}
+
+	core := client.NewMgcClient()
+	osClient, _ := New(core, "minioadmin", "minioadmin", WithMinioClientInterface(mock))
+
+	var addCount int64
+	p := &trackingProgressReporter{
+		onAdd: func(delta int64) { addCount += delta },
+	}
+	ctx = WithProgress(ctx, p)
+
+	res, err := osClient.Objects().UploadDir(ctx, "bucket/dst", srcDir, nil)
+	if err != nil {
+		t.Fatalf("UploadDir() unexpected error: %v", err)
+	}
+
+	if res.UploadedCount != 2 {
+		t.Errorf("expected UploadedCount 2, got %d", res.UploadedCount)
+	}
+
+	if addCount != 2 {
+		t.Errorf("expected Add() total 2, got %d", addCount)
+	}
+}
+
+func TestObjectServiceUploadDir_WithoutProgress_NoProgressCalls(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	srcDir := t.TempDir()
+
+	if err := os.WriteFile(filepath.Join(srcDir, "file.txt"), []byte("data"), 0644); err != nil {
+		t.Fatalf("failed to create temp file: %v", err)
+	}
+
+	mock := newMockMinioClient()
+	mock.putObjectFunc = func(_ context.Context, _, _ string, r io.Reader, _ int64, _ minio.PutObjectOptions) (minio.UploadInfo, error) {
+		return minio.UploadInfo{}, nil
+	}
+
+	core := client.NewMgcClient()
+	osClient, _ := New(core, "minioadmin", "minioadmin", WithMinioClientInterface(mock))
+
+	p := &mockProgressReporter{}
+
+	_, err := osClient.Objects().UploadDir(ctx, "bucket/dst", srcDir, nil)
+	if err != nil {
+		t.Fatalf("UploadDir() unexpected error: %v", err)
+	}
+
+	if p.startCalled || p.addCalled || p.finishCalled {
+		t.Error("progress methods should not be called when no ProgressReporter is in context")
+	}
+}
+
+func TestObjectServiceUploadDir_WithProgress_EmptyDir_StartWithZero(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	srcDir := t.TempDir()
+
+	mock := newMockMinioClient()
+
+	core := client.NewMgcClient()
+	osClient, _ := New(core, "minioadmin", "minioadmin", WithMinioClientInterface(mock))
+
+	p := &mockProgressReporter{}
+	ctx = WithProgress(ctx, p)
+
+	_, err := osClient.Objects().UploadDir(ctx, "bucket/dst", srcDir, nil)
+	if err != nil {
+		t.Fatalf("UploadDir() unexpected error: %v", err)
+	}
+
+	if !p.startCalled {
+		t.Error("Start() was not called even for empty dir")
+	}
+
+	if p.startTotal != 0 {
+		t.Errorf("Start() called with %d, expected 0 for empty dir", p.startTotal)
+	}
+
+	if !p.finishCalled {
+		t.Error("Finish() was not called")
+	}
+}
+
 func TestObjectServiceUploadStream_InvalidBucketName(t *testing.T) {
 	t.Parallel()
 
