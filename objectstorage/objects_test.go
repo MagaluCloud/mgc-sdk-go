@@ -3833,6 +3833,200 @@ func TestProcessStreamInBatches_FlushOnChannelClose(t *testing.T) {
 	}
 }
 
+func TestObjectServiceUploadStream_InvalidBucketName(t *testing.T) {
+	t.Parallel()
+
+	core := client.NewMgcClient()
+	osClient, _ := New(core, "minioadmin", "minioadmin")
+	svc := osClient.Objects()
+
+	err := svc.UploadStream(context.Background(), "", "test-key", bytes.NewReader([]byte("data")), 4, "text/plain")
+
+	if err == nil {
+		t.Error("UploadStream() expected error for empty bucket name, got nil")
+	}
+
+	if _, ok := err.(*InvalidBucketNameError); !ok {
+		t.Errorf("UploadStream() expected InvalidBucketNameError, got %T", err)
+	}
+}
+
+func TestObjectServiceUploadStream_InvalidObjectKey(t *testing.T) {
+	t.Parallel()
+
+	core := client.NewMgcClient()
+	osClient, _ := New(core, "minioadmin", "minioadmin")
+	svc := osClient.Objects()
+
+	err := svc.UploadStream(context.Background(), "test-bucket", "", bytes.NewReader([]byte("data")), 4, "text/plain")
+
+	if err == nil {
+		t.Error("UploadStream() expected error for empty object key, got nil")
+	}
+
+	if _, ok := err.(*InvalidObjectKeyError); !ok {
+		t.Errorf("UploadStream() expected InvalidObjectKeyError, got %T", err)
+	}
+}
+
+func TestObjectServiceUploadStream_ZeroSize(t *testing.T) {
+	t.Parallel()
+
+	core := client.NewMgcClient()
+	osClient, _ := New(core, "minioadmin", "minioadmin")
+	svc := osClient.Objects()
+
+	err := svc.UploadStream(context.Background(), "test-bucket", "test-key", bytes.NewReader([]byte{}), 0, "text/plain")
+
+	if err == nil {
+		t.Error("UploadStream() expected error for size zero, got nil")
+	}
+
+	if _, ok := err.(*InvalidObjectDataError); !ok {
+		t.Errorf("UploadStream() expected InvalidObjectDataError, got %T", err)
+	}
+}
+
+func TestObjectServiceUploadStream_ValidParameters(t *testing.T) {
+	t.Parallel()
+
+	core := client.NewMgcClient()
+	osClient, _ := New(core, "minioadmin", "minioadmin")
+	svc := osClient.Objects()
+
+	err := svc.UploadStream(context.Background(), "test-bucket", "test-key", bytes.NewReader([]byte("data")), 4, "text/plain")
+
+	if err == nil {
+		t.Error("UploadStream() expected error due to no connection, got nil")
+	}
+}
+
+func TestObjectServiceUploadStream_Success(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	content := []byte("hello stream")
+
+	mock := newMockMinioClient()
+
+	var (
+		receivedBucket string
+		receivedKey    string
+		receivedSize   int64
+		receivedData   []byte
+	)
+
+	mock.putObjectFunc = func(
+		ctx context.Context,
+		bucketName string,
+		objectName string,
+		reader io.Reader,
+		objectSize int64,
+		opts minio.PutObjectOptions,
+	) (minio.UploadInfo, error) {
+		receivedBucket = bucketName
+		receivedKey = objectName
+		receivedSize = objectSize
+		receivedData, _ = io.ReadAll(reader)
+		return minio.UploadInfo{Bucket: bucketName, Key: objectName, Size: objectSize}, nil
+	}
+
+	core := client.NewMgcClient()
+	osClient, _ := New(core, "minioadmin", "minioadmin", WithMinioClientInterface(mock))
+	svc := osClient.Objects()
+
+	err := svc.UploadStream(ctx, "test-bucket", "test-key", bytes.NewReader(content), int64(len(content)), "text/plain")
+
+	if err != nil {
+		t.Fatalf("UploadStream() unexpected error: %v", err)
+	}
+
+	if receivedBucket != "test-bucket" {
+		t.Errorf("expected bucket %q, got %q", "test-bucket", receivedBucket)
+	}
+
+	if receivedKey != "test-key" {
+		t.Errorf("expected key %q, got %q", "test-key", receivedKey)
+	}
+
+	if receivedSize != int64(len(content)) {
+		t.Errorf("expected size %d, got %d", len(content), receivedSize)
+	}
+
+	if !bytes.Equal(receivedData, content) {
+		t.Errorf("expected data %q, got %q", content, receivedData)
+	}
+}
+
+func TestObjectServiceUploadStream_PassesContentType(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+
+	mock := newMockMinioClient()
+
+	var receivedContentType string
+
+	mock.putObjectFunc = func(
+		ctx context.Context,
+		bucketName string,
+		objectName string,
+		reader io.Reader,
+		objectSize int64,
+		opts minio.PutObjectOptions,
+	) (minio.UploadInfo, error) {
+		receivedContentType = opts.ContentType
+		return minio.UploadInfo{}, nil
+	}
+
+	core := client.NewMgcClient()
+	osClient, _ := New(core, "minioadmin", "minioadmin", WithMinioClientInterface(mock))
+	svc := osClient.Objects()
+
+	err := svc.UploadStream(ctx, "test-bucket", "test-key", bytes.NewReader([]byte("data")), 4, "application/octet-stream")
+
+	if err != nil {
+		t.Fatalf("UploadStream() unexpected error: %v", err)
+	}
+
+	if receivedContentType != "application/octet-stream" {
+		t.Errorf("expected ContentType %q, got %q", "application/octet-stream", receivedContentType)
+	}
+}
+
+func TestObjectServiceUploadStream_PropagatesPutObjectError(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+
+	mock := newMockMinioClient()
+
+	mock.putObjectFunc = func(
+		ctx context.Context,
+		bucketName string,
+		objectName string,
+		reader io.Reader,
+		objectSize int64,
+		opts minio.PutObjectOptions,
+	) (minio.UploadInfo, error) {
+		return minio.UploadInfo{}, fmt.Errorf("storage error")
+	}
+
+	core := client.NewMgcClient()
+	osClient, _ := New(core, "minioadmin", "minioadmin", WithMinioClientInterface(mock))
+	svc := osClient.Objects()
+
+	err := svc.UploadStream(ctx, "test-bucket", "test-key", bytes.NewReader([]byte("data")), 4, "text/plain")
+
+	if err == nil {
+		t.Fatal("UploadStream() expected error from PutObject, got nil")
+	}
+
+	if err.Error() != "storage error" {
+		t.Errorf("expected error %q, got %q", "storage error", err.Error())
+	}
+}
+
 func intPtr(v int) *int {
 	return &v
 }
