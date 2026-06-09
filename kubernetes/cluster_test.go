@@ -124,7 +124,8 @@ func TestClusterService_Create(t *testing.T) {
 				Name:    "new-cluster",
 				Version: strPtr("v1.30.2"),
 			},
-			wantErr: true,
+			statusCode: http.StatusInternalServerError,
+			wantErr:    true,
 		},
 	}
 

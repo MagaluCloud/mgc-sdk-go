@@ -242,6 +242,7 @@ func TestNodePoolService_Delete(t *testing.T) {
 			name:       "invalid node pool ID",
 			clusterID:  "cluster-123",
 			nodePoolID: "asdasd",
+			statusCode: http.StatusNotFound,
 			wantErr:    true,
 		},
 	}

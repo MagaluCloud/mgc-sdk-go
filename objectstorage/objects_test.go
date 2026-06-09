@@ -4057,9 +4057,9 @@ func TestObjectServiceUploadDir_WithProgress_AddCalledPerFile(t *testing.T) {
 	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin", WithMinioClientInterface(mock))
 
-	var addCount int64
+	var addCount atomic.Int64
 	p := &trackingProgressReporter{
-		onAdd: func(delta int64) { addCount += delta },
+		onAdd: func(delta int64) { addCount.Add(delta) },
 	}
 	ctx = WithProgress(ctx, p)
 
@@ -4072,8 +4072,8 @@ func TestObjectServiceUploadDir_WithProgress_AddCalledPerFile(t *testing.T) {
 		t.Errorf("expected UploadedCount 2, got %d", res.UploadedCount)
 	}
 
-	if addCount != 2 {
-		t.Errorf("expected Add() total 2, got %d", addCount)
+	if addCount.Load() != 2 {
+		t.Errorf("expected Add() total 2, got %d", addCount.Load())
 	}
 }
 

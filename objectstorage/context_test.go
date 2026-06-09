@@ -2,6 +2,7 @@ package objectstorage
 
 import (
 	"context"
+	"sync"
 	"testing"
 )
 
@@ -63,6 +64,7 @@ func TestWithStorageClass_OriginalContextUnchanged(t *testing.T) {
 }
 
 type mockProgressReporter struct {
+	mu           sync.Mutex
 	startCalled  bool
 	addCalled    bool
 	finishCalled bool
@@ -71,16 +73,22 @@ type mockProgressReporter struct {
 }
 
 func (m *mockProgressReporter) Start(total int64) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	m.startCalled = true
 	m.startTotal = total
 }
 
 func (m *mockProgressReporter) Add(delta int64) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	m.addCalled = true
 	m.addDelta = delta
 }
 
 func (m *mockProgressReporter) Finish() {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	m.finishCalled = true
 }
 
