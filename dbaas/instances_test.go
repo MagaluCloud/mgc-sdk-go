@@ -36,8 +36,8 @@ func TestInstanceService_List(t *testing.T) {
 			response: `{
 				"meta": {"total": 2},
 				"results": [
-					{"id": "inst1", "name": "instance1"},
-					{"id": "inst2", "name": "instance2"}
+					{"id": "inst1", "name": "instance1", "deletion_protected": true},
+					{"id": "inst2", "name": "instance2", "deletion_protected": false}
 				]
 			}`,
 			statusCode: http.StatusOK,
@@ -56,7 +56,7 @@ func TestInstanceService_List(t *testing.T) {
 			},
 			response: `{
 				"meta": {"total": 1},
-				"results": [{"id": "inst1", "status": "ACTIVE"}]
+				"results": [{"id": "inst1", "status": "ACTIVE", "deletion_protected": true}]
 			}`,
 			statusCode: http.StatusOK,
 			wantCount:  1,
@@ -139,7 +139,8 @@ func TestInstanceService_Get(t *testing.T) {
 			response: `{
 				"id": "inst1",
 				"name": "test-instance",
-				"status": "ACTIVE"
+				"status": "ACTIVE",
+				"deletion_protected": true
 			}`,
 			statusCode: http.StatusOK,
 			wantID:     "inst1",
@@ -208,8 +209,8 @@ func TestInstanceService_List_PaginationMetadata(t *testing.T) {
 				]
 			},
 			"results": [
-				{"id": "inst1", "name": "instance1", "status": "ACTIVE"},
-				{"id": "inst2", "name": "instance2", "status": "ACTIVE"}
+				{"id": "inst1", "name": "instance1", "status": "ACTIVE", "deletion_protected": true},
+				{"id": "inst2", "name": "instance2", "status": "ACTIVE", "deletion_protected": false}
 			]
 		}`))
 	}))
@@ -264,6 +265,23 @@ func TestInstanceService_Create(t *testing.T) {
 					Size: 100,
 					Type: "nvme",
 				},
+				DeletionProtected: helpers.BoolPtr(true),
+			},
+			response:   `{"id": "inst-new"}`,
+			statusCode: http.StatusOK,
+			wantID:     "inst-new",
+			wantErr:    false,
+		},
+		{
+			name: "successful creation without deletion protection",
+			request: InstanceCreateRequest{
+				Name:     "new-instance",
+				User:     "admin",
+				Password: "secret",
+				Volume: InstanceVolumeRequest{
+					Size: 100,
+					Type: "nvme",
+				},
 			},
 			response:   `{"id": "inst-new"}`,
 			statusCode: http.StatusOK,
@@ -291,6 +309,10 @@ func TestInstanceService_Create(t *testing.T) {
 				assertEqual(t, tt.request.Name, req.Name)
 				assertEqual(t, tt.request.User, req.User)
 				assertEqual(t, tt.request.Password, req.Password)
+
+				if tt.request.DeletionProtected != nil {
+					assertEqual(t, *tt.request.DeletionProtected, *req.DeletionProtected)
+				}
 
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(tt.statusCode)
@@ -376,12 +398,14 @@ func TestInstanceService_Update(t *testing.T) {
 				BackupRetentionDays: helpers.IntPtr(7),
 				BackupStartAt:       helpers.StrPtr("02:00"),
 				ParameterGroupID:    helpers.StrPtr("pg-id"),
+				DeletionProtected:   helpers.BoolPtr(false),
 			},
 			response: `{
 				"id": "inst1",
 				"backup_retention_days": 7,
 				"backup_start_at": "02:00",
-				"parameter_group_id": "pg-id"
+				"parameter_group_id": "pg-id",
+				"deletion_protected": false
 			}`,
 			statusCode: http.StatusOK,
 			wantID:     "inst1",
@@ -400,6 +424,7 @@ func TestInstanceService_Update(t *testing.T) {
 				assertEqual(t, *tt.request.BackupRetentionDays, *req.BackupRetentionDays)
 				assertEqual(t, *tt.request.BackupStartAt, *req.BackupStartAt)
 				assertEqual(t, *tt.request.ParameterGroupID, *req.ParameterGroupID)
+				assertEqual(t, *tt.request.DeletionProtected, *req.DeletionProtected)
 
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(tt.statusCode)

@@ -85,6 +85,8 @@ func main() {
 	ExampleListFlavorsAndVersions(k8sClient)
 	ExampleDeleteCluster(k8sClient, idSemNodePool)
 	ExampleDeleteCluster(k8sClient, idComNodePool)
+
+	ExampleListVersions(k8sClient)
 }
 
 func deleteAllClusters(k8sClient *kubernetes.KubernetesClient) {
@@ -360,6 +362,7 @@ func ExampleNodePoolOperations(k8sClient *kubernetes.KubernetesClient, clusterID
 
 	updateReq := kubernetes.PatchNodePoolRequest{
 		Replicas: helpers.IntPtr(3),
+		Flavor:   helpers.StrPtr("DP64-128-500"),
 	}
 
 	updatedPool, err := k8sClient.Nodepools().Update(ctx, clusterID, newPool.ID, updateReq)
@@ -367,7 +370,10 @@ func ExampleNodePoolOperations(k8sClient *kubernetes.KubernetesClient, clusterID
 		log.Fatal(err)
 	}
 
-	fmt.Printf("\nNode Pool atualizado: %d replicas\n", updatedPool.Replicas)
+	fmt.Println("\nNode Pool atualizado:")
+	fmt.Printf("Replicas: %d\n", updatedPool.Replicas)
+	fmt.Printf("Flavor: %s\n", updatedPool.InstanceTemplate.Flavor.Name)
+
 	pool, err := k8sClient.Nodepools().Get(ctx, clusterID, newPool.ID)
 	if err != nil {
 		log.Fatal(err)
@@ -465,4 +471,24 @@ func ExampleGetNodePool(k8sClient *kubernetes.KubernetesClient, clusterID string
 	}
 
 	fmt.Println("\nNode Pool:", nodePool)
+}
+
+func ExampleListVersions(k8sClient *kubernetes.KubernetesClient) {
+	ctx := context.Background()
+
+	versions, err := k8sClient.Versions().List(ctx, &kubernetes.VersionListOptions{
+		IncludeDeprecated: true,
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println("\nVersions:")
+
+	for _, version := range versions {
+		fmt.Printf("   Version: %s\n", version.Version)
+		fmt.Printf("   Deprecated: %t\n", version.Deprecated)
+
+		fmt.Println()
+	}
 }

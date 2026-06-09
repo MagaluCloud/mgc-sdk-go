@@ -5,17 +5,57 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
+	"time"
 
 	"github.com/MagaluCloud/mgc-sdk-go/client"
 	"github.com/MagaluCloud/mgc-sdk-go/compute"
+	"github.com/MagaluCloud/mgc-sdk-go/helpers"
 	"gopkg.in/yaml.v3"
 )
 
 func main() {
+	// Get credentials from environment
+	apiToken := os.Getenv("MGC_API_KEY")
+	if apiToken == "" {
+		log.Fatal("MGC_API_TOKEN environment variable is not set")
+	}
+
+	// Check for optional region parameter
+	region := os.Getenv("MGC_REGION")
+	if region == "" {
+		region = "br-se1"
+	}
+
+	// Set client options
+	opts := []client.Option{client.WithAPIKey(apiToken)}
+	switch strings.ToLower(region) {
+	case "br-ne1":
+		opts = append(opts, client.WithBaseURL(client.BrNe1))
+	case "br-se1":
+		opts = append(opts, client.WithBaseURL(client.BrSe1))
+	default:
+		log.Fatalf("MGC_REGION set with invalid region %s\n", region)
+	}
+
+	// Create MagaluCloud client with selected region
+	c := client.NewMgcClient(opts...)
+
+	// Create Compute client
+	cli := compute.New(c)
+
+	ctx := context.Background()
+
 	// ExampleListMachineTypes()
 	// ExampleListImages()
 	ExampleListImagesWithJWT()
-	ExampleListImagesWithJWTAndAPIKey()
+	ExampleListImagesWithJWTAndAPIKey(ctx, apiToken)
+	id := ExampleCreateCustomImage(ctx, cli)
+	ExampleRetrieveCustomImage(ctx, cli, id)
+	ExampleListCustomImages(ctx, cli)
+	ExampleUpdateCustomImage(ctx, cli, id)
+	time.Sleep(5 * time.Second)
+	ExampleDeleteCustomImage(ctx, cli, id)
 	// id := "" // comment and uncomment to run the examples
 	// // id := ExampleCreateInstance() // uncomment to create a new instance
 	// // id := ExampleListInstances() // uncomment to list instances and get the id of the last instance
@@ -261,14 +301,14 @@ func ExampleListImagesWithJWT() {
 		fmt.Printf("  Minimum Requirements: %d VCPUs, %d RAM, %d Disk\n", image.MinimumRequirements.VCPU, image.MinimumRequirements.RAM, image.MinimumRequirements.Disk)
 	}
 }
-func ExampleListImagesWithJWTAndAPIKey() {
-	c := client.NewMgcClient(client.WithAPIKey("057dca55-6115-API-KEY-f03f8e1adbb2"), client.WithJWToken("Bearer JWTokenn"))
+func ExampleListImagesWithJWTAndAPIKey(ctx context.Context, apiToken string) {
+	c := client.NewMgcClient(client.WithAPIKey(apiToken), client.WithJWToken("Bearer JWToken"))
 	computeClient := compute.New(c)
 
 	// List images
-	_, err := computeClient.Images().List(context.Background(), compute.ImageListOptions{})
+	_, err := computeClient.Images().List(ctx, compute.ImageListOptions{})
 	if err != nil {
-		log.Println("Successfully authenticated with API Key and ignored JWT authentication")
+		log.Println("Failed to authenticate with API Key and ignore JWT authentication")
 		log.Fatal(err)
 	}
 }
@@ -394,3 +434,114 @@ func awaitRunningCompleted(id string) {
 	fmt.Println("Instance is running")
 }
 */
+
+func ExampleCreateCustomImage(ctx context.Context, cli *compute.VirtualMachineClient) (id string) {
+	url := os.Getenv("MGC_SIGNED_IMG_URL")
+	if url == "" {
+		fmt.Println("MGC_SIGNED_IMG_URL environment variable not set, skipping custom image creation")
+		return
+	}
+
+	req := compute.CreateCustomImageRequest{
+		Name:         "sdk-example-" + time.Now().Format("20060102150405"),
+		Platform:     compute.PlatformLinux,
+		Architecture: compute.ArchitectureX86_64,
+		License:      compute.LicenseUnlicensed,
+		URL:          url,
+	}
+	id, err := cli.Images().CreateCustom(ctx, req)
+	if err != nil {
+		fmt.Printf("Failed to create custom image: %s\n", err)
+		return
+	}
+
+	fmt.Printf("Image ID: %s\n", id)
+	return
+}
+
+func ExampleRetrieveCustomImage(ctx context.Context, cli *compute.VirtualMachineClient, id string) {
+	if id == "" {
+		fmt.Println("Custom image ID not set, skipping custom image request")
+		return
+	}
+
+	image, err := cli.Images().GetCustom(ctx, id)
+	if err != nil {
+		fmt.Printf("Failed to retrieve custom image: %s\n", err)
+		return
+	}
+
+	fmt.Printf("Image: %s (ID: %s)\n", image.Name, image.ID)
+	fmt.Printf("  Status: %s\n", image.Status)
+	fmt.Printf("  Platform: %s\n", image.Platform)
+	fmt.Printf("  License: %s\n", image.License)
+	fmt.Printf("  Requirements: %d vCPU, %d RAM, %d Disk\n", image.Requirements.VCPU, image.Requirements.RAM, image.Requirements.Disk)
+	if image.Version != nil {
+		fmt.Printf("  Version: %s\n", *image.Version)
+	}
+	if image.Description != nil {
+		fmt.Printf("  Description: %s\n", *image.Description)
+	}
+	if image.Metadata != nil {
+		fmt.Printf("  Metadata: %v\n", *image.Metadata)
+	}
+}
+
+func ExampleListCustomImages(ctx context.Context, cli *compute.VirtualMachineClient) {
+	opts := compute.CustomImageListOptions{Limit: helpers.IntPtr(2)}
+	images, err := cli.Images().ListCustom(ctx, opts)
+	if err != nil {
+		fmt.Printf("Failed to list custom images: %s\n", err)
+		return
+	}
+
+	for _, image := range images.Images {
+		fmt.Printf("Image: %s (ID: %s)\n", image.Name, image.ID)
+		fmt.Printf("  Status: %s\n", image.Status)
+		fmt.Printf("  Platform: %s\n", image.Platform)
+		fmt.Printf("  License: %s\n", image.License)
+		fmt.Printf("  Requirements: %d vCPU, %d RAM, %d Disk\n", image.Requirements.VCPU, image.Requirements.RAM, image.Requirements.Disk)
+		if image.Version != nil {
+			fmt.Printf("  Version: %s\n", *image.Version)
+		}
+		if image.Description != nil {
+			fmt.Printf("  Description: %s\n", *image.Description)
+		}
+		if image.Metadata != nil {
+			fmt.Printf("  Metadata: %v\n", *image.Metadata)
+		}
+	}
+}
+
+func ExampleDeleteCustomImage(ctx context.Context, cli *compute.VirtualMachineClient, id string) {
+	if id == "" {
+		fmt.Println("Custom image ID not set, skipping custom image deletion request")
+		return
+	}
+
+	err := cli.Images().DeleteCustom(ctx, id)
+	if err != nil {
+		fmt.Printf("Failed to delete custom image: %s\n", err)
+		return
+	}
+
+	fmt.Printf("Image ID: %s deletion succeeded\n", id)
+}
+
+func ExampleUpdateCustomImage(ctx context.Context, cli *compute.VirtualMachineClient, id string) {
+	if id == "" {
+		fmt.Println("Custom image ID not set, skipping update custom image request")
+		return
+	}
+
+	req := compute.UpdateCustomImageRequest{
+		Description: helpers.StrPtr("SDK test"),
+		Version:     helpers.StrPtr("0.1.0"),
+	}
+	err := cli.Images().UpdateCustom(ctx, id, req)
+	if err != nil {
+		fmt.Printf("Failed to update custom image: %s\n", err)
+		return
+	}
+	fmt.Printf("Image ID: %s update succeeded\n", id)
+}

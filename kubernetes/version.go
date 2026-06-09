@@ -10,7 +10,7 @@ import (
 type (
 	// VersionService provides methods for managing Kubernetes versions
 	VersionService interface {
-		List(ctx context.Context) ([]Version, error)
+		List(ctx context.Context, opts *VersionListOptions) ([]Version, error)
 	}
 
 	// VersionList represents the response when listing versions
@@ -24,6 +24,10 @@ type (
 		Deprecated bool   `json:"deprecated"`
 	}
 
+	VersionListOptions struct {
+		IncludeDeprecated bool
+	}
+
 	// versionService implements the VersionService interface
 	versionService struct {
 		client *KubernetesClient
@@ -31,12 +35,30 @@ type (
 )
 
 // List returns all available Kubernetes versions
-func (s *versionService) List(ctx context.Context) ([]Version, error) {
+func (s *versionService) List(ctx context.Context, opts *VersionListOptions) ([]Version, error) {
 	resp, err := mgc_http.ExecuteSimpleRequestWithRespBody[VersionList](ctx, s.client.newRequest,
 		s.client.GetConfig(), http.MethodGet, "/v1/versions", nil, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	return resp.Results, nil
+	if opts == nil {
+		opts = &VersionListOptions{
+			IncludeDeprecated: false,
+		}
+	}
+
+	if opts.IncludeDeprecated {
+		return resp.Results, nil
+	}
+
+	filteredVersions := []Version{}
+
+	for _, version := range resp.Results {
+		if !version.Deprecated {
+			filteredVersions = append(filteredVersions, version)
+		}
+	}
+
+	return filteredVersions, nil
 }

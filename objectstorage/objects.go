@@ -20,6 +20,7 @@ import (
 type ObjectService interface {
 	Upload(ctx context.Context, bucketName string, objectKey string, data []byte, contentType string, storageClass *string) error
 	UploadDir(ctx context.Context, bucketName string, objectKey string, srcDir string, opts *UploadDirOptions) (*UploadAllResult, error)
+	UploadStream(ctx context.Context, bucketName string, objectKey string, data io.Reader, size int64, contentType string) error
 	Download(ctx context.Context, bucketName string, objectKey string, opts *DownloadOptions) ([]byte, error)
 	DownloadStream(ctx context.Context, bucketName string, objectKey string, opts *DownloadStreamOptions) (io.Reader, error)
 	DownloadAll(ctx context.Context, bucketName string, dst string, opts *DownloadAllOptions) (*DownloadAllResult, error)
@@ -260,6 +261,27 @@ func (s *objectService) getObject(ctx context.Context, bucketName, objectKey str
 	}
 
 	return s.client.minioClient.GetObject(ctx, bucketName, objectKey, opts)
+}
+
+// UploadStream uploads an object to a bucket from a reader.
+func (s *objectService) UploadStream(ctx context.Context, bucketName string, objectKey string, data io.Reader, size int64, contentType string) error {
+	if bucketName == "" {
+		return &InvalidBucketNameError{Name: bucketName}
+	}
+
+	if objectKey == "" {
+		return &InvalidObjectKeyError{Key: objectKey}
+	}
+
+	if size == 0 {
+		return &InvalidObjectDataError{Message: "object size cannot be zero"}
+	}
+
+	_, err := s.client.minioClient.PutObject(ctx, bucketName, objectKey, data, size, minio.PutObjectOptions{
+		ContentType: contentType,
+	})
+
+	return err
 }
 
 // Download retrieves an object from a bucket and returns its content as bytes.

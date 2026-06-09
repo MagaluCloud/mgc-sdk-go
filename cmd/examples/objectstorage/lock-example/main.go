@@ -43,7 +43,7 @@ func main() {
 	}
 
 	fmt.Println("╔════════════════════════════════════════════════════════════╗")
-	fmt.Println("║  MagaluCloud Object Storage - Object Lock Example         ║")
+	fmt.Println("║  MagaluCloud Object Storage - Object Lock Example          ║")
 	fmt.Println("╚════════════════════════════════════════════════════════════╝")
 	fmt.Println()
 

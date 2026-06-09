@@ -48,7 +48,8 @@ func TestClusterService_List(t *testing.T) {
 						"apply_parameters_pending": false,
 						"backup_retention_days": 7,
 						"backup_start_at": "01:00",
-						"created_at": "2023-01-01T00:00:00Z"
+						"created_at": "2023-01-01T00:00:00Z",
+						"deletion_protected": false
 					},
 					{
 						"id": "cluster-2",
@@ -62,7 +63,8 @@ func TestClusterService_List(t *testing.T) {
 						"apply_parameters_pending": false,
 						"backup_retention_days": 7,
 						"backup_start_at": "02:00",
-						"created_at": "2023-01-02T00:00:00Z"
+						"created_at": "2023-01-02T00:00:00Z",
+						"deletion_protected": true
 					}
 				]
 			}`,
@@ -202,6 +204,30 @@ func TestClusterService_Create(t *testing.T) {
 			wantErr:    false,
 		},
 		{
+			name: "successful creation with deletion protection",
+			request: ClusterCreateRequest{
+				Name:           "test-cluster",
+				EngineID:       "postgres-13",
+				InstanceTypeID: "db.t3.micro",
+				User:           "admin",
+				Password:       "password123",
+				Volume: ClusterVolumeRequest{
+					Size: 20,
+					Type: helpers.StrPtr("gp2"),
+				},
+				ParameterGroupID:    helpers.StrPtr("pg-1"),
+				BackupRetentionDays: helpers.IntPtr(7),
+				BackupStartAt:       helpers.StrPtr("01:00"),
+				DeletionProtected:   helpers.BoolPtr(true),
+			},
+			response: `{
+				"id": "cluster-1"
+			}`,
+			statusCode: http.StatusAccepted,
+			wantID:     "cluster-1",
+			wantErr:    false,
+		},
+		{
 			name: "validation error",
 			request: ClusterCreateRequest{
 				Name:     "test-cluster",
@@ -227,6 +253,10 @@ func TestClusterService_Create(t *testing.T) {
 				assertEqual(t, tt.request.User, reqBody.User)
 				assertEqual(t, tt.request.Password, reqBody.Password)
 				assertEqual(t, tt.request.Volume.Size, reqBody.Volume.Size)
+
+				if tt.request.DeletionProtected != nil {
+					assertEqual(t, *tt.request.DeletionProtected, *reqBody.DeletionProtected)
+				}
 
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(tt.statusCode)
@@ -273,7 +303,8 @@ func TestClusterService_Get(t *testing.T) {
 				"apply_parameters_pending": false,
 				"backup_retention_days": 7,
 				"backup_start_at": "01:00",
-				"created_at": "2023-01-01T00:00:00Z"
+				"created_at": "2023-01-01T00:00:00Z",
+				"deletion_protected": true
 			}`,
 			statusCode: http.StatusOK,
 			wantID:     "cluster-1",
@@ -335,6 +366,7 @@ func TestClusterService_Update(t *testing.T) {
 				ParameterGroupID:    helpers.StrPtr("pg-2"),
 				BackupRetentionDays: helpers.IntPtr(14),
 				BackupStartAt:       helpers.StrPtr("02:00"),
+				DeletionProtected:   helpers.BoolPtr(true),
 			},
 			response: `{
 				"id": "cluster-1",
@@ -342,7 +374,8 @@ func TestClusterService_Update(t *testing.T) {
 				"parameter_group_id": "pg-2",
 				"backup_retention_days": 14,
 				"backup_start_at": "02:00",
-				"status": "ACTIVE"
+				"status": "ACTIVE",
+				"deletion_protected": true
 			}`,
 			statusCode: http.StatusOK,
 			wantID:     "cluster-1",
@@ -376,6 +409,10 @@ func TestClusterService_Update(t *testing.T) {
 					}
 					if tt.request.BackupStartAt != nil {
 						assertEqual(t, *tt.request.BackupStartAt, *reqBody.BackupStartAt)
+					}
+
+					if tt.request.DeletionProtected != nil {
+						assertEqual(t, *tt.request.DeletionProtected, *reqBody.DeletionProtected)
 					}
 
 					w.Header().Set("Content-Type", "application/json")
@@ -644,8 +681,8 @@ func TestClusterService_ListAll(t *testing.T) {
 			response: `{
 				"meta": {"page": {"offset": 0, "limit": 25, "count": 2, "total": 2, "max_limit": 100}},
 				"results": [
-					{"id": "cluster-1", "name": "Cluster 1"},
-					{"id": "cluster-2", "name": "Cluster 2"}
+					{"id": "cluster-1", "name": "Cluster 1", "deletion_protected": true},
+					{"id": "cluster-2", "name": "Cluster 2", "deletion_protected": false}
 				]
 			}`,
 			statusCode: http.StatusOK,
@@ -883,6 +920,158 @@ func TestClusterService_ListAll_WithFilters(t *testing.T) {
 		if cluster.EngineID != "postgres-13" {
 			t.Errorf("expected engine_id postgres-13, got %s", cluster.EngineID)
 		}
+	}
+}
+
+func TestClusterService_StartImportMode(t *testing.T) {
+	tests := []struct {
+		name         string
+		clusterID    string
+		response     string
+		statusCode   int
+		wantID       string
+		wantErr      bool
+		errorMessage *string
+	}{
+		{
+			name:      "successful start import mode",
+			clusterID: "cluster-1",
+			response: `{
+				"id": "cluster-1",
+				"name": "test-cluster",
+				"status": "STARTING_IMPORT_MODE",
+				"started_at": "2023-01-01T01:00:00Z"
+			}`,
+			statusCode: http.StatusAccepted,
+			wantID:     "cluster-1",
+			wantErr:    false,
+		},
+		{
+			name:         "cluster ID empty",
+			clusterID:    "",
+			response:     "ID cannot be empty",
+			statusCode:   http.StatusAccepted,
+			wantErr:      true,
+			errorMessage: helpers.StrPtr("ID cannot be empty"),
+		},
+		{
+			name:       "not found",
+			clusterID:  "invalid",
+			response:   `{"error": "cluster not found"}`,
+			statusCode: http.StatusNotFound,
+			wantErr:    true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if tt.clusterID != "" {
+					expectedPath := fmt.Sprintf("/database/v2/clusters/%s/start-import-mode", tt.clusterID)
+					assertEqual(t, expectedPath, r.URL.Path)
+					assertEqual(t, http.MethodPost, r.Method)
+				}
+
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(tt.statusCode)
+				w.Write([]byte(tt.response))
+			}))
+			defer server.Close()
+
+			client := testClusterClient(server.URL)
+			result, err := client.StartImportMode(context.Background(), tt.clusterID)
+
+			if tt.wantErr {
+				assertError(t, err)
+
+				if tt.errorMessage != nil {
+					assertEqual(t, *tt.errorMessage, err.Error())
+				} else {
+					assertEqual(t, true, strings.Contains(err.Error(), strconv.Itoa(tt.statusCode)))
+				}
+
+				return
+			}
+
+			assertNoError(t, err)
+			assertEqual(t, tt.wantID, result.ID)
+		})
+	}
+}
+
+func TestClusterService_StopImportMode(t *testing.T) {
+	tests := []struct {
+		name         string
+		clusterID    string
+		response     string
+		statusCode   int
+		wantID       string
+		wantErr      bool
+		errorMessage *string
+	}{
+		{
+			name:      "successful stop import mode",
+			clusterID: "cluster-1",
+			response: `{
+				"id": "cluster-1",
+				"name": "test-cluster",
+				"status": "STOPPING_IMPORT_MODE",
+				"stopped_at": "2023-01-01T01:00:00Z"
+			}`,
+			statusCode: http.StatusAccepted,
+			wantID:     "cluster-1",
+			wantErr:    false,
+		},
+		{
+			name:         "cluster ID empty",
+			clusterID:    "",
+			response:     "ID cannot be empty",
+			statusCode:   http.StatusAccepted,
+			wantErr:      true,
+			errorMessage: helpers.StrPtr("ID cannot be empty"),
+		},
+		{
+			name:       "not found",
+			clusterID:  "invalid",
+			response:   `{"error": "cluster not found"}`,
+			statusCode: http.StatusNotFound,
+			wantErr:    true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if tt.clusterID != "" {
+					expectedPath := fmt.Sprintf("/database/v2/clusters/%s/stop-import-mode", tt.clusterID)
+					assertEqual(t, expectedPath, r.URL.Path)
+					assertEqual(t, http.MethodPost, r.Method)
+				}
+
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(tt.statusCode)
+				w.Write([]byte(tt.response))
+			}))
+			defer server.Close()
+
+			client := testClusterClient(server.URL)
+			result, err := client.StopImportMode(context.Background(), tt.clusterID)
+
+			if tt.wantErr {
+				assertError(t, err)
+
+				if tt.errorMessage != nil {
+					assertEqual(t, *tt.errorMessage, err.Error())
+				} else {
+					assertEqual(t, true, strings.Contains(err.Error(), strconv.Itoa(tt.statusCode)))
+				}
+
+				return
+			}
+
+			assertNoError(t, err)
+			assertEqual(t, tt.wantID, result.ID)
+		})
 	}
 }
 
