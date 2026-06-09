@@ -123,6 +123,29 @@ func TestObjectServiceUpload_ValidStorageClass(t *testing.T) {
 	}
 }
 
+func TestObjectServiceUploadDir_EmptyBucketName(t *testing.T) {
+	t.Parallel()
+
+	core := client.NewMgcClient()
+	osClient, _ := New(core, "minioadmin", "minioadmin")
+	svc := osClient.Objects()
+
+	_, err := svc.UploadDir(
+		context.Background(),
+		"/key",
+		"bucket/key",
+		nil,
+	)
+
+	if err == nil {
+		t.Error("UploadDir() expected error for empty bucket name, got nil")
+	}
+
+	if _, ok := err.(*InvalidBucketNameError); !ok {
+		t.Errorf("UploadDir() expected InvalidBucketNameError, got %T", err)
+	}
+}
+
 func TestObjectServiceUploadDir_EmptyDstDir(t *testing.T) {
 	t.Parallel()
 
@@ -138,7 +161,7 @@ func TestObjectServiceUploadDir_EmptyDstDir(t *testing.T) {
 	)
 
 	if err == nil {
-		t.Error("UploadDir() expected error for empty src dir, got nil")
+		t.Error("UploadDir() expected error for empty dst dir, got nil")
 	}
 
 	if _, ok := err.(*InvalidObjectDataError); !ok {
