@@ -123,21 +123,26 @@ func TestObjectServiceUpload_ValidStorageClass(t *testing.T) {
 	}
 }
 
-func TestObjectServiceUploadDir_InvalidBucketName(t *testing.T) {
+func TestObjectServiceUploadDir_EmptyDstDir(t *testing.T) {
 	t.Parallel()
 
 	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Objects()
 
-	_, err := svc.UploadDir(context.Background(), "", "test-key", "src", &UploadDirOptions{})
+	_, err := svc.UploadDir(
+		context.Background(),
+		"",
+		"bucket/key",
+		nil,
+	)
 
 	if err == nil {
-		t.Error("UploadDir() expected error for empty bucket name, got nil")
+		t.Error("UploadDir() expected error for empty src dir, got nil")
 	}
 
-	if _, ok := err.(*InvalidBucketNameError); !ok {
-		t.Errorf("UploadDir() expected InvalidBucketNameError, got %T", err)
+	if _, ok := err.(*InvalidObjectDataError); !ok {
+		t.Errorf("UploadDir() expected InvalidObjectDataError, got %T", err)
 	}
 }
 
@@ -150,8 +155,7 @@ func TestObjectServiceUploadDir_EmptySrcDir(t *testing.T) {
 
 	_, err := svc.UploadDir(
 		context.Background(),
-		"bucket",
-		"key",
+		"bucket/key",
 		"",
 		nil,
 	)
@@ -172,7 +176,7 @@ func TestObjectServiceUploadDir_InvalidStorageClass(t *testing.T) {
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Objects()
 
-	_, err := svc.UploadDir(context.Background(), "bucket-name", "test-key", "src", &UploadDirOptions{
+	_, err := svc.UploadDir(context.Background(), "bucket-name/test-key", "src", &UploadDirOptions{
 		StorageClass: "invalid",
 	})
 
@@ -192,7 +196,7 @@ func TestObjectServiceUploadDir_ValidParameters(t *testing.T) {
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Objects()
 
-	_, err := svc.UploadDir(context.Background(), "bucket-name", "test-key", "src", &UploadDirOptions{
+	_, err := svc.UploadDir(context.Background(), "bucket-name/test-key", "src", &UploadDirOptions{
 		Shallow:      false,
 		StorageClass: "standard",
 		BatchSize:    100,
@@ -210,7 +214,7 @@ func TestObjectServiceUploadDir_ValidStorageClass(t *testing.T) {
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Objects()
 
-	_, err := svc.UploadDir(context.Background(), "", "test-key", "src", &UploadDirOptions{
+	_, err := svc.UploadDir(context.Background(), "bucket/test-key", "src", &UploadDirOptions{
 		Shallow:      false,
 		StorageClass: "cold_instant",
 		BatchSize:    100,
@@ -228,7 +232,7 @@ func TestObjectServiceUploadDir_BatchSizeZero(t *testing.T) {
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Objects()
 
-	_, err := svc.UploadDir(context.Background(), "bucket", "key", "src", &UploadDirOptions{
+	_, err := svc.UploadDir(context.Background(), "bucket/key", "src", &UploadDirOptions{
 		BatchSize: 0,
 	})
 
@@ -255,8 +259,7 @@ func TestObjectServiceUploadDir_WalkDirCollectsFiles(t *testing.T) {
 
 	_, err = svc.UploadDir(
 		context.Background(),
-		"bucket",
-		"key",
+		"bucket/key",
 		tmpDir,
 		nil,
 	)
@@ -289,8 +292,7 @@ func TestObjectServiceUploadDir_ShallowSkipsSubDirs(t *testing.T) {
 
 	result, err := svc.UploadDir(
 		context.Background(),
-		"bucket",
-		"key",
+		"bucket/key",
 		tmpDir,
 		&UploadDirOptions{
 			Shallow: true,
@@ -326,8 +328,7 @@ func TestObjectServiceUploadDir_FilterSkipsFile(t *testing.T) {
 
 	result, err := svc.UploadDir(
 		context.Background(),
-		"bucket",
-		"key",
+		"bucket/key",
 		tmpDir,
 		&UploadDirOptions{
 			Filter: &filters,
@@ -361,8 +362,7 @@ func TestObjectServiceUploadDir_WithoutFilter(t *testing.T) {
 
 	result, err := svc.UploadDir(
 		context.Background(),
-		"bucket",
-		"key",
+		"bucket/key",
 		tmpDir,
 		nil,
 	)
@@ -417,8 +417,7 @@ func TestObjectServiceUploadDir_WithStorageClass(t *testing.T) {
 
 	res, err := svc.UploadDir(
 		ctx,
-		"bucket-name",
-		"dst",
+		"bucket-name/dst",
 		srcDir,
 		&UploadDirOptions{
 			StorageClass: storageClass,

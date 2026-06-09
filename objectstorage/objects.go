@@ -19,7 +19,7 @@ import (
 // ObjectService provides operations for managing objects.
 type ObjectService interface {
 	Upload(ctx context.Context, bucketName string, objectKey string, data []byte, contentType string, storageClass *string) error
-	UploadDir(ctx context.Context, bucketName string, objectKey string, srcDir string, opts *UploadDirOptions) (*UploadAllResult, error)
+	UploadDir(ctx context.Context, dstDir string, srcDir string, opts *UploadDirOptions) (*UploadAllResult, error)
 	UploadStream(ctx context.Context, bucketName string, objectKey string, data io.Reader, size int64, contentType string) error
 	Download(ctx context.Context, bucketName string, objectKey string, opts *DownloadOptions) ([]byte, error)
 	DownloadStream(ctx context.Context, bucketName string, objectKey string, opts *DownloadStreamOptions) (io.Reader, error)
@@ -117,12 +117,18 @@ func (s *objectService) Upload(ctx context.Context, bucketName string, objectKey
 	return err
 }
 
-func (s *objectService) UploadDir(ctx context.Context, bucketName string, objectKey string, srcDir string, opts *UploadDirOptions) (*UploadAllResult, error) {
-	if err := validateBucket(bucketName); err != nil {
-		return nil, err
+func (s *objectService) UploadDir(ctx context.Context, dstDir string, srcDir string, opts *UploadDirOptions) (*UploadAllResult, error) {
+	if dstDir == "" {
+		return nil, &InvalidObjectDataError{Message: "dstDir is empty"}
 	}
 	if srcDir == "" {
 		return nil, &InvalidObjectDataError{Message: "srcDir is empty"}
+	}
+
+	bucketName, objectKey, _ := strings.Cut(dstDir, "/")
+
+	if bucketName == "" {
+		return nil, &InvalidBucketNameError{Name: dstDir}
 	}
 
 	if opts == nil {
@@ -1025,6 +1031,8 @@ func processStreamInBatches[T any](
 	batch := make([]T, 0, batchSize)
 
 	flush := func(items []T) {
+		defer wg.Wait()
+
 		for _, item := range items {
 			select {
 			case <-ctx.Done():
@@ -1046,8 +1054,6 @@ func processStreamInBatches[T any](
 				onSuccess()
 			}(item)
 		}
-
-		wg.Wait()
 	}
 
 	for {
