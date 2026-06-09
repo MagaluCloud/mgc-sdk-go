@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/MagaluCloud/mgc-sdk-go/client"
+	"github.com/MagaluCloud/mgc-sdk-go/helpers"
 	"github.com/MagaluCloud/mgc-sdk-go/objectstorage"
 )
 
@@ -127,7 +128,7 @@ func main() {
 	// Step 5: Upload an object
 	fmt.Println("📍 Step 5: Upload object to locked bucket")
 	fmt.Printf("   Uploading '%s'...\n", testObjectKey)
-	err = osClient.Objects().Upload(ctx, testBucketName, testObjectKey, []byte(testObjectData), "text/plain")
+	err = osClient.Objects().Upload(ctx, testBucketName, testObjectKey, []byte(testObjectData), "text/plain", helpers.StrPtr("cold_instant"))
 	if err != nil {
 		fmt.Printf("   ❌ Failed to upload object: %v\n", err)
 	} else {
@@ -139,7 +140,7 @@ func main() {
 	// Step 6: Lock the object with retention period
 	fmt.Println("📍 Step 6: Apply retention lock to object")
 	retentionDays := 7
-	retainUntil := time.Now().UTC().AddDate(0, 0, retentionDays)
+	retainUntil := time.Now().UTC().AddDate(0, 0, retentionDays).Truncate(time.Second)
 	fmt.Printf("   Locking object for %d days (until %s)...\n", retentionDays, retainUntil.Format("2006-01-02 15:04:05"))
 	err = osClient.Objects().LockObject(ctx, testBucketName, testObjectKey, retainUntil)
 	if err != nil {
@@ -210,7 +211,7 @@ func main() {
 	// Step 11: Get object metadata
 	fmt.Println("📍 Step 11: Get object metadata")
 	fmt.Printf("   Retrieving metadata for '%s'...\n", testObjectKey)
-	metadata, err := osClient.Objects().Metadata(ctx, testBucketName, testObjectKey)
+	metadata, err := osClient.Objects().Metadata(ctx, testBucketName, testObjectKey, nil)
 	if err != nil {
 		fmt.Printf("   ❌ Failed to get metadata: %v\n", err)
 	} else {
@@ -221,6 +222,7 @@ func main() {
 		fmt.Printf("      - Content-Type: %s\n", metadata.ContentType)
 		fmt.Printf("      - Last Modified: %s\n", metadata.LastModified.Format("2006-01-02 15:04:05"))
 		fmt.Printf("      - ETag: %s\n", metadata.ETag)
+		fmt.Printf("      - Storage Class: %s\n", metadata.StorageClass)
 	}
 	fmt.Println()
 	pause()

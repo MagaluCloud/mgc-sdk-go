@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/MagaluCloud/mgc-sdk-go/client"
+	"github.com/MagaluCloud/mgc-sdk-go/helpers"
 	"github.com/MagaluCloud/mgc-sdk-go/objectstorage"
 )
 
@@ -139,19 +140,35 @@ func runE2ETest(ctx context.Context, osClient *objectstorage.ObjectStorageClient
 	testGetBucketCORS(ctx, osClient)
 	pause()
 
-	// Step 15: Delete bucket CORS
-	testDeleteBucketCORS(ctx, osClient)
-	pause()
-
-	// Step 16: Get presigned URL
+	// Step 14: Get presigned URL
 	testGetPresignedURL(ctx, osClient)
 	pause()
 
-	// Step 17: Delete object
+	// Step 15: List all object versions
+	testListAllVersions(ctx, osClient)
+	pause()
+
+	// Step 16: Copy object
+	testCopyObject(ctx, osClient)
+	pause()
+
+	// Step 17: Copy all objects
+	testCopyAllObjects(ctx, osClient)
+	pause()
+
+	// Step 18: Delete bucket CORS
+	testDeleteBucketCORS(ctx, osClient)
+	pause()
+
+	// Step 19: Delete object
 	testDeleteObject(ctx, osClient)
 	pause()
 
-	// Step 18: Delete bucket
+	// Step 20: Delete all objects
+	testDeleteAllObjects(ctx, osClient)
+	pause()
+
+	// Step 21: Delete bucket
 	testDeleteBucket(ctx, osClient)
 	pause()
 
@@ -234,6 +251,7 @@ func testUploadObject(ctx context.Context, osClient *objectstorage.ObjectStorage
 		testObjectKey,
 		[]byte(testObjectData),
 		"text/plain",
+		helpers.StrPtr("standard"),
 	)
 	if err != nil {
 		fmt.Printf("❌ Failed: %v\n\n", err)
@@ -271,7 +289,7 @@ func testObjectMetadata(ctx context.Context, osClient *objectstorage.ObjectStora
 	fmt.Println("📝 Test 6: Get Object Metadata")
 	fmt.Println("─────────────────────────────────────────────────────────────")
 
-	obj, err := osClient.Objects().Metadata(ctx, testBucketName, testObjectKey)
+	obj, err := osClient.Objects().Metadata(ctx, testBucketName, testObjectKey, nil)
 	if err != nil {
 		fmt.Printf("❌ Failed: %v\n\n", err)
 		return
@@ -282,7 +300,8 @@ func testObjectMetadata(ctx context.Context, osClient *objectstorage.ObjectStora
 	fmt.Printf("   Size: %d bytes\n", obj.Size)
 	fmt.Printf("   Content-Type: %s\n", obj.ContentType)
 	fmt.Printf("   Last Modified: %s\n", obj.LastModified)
-	fmt.Printf("   ETag: %s\n\n", obj.ETag)
+	fmt.Printf("   ETag: %s\n", obj.ETag)
+	fmt.Printf("   Storage Class: %s\n\n", obj.StorageClass)
 }
 
 func testDownloadObject(ctx context.Context, osClient *objectstorage.ObjectStorageClient) {
@@ -456,21 +475,8 @@ func testGetBucketCORS(ctx context.Context, osClient *objectstorage.ObjectStorag
 	}
 }
 
-func testDeleteBucketCORS(ctx context.Context, osClient *objectstorage.ObjectStorageClient) {
-	fmt.Println("📝 Test 15: Delete Bucket CORS")
-	fmt.Println("─────────────────────────────────────────────────────────────")
-
-	err := osClient.Buckets().DeleteCORS(ctx, testBucketName)
-	if err != nil {
-		fmt.Printf("❌ Failed: %v\n\n", err)
-		return
-	}
-
-	fmt.Printf("✅ Bucket cors deleted successfully\n\n")
-}
-
 func testGetPresignedURL(ctx context.Context, osClient *objectstorage.ObjectStorageClient) {
-	fmt.Println("📝 Test 16: Get presigned URL")
+	fmt.Println("📝 Test 14: Get presigned URL")
 	fmt.Println("─────────────────────────────────────────────────────────────")
 
 	presignedURL, err := osClient.Objects().GetPresignedURL(ctx, testBucketName, testObjectKey, objectstorage.GetPresignedURLOptions{
@@ -497,8 +503,88 @@ func testGetPresignedURL(ctx context.Context, osClient *objectstorage.ObjectStor
 	fmt.Printf("✅ Presigned PUT URL retrieved: %s\n\n", presignedURL.URL)
 }
 
+func testListAllVersions(ctx context.Context, osClient *objectstorage.ObjectStorageClient) {
+	fmt.Println("📝 Test 15: List all object versions")
+	fmt.Println("─────────────────────────────────────────────────────────────")
+
+	versions, err := osClient.Objects().ListAllVersions(ctx, testBucketName, testObjectKey)
+	if err != nil {
+		fmt.Printf("❌ Failed to list object versions: %v\n\n", err)
+		return
+	}
+
+	fmt.Printf("✅ Listed %d version(s) for object %s:\n", len(versions), testObjectKey)
+	for _, v := range versions {
+		fmt.Printf("   Version ID: %s\n", v.VersionID)
+		fmt.Printf("      Key: %s\n", v.Key)
+		fmt.Printf("      Size: %d bytes\n", v.Size)
+		fmt.Printf("      Last Modified: %s\n", v.LastModified)
+		fmt.Printf("      Is Latest: %t\n", v.IsLatest)
+		fmt.Printf("      Is Delete Marker: %t\n", v.IsDeleteMarker)
+		fmt.Printf("      Storage Class: %s\n", v.StorageClass)
+		fmt.Printf("      ETag: %s\n", v.ETag)
+	}
+	fmt.Println()
+}
+
+func testCopyObject(ctx context.Context, osClient *objectstorage.ObjectStorageClient) {
+	fmt.Println("📝 Test 16: Copy Object")
+	fmt.Println("─────────────────────────────────────────────────────────────")
+
+	err := osClient.Objects().Copy(ctx, objectstorage.CopySrcConfig{
+		BucketName: testBucketName,
+		ObjectKey:  testObjectKey,
+	}, objectstorage.CopyDstConfig{
+		BucketName: testBucketName,
+		ObjectKey:  "test.txt",
+	})
+	if err != nil {
+		fmt.Printf("❌ Failed to copy the object: %v\n\n", err)
+		return
+	}
+
+	fmt.Printf("✅ Object copied successfully\n\n")
+}
+
+func testCopyAllObjects(ctx context.Context, osClient *objectstorage.ObjectStorageClient) {
+	fmt.Println("📝 Test 17: Copy All Objects")
+	fmt.Println("─────────────────────────────────────────────────────────────")
+
+	_, err := osClient.Objects().CopyAll(ctx, objectstorage.CopyPath{
+		BucketName: testBucketName,
+		ObjectKey:  testObjectKey,
+	}, objectstorage.CopyPath{
+		BucketName: testBucketName,
+		ObjectKey:  "test.txt",
+	}, &objectstorage.CopyAllOptions{
+		StorageClass: "standard",
+		Filter: &[]objectstorage.FilterOptions{
+			{Exclude: "test"},
+		},
+	})
+	if err != nil {
+		fmt.Printf("❌ Failed to copy the objects: %v\n\n", err)
+		return
+	}
+
+	fmt.Printf("✅ Objects copied successfully\n\n")
+}
+
+func testDeleteBucketCORS(ctx context.Context, osClient *objectstorage.ObjectStorageClient) {
+	fmt.Println("📝 Test 18: Delete Bucket CORS")
+	fmt.Println("─────────────────────────────────────────────────────────────")
+
+	err := osClient.Buckets().DeleteCORS(ctx, testBucketName)
+	if err != nil {
+		fmt.Printf("❌ Failed: %v\n\n", err)
+		return
+	}
+
+	fmt.Printf("✅ Bucket cors deleted successfully\n\n")
+}
+
 func testDeleteObject(ctx context.Context, osClient *objectstorage.ObjectStorageClient) {
-	fmt.Println("📝 Test 17: Delete Object")
+	fmt.Println("📝 Test 19: Delete Object")
 	fmt.Println("─────────────────────────────────────────────────────────────")
 
 	err := osClient.Objects().Delete(ctx, testBucketName, testObjectKey, nil)
@@ -510,8 +596,36 @@ func testDeleteObject(ctx context.Context, osClient *objectstorage.ObjectStorage
 	fmt.Printf("✅ Object deleted: %s\n\n", testObjectKey)
 }
 
+func testDeleteAllObjects(ctx context.Context, osClient *objectstorage.ObjectStorageClient) {
+	fmt.Println("📝 Test 20: Delete All Objects")
+	fmt.Println("─────────────────────────────────────────────────────────────")
+
+	err := osClient.Objects().Upload(
+		ctx,
+		testBucketName,
+		testObjectKey,
+		[]byte(testObjectData),
+		"text/plain",
+		helpers.StrPtr("standard"),
+	)
+	if err != nil {
+		fmt.Printf("❌ Failed: %v\n\n", err)
+		return
+	}
+
+	fmt.Printf("✅ Object uploaded: %s\n", testObjectKey)
+
+	_, err = osClient.Objects().DeleteAll(ctx, testBucketName, nil)
+	if err != nil {
+		fmt.Printf("❌ Failed: %v\n\n", err)
+		return
+	}
+
+	fmt.Printf("✅ All objects are deleted: %s\n\n", testBucketName)
+}
+
 func testDeleteBucket(ctx context.Context, osClient *objectstorage.ObjectStorageClient) {
-	fmt.Println("📝 Test 18: Delete Bucket")
+	fmt.Println("📝 Test 21: Delete Bucket")
 	fmt.Println("─────────────────────────────────────────────────────────────")
 
 	err := osClient.Buckets().Delete(ctx, testBucketName, true)
