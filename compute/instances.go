@@ -77,14 +77,15 @@ type Error struct {
 
 // CreateRequest represents the request to create a new instance.
 type CreateRequest struct {
-	AvailabilityZone *string                  `json:"availability_zone,omitempty"`
-	Image            IDOrName                 `json:"image"`
-	Labels           *[]string                `json:"labels,omitempty"`
-	MachineType      IDOrName                 `json:"machine_type"`
-	Name             string                   `json:"name"`
-	Network          *CreateParametersNetwork `json:"network,omitempty"`
-	SshKeyName       *string                  `json:"ssh_key_name,omitempty"`
-	UserData         *string                  `json:"user_data,omitempty"`
+	AvailabilityZone *string                         `json:"availability_zone,omitempty"`
+	Image            IDOrName                        `json:"image"`
+	Labels           *[]string                       `json:"labels,omitempty"`
+	MachineType      IDOrName                        `json:"machine_type"`
+	Name             string                          `json:"name"`
+	Network          *CreateParametersNetwork        `json:"network,omitempty"`
+	NetworkProfile   *CreateParametersNetworkProfile `json:"network_profile,omitempty"`
+	SshKeyName       *string                         `json:"ssh_key_name,omitempty"`
+	UserData         *string                         `json:"user_data,omitempty"`
 }
 
 // CreateParametersNetwork represents network configuration for instance creation.
@@ -98,11 +99,43 @@ type CreateParametersNetwork struct {
 type CreateParametersNetworkInterface struct {
 	ID             *string                                   `json:"id,omitempty"`
 	SecurityGroups *[]CreateParametersNetworkInterfaceWithID `json:"security_groups,omitempty"`
+	Subnets        *[]CreateParametersNetworkInterfaceWithID `json:"subnets,omitempty"`
 }
 
-// CreateParametersNetworkInterfaceWithID represents a security group item.
+// CreateParametersNetworkInterfaceWithID represents a resource referenced by its ID
+// (e.g. a security group or subnet).
 type CreateParametersNetworkInterfaceWithID struct {
 	ID string `json:"id"`
+}
+
+// CreateParametersNetworkProfile represents the configuration for attaching
+// multiple network interfaces (VNICs) to an instance at creation time.
+// It is mutually exclusive with the singular Network field.
+type CreateParametersNetworkProfile struct {
+	Interfaces []CreateParametersNetworkInterfaceAttachment `json:"interfaces,omitempty"`
+}
+
+// CreateParametersNetworkInterfaceAttachment represents a single network
+// interface (VNIC) to be attached to the instance during creation.
+type CreateParametersNetworkInterfaceAttachment struct {
+	// ID references an existing network interface by its ID. When provided,
+	// the interface is attached instead of a new one being created.
+	ID *CreateParametersNetworkInterfaceWithID `json:"id,omitempty"`
+	// Name is a human-readable name assigned to the network interface.
+	Name *string `json:"name,omitempty"`
+	// Vpc is the VPC where this interface will be attached. Defaults to the
+	// default VPC when omitted.
+	Vpc *IDOrName `json:"vpc,omitempty"`
+	// Subnets holds the subnet associated with this interface (maximum of 1).
+	Subnets *[]CreateParametersNetworkInterfaceWithID `json:"subnets,omitempty"`
+	// SecurityGroups holds the security group IDs applied to this interface.
+	SecurityGroups *[]CreateParametersNetworkInterfaceWithID `json:"security_groups,omitempty"`
+	// AssociatePublicIp indicates whether a public IP should be assigned to
+	// this interface. Defaults to false.
+	AssociatePublicIp *bool `json:"associate_public_ip,omitempty"`
+	// Tag is an optional device role tag exposed to the guest OS via metadata,
+	// ensuring reliable interface identification.
+	Tag *string `json:"tag,omitempty"`
 }
 
 // IDOrName represents a resource that can be identified by ID or name.
@@ -159,6 +192,7 @@ type NetworkInterface struct {
 	Primary              *bool              `json:"primary"`
 	AssociatedPublicIpv4 *string            `json:"associated_public_ipv4,omitempty"`
 	IpAddresses          IpAddressNewExpand `json:"ip_addresses"`
+	MacAddress           *string            `json:"mac_address,omitempty"`
 }
 
 // Network represents the network configuration of an instance.
