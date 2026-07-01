@@ -193,6 +193,72 @@ func ExampleCreateInstance() string {
 */
 
 /*
+// ExampleCreateInstanceWithMultipleVNICs demonstrates creating an instance with
+// multiple network interfaces (VNICs) using the network_profile field.
+// Up to 3 interfaces are supported. Use the "tag" field to reliably identify
+// each interface from the guest OS, since network device order is not guaranteed.
+func ExampleCreateInstanceWithMultipleVNICs() string {
+	apiToken := os.Getenv("MGC_API_TOKEN")
+	if apiToken == "" {
+		log.Fatal("MGC_API_TOKEN environment variable is not set")
+	}
+	c := client.NewMgcClient(client.WithAPIKey(apiToken))
+	computeClient := compute.New(c)
+
+	userData := "#!/bin/bash\necho \"Hello World\"\n"
+	base64UserData := base64.StdEncoding.EncodeToString([]byte(userData))
+	date := time.Now().Format("2006-01-02-15-04-05")
+
+	createReq := compute.CreateRequest{
+		Name: "my-multi-vnic-" + date,
+		MachineType: compute.IDOrName{
+			Name: helpers.StrPtr("BV1-1-40"),
+		},
+		Image: compute.IDOrName{
+			Name: helpers.StrPtr("cloud-ubuntu-24.04 LTS"),
+		},
+		// NetworkProfile replaces the singular Network field when you need more
+		// than one interface. Do not set both at the same time.
+		NetworkProfile: &compute.CreateParametersNetworkProfile{
+			Interfaces: []compute.CreateParametersNetworkInterfaceAttachment{
+				{
+					// Primary interface: new VNIC in a VPC, with a public IP.
+					Name:              helpers.StrPtr("nic-primary"),
+					Tag:               helpers.StrPtr("primary"),
+					Vpc:               &compute.IDOrName{ID: helpers.StrPtr("your-vpc-id")},
+					AssociatePublicIp: helpers.BoolPtr(true),
+					Subnets: &[]compute.CreateParametersNetworkInterfaceWithID{
+						{ID: "your-subnet-id"},
+					},
+					SecurityGroups: &[]compute.CreateParametersNetworkInterfaceWithID{
+						{ID: "your-security-group-id"},
+					},
+				},
+				{
+					// Secondary interface: private only, in a different VPC.
+					Name:              helpers.StrPtr("nic-secondary"),
+					Tag:               helpers.StrPtr("secondary"),
+					Vpc:               &compute.IDOrName{ID: helpers.StrPtr("another-vpc-id")},
+					AssociatePublicIp: helpers.BoolPtr(false),
+				},
+			},
+		},
+		SshKeyName: helpers.StrPtr("publio"),
+		UserData:   helpers.StrPtr(base64UserData),
+	}
+
+	id, err := computeClient.Instances().Create(context.Background(), createReq)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Printf("Created instance with multiple VNICs, ID: %s\n", id)
+
+	return id
+}
+*/
+
+/*
 func ExampleGetInstance(id string) {
 	apiToken := os.Getenv("MGC_API_TOKEN")
 	if apiToken == "" {
