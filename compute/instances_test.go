@@ -2,6 +2,7 @@ package compute
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -352,6 +353,91 @@ func TestInstanceService_Create(t *testing.T) {
 	}
 }
 
+func TestInstanceService_CreateWithMultipleVNICs(t *testing.T) {
+	t.Parallel()
+
+	associatePublicIp := true
+	primaryTag := "primary"
+	nicName := "nic-secondary"
+	req := CreateRequest{
+		Name:        "multi-vnic-vm",
+		MachineType: IDOrName{Name: strPtr("BV1-1-40")},
+		Image:       IDOrName{Name: strPtr("cloud-ubuntu-24.04 LTS")},
+		NetworkProfile: &CreateParametersNetworkProfile{
+			Interfaces: []CreateParametersNetworkInterfaceAttachment{
+				{
+					Name:              &nicName,
+					Vpc:               &IDOrName{ID: strPtr("vpc-1")},
+					AssociatePublicIp: &associatePublicIp,
+					Tag:               &primaryTag,
+					Subnets:           &[]CreateParametersNetworkInterfaceWithID{{ID: "subnet-1"}},
+					SecurityGroups:    &[]CreateParametersNetworkInterfaceWithID{{ID: "sg-1"}, {ID: "sg-2"}},
+				},
+				{
+					ID: &CreateParametersNetworkInterfaceWithID{ID: "existing-nic-1"},
+				},
+			},
+		},
+	}
+
+	var received map[string]any
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := json.NewDecoder(r.Body).Decode(&received); err != nil {
+			t.Fatalf("failed to decode request body: %v", err)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"id": "inst-multi"}`))
+	}))
+	defer server.Close()
+
+	client := testClient(server.URL)
+	gotID, err := client.Instances().Create(context.Background(), req)
+	if err != nil {
+		t.Fatalf("Create() unexpected error: %v", err)
+	}
+	if gotID != "inst-multi" {
+		t.Errorf("Create() got = %v, want inst-multi", gotID)
+	}
+
+	// The singular network field must be absent when only network_profile is set.
+	if _, ok := received["network"]; ok {
+		t.Errorf("expected no 'network' field in payload, got one")
+	}
+
+	profile, ok := received["network_profile"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected 'network_profile' object in payload, got %T", received["network_profile"])
+	}
+	interfaces, ok := profile["interfaces"].([]any)
+	if !ok {
+		t.Fatalf("expected 'interfaces' array, got %T", profile["interfaces"])
+	}
+	if len(interfaces) != 2 {
+		t.Fatalf("expected 2 interfaces, got %d", len(interfaces))
+	}
+
+	first := interfaces[0].(map[string]any)
+	if first["name"] != nicName {
+		t.Errorf("first interface name = %v, want %v", first["name"], nicName)
+	}
+	if first["tag"] != primaryTag {
+		t.Errorf("first interface tag = %v, want %v", first["tag"], primaryTag)
+	}
+	if first["associate_public_ip"] != true {
+		t.Errorf("first interface associate_public_ip = %v, want true", first["associate_public_ip"])
+	}
+	if sgs, ok := first["security_groups"].([]any); !ok || len(sgs) != 2 {
+		t.Errorf("first interface security_groups = %v, want 2 items", first["security_groups"])
+	}
+
+	second := interfaces[1].(map[string]any)
+	id, ok := second["id"].(map[string]any)
+	if !ok || id["id"] != "existing-nic-1" {
+		t.Errorf("second interface id = %v, want {id: existing-nic-1}", second["id"])
+	}
+}
+
 func TestInstanceService_Get(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
@@ -361,6 +447,7 @@ func TestInstanceService_Get(t *testing.T) {
 		response   string
 		statusCode int
 		wantErr    bool
+		check      func(*testing.T, *Instance)
 	}{
 		{
 			name: "existing instance",
@@ -400,6 +487,51 @@ func TestInstanceService_Get(t *testing.T) {
 			wantErr:    false,
 		},
 		{
+			name:   "with multiple network interfaces",
+			id:     "inst1",
+			expand: []InstanceExpand{InstanceNetworkExpand},
+			response: `{
+				"id": "inst1",
+				"name": "test-vm",
+				"network": {
+					"vpc": {"id": "vpc1"},
+					"interfaces": [
+						{
+							"id": "nic1",
+							"name": "primary",
+							"primary": true,
+							"mac_address": "aa:bb:cc:dd:ee:01",
+							"ip_addresses": {"private_ipv4": "10.0.0.10"}
+						},
+						{
+							"id": "nic2",
+							"name": "secondary",
+							"primary": false,
+							"mac_address": "aa:bb:cc:dd:ee:02",
+							"ip_addresses": {"private_ipv4": "10.0.0.11"}
+						}
+					]
+				}
+			}`,
+			statusCode: http.StatusOK,
+			wantErr:    false,
+			check: func(t *testing.T, got *Instance) {
+				if got.Network == nil || got.Network.Interfaces == nil {
+					t.Fatal("expected network with interfaces, got nil")
+				}
+				ifaces := *got.Network.Interfaces
+				if len(ifaces) != 2 {
+					t.Fatalf("expected 2 interfaces, got %d", len(ifaces))
+				}
+				if ifaces[0].MacAddress == nil || *ifaces[0].MacAddress != "aa:bb:cc:dd:ee:01" {
+					t.Errorf("interface[0] mac_address = %v, want aa:bb:cc:dd:ee:01", ifaces[0].MacAddress)
+				}
+				if ifaces[1].MacAddress == nil || *ifaces[1].MacAddress != "aa:bb:cc:dd:ee:02" {
+					t.Errorf("interface[1] mac_address = %v, want aa:bb:cc:dd:ee:02", ifaces[1].MacAddress)
+				}
+			},
+		},
+		{
 			name:       "malformed response",
 			id:         "inst1",
 			response:   `{"id": "inst1", "name":}`,
@@ -436,6 +568,9 @@ func TestInstanceService_Get(t *testing.T) {
 				}
 				if got.ID != tt.id {
 					t.Errorf("Get() got ID = %v, want %v", got.ID, tt.id)
+				}
+				if tt.check != nil {
+					tt.check(t, got)
 				}
 			}
 		})
