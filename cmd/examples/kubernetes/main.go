@@ -87,6 +87,7 @@ func main() {
 	ExampleDeleteCluster(k8sClient, idComNodePool)
 
 	ExampleListVersions(k8sClient)
+	ExampleCreateNodepoolWithLabels(k8sClient, idComNodePool)
 }
 
 func deleteAllClusters(k8sClient *kubernetes.KubernetesClient) {
@@ -491,4 +492,27 @@ func ExampleListVersions(k8sClient *kubernetes.KubernetesClient) {
 
 		fmt.Println()
 	}
+}
+
+func ExampleCreateNodepoolWithLabels(k8sClient *kubernetes.KubernetesClient, clusterID string) {
+	ctx := context.Background()
+
+	labels := map[string]string{
+		"environment": "staging",
+		"team":        "devX",
+		"tier":        "backend",
+	}
+
+	poolReq := kubernetes.CreateNodePoolRequest{
+		Name:     "test-" + randomString(),
+		Flavor:   "BV2-2-40",
+		Replicas: 1,
+		Labels:   labels,
+	}
+
+	newPool, err := k8sClient.Nodepools().Create(ctx, clusterID, poolReq)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("Successfully created the nodepools with labels %+v ", newPool.Labels)
 }
