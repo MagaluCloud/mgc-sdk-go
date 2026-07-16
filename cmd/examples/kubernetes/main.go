@@ -81,13 +81,13 @@ func main() {
 	ExampleNodePoolOperations(k8sClient, idComNodePool)
 	ExampleNodePoolOperationsWithEmptyTaints(k8sClient, idComNodePool)
 	ExampleNodePoolOperationsWithTaints(k8sClient, idComNodePool)
+	ExampleCreateNodepoolWithLabels(k8sClient, idComNodePool)
 
 	ExampleListFlavorsAndVersions(k8sClient)
 	ExampleDeleteCluster(k8sClient, idSemNodePool)
 	ExampleDeleteCluster(k8sClient, idComNodePool)
 
 	ExampleListVersions(k8sClient)
-	ExampleCreateNodepoolWithLabels(k8sClient, idComNodePool)
 }
 
 func deleteAllClusters(k8sClient *kubernetes.KubernetesClient) {
