@@ -211,6 +211,79 @@ func TestNodePoolService_Create_WithCustomerChosenSubnets(t *testing.T) {
 	})
 }
 
+func TestNodePoolService_Create_WithLabels(t *testing.T) {
+	t.Parallel()
+
+	t.Run("customer informs labels and they are sent in the payload", func(t *testing.T) {
+		t.Parallel()
+		chosenLabels := map[string]string{
+			"environment": "staging",
+			"team":        "devX",
+			"tier":        "backend",
+		}
+
+		var sentPayload map[string]any
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			body, _ := io.ReadAll(r.Body)
+			_ = json.Unmarshal(body, &sentPayload)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusCreated)
+			w.Write([]byte(`{"id":"pool-new","name":"pool-new","replicas":2}`))
+		}))
+		defer server.Close()
+
+		_, err := testClient(server.URL).Nodepools().Create(context.Background(), "cluster-123", CreateNodePoolRequest{
+			Name:     "pool-new",
+			Flavor:   "BV4-8-40",
+			Replicas: 2,
+			Labels:   chosenLabels,
+		})
+		if err != nil {
+			t.Fatalf("Create() erro inesperado: %v", err)
+		}
+
+		rawLabels, present := sentPayload["labels"]
+		if !present {
+			t.Fatalf("esperava chave labels no payload, recebi: %v", sentPayload)
+		}
+		labels := rawLabels.(map[string]any)
+		if len(labels) != len(chosenLabels) {
+			t.Fatalf("esperava %d labels enviadas, recebi %d", len(chosenLabels), len(labels))
+		}
+		for k, v := range chosenLabels {
+			if labels[k] != v {
+				t.Errorf("label[%q] enviada = %v, esperava %s", k, labels[k], v)
+			}
+		}
+	})
+
+	t.Run("customer omits labels and the key is not present in the payload", func(t *testing.T) {
+		t.Parallel()
+		var sentPayload map[string]any
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			body, _ := io.ReadAll(r.Body)
+			_ = json.Unmarshal(body, &sentPayload)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusCreated)
+			w.Write([]byte(`{"id":"pool-new","name":"pool-new","replicas":2}`))
+		}))
+		defer server.Close()
+
+		_, err := testClient(server.URL).Nodepools().Create(context.Background(), "cluster-123", CreateNodePoolRequest{
+			Name:     "pool-new",
+			Flavor:   "BV4-8-40",
+			Replicas: 2,
+		})
+		if err != nil {
+			t.Fatalf("Create() erro inesperado: %v", err)
+		}
+
+		if _, present := sentPayload["labels"]; present {
+			t.Errorf("não esperava chave labels no payload quando cliente não informa labels, recebi: %v", sentPayload)
+		}
+	})
+}
+
 func TestNodePoolService_Delete(t *testing.T) {
 	tests := []struct {
 		name       string
