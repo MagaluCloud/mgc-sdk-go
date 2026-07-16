@@ -86,6 +86,7 @@ type (
 		MaxPodsPerNode    *int                      `json:"max_pods_per_node,omitempty"`
 		AvailabilityZones *[]string                 `json:"availability_zones,omitempty"`
 		Network           *KubernetesNetworkRequest `json:"network,omitempty"`
+		Labels            map[string]string         `json:"labels,omitempty"`
 	}
 
 	KubernetesNetworkRequest struct {
