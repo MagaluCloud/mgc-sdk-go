@@ -4,23 +4,24 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"net/url"
 
 	mgc_http "github.com/MagaluCloud/mgc-sdk-go/internal/http"
 	"github.com/MagaluCloud/mgc-sdk-go/internal/utils"
 )
 
 // VpcsPeeringStatus represents the lifecycle status of a VPC peering.
+// The API may return states beyond the constants below.
 type VpcsPeeringStatus string
 
 const (
-	VpcsPeeringStatusPending    VpcsPeeringStatus = "pending"
-	VpcsPeeringStatusProcessing VpcsPeeringStatus = "processing"
-	VpcsPeeringStatusCreated    VpcsPeeringStatus = "created"
-	VpcsPeeringStatusUpdating   VpcsPeeringStatus = "updating"
-	VpcsPeeringStatusDeleting   VpcsPeeringStatus = "deleting"
-	VpcsPeeringStatusDeleted    VpcsPeeringStatus = "deleted"
-	VpcsPeeringStatusError      VpcsPeeringStatus = "error"
+	VpcsPeeringStatusPending           VpcsPeeringStatus = "pending"
+	VpcsPeeringStatusPendingRouteTable VpcsPeeringStatus = "pending_route_table"
+	VpcsPeeringStatusProcessing        VpcsPeeringStatus = "processing"
+	VpcsPeeringStatusCreated           VpcsPeeringStatus = "created"
+	VpcsPeeringStatusUpdating          VpcsPeeringStatus = "updating"
+	VpcsPeeringStatusDeleting          VpcsPeeringStatus = "deleting"
+	VpcsPeeringStatusDeleted           VpcsPeeringStatus = "deleted"
+	VpcsPeeringStatusError             VpcsPeeringStatus = "error"
 )
 
 // VpcsPeeringDirectRole represents the side a VPC takes in a peering.
@@ -41,7 +42,7 @@ type (
 
 	// VpcsPeering represents a peering connection between two VPCs.
 	VpcsPeering struct {
-		ID          string                          `json:"vpc_peering_id"`
+		ID          string                          `json:"id"`
 		Name        string                          `json:"name"`
 		Description *string                         `json:"description,omitempty"`
 		Status      VpcsPeeringStatus               `json:"status"`
@@ -57,10 +58,13 @@ type (
 		Members []VpcsPeeringMember `json:"members"`
 	}
 
-	// ListVpcsPeeringsOptions represents the filters accepted when listing peerings.
+	// ListVpcsPeeringsOptions represents the filters and pagination accepted when
+	// listing peerings.
 	ListVpcsPeeringsOptions struct {
 		// VpcID restricts the result to the peerings a given VPC takes part in.
-		VpcID string
+		VpcID  string
+		Limit  *int
+		Offset *int
 	}
 
 	// ListVpcsPeeringsResponse represents a peering listing response.
@@ -92,15 +96,11 @@ type (
 
 // VpcsPeeringsService defines operations for managing VPC peerings.
 type VpcsPeeringsService interface {
-	// List retrieves the peerings of the current tenant, optionally filtered by VPC.
-	//
-	// The API does not accept pagination parameters on this endpoint, so the result is
-	// whatever page the server chooses to return: check Meta.Page to detect truncation.
+	// List retrieves the peerings of the current tenant, optionally filtered by VPC
+	// and paginated through Limit and Offset. Meta.Page reports the totals.
 	List(ctx context.Context, opts *ListVpcsPeeringsOptions) (*ListVpcsPeeringsResponse, error)
 	// GetMembers retrieves the members of a peering and its current status.
-	//
-	// The API has no endpoint returning a single peering in full: name, description and
-	// timestamps are only available through List.
+	// Name, description and timestamps are only available through List.
 	GetMembers(ctx context.Context, peeringID string) (*VpcsPeeringMembers, error)
 	// Create requests a new peering between two VPCs.
 	Create(ctx context.Context, req VpcsPeeringsCreateRequest) (*VpcsPeeringsCreateResponse, error)
@@ -113,9 +113,13 @@ type vpcsPeeringsService struct {
 }
 
 func (s *vpcsPeeringsService) List(ctx context.Context, opts *ListVpcsPeeringsOptions) (*ListVpcsPeeringsResponse, error) {
-	query := make(url.Values)
+	if opts == nil {
+		opts = &ListVpcsPeeringsOptions{}
+	}
 
-	if opts != nil && opts.VpcID != "" {
+	query := makeListOptionsQuery(ListOptions{Limit: opts.Limit, Offset: opts.Offset})
+
+	if opts.VpcID != "" {
 		query.Set("vpc_id", opts.VpcID)
 	}
 

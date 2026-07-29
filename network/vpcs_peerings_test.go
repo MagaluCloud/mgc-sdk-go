@@ -13,7 +13,6 @@ import (
 
 	"github.com/MagaluCloud/mgc-sdk-go/client"
 	"github.com/MagaluCloud/mgc-sdk-go/helpers"
-	"github.com/MagaluCloud/mgc-sdk-go/internal/utils"
 )
 
 func TestVpcsPeeringsService_Create(t *testing.T) {
@@ -213,13 +212,13 @@ func TestVpcsPeeringsService_CreateValidation(t *testing.T) {
 }
 
 func TestVpcsPeeringsService_List(t *testing.T) {
-	createdAt := time.Date(2026, 7, 28, 10, 0, 0, 0, time.UTC)
-	updated := time.Date(2026, 7, 28, 11, 30, 0, 0, time.UTC)
+	createdAt := time.Date(2026, 7, 23, 20, 21, 8, 861443000, time.UTC)
+	updated := time.Date(2026, 7, 24, 17, 47, 13, 459860000, time.UTC)
 
 	tests := []struct {
 		name       string
 		opts       *ListVpcsPeeringsOptions
-		wantVpcID  string
+		wantQuery  map[string]string
 		response   string
 		statusCode int
 		check      func(t *testing.T, got *ListVpcsPeeringsResponse)
@@ -231,68 +230,97 @@ func TestVpcsPeeringsService_List(t *testing.T) {
 			response: `{
 				"meta": {
 					"links": {
-						"next": "?_offset=10&_limit=10",
+						"next": null,
 						"previous": null,
-						"self": "?_offset=0&_limit=10"
+						"self": "?_offset=0&_limit=1"
 					},
 					"page": {
 						"count": 1,
-						"limit": 10,
+						"limit": 1,
 						"max_items_per_page": 100,
 						"offset": 0,
-						"total": 12
+						"total": 1
 					}
 				},
 				"result": [
 					{
-						"vpc_peering_id": "peering-1",
-						"name": "peering-prod-to-db",
-						"description": "connection between production and database vpcs",
-						"status": "created",
-						"created_at": "` + createdAt.Format(utils.LocalDateTimeWithoutZoneLayout) + `",
-						"updated": "` + updated.Format(utils.LocalDateTimeWithoutZoneLayout) + `",
+						"created_at": "2026-07-23T20:21:08.861443",
+						"description": "desc",
+						"id": "866b0e4d-59d7-42e6-82d7-aa5fcb72360d",
 						"members": [
 							{
-								"id": "member-1",
-								"vpc_id": "vpc-requester",
-								"direct_role": "requester"
+								"direct_role": "requester",
+								"id": "ec32dc9f-679d-4c25-9f3f-b0b37aa101a0",
+								"vpc_id": "2ea7d752-c185-422b-9780-2d07109d8afe"
 							},
 							{
-								"id": "member-2",
-								"vpc_id": "vpc-accepter",
-								"direct_role": "accepter"
+								"direct_role": "accepter",
+								"id": "759afe65-f9d5-408e-a4ac-c430dbbd6d35",
+								"vpc_id": "732d0b32-b9c0-44da-8766-72044e59ef12"
 							}
-						]
+						],
+						"name": "name",
+						"status": "pending",
+						"updated": "2026-07-24T17:47:13.459860"
 					}
 				]
 			}`,
 			statusCode: http.StatusOK,
 			check: func(t *testing.T, got *ListVpcsPeeringsResponse) {
-				assertEqual(t, 12, got.Meta.Page.Total)
+				assertEqual(t, 1, got.Meta.Page.Total)
 				assertEqual(t, 100, got.Meta.Page.MaxItemsPerPage)
-				assertEqual(t, "?_offset=0&_limit=10", got.Meta.Links.Self)
-				assertEqual(t, "?_offset=10&_limit=10", *got.Meta.Links.Next)
+				assertEqual(t, "?_offset=0&_limit=1", got.Meta.Links.Self)
+				assertEqual(t, true, got.Meta.Links.Next == nil)
+				assertEqual(t, true, got.Meta.Links.Previous == nil)
 
 				assertEqual(t, 1, len(got.Result))
 				peering := got.Result[0]
-				assertEqual(t, "peering-1", peering.ID)
-				assertEqual(t, "peering-prod-to-db", peering.Name)
-				assertEqual(t, "connection between production and database vpcs", *peering.Description)
-				assertEqual(t, VpcsPeeringStatusCreated, peering.Status)
+				assertEqual(t, "866b0e4d-59d7-42e6-82d7-aa5fcb72360d", peering.ID)
+				assertEqual(t, "name", peering.Name)
+				assertEqual(t, "desc", *peering.Description)
+				assertEqual(t, VpcsPeeringStatusPending, peering.Status)
 				assertEqual(t, true, time.Time(*peering.CreatedAt).Equal(createdAt))
 				assertEqual(t, true, time.Time(*peering.Updated).Equal(updated))
 
 				assertEqual(t, 2, len(peering.Members))
-				assertEqual(t, "member-1", peering.Members[0].ID)
-				assertEqual(t, "vpc-requester", peering.Members[0].VpcID)
+				assertEqual(t, "ec32dc9f-679d-4c25-9f3f-b0b37aa101a0", peering.Members[0].ID)
+				assertEqual(t, "2ea7d752-c185-422b-9780-2d07109d8afe", peering.Members[0].VpcID)
 				assertEqual(t, VpcsPeeringDirectRoleRequester, peering.Members[0].DirectRole)
 				assertEqual(t, VpcsPeeringDirectRoleAccepter, peering.Members[1].DirectRole)
 			},
 		},
 		{
+			name: "second page of peerings",
+			opts: &ListVpcsPeeringsOptions{
+				Limit:  helpers.IntPtr(1),
+				Offset: helpers.IntPtr(1),
+			},
+			wantQuery: map[string]string{"_limit": "1", "_offset": "1"},
+			response: `{
+				"meta": {
+					"links": {
+						"next": null,
+						"previous": "?_offset=0&_limit=1",
+						"self": "?_offset=1&_limit=1"
+					},
+					"page": {"count": 1, "limit": 1, "max_items_per_page": 100, "offset": 1, "total": 2}
+				},
+				"result": [
+					{"id": "peering-2", "name": "second", "status": "created", "members": []}
+				]
+			}`,
+			statusCode: http.StatusOK,
+			check: func(t *testing.T, got *ListVpcsPeeringsResponse) {
+				assertEqual(t, 1, got.Meta.Page.Offset)
+				assertEqual(t, 2, got.Meta.Page.Total)
+				assertEqual(t, "?_offset=0&_limit=1", *got.Meta.Links.Previous)
+				assertEqual(t, "peering-2", got.Result[0].ID)
+			},
+		},
+		{
 			name:      "peerings of a specific vpc",
 			opts:      &ListVpcsPeeringsOptions{VpcID: "vpc-requester"},
-			wantVpcID: "vpc-requester",
+			wantQuery: map[string]string{"vpc_id": "vpc-requester"},
 			response: `{
 				"meta": {
 					"links": {"self": "?_offset=0&_limit=10"},
@@ -324,7 +352,7 @@ func TestVpcsPeeringsService_List(t *testing.T) {
 		{
 			name:       "missing description becomes nil",
 			opts:       &ListVpcsPeeringsOptions{},
-			response:   `{"meta": {"links": {"self": "?"}, "page": {"count": 1, "limit": 10, "max_items_per_page": 100, "offset": 0, "total": 1}}, "result": [{"vpc_peering_id": "peering-2", "name": "peering-minimal", "status": "pending", "members": []}]}`,
+			response:   `{"meta": {"links": {"self": "?"}, "page": {"count": 1, "limit": 10, "max_items_per_page": 100, "offset": 0, "total": 1}}, "result": [{"id": "peering-2", "name": "peering-minimal", "status": "pending", "members": []}]}`,
 			statusCode: http.StatusOK,
 			check: func(t *testing.T, got *ListVpcsPeeringsResponse) {
 				peering := got.Result[0]
@@ -356,7 +384,12 @@ func TestVpcsPeeringsService_List(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				assertEqual(t, "/network/v1/vpcs_peerings", r.URL.Path)
 				assertEqual(t, http.MethodGet, r.Method)
-				assertEqual(t, tt.wantVpcID, r.URL.Query().Get("vpc_id"))
+
+				query := r.URL.Query()
+				assertEqual(t, len(tt.wantQuery), len(query))
+				for param, want := range tt.wantQuery {
+					assertEqual(t, want, query.Get(param))
+				}
 
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(tt.statusCode)
@@ -390,32 +423,41 @@ func TestVpcsPeeringsService_GetMembers(t *testing.T) {
 	}{
 		{
 			name:      "members of both ends of the peering",
-			peeringID: "peering-1",
+			peeringID: "866b0e4d-59d7-42e6-82d7-aa5fcb72360d",
 			response: `{
-				"vpc_peering_id": "peering-1",
-				"status": "created",
 				"members": [
 					{
-						"id": "member-1",
-						"vpc_id": "vpc-requester",
-						"direct_role": "requester"
+						"direct_role": "requester",
+						"id": "ec32dc9f-679d-4c25-9f3f-b0b37aa101a0",
+						"vpc_id": "2ea7d752-c185-422b-9780-2d07109d8afe"
 					},
 					{
-						"id": "member-2",
-						"vpc_id": "vpc-accepter",
-						"direct_role": "accepter"
+						"direct_role": "accepter",
+						"id": "759afe65-f9d5-408e-a4ac-c430dbbd6d35",
+						"vpc_id": "732d0b32-b9c0-44da-8766-72044e59ef12"
 					}
-				]
+				],
+				"status": "pending_route_table",
+				"vpc_peering_id": "866b0e4d-59d7-42e6-82d7-aa5fcb72360d"
 			}`,
 			statusCode: http.StatusOK,
 			check: func(t *testing.T, got *VpcsPeeringMembers) {
-				assertEqual(t, "peering-1", got.ID)
-				assertEqual(t, VpcsPeeringStatusCreated, got.Status)
+				assertEqual(t, "866b0e4d-59d7-42e6-82d7-aa5fcb72360d", got.ID)
+				assertEqual(t, VpcsPeeringStatusPendingRouteTable, got.Status)
 				assertEqual(t, 2, len(got.Members))
-				assertEqual(t, "vpc-requester", got.Members[0].VpcID)
+				assertEqual(t, "2ea7d752-c185-422b-9780-2d07109d8afe", got.Members[0].VpcID)
 				assertEqual(t, VpcsPeeringDirectRoleRequester, got.Members[0].DirectRole)
-				assertEqual(t, "vpc-accepter", got.Members[1].VpcID)
+				assertEqual(t, "732d0b32-b9c0-44da-8766-72044e59ef12", got.Members[1].VpcID)
 				assertEqual(t, VpcsPeeringDirectRoleAccepter, got.Members[1].DirectRole)
+			},
+		},
+		{
+			name:       "status the SDK does not know yet",
+			peeringID:  "peering-3",
+			response:   `{"vpc_peering_id": "peering-3", "status": "some_future_status", "members": []}`,
+			statusCode: http.StatusOK,
+			check: func(t *testing.T, got *VpcsPeeringMembers) {
+				assertEqual(t, VpcsPeeringStatus("some_future_status"), got.Status)
 			},
 		},
 		{
@@ -429,7 +471,7 @@ func TestVpcsPeeringsService_GetMembers(t *testing.T) {
 			},
 		},
 		{
-			name:       "peering inexistente",
+			name:       "non-existent peering",
 			peeringID:  "invalid",
 			response:   `{"detail": "not found"}`,
 			statusCode: http.StatusNotFound,
