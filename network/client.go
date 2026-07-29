@@ -78,3 +78,8 @@ func (c *NetworkClient) NatGateways() NatGatewayService {
 func (c *NetworkClient) VpcsRoutes() VpcsRoutesService {
 	return &vpcsRoutesService{client: c}
 }
+
+// VpcsPeerings returns a service for managing VPC peering resources
+func (c *NetworkClient) VpcsPeerings() VpcsPeeringsService {
+	return &vpcsPeeringsService{client: c}
+}
