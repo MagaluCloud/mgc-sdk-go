@@ -1075,6 +1075,512 @@ func TestClusterService_StopImportMode(t *testing.T) {
 	}
 }
 
+func TestClusterService_ListSnapshots(t *testing.T) {
+	tests := []struct {
+		name       string
+		clusterID  string
+		opts       ListClusterSnapshotOptions
+		response   string
+		statusCode int
+		wantCount  int
+		wantErr    bool
+	}{
+		{
+			name:      "basic list",
+			clusterID: "cluster-1",
+			response: `{
+				"meta": {"page": {"offset": 0, "limit": 50, "count": 1, "total": 1, "max_limit": 100}},
+				"results": [
+					{
+						"id": "snap-1",
+						"cluster": {"id": "cluster-1", "name": "test-cluster"},
+						"name": "daily-backup",
+						"description": "automated snapshot",
+						"type": "AUTOMATED",
+						"status": "AVAILABLE",
+						"allocated_size": 20,
+						"created_at": "2023-01-01T00:00:00Z"
+					}
+				]
+			}`,
+			statusCode: http.StatusOK,
+			wantCount:  1,
+			wantErr:    false,
+		},
+		{
+			name:      "with filters",
+			clusterID: "cluster-1",
+			opts: ListClusterSnapshotOptions{
+				Limit:  helpers.IntPtr(10),
+				Offset: helpers.IntPtr(5),
+				Type:   Ptr(SnapshotTypeOnDemand),
+				Status: Ptr(SnapshotStatusAvailable),
+			},
+			response: `{
+				"meta": {"page": {"offset": 5, "limit": 10, "count": 0, "total": 0, "max_limit": 100}},
+				"results": []
+			}`,
+			statusCode: http.StatusOK,
+			wantCount:  0,
+			wantErr:    false,
+		},
+		{
+			name:       "cluster ID empty",
+			clusterID:  "",
+			wantErr:    true,
+			statusCode: http.StatusOK,
+		},
+		{
+			name:       "server error",
+			clusterID:  "cluster-1",
+			response:   `{"error": "internal server error"}`,
+			statusCode: http.StatusInternalServerError,
+			wantErr:    true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				assertEqual(t, fmt.Sprintf("/database/v2/clusters/%s/snapshots", tt.clusterID), r.URL.Path)
+				assertEqual(t, http.MethodGet, r.Method)
+
+				query := r.URL.Query()
+				if tt.opts.Limit != nil {
+					assertEqual(t, strconv.Itoa(*tt.opts.Limit), query.Get("_limit"))
+				}
+				if tt.opts.Offset != nil {
+					assertEqual(t, strconv.Itoa(*tt.opts.Offset), query.Get("_offset"))
+				}
+				if tt.opts.Type != nil {
+					assertEqual(t, string(*tt.opts.Type), query.Get("type"))
+				}
+				if tt.opts.Status != nil {
+					assertEqual(t, string(*tt.opts.Status), query.Get("status"))
+				}
+
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(tt.statusCode)
+				w.Write([]byte(tt.response))
+			}))
+			defer server.Close()
+
+			client := testClusterClient(server.URL)
+			result, err := client.ListSnapshots(context.Background(), tt.clusterID, tt.opts)
+
+			if tt.wantErr {
+				assertError(t, err)
+				return
+			}
+
+			assertNoError(t, err)
+			assertEqual(t, tt.wantCount, len(result.Results))
+		})
+	}
+}
+
+func TestClusterService_ListAllSnapshots(t *testing.T) {
+	requestCount := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assertEqual(t, "/database/v2/clusters/cluster-1/snapshots", r.URL.Path)
+
+		query := r.URL.Query()
+		offset := query.Get("_offset")
+		limit := query.Get("_limit")
+
+		if limit != "25" {
+			t.Errorf("expected limit 25, got %s", limit)
+		}
+
+		requestCount++
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+
+		switch offset {
+		case "0":
+			snapshots := make([]string, 25)
+			for i := 0; i < 25; i++ {
+				snapshots[i] = fmt.Sprintf(`{"id": "snap%d", "name": "Snap%d"}`, i+1, i+1)
+			}
+			response := fmt.Sprintf(`{"meta": {"page": {"offset": 0, "limit": 25, "count": 25, "total": 30, "max_limit": 100}}, "results": [%s]}`,
+				strings.Join(snapshots, ","))
+			w.Write([]byte(response))
+		case "25":
+			snapshots := make([]string, 5)
+			for i := 0; i < 5; i++ {
+				snapshots[i] = fmt.Sprintf(`{"id": "snap%d", "name": "Snap%d"}`, i+26, i+26)
+			}
+			response := fmt.Sprintf(`{"meta": {"page": {"offset": 25, "limit": 25, "count": 5, "total": 30, "max_limit": 100}}, "results": [%s]}`,
+				strings.Join(snapshots, ","))
+			w.Write([]byte(response))
+		default:
+			t.Errorf("unexpected offset: %s", offset)
+		}
+	}))
+	defer server.Close()
+
+	client := testClusterClient(server.URL)
+	snapshots, err := client.ListAllSnapshots(context.Background(), "cluster-1", ClusterSnapshotFilterOptions{})
+
+	assertNoError(t, err)
+	assertEqual(t, 30, len(snapshots))
+
+	if requestCount != 2 {
+		t.Errorf("made %d requests, want 2", requestCount)
+	}
+
+	assertEqual(t, "snap1", snapshots[0].ID)
+	assertEqual(t, "snap30", snapshots[29].ID)
+}
+
+func TestClusterService_CreateSnapshot(t *testing.T) {
+	tests := []struct {
+		name       string
+		clusterID  string
+		request    ClusterSnapshotCreateRequest
+		response   string
+		statusCode int
+		wantID     string
+		wantErr    bool
+	}{
+		{
+			name:      "successful creation",
+			clusterID: "cluster-1",
+			request: ClusterSnapshotCreateRequest{
+				Name:        "daily-backup",
+				Description: helpers.StrPtr("manual snapshot"),
+			},
+			response: `{
+				"id": "snap-1"
+			}`,
+			statusCode: http.StatusAccepted,
+			wantID:     "snap-1",
+			wantErr:    false,
+		},
+		{
+			name:       "cluster ID empty",
+			clusterID:  "",
+			wantErr:    true,
+			statusCode: http.StatusAccepted,
+		},
+		{
+			name:       "validation error",
+			clusterID:  "cluster-1",
+			request:    ClusterSnapshotCreateRequest{},
+			response:   `{"error": "validation failed"}`,
+			statusCode: http.StatusBadRequest,
+			wantErr:    true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				assertEqual(t, fmt.Sprintf("/database/v2/clusters/%s/snapshots", tt.clusterID), r.URL.Path)
+				assertEqual(t, http.MethodPost, r.Method)
+
+				var reqBody ClusterSnapshotCreateRequest
+				json.NewDecoder(r.Body).Decode(&reqBody)
+				assertEqual(t, tt.request.Name, reqBody.Name)
+
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(tt.statusCode)
+				w.Write([]byte(tt.response))
+			}))
+			defer server.Close()
+
+			client := testClusterClient(server.URL)
+			result, err := client.CreateSnapshot(context.Background(), tt.clusterID, tt.request)
+
+			if tt.wantErr {
+				assertError(t, err)
+				return
+			}
+
+			assertNoError(t, err)
+			assertEqual(t, tt.wantID, result.ID)
+		})
+	}
+}
+
+func TestClusterService_GetSnapshot(t *testing.T) {
+	tests := []struct {
+		name       string
+		clusterID  string
+		snapshotID string
+		response   string
+		statusCode int
+		wantID     string
+		wantErr    bool
+	}{
+		{
+			name:       "existing snapshot",
+			clusterID:  "cluster-1",
+			snapshotID: "snap-1",
+			response: `{
+				"id": "snap-1",
+				"cluster": {"id": "cluster-1", "name": "test-cluster"},
+				"name": "daily-backup",
+				"status": "AVAILABLE"
+			}`,
+			statusCode: http.StatusOK,
+			wantID:     "snap-1",
+			wantErr:    false,
+		},
+		{
+			name:       "cluster ID empty",
+			clusterID:  "",
+			snapshotID: "snap-1",
+			wantErr:    true,
+			statusCode: http.StatusOK,
+		},
+		{
+			name:       "not found",
+			clusterID:  "cluster-1",
+			snapshotID: "invalid",
+			response:   `{"error": "snapshot not found"}`,
+			statusCode: http.StatusNotFound,
+			wantErr:    true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				expectedPath := fmt.Sprintf("/database/v2/clusters/%s/snapshots/%s", tt.clusterID, tt.snapshotID)
+				assertEqual(t, expectedPath, r.URL.Path)
+				assertEqual(t, http.MethodGet, r.Method)
+
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(tt.statusCode)
+				w.Write([]byte(tt.response))
+			}))
+			defer server.Close()
+
+			client := testClusterClient(server.URL)
+			result, err := client.GetSnapshot(context.Background(), tt.clusterID, tt.snapshotID)
+
+			if tt.wantErr {
+				assertError(t, err)
+				return
+			}
+
+			assertNoError(t, err)
+			assertEqual(t, tt.wantID, result.ID)
+		})
+	}
+}
+
+func TestClusterService_UpdateSnapshot(t *testing.T) {
+	tests := []struct {
+		name       string
+		clusterID  string
+		snapshotID string
+		request    ClusterSnapshotUpdateRequest
+		response   string
+		statusCode int
+		wantID     string
+		wantErr    bool
+	}{
+		{
+			name:       "successful update",
+			clusterID:  "cluster-1",
+			snapshotID: "snap-1",
+			request: ClusterSnapshotUpdateRequest{
+				Name:        "updated-name",
+				Description: helpers.StrPtr("updated description"),
+			},
+			response: `{
+				"id": "snap-1",
+				"name": "updated-name",
+				"description": "updated description"
+			}`,
+			statusCode: http.StatusOK,
+			wantID:     "snap-1",
+			wantErr:    false,
+		},
+		{
+			name:       "cluster ID empty",
+			clusterID:  "",
+			snapshotID: "snap-1",
+			wantErr:    true,
+			statusCode: http.StatusOK,
+		},
+		{
+			name:       "not found",
+			clusterID:  "cluster-1",
+			snapshotID: "invalid",
+			response:   `{"error": "snapshot not found"}`,
+			statusCode: http.StatusNotFound,
+			wantErr:    true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				expectedPath := fmt.Sprintf("/database/v2/clusters/%s/snapshots/%s", tt.clusterID, tt.snapshotID)
+				assertEqual(t, expectedPath, r.URL.Path)
+				assertEqual(t, http.MethodPatch, r.Method)
+
+				var reqBody ClusterSnapshotUpdateRequest
+				json.NewDecoder(r.Body).Decode(&reqBody)
+				assertEqual(t, tt.request.Name, reqBody.Name)
+
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(tt.statusCode)
+				w.Write([]byte(tt.response))
+			}))
+			defer server.Close()
+
+			client := testClusterClient(server.URL)
+			result, err := client.UpdateSnapshot(context.Background(), tt.clusterID, tt.snapshotID, tt.request)
+
+			if tt.wantErr {
+				assertError(t, err)
+				return
+			}
+
+			assertNoError(t, err)
+			assertEqual(t, tt.wantID, result.ID)
+		})
+	}
+}
+
+func TestClusterService_DeleteSnapshot(t *testing.T) {
+	tests := []struct {
+		name       string
+		clusterID  string
+		snapshotID string
+		statusCode int
+		wantErr    bool
+	}{
+		{
+			name:       "successful deletion",
+			clusterID:  "cluster-1",
+			snapshotID: "snap-1",
+			statusCode: http.StatusAccepted,
+			wantErr:    false,
+		},
+		{
+			name:       "cluster ID empty",
+			clusterID:  "",
+			snapshotID: "snap-1",
+			wantErr:    true,
+		},
+		{
+			name:       "not found",
+			clusterID:  "cluster-1",
+			snapshotID: "invalid",
+			statusCode: http.StatusNotFound,
+			wantErr:    true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				expectedPath := fmt.Sprintf("/database/v2/clusters/%s/snapshots/%s", tt.clusterID, tt.snapshotID)
+				assertEqual(t, expectedPath, r.URL.Path)
+				assertEqual(t, http.MethodDelete, r.Method)
+
+				w.WriteHeader(tt.statusCode)
+			}))
+			defer server.Close()
+
+			client := testClusterClient(server.URL)
+			err := client.DeleteSnapshot(context.Background(), tt.clusterID, tt.snapshotID)
+
+			if tt.wantErr {
+				assertError(t, err)
+			} else {
+				assertNoError(t, err)
+			}
+		})
+	}
+}
+
+func TestClusterService_RestoreSnapshot(t *testing.T) {
+	tests := []struct {
+		name       string
+		clusterID  string
+		snapshotID string
+		request    ClusterRestoreRequest
+		response   string
+		statusCode int
+		wantID     string
+		wantErr    bool
+	}{
+		{
+			name:       "successful restore",
+			clusterID:  "cluster-1",
+			snapshotID: "snap-1",
+			request: ClusterRestoreRequest{
+				Name:           "restored-cluster",
+				InstanceTypeID: "type-large",
+				Volume: &ClusterVolumeRequest{
+					Size: 100,
+					Type: helpers.StrPtr("nvme"),
+				},
+			},
+			response: `{
+				"id": "new-cluster",
+				"name": "restored-cluster",
+				"status": "CREATING"
+			}`,
+			statusCode: http.StatusAccepted,
+			wantID:     "new-cluster",
+			wantErr:    false,
+		},
+		{
+			name:       "cluster ID empty",
+			clusterID:  "",
+			snapshotID: "snap-1",
+			wantErr:    true,
+			statusCode: http.StatusAccepted,
+		},
+		{
+			name:       "not found",
+			clusterID:  "cluster-1",
+			snapshotID: "invalid",
+			response:   `{"error": "snapshot not found"}`,
+			statusCode: http.StatusNotFound,
+			wantErr:    true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				expectedPath := fmt.Sprintf("/database/v2/clusters/%s/snapshots/%s/restore", tt.clusterID, tt.snapshotID)
+				assertEqual(t, expectedPath, r.URL.Path)
+				assertEqual(t, http.MethodPost, r.Method)
+
+				var reqBody ClusterRestoreRequest
+				json.NewDecoder(r.Body).Decode(&reqBody)
+				assertEqual(t, tt.request.Name, reqBody.Name)
+				assertEqual(t, tt.request.InstanceTypeID, reqBody.InstanceTypeID)
+
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(tt.statusCode)
+				w.Write([]byte(tt.response))
+			}))
+			defer server.Close()
+
+			client := testClusterClient(server.URL)
+			result, err := client.RestoreSnapshot(context.Background(), tt.clusterID, tt.snapshotID, tt.request)
+
+			if tt.wantErr {
+				assertError(t, err)
+				return
+			}
+
+			assertNoError(t, err)
+			assertEqual(t, tt.wantID, result.ID)
+		})
+	}
+}
+
 func Ptr[T any](v T) *T {
 	return &v
 }
