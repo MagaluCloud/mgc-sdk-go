@@ -165,6 +165,73 @@ type (
 		BackupStartAt       *string `json:"backup_start_at,omitempty"`
 		DeletionProtected   *bool   `json:"deletion_protected,omitempty"`
 	}
+
+	// ListClusterSnapshotOptions provides options for listing cluster snapshots
+	ListClusterSnapshotOptions struct {
+		Offset *int
+		Limit  *int
+		Type   *SnapshotType
+		Status *SnapshotStatus
+	}
+
+	// ClusterSnapshotFilterOptions provides filtering options for ListAllSnapshots (without pagination)
+	ClusterSnapshotFilterOptions struct {
+		Type   *SnapshotType
+		Status *SnapshotStatus
+	}
+
+	// ClusterSnapshotInfo represents cluster information referenced by a cluster snapshot
+	ClusterSnapshotInfo struct {
+		ID   string `json:"id"`
+		Name string `json:"name"`
+	}
+
+	// ClusterSnapshotDetailResponse represents detailed information about a cluster snapshot
+	ClusterSnapshotDetailResponse struct {
+		ID            string              `json:"id"`
+		Cluster       ClusterSnapshotInfo `json:"cluster"`
+		Name          string              `json:"name"`
+		Description   string              `json:"description"`
+		Type          SnapshotType        `json:"type"`
+		Status        SnapshotStatus      `json:"status"`
+		AllocatedSize int                 `json:"allocated_size"`
+		CreatedAt     time.Time           `json:"created_at"`
+		StartedAt     *string             `json:"started_at,omitempty"`
+		FinishedAt    *string             `json:"finished_at,omitempty"`
+		UpdatedAt     *time.Time          `json:"updated_at,omitempty"`
+	}
+
+	// ClusterSnapshotsResponse represents the response when listing cluster snapshots
+	ClusterSnapshotsResponse struct {
+		Meta    Metadata                        `json:"meta"`
+		Results []ClusterSnapshotDetailResponse `json:"results"`
+	}
+
+	// ClusterSnapshotCreateRequest represents the request payload for creating a cluster snapshot
+	ClusterSnapshotCreateRequest struct {
+		Name        string  `json:"name"`
+		Description *string `json:"description,omitempty"`
+	}
+
+	// ClusterSnapshotResponse represents the response when creating a cluster snapshot
+	ClusterSnapshotResponse struct {
+		ID string `json:"id"`
+	}
+
+	// ClusterSnapshotUpdateRequest represents the request payload for updating a cluster snapshot
+	ClusterSnapshotUpdateRequest struct {
+		Name        string  `json:"name,omitempty"`
+		Description *string `json:"description,omitempty"`
+	}
+
+	// ClusterRestoreRequest represents the request payload for restoring a cluster from a snapshot
+	ClusterRestoreRequest struct {
+		Name                string                `json:"name"`
+		InstanceTypeID      string                `json:"instance_type_id"`
+		Volume              *ClusterVolumeRequest `json:"volume,omitempty"`
+		BackupRetentionDays *int                  `json:"backup_retention_days,omitempty"`
+		BackupStartAt       *string               `json:"backup_start_at,omitempty"`
+	}
 )
 
 // ClusterService provides methods for managing database clusters
@@ -180,6 +247,13 @@ type ClusterService interface {
 	Stop(ctx context.Context, ID string) (*ClusterDetailResponse, error)
 	StartImportMode(ctx context.Context, ID string) (*ClusterDetailResponse, error)
 	StopImportMode(ctx context.Context, ID string) (*ClusterDetailResponse, error)
+	ListSnapshots(ctx context.Context, clusterID string, opts ListClusterSnapshotOptions) (*ClusterSnapshotsResponse, error)
+	ListAllSnapshots(ctx context.Context, clusterID string, filterOpts ClusterSnapshotFilterOptions) ([]ClusterSnapshotDetailResponse, error)
+	CreateSnapshot(ctx context.Context, clusterID string, req ClusterSnapshotCreateRequest) (*ClusterSnapshotResponse, error)
+	GetSnapshot(ctx context.Context, clusterID, snapshotID string) (*ClusterSnapshotDetailResponse, error)
+	UpdateSnapshot(ctx context.Context, clusterID, snapshotID string, req ClusterSnapshotUpdateRequest) (*ClusterSnapshotDetailResponse, error)
+	DeleteSnapshot(ctx context.Context, clusterID, snapshotID string) error
+	RestoreSnapshot(ctx context.Context, clusterID, snapshotID string, req ClusterRestoreRequest) (*ClusterDetailResponse, error)
 }
 
 // clusterService implements the ClusterService interface
@@ -189,6 +263,11 @@ type clusterService struct {
 
 const v2ClustersPath = "/v2/clusters"
 const errIDCannotBeEmpty = "ID cannot be empty"
+
+const (
+	ClusterSnapshotPath   = v2ClustersPath + "/%s/snapshots"
+	ClusterSnapshotPathID = ClusterSnapshotPath + "/%s"
+)
 
 // List implements the ClusterService interface and returns a paginated list of clusters
 func (s *clusterService) List(ctx context.Context, opts ListClustersOptions) (*ClustersResponse, error) {
@@ -426,6 +505,161 @@ func (s *clusterService) StopImportMode(ctx context.Context, ID string) (*Cluste
 		http.MethodPost,
 		fmt.Sprintf("%s/%s/stop-import-mode", v2ClustersPath, ID),
 		nil,
+		nil,
+	)
+}
+
+// ListSnapshots returns a list of snapshots for a specific cluster.
+func (s *clusterService) ListSnapshots(ctx context.Context, clusterID string, opts ListClusterSnapshotOptions) (*ClusterSnapshotsResponse, error) {
+	if clusterID == "" {
+		return nil, fmt.Errorf(errIDCannotBeEmpty)
+	}
+
+	query := make(url.Values)
+
+	if opts.Offset != nil {
+		query.Set("_offset", strconv.Itoa(*opts.Offset))
+	}
+	if opts.Limit != nil {
+		query.Set("_limit", strconv.Itoa(*opts.Limit))
+	}
+	if opts.Type != nil {
+		query.Set("type", string(*opts.Type))
+	}
+	if opts.Status != nil {
+		query.Set("status", string(*opts.Status))
+	}
+
+	result, err := mgc_http.ExecuteSimpleRequestWithRespBody[ClusterSnapshotsResponse](
+		ctx,
+		s.client.newRequest,
+		s.client.GetConfig(),
+		http.MethodGet,
+		fmt.Sprintf(ClusterSnapshotPath, clusterID),
+		nil,
+		query,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+// ListAllSnapshots retrieves all snapshots for a cluster by fetching all pages with optional filtering
+func (s *clusterService) ListAllSnapshots(ctx context.Context, clusterID string, filterOpts ClusterSnapshotFilterOptions) ([]ClusterSnapshotDetailResponse, error) {
+	var allSnapshots []ClusterSnapshotDetailResponse
+	offset := 0
+	limit := 25
+
+	for {
+		currentOffset := offset
+		currentLimit := limit
+		opts := ListClusterSnapshotOptions{
+			Offset: &currentOffset,
+			Limit:  &currentLimit,
+			Type:   filterOpts.Type,
+			Status: filterOpts.Status,
+		}
+
+		resp, err := s.ListSnapshots(ctx, clusterID, opts)
+		if err != nil {
+			return nil, err
+		}
+
+		allSnapshots = append(allSnapshots, resp.Results...)
+
+		if len(resp.Results) < limit {
+			break
+		}
+
+		offset += limit
+	}
+
+	return allSnapshots, nil
+}
+
+// CreateSnapshot creates a new snapshot for the specified cluster.
+func (s *clusterService) CreateSnapshot(ctx context.Context, clusterID string, req ClusterSnapshotCreateRequest) (*ClusterSnapshotResponse, error) {
+	if clusterID == "" {
+		return nil, fmt.Errorf(errIDCannotBeEmpty)
+	}
+
+	return mgc_http.ExecuteSimpleRequestWithRespBody[ClusterSnapshotResponse](
+		ctx,
+		s.client.newRequest,
+		s.client.GetConfig(),
+		http.MethodPost,
+		fmt.Sprintf(ClusterSnapshotPath, clusterID),
+		req,
+		nil,
+	)
+}
+
+// GetSnapshot retrieves details of a specific cluster snapshot.
+func (s *clusterService) GetSnapshot(ctx context.Context, clusterID, snapshotID string) (*ClusterSnapshotDetailResponse, error) {
+	if clusterID == "" || snapshotID == "" {
+		return nil, fmt.Errorf(errIDCannotBeEmpty)
+	}
+
+	return mgc_http.ExecuteSimpleRequestWithRespBody[ClusterSnapshotDetailResponse](
+		ctx,
+		s.client.newRequest,
+		s.client.GetConfig(),
+		http.MethodGet,
+		fmt.Sprintf(ClusterSnapshotPathID, clusterID, snapshotID),
+		nil,
+		nil,
+	)
+}
+
+// UpdateSnapshot updates the properties of an existing cluster snapshot.
+func (s *clusterService) UpdateSnapshot(ctx context.Context, clusterID, snapshotID string, req ClusterSnapshotUpdateRequest) (*ClusterSnapshotDetailResponse, error) {
+	if clusterID == "" || snapshotID == "" {
+		return nil, fmt.Errorf(errIDCannotBeEmpty)
+	}
+
+	return mgc_http.ExecuteSimpleRequestWithRespBody[ClusterSnapshotDetailResponse](
+		ctx,
+		s.client.newRequest,
+		s.client.GetConfig(),
+		http.MethodPatch,
+		fmt.Sprintf(ClusterSnapshotPathID, clusterID, snapshotID),
+		req,
+		nil,
+	)
+}
+
+// DeleteSnapshot deletes a cluster snapshot.
+func (s *clusterService) DeleteSnapshot(ctx context.Context, clusterID, snapshotID string) error {
+	if clusterID == "" || snapshotID == "" {
+		return fmt.Errorf(errIDCannotBeEmpty)
+	}
+
+	return mgc_http.ExecuteSimpleRequest(
+		ctx,
+		s.client.newRequest,
+		s.client.GetConfig(),
+		http.MethodDelete,
+		fmt.Sprintf(ClusterSnapshotPathID, clusterID, snapshotID),
+		nil,
+		nil,
+	)
+}
+
+// RestoreSnapshot creates a new cluster from a snapshot.
+func (s *clusterService) RestoreSnapshot(ctx context.Context, clusterID, snapshotID string, req ClusterRestoreRequest) (*ClusterDetailResponse, error) {
+	if clusterID == "" || snapshotID == "" {
+		return nil, fmt.Errorf(errIDCannotBeEmpty)
+	}
+
+	return mgc_http.ExecuteSimpleRequestWithRespBody[ClusterDetailResponse](
+		ctx,
+		s.client.newRequest,
+		s.client.GetConfig(),
+		http.MethodPost,
+		fmt.Sprintf(ClusterSnapshotPathID+"/restore", clusterID, snapshotID),
+		req,
 		nil,
 	)
 }
