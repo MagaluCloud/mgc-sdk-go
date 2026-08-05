@@ -36,7 +36,7 @@ class DocumentationGenerator:
         self.go_modules = [
             "client", "compute", "blockstorage", "network", "kubernetes",
             "dbaas", "containerregistry", "sshkeys", "availabilityzones",
-            "audit", "lbaas", "helpers"
+            "audit", "lbaas", "tag", "helpers"
         ]
 
     def get_project_version(self) -> str:
@@ -163,6 +163,7 @@ The MGC Go SDK provides a convenient way to interact with the Magalu Cloud API f
    modules/availabilityzones
    modules/audit
    modules/lbaas
+   modules/tag
    modules/helpers
 
 Indices and tables
@@ -521,6 +522,7 @@ mgc-sdk-go/
 ├── availabilityzones/ # Availability Zones service API
 ├── audit/          # Audit service API
 ├── lbaas/          # Load Balancer as a Service API
+├── tag/            # Tags service API
 ├── helpers/        # Utility functions
 ├── internal/       # Internal packages
 └── cmd/            # Usage examples
@@ -560,6 +562,9 @@ Provides functionality to access audit logs and events.
 
 ### lbaas/
 Allows managing load balancers and related configurations.
+
+### tag/
+Allows managing tags, their values, and the tags attached to the resources of other products.
 
 ### helpers/
 Contains reusable utility functions throughout the SDK.
