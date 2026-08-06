@@ -67,6 +67,13 @@ type (
 		Offset *int
 	}
 
+	// ListAllVpcsPeeringsOptions represents the filters accepted when listing
+	// all peerings.
+	ListAllVpcsPeeringsOptions struct {
+		// VpcID restricts the result to the peerings a given VPC takes part in.
+		VpcID string
+	}
+
 	// ListVpcsPeeringsResponse represents a peering listing response.
 	ListVpcsPeeringsResponse struct {
 		Meta   Meta          `json:"meta"`
@@ -99,6 +106,9 @@ type VpcsPeeringsService interface {
 	// List retrieves the peerings of the current tenant, optionally filtered by VPC
 	// and paginated through Limit and Offset. Meta.Page reports the totals.
 	List(ctx context.Context, opts *ListVpcsPeeringsOptions) (*ListVpcsPeeringsResponse, error)
+	// ListAll retrieves all peerings of the current tenant, optionally filtered
+	// by VPC, automatically handling pagination.
+	ListAll(ctx context.Context, opts *ListAllVpcsPeeringsOptions) ([]VpcsPeering, error)
 	// GetMembers retrieves the members of a peering and its current status.
 	// Name, description and timestamps are only available through List.
 	GetMembers(ctx context.Context, peeringID string) (*VpcsPeeringMembers, error)
@@ -132,6 +142,37 @@ func (s *vpcsPeeringsService) List(ctx context.Context, opts *ListVpcsPeeringsOp
 		nil,
 		query,
 	)
+}
+
+func (s *vpcsPeeringsService) ListAll(ctx context.Context, opts *ListAllVpcsPeeringsOptions) ([]VpcsPeering, error) {
+	if opts == nil {
+		opts = &ListAllVpcsPeeringsOptions{}
+	}
+
+	allPeerings := []VpcsPeering{}
+	offset := 0
+	limit := 100
+
+	for {
+		currentOffset := offset
+		resp, err := s.List(ctx, &ListVpcsPeeringsOptions{
+			VpcID:  opts.VpcID,
+			Limit:  &limit,
+			Offset: &currentOffset,
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		allPeerings = append(allPeerings, resp.Result...)
+
+		offset += limit
+		if offset >= resp.Meta.Page.Total {
+			break
+		}
+	}
+
+	return allPeerings, nil
 }
 
 func (s *vpcsPeeringsService) GetMembers(ctx context.Context, peeringID string) (*VpcsPeeringMembers, error) {

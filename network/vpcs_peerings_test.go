@@ -604,6 +604,85 @@ func TestVpcsPeeringsService_DeleteValidation(t *testing.T) {
 	assertEqual(t, "vpc_peering_id cannot be empty", err.Error())
 }
 
+// ListAll pages with _offset until Meta.Page.Total is covered; the handler
+// answers each offset with a distinct result so a page fetched twice, skipped
+// or out of order fails the assertions.
+func TestVpcsPeeringsService_ListAll(t *testing.T) {
+	t.Parallel()
+
+	peeringJSON := func(id string) string {
+		return `{"id": "` + id + `", "name": "peering-` + id + `", "status": "created", "members": []}`
+	}
+	metaJSON := func(offset, count, total int) string {
+		return `{"links": {"self": "?"}, "page": {"count": ` + strconv.Itoa(count) +
+			`, "limit": 100, "max_items_per_page": 100, "offset": ` + strconv.Itoa(offset) +
+			`, "total": ` + strconv.Itoa(total) + `}}`
+	}
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assertEqual(t, "/network/v1/vpcs_peerings", r.URL.Path)
+		assertEqual(t, "vpc-1", r.URL.Query().Get("vpc_id"))
+		assertEqual(t, "100", r.URL.Query().Get("_limit"))
+
+		w.Header().Set("Content-Type", "application/json")
+
+		switch r.URL.Query().Get("_offset") {
+		case "0":
+			io.WriteString(w, `{"meta": `+metaJSON(0, 2, 102)+`, "result": [`+peeringJSON("peering-1")+`, `+peeringJSON("peering-2")+`]}`)
+		case "100":
+			io.WriteString(w, `{"meta": `+metaJSON(100, 1, 102)+`, "result": [`+peeringJSON("peering-3")+`]}`)
+		default:
+			t.Errorf("unexpected offset %q", r.URL.Query().Get("_offset"))
+			w.WriteHeader(http.StatusBadRequest)
+		}
+	}))
+	defer server.Close()
+
+	client := testPeeringClient(server.URL)
+	got, err := client.ListAll(context.Background(), &ListAllVpcsPeeringsOptions{VpcID: "vpc-1"})
+
+	assertNoError(t, err)
+	assertEqual(t, 3, len(got))
+	assertEqual(t, "peering-1", got[0].ID)
+	assertEqual(t, "peering-2", got[1].ID)
+	assertEqual(t, "peering-3", got[2].ID)
+}
+
+func TestVpcsPeeringsService_ListAllEmpty(t *testing.T) {
+	t.Parallel()
+
+	requests := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests++
+		assertEqual(t, "", r.URL.Query().Get("vpc_id"))
+
+		w.Header().Set("Content-Type", "application/json")
+		io.WriteString(w, `{"meta": {"links": {"self": "?"}, "page": {"count": 0, "limit": 100, "max_items_per_page": 100, "offset": 0, "total": 0}}, "result": []}`)
+	}))
+	defer server.Close()
+
+	client := testPeeringClient(server.URL)
+	got, err := client.ListAll(context.Background(), nil)
+
+	assertNoError(t, err)
+	assertEqual(t, 0, len(got))
+	assertEqual(t, 1, requests)
+}
+
+func TestVpcsPeeringsService_ListAllError(t *testing.T) {
+	t.Parallel()
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	defer server.Close()
+
+	client := testPeeringClient(server.URL)
+	_, err := client.ListAll(context.Background(), nil)
+
+	assertError(t, err)
+}
+
 // canonicalJSON normalizes a JSON document so payloads can be compared
 // regardless of key order and formatting.
 func canonicalJSON(t *testing.T, raw string) string {
