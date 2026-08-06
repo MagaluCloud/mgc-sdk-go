@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strconv"
 	"strings"
 	"testing"
@@ -20,6 +21,40 @@ func testClusterClient(baseURL string) ClusterService {
 		client.WithBaseURL(client.MgcUrl(baseURL)),
 		client.WithHTTPClient(httpClient))
 	return New(core).Clusters()
+}
+
+func assertClusterListQueryParams(t *testing.T, query url.Values, opts ListClustersOptions) {
+	t.Helper()
+	if opts.Limit != nil {
+		assertEqual(t, strconv.Itoa(*opts.Limit), query.Get("_limit"))
+	}
+	if opts.Offset != nil {
+		assertEqual(t, strconv.Itoa(*opts.Offset), query.Get("_offset"))
+	}
+	if opts.Status != nil {
+		assertEqual(t, string(*opts.Status), query.Get("status"))
+	}
+	if opts.EngineID != nil {
+		assertEqual(t, *opts.EngineID, query.Get("engine_id"))
+	}
+	if opts.VolumeSize != nil {
+		assertEqual(t, strconv.Itoa(*opts.VolumeSize), query.Get("volume.size"))
+	}
+	if opts.VolumeSizeGt != nil {
+		assertEqual(t, strconv.Itoa(*opts.VolumeSizeGt), query.Get("volume.size__gt"))
+	}
+	if opts.VolumeSizeGte != nil {
+		assertEqual(t, strconv.Itoa(*opts.VolumeSizeGte), query.Get("volume.size__gte"))
+	}
+	if opts.VolumeSizeLt != nil {
+		assertEqual(t, strconv.Itoa(*opts.VolumeSizeLt), query.Get("volume.size__lt"))
+	}
+	if opts.VolumeSizeLte != nil {
+		assertEqual(t, strconv.Itoa(*opts.VolumeSizeLte), query.Get("volume.size__lte"))
+	}
+	if opts.ParameterGroupID != nil {
+		assertEqual(t, *opts.ParameterGroupID, query.Get("parameter_group_id"))
+	}
 }
 
 func TestClusterService_List(t *testing.T) {
@@ -116,36 +151,7 @@ func TestClusterService_List(t *testing.T) {
 				assertEqual(t, http.MethodGet, r.Method)
 
 				query := r.URL.Query()
-				if tt.opts.Limit != nil {
-					assertEqual(t, strconv.Itoa(*tt.opts.Limit), query.Get("_limit"))
-				}
-				if tt.opts.Offset != nil {
-					assertEqual(t, strconv.Itoa(*tt.opts.Offset), query.Get("_offset"))
-				}
-				if tt.opts.Status != nil {
-					assertEqual(t, string(*tt.opts.Status), query.Get("status"))
-				}
-				if tt.opts.EngineID != nil {
-					assertEqual(t, *tt.opts.EngineID, query.Get("engine_id"))
-				}
-				if tt.opts.VolumeSize != nil {
-					assertEqual(t, strconv.Itoa(*tt.opts.VolumeSize), query.Get("volume.size"))
-				}
-				if tt.opts.VolumeSizeGt != nil {
-					assertEqual(t, strconv.Itoa(*tt.opts.VolumeSizeGt), query.Get("volume.size__gt"))
-				}
-				if tt.opts.VolumeSizeGte != nil {
-					assertEqual(t, strconv.Itoa(*tt.opts.VolumeSizeGte), query.Get("volume.size__gte"))
-				}
-				if tt.opts.VolumeSizeLt != nil {
-					assertEqual(t, strconv.Itoa(*tt.opts.VolumeSizeLt), query.Get("volume.size__lt"))
-				}
-				if tt.opts.VolumeSizeLte != nil {
-					assertEqual(t, strconv.Itoa(*tt.opts.VolumeSizeLte), query.Get("volume.size__lte"))
-				}
-				if tt.opts.ParameterGroupID != nil {
-					assertEqual(t, *tt.opts.ParameterGroupID, query.Get("parameter_group_id"))
-				}
+				assertClusterListQueryParams(t, query, tt.opts)
 
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(tt.statusCode)
@@ -349,6 +355,22 @@ func TestClusterService_Get(t *testing.T) {
 	}
 }
 
+func assertClusterUpdateRequestFields(t *testing.T, want, got ClusterUpdateRequest) {
+	t.Helper()
+	if want.ParameterGroupID != nil {
+		assertEqual(t, *want.ParameterGroupID, *got.ParameterGroupID)
+	}
+	if want.BackupRetentionDays != nil {
+		assertEqual(t, *want.BackupRetentionDays, *got.BackupRetentionDays)
+	}
+	if want.BackupStartAt != nil {
+		assertEqual(t, *want.BackupStartAt, *got.BackupStartAt)
+	}
+	if want.DeletionProtected != nil {
+		assertEqual(t, *want.DeletionProtected, *got.DeletionProtected)
+	}
+}
+
 func TestClusterService_Update(t *testing.T) {
 	tests := []struct {
 		name       string
@@ -401,19 +423,7 @@ func TestClusterService_Update(t *testing.T) {
 
 					var reqBody ClusterUpdateRequest
 					json.NewDecoder(r.Body).Decode(&reqBody)
-					if tt.request.ParameterGroupID != nil {
-						assertEqual(t, *tt.request.ParameterGroupID, *reqBody.ParameterGroupID)
-					}
-					if tt.request.BackupRetentionDays != nil {
-						assertEqual(t, *tt.request.BackupRetentionDays, *reqBody.BackupRetentionDays)
-					}
-					if tt.request.BackupStartAt != nil {
-						assertEqual(t, *tt.request.BackupStartAt, *reqBody.BackupStartAt)
-					}
-
-					if tt.request.DeletionProtected != nil {
-						assertEqual(t, *tt.request.DeletionProtected, *reqBody.DeletionProtected)
-					}
+					assertClusterUpdateRequestFields(t, tt.request, reqBody)
 
 					w.Header().Set("Content-Type", "application/json")
 					w.WriteHeader(tt.statusCode)
@@ -730,6 +740,15 @@ func TestClusterService_ListAll(t *testing.T) {
 	}
 }
 
+func clusterPageItems(startID, count int, extraFields string) string {
+	items := make([]string, count)
+	for i := range count {
+		id := startID + i
+		items[i] = fmt.Sprintf(`{"id": "cluster%d", "name": "Cluster%d"%s}`, id, id, extraFields)
+	}
+	return strings.Join(items, ",")
+}
+
 func TestClusterService_ListAll_MultiplePagesWithPagination(t *testing.T) {
 	requestCount := 0
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -751,30 +770,18 @@ func TestClusterService_ListAll_MultiplePagesWithPagination(t *testing.T) {
 		switch offset {
 		case "0":
 			// First page: 25 items
-			clusters := make([]string, 25)
-			for i := 0; i < 25; i++ {
-				clusters[i] = fmt.Sprintf(`{"id": "cluster%d", "name": "Cluster%d"}`, i+1, i+1)
-			}
 			response := fmt.Sprintf(`{"meta": {"page": {"offset": 0, "limit": 25, "count": 25, "total": 75, "max_limit": 100}}, "results": [%s]}`,
-				strings.Join(clusters, ","))
+				clusterPageItems(1, 25, ""))
 			w.Write([]byte(response))
 		case "25":
 			// Second page: 25 items
-			clusters := make([]string, 25)
-			for i := 0; i < 25; i++ {
-				clusters[i] = fmt.Sprintf(`{"id": "cluster%d", "name": "Cluster%d"}`, i+26, i+26)
-			}
 			response := fmt.Sprintf(`{"meta": {"page": {"offset": 25, "limit": 25, "count": 25, "total": 75, "max_limit": 100}}, "results": [%s]}`,
-				strings.Join(clusters, ","))
+				clusterPageItems(26, 25, ""))
 			w.Write([]byte(response))
 		case "50":
 			// Third page: 25 items
-			clusters := make([]string, 25)
-			for i := 0; i < 25; i++ {
-				clusters[i] = fmt.Sprintf(`{"id": "cluster%d", "name": "Cluster%d"}`, i+51, i+51)
-			}
 			response := fmt.Sprintf(`{"meta": {"page": {"offset": 50, "limit": 25, "count": 25, "total": 75, "max_limit": 100}}, "results": [%s]}`,
-				strings.Join(clusters, ","))
+				clusterPageItems(51, 25, ""))
 			w.Write([]byte(response))
 		case "75":
 			// Final empty page to stop iteration
@@ -829,12 +836,9 @@ func TestClusterService_ListAll_WithFilters(t *testing.T) {
 
 		// Return 25 items on first three pages, then empty page
 		offset := query.Get("_offset")
+		const filterExtraFields = `, "status": "ACTIVE", "engine_id": "postgres-13"`
 		switch offset {
 		case "0":
-			clusters := make([]string, 25)
-			for i := 0; i < 25; i++ {
-				clusters[i] = fmt.Sprintf(`{"id": "cluster%d", "name": "Cluster%d", "status": "ACTIVE", "engine_id": "postgres-13"}`, i+1, i+1)
-			}
 			response := fmt.Sprintf(`{
 				"meta": {
 					"filters": [
@@ -844,13 +848,9 @@ func TestClusterService_ListAll_WithFilters(t *testing.T) {
 					"page": {"offset": 0, "limit": 25, "count": 25, "total": 75, "max_limit": 100}
 				},
 				"results": [%s]
-			}`, strings.Join(clusters, ","))
+			}`, clusterPageItems(1, 25, filterExtraFields))
 			w.Write([]byte(response))
 		case "25":
-			clusters := make([]string, 25)
-			for i := 0; i < 25; i++ {
-				clusters[i] = fmt.Sprintf(`{"id": "cluster%d", "name": "Cluster%d", "status": "ACTIVE", "engine_id": "postgres-13"}`, i+26, i+26)
-			}
 			response := fmt.Sprintf(`{
 				"meta": {
 					"filters": [
@@ -860,13 +860,9 @@ func TestClusterService_ListAll_WithFilters(t *testing.T) {
 					"page": {"offset": 25, "limit": 25, "count": 25, "total": 75, "max_limit": 100}
 				},
 				"results": [%s]
-			}`, strings.Join(clusters, ","))
+			}`, clusterPageItems(26, 25, filterExtraFields))
 			w.Write([]byte(response))
 		case "50":
-			clusters := make([]string, 25)
-			for i := 0; i < 25; i++ {
-				clusters[i] = fmt.Sprintf(`{"id": "cluster%d", "name": "Cluster%d", "status": "ACTIVE", "engine_id": "postgres-13"}`, i+51, i+51)
-			}
 			response := fmt.Sprintf(`{
 				"meta": {
 					"filters": [
@@ -876,7 +872,7 @@ func TestClusterService_ListAll_WithFilters(t *testing.T) {
 					"page": {"offset": 50, "limit": 25, "count": 25, "total": 75, "max_limit": 100}
 				},
 					"results": [%s]
-			}`, strings.Join(clusters, ","))
+			}`, clusterPageItems(51, 25, filterExtraFields))
 			w.Write([]byte(response))
 		case "75":
 			response := `{
@@ -1075,6 +1071,22 @@ func TestClusterService_StopImportMode(t *testing.T) {
 	}
 }
 
+func assertClusterSnapshotListQueryParams(t *testing.T, query url.Values, opts ListClusterSnapshotOptions) {
+	t.Helper()
+	if opts.Limit != nil {
+		assertEqual(t, strconv.Itoa(*opts.Limit), query.Get("_limit"))
+	}
+	if opts.Offset != nil {
+		assertEqual(t, strconv.Itoa(*opts.Offset), query.Get("_offset"))
+	}
+	if opts.Type != nil {
+		assertEqual(t, string(*opts.Type), query.Get("type"))
+	}
+	if opts.Status != nil {
+		assertEqual(t, string(*opts.Status), query.Get("status"))
+	}
+}
+
 func TestClusterService_ListSnapshots(t *testing.T) {
 	tests := []struct {
 		name       string
@@ -1146,18 +1158,7 @@ func TestClusterService_ListSnapshots(t *testing.T) {
 				assertEqual(t, http.MethodGet, r.Method)
 
 				query := r.URL.Query()
-				if tt.opts.Limit != nil {
-					assertEqual(t, strconv.Itoa(*tt.opts.Limit), query.Get("_limit"))
-				}
-				if tt.opts.Offset != nil {
-					assertEqual(t, strconv.Itoa(*tt.opts.Offset), query.Get("_offset"))
-				}
-				if tt.opts.Type != nil {
-					assertEqual(t, string(*tt.opts.Type), query.Get("type"))
-				}
-				if tt.opts.Status != nil {
-					assertEqual(t, string(*tt.opts.Status), query.Get("status"))
-				}
+				assertClusterSnapshotListQueryParams(t, query, tt.opts)
 
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(tt.statusCode)
