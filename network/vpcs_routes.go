@@ -27,7 +27,8 @@ const (
 type (
 	VpcsRouteDetail struct {
 		ID              string      `json:"id"`
-		PortID          string      `json:"port_id"`
+		PortID          string      `json:"port_id,omitempty"`
+		VPCPeeringID    string      `json:"vpc_peering_id,omitempty"`
 		CIDRDestination string      `json:"cidr_destination"`
 		Description     string      `json:"description,omitempty"`
 		NextHop         string      `json:"next_hop"`
@@ -41,9 +42,16 @@ type (
 	}
 
 	VpcsRoutesCreateRequest struct {
-		PortID          string  `json:"port_id"`
-		CIDRDestination string  `json:"cidr_destination"`
-		Description     *string `json:"description"`
+		//DEPRECATED, will be removed shortly
+		PortID          *string        `json:"port_id"`
+		CIDRDestination string         `json:"cidr_destination"`
+		Description     *string        `json:"description"`
+		Targets         TargetsRequest `json:"targets"`
+	}
+
+	TargetsRequest struct {
+		ID   string `json:"id"`
+		Type string `json:"type"`
 	}
 
 	VpcsRoutesCreateResponse struct {
@@ -198,9 +206,15 @@ func (s *vpcsRoutesService) Get(ctx context.Context, vpcID, routeID string) (*Vp
 }
 
 func (s *vpcsRoutesService) Create(ctx context.Context, vpcID string, req VpcsRoutesCreateRequest) (*VpcsRoutesCreateResponse, error) {
-	if req.PortID == "" {
-		return nil, fmt.Errorf("port_id cannot be empty")
+	if req.Targets.ID == "" || req.Targets.Type == "" {
+		return nil, fmt.Errorf("targets id and type cannot be empty")
 	}
+
+	//This is a temporary adjustment and should be removed soon.
+	if req.Targets.Type == "port_id" {
+		req.PortID = &req.Targets.ID
+	}
+
 	if req.CIDRDestination == "" {
 		return nil, fmt.Errorf("cidr_destination cannot be empty")
 	}
