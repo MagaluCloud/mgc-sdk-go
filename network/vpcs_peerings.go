@@ -51,13 +51,6 @@ type (
 		Members     []VpcsPeeringMember             `json:"members"`
 	}
 
-	// VpcsPeeringMembers represents the members of a peering and its current status.
-	VpcsPeeringMembers struct {
-		ID      string              `json:"vpc_peering_id"`
-		Status  VpcsPeeringStatus   `json:"status"`
-		Members []VpcsPeeringMember `json:"members"`
-	}
-
 	// ListVpcsPeeringsOptions represents the filters and pagination accepted when
 	// listing peerings.
 	ListVpcsPeeringsOptions struct {
@@ -109,9 +102,8 @@ type VpcsPeeringsService interface {
 	// ListAll retrieves all peerings of the current tenant, optionally filtered
 	// by VPC, automatically handling pagination.
 	ListAll(ctx context.Context, opts *ListAllVpcsPeeringsOptions) ([]VpcsPeering, error)
-	// GetMembers retrieves the members of a peering and its current status.
-	// Name, description and timestamps are only available through List.
-	GetMembers(ctx context.Context, peeringID string) (*VpcsPeeringMembers, error)
+	// Get retrieves the members of a peering and its current status.
+	Get(ctx context.Context, peeringID string) (*VpcsPeering, error)
 	// Create requests a new peering between two VPCs.
 	Create(ctx context.Context, req VpcsPeeringsCreateRequest) (*VpcsPeeringsCreateResponse, error)
 	// Delete removes a peering by its ID.
@@ -175,12 +167,12 @@ func (s *vpcsPeeringsService) ListAll(ctx context.Context, opts *ListAllVpcsPeer
 	return allPeerings, nil
 }
 
-func (s *vpcsPeeringsService) GetMembers(ctx context.Context, peeringID string) (*VpcsPeeringMembers, error) {
+func (s *vpcsPeeringsService) Get(ctx context.Context, peeringID string) (*VpcsPeering, error) {
 	if peeringID == "" {
 		return nil, fmt.Errorf("vpc_peering_id cannot be empty")
 	}
 
-	return mgc_http.ExecuteSimpleRequestWithRespBody[VpcsPeeringMembers](
+	return mgc_http.ExecuteSimpleRequestWithRespBody[VpcsPeering](
 		ctx,
 		s.client.newRequest,
 		s.client.GetConfig(),

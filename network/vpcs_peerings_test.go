@@ -412,19 +412,28 @@ func TestVpcsPeeringsService_List(t *testing.T) {
 	}
 }
 
-func TestVpcsPeeringsService_GetMembers(t *testing.T) {
+func TestVpcsPeeringsService_Get(t *testing.T) {
+	createdAt := time.Date(2026, 7, 23, 20, 21, 8, 861443000, time.UTC)
+	updated := time.Date(2026, 7, 24, 17, 47, 13, 459860000, time.UTC)
+
 	tests := []struct {
 		name       string
 		peeringID  string
 		response   string
 		statusCode int
-		check      func(t *testing.T, got *VpcsPeeringMembers)
+		check      func(t *testing.T, got *VpcsPeering)
 		wantErr    bool
 	}{
 		{
-			name:      "members of both ends of the peering",
+			name:      "full peering with both members",
 			peeringID: "866b0e4d-59d7-42e6-82d7-aa5fcb72360d",
 			response: `{
+				"id": "866b0e4d-59d7-42e6-82d7-aa5fcb72360d",
+				"name": "peering-prod-to-db",
+				"description": "desc",
+				"status": "pending_route_table",
+				"created_at": "2026-07-23T20:21:08.861443",
+				"updated": "2026-07-24T17:47:13.459860",
 				"members": [
 					{
 						"direct_role": "requester",
@@ -436,14 +445,16 @@ func TestVpcsPeeringsService_GetMembers(t *testing.T) {
 						"id": "759afe65-f9d5-408e-a4ac-c430dbbd6d35",
 						"vpc_id": "732d0b32-b9c0-44da-8766-72044e59ef12"
 					}
-				],
-				"status": "pending_route_table",
-				"vpc_peering_id": "866b0e4d-59d7-42e6-82d7-aa5fcb72360d"
+				]
 			}`,
 			statusCode: http.StatusOK,
-			check: func(t *testing.T, got *VpcsPeeringMembers) {
+			check: func(t *testing.T, got *VpcsPeering) {
 				assertEqual(t, "866b0e4d-59d7-42e6-82d7-aa5fcb72360d", got.ID)
+				assertEqual(t, "peering-prod-to-db", got.Name)
+				assertEqual(t, "desc", *got.Description)
 				assertEqual(t, VpcsPeeringStatusPendingRouteTable, got.Status)
+				assertEqual(t, true, time.Time(*got.CreatedAt).Equal(createdAt))
+				assertEqual(t, true, time.Time(*got.Updated).Equal(updated))
 				assertEqual(t, 2, len(got.Members))
 				assertEqual(t, "2ea7d752-c185-422b-9780-2d07109d8afe", got.Members[0].VpcID)
 				assertEqual(t, VpcsPeeringDirectRoleRequester, got.Members[0].DirectRole)
@@ -454,18 +465,18 @@ func TestVpcsPeeringsService_GetMembers(t *testing.T) {
 		{
 			name:       "status the SDK does not know yet",
 			peeringID:  "peering-3",
-			response:   `{"vpc_peering_id": "peering-3", "status": "some_future_status", "members": []}`,
+			response:   `{"id": "peering-3", "name": "peering", "status": "some_future_status", "members": []}`,
 			statusCode: http.StatusOK,
-			check: func(t *testing.T, got *VpcsPeeringMembers) {
+			check: func(t *testing.T, got *VpcsPeering) {
 				assertEqual(t, VpcsPeeringStatus("some_future_status"), got.Status)
 			},
 		},
 		{
 			name:       "peering being created has no members yet",
 			peeringID:  "peering-2",
-			response:   `{"vpc_peering_id": "peering-2", "status": "pending", "members": []}`,
+			response:   `{"id": "peering-2", "name": "peering", "status": "pending", "members": []}`,
 			statusCode: http.StatusOK,
-			check: func(t *testing.T, got *VpcsPeeringMembers) {
+			check: func(t *testing.T, got *VpcsPeering) {
 				assertEqual(t, VpcsPeeringStatusPending, got.Status)
 				assertEqual(t, 0, len(got.Members))
 			},
@@ -509,7 +520,7 @@ func TestVpcsPeeringsService_GetMembers(t *testing.T) {
 			defer server.Close()
 
 			client := testPeeringClient(server.URL)
-			got, err := client.GetMembers(context.Background(), tt.peeringID)
+			got, err := client.Get(context.Background(), tt.peeringID)
 
 			if tt.wantErr {
 				assertError(t, err)
@@ -522,11 +533,11 @@ func TestVpcsPeeringsService_GetMembers(t *testing.T) {
 	}
 }
 
-func TestVpcsPeeringsService_GetMembersValidation(t *testing.T) {
+func TestVpcsPeeringsService_GetValidation(t *testing.T) {
 	t.Parallel()
 
 	client := testPeeringClient("test")
-	_, err := client.GetMembers(context.Background(), "")
+	_, err := client.Get(context.Background(), "")
 
 	assertError(t, err)
 	assertEqual(t, "vpc_peering_id cannot be empty", err.Error())

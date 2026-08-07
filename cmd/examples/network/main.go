@@ -1123,7 +1123,7 @@ func getVpcsPeeringMembers(networkClient *network.NetworkClient, peeringID strin
 	ctx, cancel := getContext()
 	defer cancel()
 
-	peering, err := networkClient.VpcsPeerings().GetMembers(ctx, peeringID)
+	peering, err := networkClient.VpcsPeerings().Get(ctx, peeringID)
 	if err != nil {
 		log.Fatalf("❌ Failed to get the VPC peering members: %v", err)
 	}
