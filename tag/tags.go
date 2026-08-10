@@ -2,7 +2,6 @@ package tag
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -75,44 +74,12 @@ type (
 	}
 
 	// UpdateTagRequest represents the parameters for updating a tag.
-	// Fields left nil are not sent, and the API keeps their current value.
-	// Fields set to an empty value clear the current one.
 	UpdateTagRequest struct {
 		Description *string    `json:"description,omitempty"`
 		Color       *string    `json:"color,omitempty"`
 		Kinds       *[]TagKind `json:"kinds,omitempty"`
 	}
-
-	// updateTagPayload is the wire form of UpdateTagRequest, where a field to be
-	// cleared is null and a field to be kept is absent.
-	updateTagPayload struct {
-		Description any        `json:"description,omitempty"`
-		Color       any        `json:"color,omitempty"`
-		Kinds       *[]TagKind `json:"kinds,omitempty"`
-	}
 )
-
-// MarshalJSON encodes only the fields the caller set, sending the ones set to an
-// empty value as null, which is how the API clears them.
-func (r UpdateTagRequest) MarshalJSON() ([]byte, error) {
-	return json.Marshal(updateTagPayload{
-		Description: clearableString(r.Description),
-		Color:       clearableString(r.Color),
-		Kinds:       r.Kinds,
-	})
-}
-
-// clearableString maps an optional string of an update request to its wire form:
-// nil is left out of the body, and an empty string becomes null.
-func clearableString(value *string) any {
-	if value == nil {
-		return nil
-	}
-	if *value == "" {
-		return (*string)(nil)
-	}
-	return *value
-}
 
 // TagService provides methods for managing tags.
 // All operations in this service are performed against the global endpoint,

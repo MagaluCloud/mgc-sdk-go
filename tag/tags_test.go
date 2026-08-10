@@ -462,16 +462,6 @@ func TestTagService_Update(t *testing.T) {
 			wantBody: `{"description": "new description"}`,
 		},
 		{
-			name:     "empty description clears it",
-			req:      UpdateTagRequest{Description: helpers.StrPtr("")},
-			wantBody: `{"description": null}`,
-		},
-		{
-			name:     "empty color clears it",
-			req:      UpdateTagRequest{Color: helpers.StrPtr("")},
-			wantBody: `{"color": null}`,
-		},
-		{
 			name:     "empty kinds clears the list",
 			req:      UpdateTagRequest{Kinds: &[]TagKind{}},
 			wantBody: `{"kinds": []}`,
