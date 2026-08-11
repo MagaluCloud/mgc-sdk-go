@@ -12,16 +12,12 @@ import (
 )
 
 // VpcsPeeringStatus represents the lifecycle status of a VPC peering.
-// The API may return states beyond the constants below.
 type VpcsPeeringStatus string
 
 const (
 	VpcsPeeringStatusPending           VpcsPeeringStatus = "pending"
-	VpcsPeeringStatusPendingRouteTable VpcsPeeringStatus = "pending_route_table"
-	VpcsPeeringStatusProcessing        VpcsPeeringStatus = "processing"
+	VpcsPeeringStatusPendingRouteTable VpcsPeeringStatus = "pending_route"
 	VpcsPeeringStatusCreated           VpcsPeeringStatus = "created"
-	VpcsPeeringStatusUpdating          VpcsPeeringStatus = "updating"
-	VpcsPeeringStatusDeleting          VpcsPeeringStatus = "deleting"
 	VpcsPeeringStatusDeleted           VpcsPeeringStatus = "deleted"
 	VpcsPeeringStatusError             VpcsPeeringStatus = "error"
 )
@@ -44,7 +40,7 @@ type (
 
 	// VpcsPeering represents a peering connection between two VPCs.
 	VpcsPeering struct {
-		ID          string                          `json:"vpc_peering_id"`
+		ID          string                          `json:"id"`
 		Name        string                          `json:"name"`
 		Description *string                         `json:"description,omitempty"`
 		Status      VpcsPeeringStatus               `json:"status"`
@@ -88,7 +84,6 @@ type (
 	}
 
 	// VpcsPeeringsCreateVpcs identifies the two VPCs taking part in a peering.
-	// The requester asks for the connection and the accepter receives the invitation.
 	VpcsPeeringsCreateVpcs struct {
 		RequesterVpcID string `json:"requester_vpc_id"`
 		AccepterVpcID  string `json:"accepter_vpc_id"`
@@ -111,12 +106,12 @@ type (
 // VpcsPeeringsService defines operations for managing VPC peerings.
 type VpcsPeeringsService interface {
 	// List retrieves the peerings of the current tenant, optionally filtered by VPC
-	// and paginated through Limit and Offset. Meta.Page reports the totals.
+	// and pagination.
 	List(ctx context.Context, opts *ListVpcsPeeringsOptions) (*ListVpcsPeeringsResponse, error)
 	// ListAll retrieves all peerings of the current tenant, optionally filtered
 	// by VPC, automatically handling pagination.
 	ListAll(ctx context.Context, opts *ListAllVpcsPeeringsOptions) ([]VpcsPeering, error)
-	// Get retrieves the members of a peering and its current status.
+	// Get retrieves the members of a peering.
 	Get(ctx context.Context, peeringID string) (*VpcsPeering, error)
 	// Create requests a new peering between two VPCs.
 	Create(ctx context.Context, req VpcsPeeringsCreateRequest) (*VpcsPeeringsCreateResponse, error)
@@ -194,7 +189,7 @@ func (s *vpcsPeeringsService) ListAll(ctx context.Context, opts *ListAllVpcsPeer
 
 func (s *vpcsPeeringsService) Get(ctx context.Context, peeringID string) (*VpcsPeering, error) {
 	if peeringID == "" {
-		return nil, fmt.Errorf("vpc_peering_id cannot be empty")
+		return nil, fmt.Errorf("id cannot be empty")
 	}
 
 	return mgc_http.ExecuteSimpleRequestWithRespBody[VpcsPeering](
@@ -232,7 +227,7 @@ func (s *vpcsPeeringsService) Create(ctx context.Context, req VpcsPeeringsCreate
 
 func (s *vpcsPeeringsService) Delete(ctx context.Context, peeringID string) error {
 	if peeringID == "" {
-		return fmt.Errorf("vpc_peering_id cannot be empty")
+		return fmt.Errorf("id cannot be empty")
 	}
 
 	return mgc_http.ExecuteSimpleRequest(

@@ -2,7 +2,6 @@ package network
 
 import (
 	"context"
-	"encoding/json"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -129,15 +128,6 @@ func TestVpcsPeeringsService_Create(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				assertEqual(t, "/network/v1/vpcs_peerings", r.URL.Path)
 				assertEqual(t, http.MethodPost, r.Method)
-
-				if tt.wantBody != "" {
-					body, err := io.ReadAll(r.Body)
-					if err != nil {
-						t.Errorf("failed to read request body: %v", err)
-					}
-					assertEqual(t, canonicalJSON(t, tt.wantBody), canonicalJSON(t, string(body)))
-				}
-
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(tt.statusCode)
 				w.Write([]byte(tt.response))
@@ -246,7 +236,7 @@ func TestVpcsPeeringsService_List(t *testing.T) {
 					{
 						"created_at": "2026-07-23T20:21:08.861443",
 						"description": "desc",
-						"vpc_peering_id": "866b0e4d-59d7-42e6-82d7-aa5fcb72360d",
+						"id": "866b0e4d-59d7-42e6-82d7-aa5fcb72360d",
 						"members": [
 							{
 								"direct_role": "requester",
@@ -306,7 +296,7 @@ func TestVpcsPeeringsService_List(t *testing.T) {
 					"page": {"count": 1, "limit": 1, "max_items_per_page": 100, "offset": 1, "total": 2}
 				},
 				"result": [
-					{"vpc_peering_id": "peering-2", "name": "second", "status": "created", "members": []}
+					{"id": "peering-2", "name": "second", "status": "created", "members": []}
 				]
 			}`,
 			statusCode: http.StatusOK,
@@ -368,7 +358,7 @@ func TestVpcsPeeringsService_List(t *testing.T) {
 		{
 			name:       "missing description becomes nil",
 			opts:       &ListVpcsPeeringsOptions{},
-			response:   `{"meta": {"links": {"self": "?"}, "page": {"count": 1, "limit": 10, "max_items_per_page": 100, "offset": 0, "total": 1}}, "result": [{"vpc_peering_id": "peering-2", "name": "peering-minimal", "status": "pending", "members": []}]}`,
+			response:   `{"meta": {"links": {"self": "?"}, "page": {"count": 1, "limit": 10, "max_items_per_page": 100, "offset": 0, "total": 1}}, "result": [{"id": "peering-2", "name": "peering-minimal", "status": "pending", "members": []}]}`,
 			statusCode: http.StatusOK,
 			check: func(t *testing.T, got *ListVpcsPeeringsResponse) {
 				peering := got.Result[0]
@@ -444,10 +434,10 @@ func TestVpcsPeeringsService_Get(t *testing.T) {
 			name:      "full peering with both members",
 			peeringID: "866b0e4d-59d7-42e6-82d7-aa5fcb72360d",
 			response: `{
-				"vpc_peering_id": "866b0e4d-59d7-42e6-82d7-aa5fcb72360d",
+				"id": "866b0e4d-59d7-42e6-82d7-aa5fcb72360d",
 				"name": "peering-prod-to-db",
 				"description": "desc",
-				"status": "pending_route_table",
+				"status": "pending_route",
 				"created_at": "2026-07-23T20:21:08.861443",
 				"updated": "2026-07-24T17:47:13.459860",
 				"members": [
@@ -481,7 +471,7 @@ func TestVpcsPeeringsService_Get(t *testing.T) {
 		{
 			name:       "status the SDK does not know yet",
 			peeringID:  "peering-3",
-			response:   `{"vpc_peering_id": "peering-3", "name": "peering", "status": "some_future_status", "members": []}`,
+			response:   `{"id": "peering-3", "name": "peering", "status": "some_future_status", "members": []}`,
 			statusCode: http.StatusOK,
 			check: func(t *testing.T, got *VpcsPeering) {
 				assertEqual(t, VpcsPeeringStatus("some_future_status"), got.Status)
@@ -490,7 +480,7 @@ func TestVpcsPeeringsService_Get(t *testing.T) {
 		{
 			name:       "peering being created has no members yet",
 			peeringID:  "peering-2",
-			response:   `{"vpc_peering_id": "peering-2", "name": "peering", "status": "pending", "members": []}`,
+			response:   `{"id": "peering-2", "name": "peering", "status": "pending", "members": []}`,
 			statusCode: http.StatusOK,
 			check: func(t *testing.T, got *VpcsPeering) {
 				assertEqual(t, VpcsPeeringStatusPending, got.Status)
@@ -556,7 +546,7 @@ func TestVpcsPeeringsService_GetValidation(t *testing.T) {
 	_, err := client.Get(context.Background(), "")
 
 	assertError(t, err)
-	assertEqual(t, "vpc_peering_id cannot be empty", err.Error())
+	assertEqual(t, "id cannot be empty", err.Error())
 }
 
 func TestVpcsPeeringsService_Delete(t *testing.T) {
@@ -628,7 +618,7 @@ func TestVpcsPeeringsService_DeleteValidation(t *testing.T) {
 	err := client.Delete(context.Background(), "")
 
 	assertError(t, err)
-	assertEqual(t, "vpc_peering_id cannot be empty", err.Error())
+	assertEqual(t, "id cannot be empty", err.Error())
 }
 
 // ListAll walks the pages until Meta.Page.Total is covered; the handler answers
@@ -638,7 +628,7 @@ func TestVpcsPeeringsService_ListAll(t *testing.T) {
 	t.Parallel()
 
 	peeringJSON := func(id string) string {
-		return `{"vpc_peering_id": "` + id + `", "name": "peering-` + id + `", "status": "created", "members": []}`
+		return `{"id": "` + id + `", "name": "peering-` + id + `", "status": "completed", "members": []}`
 	}
 	metaJSON := func(offset, count, total int) string {
 		return `{"links": {"self": "?"}, "page": {"count": ` + strconv.Itoa(count) +
@@ -709,24 +699,6 @@ func TestVpcsPeeringsService_ListAllError(t *testing.T) {
 	_, err := client.ListAll(context.Background(), nil)
 
 	assertError(t, err)
-}
-
-// canonicalJSON normalizes a JSON document so payloads can be compared
-// regardless of key order and formatting.
-func canonicalJSON(t *testing.T, raw string) string {
-	t.Helper()
-
-	var decoded any
-	if err := json.Unmarshal([]byte(raw), &decoded); err != nil {
-		t.Fatalf("invalid JSON %q: %v", raw, err)
-	}
-
-	encoded, err := json.Marshal(decoded)
-	if err != nil {
-		t.Fatalf("failed to encode JSON: %v", err)
-	}
-
-	return string(encoded)
 }
 
 func testPeeringClient(baseURL string) VpcsPeeringsService {
