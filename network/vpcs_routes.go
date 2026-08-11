@@ -42,7 +42,7 @@ type (
 	}
 
 	VpcsRoutesCreateRequest struct {
-		//DEPRECATED, will be removed shortly
+		//DEPRECATED, use Targets instead
 		PortID          *string        `json:"port_id,omitempty"`
 		CIDRDestination string         `json:"cidr_destination"`
 		Description     *string        `json:"description"`

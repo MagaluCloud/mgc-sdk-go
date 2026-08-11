@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/url"
+	"strconv"
 
 	mgc_http "github.com/MagaluCloud/mgc-sdk-go/internal/http"
 	"github.com/MagaluCloud/mgc-sdk-go/internal/utils"
@@ -42,7 +44,7 @@ type (
 
 	// VpcsPeering represents a peering connection between two VPCs.
 	VpcsPeering struct {
-		ID          string                          `json:"id"`
+		ID          string                          `json:"vpc_peering_id"`
 		Name        string                          `json:"name"`
 		Description *string                         `json:"description,omitempty"`
 		Status      VpcsPeeringStatus               `json:"status"`
@@ -55,9 +57,19 @@ type (
 	// listing peerings.
 	ListVpcsPeeringsOptions struct {
 		// VpcID restricts the result to the peerings a given VPC takes part in.
-		VpcID  string
-		Limit  *int
-		Offset *int
+		VpcID string
+		// Defines the sorting in the format field:asc|desc.
+		//
+		// Default value: name:asc.
+		Sort string
+		// Page defines the page number (1-based).
+		//
+		// Default value: 1. Minimum value: 1.
+		Page *int
+		// ItemsPerPage defines the maximum number of items returned per page.
+		//
+		// Default value: 10. Minimum value: 1. Maximum value: 100.
+		ItemsPerPage *int
 	}
 
 	// ListAllVpcsPeeringsOptions represents the filters accepted when listing
@@ -65,6 +77,8 @@ type (
 	ListAllVpcsPeeringsOptions struct {
 		// VpcID restricts the result to the peerings a given VPC takes part in.
 		VpcID string
+		// Defines the sorting in the format field:asc|desc.
+		Sort string
 	}
 
 	// ListVpcsPeeringsResponse represents a peering listing response.
@@ -119,10 +133,19 @@ func (s *vpcsPeeringsService) List(ctx context.Context, opts *ListVpcsPeeringsOp
 		opts = &ListVpcsPeeringsOptions{}
 	}
 
-	query := makeListOptionsQuery(ListOptions{Limit: opts.Limit, Offset: opts.Offset})
+	query := make(url.Values)
 
 	if opts.VpcID != "" {
 		query.Set("vpc_id", opts.VpcID)
+	}
+	if opts.Sort != "" {
+		query.Set("sort", opts.Sort)
+	}
+	if opts.Page != nil {
+		query.Set("page", strconv.Itoa(*opts.Page))
+	}
+	if opts.ItemsPerPage != nil {
+		query.Set("items_per_page", strconv.Itoa(*opts.ItemsPerPage))
 	}
 
 	return mgc_http.ExecuteSimpleRequestWithRespBody[ListVpcsPeeringsResponse](
@@ -142,15 +165,16 @@ func (s *vpcsPeeringsService) ListAll(ctx context.Context, opts *ListAllVpcsPeer
 	}
 
 	allPeerings := []VpcsPeering{}
-	offset := 0
-	limit := 100
+	page := 1
+	itemsPerPage := 100
 
 	for {
-		currentOffset := offset
+		currentPage := page
 		resp, err := s.List(ctx, &ListVpcsPeeringsOptions{
-			VpcID:  opts.VpcID,
-			Limit:  &limit,
-			Offset: &currentOffset,
+			VpcID:        opts.VpcID,
+			Sort:         opts.Sort,
+			Page:         &currentPage,
+			ItemsPerPage: &itemsPerPage,
 		})
 		if err != nil {
 			return nil, err
@@ -158,10 +182,11 @@ func (s *vpcsPeeringsService) ListAll(ctx context.Context, opts *ListAllVpcsPeer
 
 		allPeerings = append(allPeerings, resp.Result...)
 
-		offset += limit
-		if offset >= resp.Meta.Page.Total {
+		if page*itemsPerPage >= resp.Meta.Page.Total {
 			break
 		}
+
+		page++
 	}
 
 	return allPeerings, nil

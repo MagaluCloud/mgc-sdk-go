@@ -246,7 +246,7 @@ func TestVpcsPeeringsService_List(t *testing.T) {
 					{
 						"created_at": "2026-07-23T20:21:08.861443",
 						"description": "desc",
-						"id": "866b0e4d-59d7-42e6-82d7-aa5fcb72360d",
+						"vpc_peering_id": "866b0e4d-59d7-42e6-82d7-aa5fcb72360d",
 						"members": [
 							{
 								"direct_role": "requester",
@@ -292,10 +292,10 @@ func TestVpcsPeeringsService_List(t *testing.T) {
 		{
 			name: "second page of peerings",
 			opts: &ListVpcsPeeringsOptions{
-				Limit:  helpers.IntPtr(1),
-				Offset: helpers.IntPtr(1),
+				Page:         helpers.IntPtr(2),
+				ItemsPerPage: helpers.IntPtr(1),
 			},
-			wantQuery: map[string]string{"_limit": "1", "_offset": "1"},
+			wantQuery: map[string]string{"page": "2", "items_per_page": "1"},
 			response: `{
 				"meta": {
 					"links": {
@@ -306,7 +306,7 @@ func TestVpcsPeeringsService_List(t *testing.T) {
 					"page": {"count": 1, "limit": 1, "max_items_per_page": 100, "offset": 1, "total": 2}
 				},
 				"result": [
-					{"id": "peering-2", "name": "second", "status": "created", "members": []}
+					{"vpc_peering_id": "peering-2", "name": "second", "status": "created", "members": []}
 				]
 			}`,
 			statusCode: http.StatusOK,
@@ -335,6 +335,22 @@ func TestVpcsPeeringsService_List(t *testing.T) {
 			},
 		},
 		{
+			name:      "peerings sorted by name",
+			opts:      &ListVpcsPeeringsOptions{Sort: "name:desc"},
+			wantQuery: map[string]string{"sort": "name:desc"},
+			response: `{
+				"meta": {
+					"links": {"self": "?_offset=0&_limit=10"},
+					"page": {"count": 0, "limit": 10, "max_items_per_page": 100, "offset": 0, "total": 0}
+				},
+				"result": []
+			}`,
+			statusCode: http.StatusOK,
+			check: func(t *testing.T, got *ListVpcsPeeringsResponse) {
+				assertEqual(t, 0, len(got.Result))
+			},
+		},
+		{
 			name: "no filter options",
 			opts: nil,
 			response: `{
@@ -352,7 +368,7 @@ func TestVpcsPeeringsService_List(t *testing.T) {
 		{
 			name:       "missing description becomes nil",
 			opts:       &ListVpcsPeeringsOptions{},
-			response:   `{"meta": {"links": {"self": "?"}, "page": {"count": 1, "limit": 10, "max_items_per_page": 100, "offset": 0, "total": 1}}, "result": [{"id": "peering-2", "name": "peering-minimal", "status": "pending", "members": []}]}`,
+			response:   `{"meta": {"links": {"self": "?"}, "page": {"count": 1, "limit": 10, "max_items_per_page": 100, "offset": 0, "total": 1}}, "result": [{"vpc_peering_id": "peering-2", "name": "peering-minimal", "status": "pending", "members": []}]}`,
 			statusCode: http.StatusOK,
 			check: func(t *testing.T, got *ListVpcsPeeringsResponse) {
 				peering := got.Result[0]
@@ -428,7 +444,7 @@ func TestVpcsPeeringsService_Get(t *testing.T) {
 			name:      "full peering with both members",
 			peeringID: "866b0e4d-59d7-42e6-82d7-aa5fcb72360d",
 			response: `{
-				"id": "866b0e4d-59d7-42e6-82d7-aa5fcb72360d",
+				"vpc_peering_id": "866b0e4d-59d7-42e6-82d7-aa5fcb72360d",
 				"name": "peering-prod-to-db",
 				"description": "desc",
 				"status": "pending_route_table",
@@ -465,7 +481,7 @@ func TestVpcsPeeringsService_Get(t *testing.T) {
 		{
 			name:       "status the SDK does not know yet",
 			peeringID:  "peering-3",
-			response:   `{"id": "peering-3", "name": "peering", "status": "some_future_status", "members": []}`,
+			response:   `{"vpc_peering_id": "peering-3", "name": "peering", "status": "some_future_status", "members": []}`,
 			statusCode: http.StatusOK,
 			check: func(t *testing.T, got *VpcsPeering) {
 				assertEqual(t, VpcsPeeringStatus("some_future_status"), got.Status)
@@ -474,7 +490,7 @@ func TestVpcsPeeringsService_Get(t *testing.T) {
 		{
 			name:       "peering being created has no members yet",
 			peeringID:  "peering-2",
-			response:   `{"id": "peering-2", "name": "peering", "status": "pending", "members": []}`,
+			response:   `{"vpc_peering_id": "peering-2", "name": "peering", "status": "pending", "members": []}`,
 			statusCode: http.StatusOK,
 			check: func(t *testing.T, got *VpcsPeering) {
 				assertEqual(t, VpcsPeeringStatusPending, got.Status)
@@ -615,14 +631,14 @@ func TestVpcsPeeringsService_DeleteValidation(t *testing.T) {
 	assertEqual(t, "vpc_peering_id cannot be empty", err.Error())
 }
 
-// ListAll pages with _offset until Meta.Page.Total is covered; the handler
-// answers each offset with a distinct result so a page fetched twice, skipped
-// or out of order fails the assertions.
+// ListAll walks the pages until Meta.Page.Total is covered; the handler answers
+// each page with a distinct result so a page fetched twice, skipped or out of
+// order fails the assertions.
 func TestVpcsPeeringsService_ListAll(t *testing.T) {
 	t.Parallel()
 
 	peeringJSON := func(id string) string {
-		return `{"id": "` + id + `", "name": "peering-` + id + `", "status": "created", "members": []}`
+		return `{"vpc_peering_id": "` + id + `", "name": "peering-` + id + `", "status": "created", "members": []}`
 	}
 	metaJSON := func(offset, count, total int) string {
 		return `{"links": {"self": "?"}, "page": {"count": ` + strconv.Itoa(count) +
@@ -633,24 +649,25 @@ func TestVpcsPeeringsService_ListAll(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assertEqual(t, "/network/v1/vpcs_peerings", r.URL.Path)
 		assertEqual(t, "vpc-1", r.URL.Query().Get("vpc_id"))
-		assertEqual(t, "100", r.URL.Query().Get("_limit"))
+		assertEqual(t, "name:desc", r.URL.Query().Get("sort"))
+		assertEqual(t, "100", r.URL.Query().Get("items_per_page"))
 
 		w.Header().Set("Content-Type", "application/json")
 
-		switch r.URL.Query().Get("_offset") {
-		case "0":
+		switch r.URL.Query().Get("page") {
+		case "1":
 			io.WriteString(w, `{"meta": `+metaJSON(0, 2, 102)+`, "result": [`+peeringJSON("peering-1")+`, `+peeringJSON("peering-2")+`]}`)
-		case "100":
+		case "2":
 			io.WriteString(w, `{"meta": `+metaJSON(100, 1, 102)+`, "result": [`+peeringJSON("peering-3")+`]}`)
 		default:
-			t.Errorf("unexpected offset %q", r.URL.Query().Get("_offset"))
+			t.Errorf("unexpected page %q", r.URL.Query().Get("page"))
 			w.WriteHeader(http.StatusBadRequest)
 		}
 	}))
 	defer server.Close()
 
 	client := testPeeringClient(server.URL)
-	got, err := client.ListAll(context.Background(), &ListAllVpcsPeeringsOptions{VpcID: "vpc-1"})
+	got, err := client.ListAll(context.Background(), &ListAllVpcsPeeringsOptions{VpcID: "vpc-1", Sort: "name:desc"})
 
 	assertNoError(t, err)
 	assertEqual(t, 3, len(got))

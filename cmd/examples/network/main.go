@@ -1140,8 +1140,9 @@ func listVpcsPeerings(networkClient *network.NetworkClient) {
 	defer cancel()
 
 	peerings, err := networkClient.VpcsPeerings().List(ctx, &network.ListVpcsPeeringsOptions{
-		Limit:  helpers.IntPtr(10),
-		Offset: helpers.IntPtr(0),
+		Sort:         "name:asc",
+		Page:         helpers.IntPtr(1),
+		ItemsPerPage: helpers.IntPtr(10),
 	})
 	if err != nil {
 		log.Fatalf("❌ Failed to list the VPC peerings: %v", err)
