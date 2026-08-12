@@ -2,6 +2,7 @@ package network
 
 import (
 	"context"
+	"encoding/json"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -128,6 +129,13 @@ func TestVpcsPeeringsService_Create(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				assertEqual(t, "/network/v1/vpcs_peerings", r.URL.Path)
 				assertEqual(t, http.MethodPost, r.Method)
+				if tt.wantBody != "" {
+					body, err := io.ReadAll(r.Body)
+					if err != nil {
+						t.Errorf("failed to read request body: %v", err)
+					}
+					assertEqual(t, canonicalJSON(t, tt.wantBody), canonicalJSON(t, string(body)))
+				}
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(tt.statusCode)
 				w.Write([]byte(tt.response))
@@ -709,4 +717,20 @@ func testPeeringClient(baseURL string) VpcsPeeringsService {
 		client.WithHTTPClient(httpClient))
 
 	return New(core).VpcsPeerings()
+}
+
+func canonicalJSON(t *testing.T, raw string) string {
+	t.Helper()
+
+	var decoded any
+	if err := json.Unmarshal([]byte(raw), &decoded); err != nil {
+		t.Fatalf("invalid JSON %q: %v", raw, err)
+	}
+
+	encoded, err := json.Marshal(decoded)
+	if err != nil {
+		t.Fatalf("failed to encode JSON: %v", err)
+	}
+
+	return string(encoded)
 }
