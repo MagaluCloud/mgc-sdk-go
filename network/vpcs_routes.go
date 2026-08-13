@@ -42,8 +42,6 @@ type (
 	}
 
 	VpcsRoutesCreateRequest struct {
-		//DEPRECATED, use Targets instead
-		PortID          *string        `json:"port_id,omitempty"`
 		CIDRDestination string         `json:"cidr_destination"`
 		Description     *string        `json:"description"`
 		Targets         TargetsRequest `json:"targets"`
@@ -208,11 +206,6 @@ func (s *vpcsRoutesService) Get(ctx context.Context, vpcID, routeID string) (*Vp
 func (s *vpcsRoutesService) Create(ctx context.Context, vpcID string, req VpcsRoutesCreateRequest) (*VpcsRoutesCreateResponse, error) {
 	if req.Targets.ID == "" || req.Targets.Type == "" {
 		return nil, fmt.Errorf("targets id and type cannot be empty")
-	}
-
-	//This is a temporary adjustment and should be removed soon.
-	if req.Targets.Type == "port_id" {
-		req.PortID = &req.Targets.ID
 	}
 
 	if req.CIDRDestination == "" {
