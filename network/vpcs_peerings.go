@@ -20,6 +20,7 @@ const (
 	VpcsPeeringStatusCreated           VpcsPeeringStatus = "created"
 	VpcsPeeringStatusDeleted           VpcsPeeringStatus = "deleted"
 	VpcsPeeringStatusError             VpcsPeeringStatus = "error"
+	VpcsPeeringStatusCompleted         VpcsPeeringStatus = "completed"
 )
 
 // VpcsPeeringDirectRole represents the side a VPC takes in a peering.
