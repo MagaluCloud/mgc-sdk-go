@@ -1308,8 +1308,11 @@ func TestRouteService_Create(t *testing.T) {
 			name:  "successful create",
 			vpcID: "vpc-1",
 			body: VpcsRoutesCreateRequest{
-				PortID:          "port-1",
 				CIDRDestination: "192.168.1.1",
+				Targets: TargetsRequest{
+					ID:   "port-1",
+					Type: "port",
+				},
 			},
 			response: `{
 				"id": "route-1",
@@ -1326,9 +1329,12 @@ func TestRouteService_Create(t *testing.T) {
 			name:  "successful create with description",
 			vpcID: "vpc-1",
 			body: VpcsRoutesCreateRequest{
-				PortID:          "port-1",
 				CIDRDestination: "192.168.1.1",
 				Description:     helpers.StrPtr("Description"),
+				Targets: TargetsRequest{
+					ID:   "port-1",
+					Type: "port",
+				},
 			},
 			response: `{
 				"id": "route-1",
@@ -1345,8 +1351,11 @@ func TestRouteService_Create(t *testing.T) {
 			name:  "non-existent vpc id",
 			vpcID: "invalid",
 			body: VpcsRoutesCreateRequest{
-				PortID:          "port-1",
 				CIDRDestination: "192.168.1.1",
+				Targets: TargetsRequest{
+					ID:   "port-1",
+					Type: "port",
+				},
 			},
 			response:   `{"error": "vpc id not found"}`,
 			statusCode: http.StatusNotFound,
@@ -1356,8 +1365,11 @@ func TestRouteService_Create(t *testing.T) {
 			name:  "server error",
 			vpcID: "vpc-1",
 			body: VpcsRoutesCreateRequest{
-				PortID:          "port-1",
 				CIDRDestination: "192.168.1.1",
+				Targets: TargetsRequest{
+					ID:   "port-1",
+					Type: "port",
+				},
 			},
 			response:   `{"error": "internal server error"}`,
 			statusCode: http.StatusInternalServerError,
@@ -1378,7 +1390,8 @@ func TestRouteService_Create(t *testing.T) {
 				assertNoError(t, err)
 
 				assertEqual(t, tt.body.CIDRDestination, req.CIDRDestination)
-				assertEqual(t, tt.body.PortID, req.PortID)
+				assertEqual(t, tt.body.Targets.ID, req.Targets.ID)
+				assertEqual(t, tt.body.Targets.Type, req.Targets.Type)
 
 				if tt.body.Description != nil {
 					assertEqual(t, *tt.body.Description, *req.Description)
@@ -1416,16 +1429,39 @@ func TestRouteService_Create_InvalidBody(t *testing.T) {
 		err  string
 	}{
 		{
-			name: "empty port_id",
+			name: "empty targets",
 			body: VpcsRoutesCreateRequest{
 				CIDRDestination: "192.168.1.1",
 			},
-			err: "port_id cannot be empty",
+			err: "targets id and type cannot be empty",
+		},
+		{
+			name: "empty targets id",
+			body: VpcsRoutesCreateRequest{
+				CIDRDestination: "192.168.1.1",
+				Targets: TargetsRequest{
+					Type: "port",
+				},
+			},
+			err: "targets id and type cannot be empty",
+		},
+		{
+			name: "empty targets type",
+			body: VpcsRoutesCreateRequest{
+				CIDRDestination: "192.168.1.1",
+				Targets: TargetsRequest{
+					ID: "port-1",
+				},
+			},
+			err: "targets id and type cannot be empty",
 		},
 		{
 			name: "empty cidr_destination",
 			body: VpcsRoutesCreateRequest{
-				PortID: "port-1",
+				Targets: TargetsRequest{
+					ID:   "port-1",
+					Type: "port",
+				},
 			},
 			err: "cidr_destination cannot be empty",
 		},

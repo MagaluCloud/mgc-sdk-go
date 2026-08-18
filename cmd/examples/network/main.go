@@ -49,6 +49,9 @@ func main() {
 
 	fmt.Println("\n=== Routes Examples ===")
 	demoRoutesOperations(networkClient)
+
+	fmt.Println("\n=== VPC Peering Examples ===")
+	demoVpcsPeeringsOperations(networkClient)
 }
 
 func createNetworkClient() *network.NetworkClient {
@@ -950,9 +953,12 @@ func createRoute(networkClient *network.NetworkClient, vpcID string) string {
 	defer cancel()
 
 	route, err := networkClient.VpcsRoutes().Create(ctx, vpcID, network.VpcsRoutesCreateRequest{
-		PortID:          "your-port-id",
 		CIDRDestination: "172.20.0.0/16",
 		Description:     helpers.StrPtr("Route description"),
+		Targets: network.TargetsRequest{
+			ID:   "your-port-id",
+			Type: "port_id",
+		},
 	})
 	if err != nil {
 		log.Fatalf("❌ Failed to create a new route: %v", err)
@@ -1063,4 +1069,160 @@ func deleteRoute(networkClient *network.NetworkClient, vpcID string, routeID str
 	}
 
 	fmt.Println("✅ Route successfully deleted!")
+}
+
+func demoVpcsPeeringsOperations(networkClient *network.NetworkClient) {
+	requesterVpcID := "your-requester-vpc-id"
+	accepterVpcID := "your-accepter-vpc-id"
+
+	fmt.Println()
+	fmt.Println("--- CREATING VPC PEERING ---")
+	peeringID := createVpcsPeering(networkClient, requesterVpcID, accepterVpcID)
+
+	fmt.Println()
+	fmt.Println("--- GETTING VPC PEERING MEMBERS ---")
+	getVpcsPeeringMembers(networkClient, peeringID)
+
+	fmt.Println()
+	fmt.Println("--- LISTING VPC PEERINGS ---")
+	listVpcsPeerings(networkClient)
+
+	fmt.Println()
+	fmt.Println("--- LISTING VPC PEERINGS OF A VPC ---")
+	listVpcsPeeringsByVpc(networkClient, requesterVpcID)
+
+	fmt.Println()
+	fmt.Println("--- DELETING VPC PEERING ---")
+	deleteVpcsPeering(networkClient, peeringID)
+}
+
+func createVpcsPeering(networkClient *network.NetworkClient, requesterVpcID, accepterVpcID string) string {
+	ctx, cancel := getContext()
+	defer cancel()
+
+	peering, err := networkClient.VpcsPeerings().Create(ctx, network.VpcsPeeringsCreateRequest{
+		Name:        "peering-example",
+		Description: helpers.StrPtr("Peering description"),
+		VPCs: network.VpcsPeeringsCreateVpcs{
+			RequesterVpcID: requesterVpcID,
+			AccepterVpcID:  accepterVpcID,
+		},
+	})
+	if err != nil {
+		log.Fatalf("❌ Failed to create a new VPC peering: %v", err)
+	}
+
+	fmt.Println("✅ Created VPC peering:")
+	fmt.Printf("  ID: %s\n", peering.ID)
+	fmt.Printf("  Status: %s\n", peering.Status)
+
+	return peering.ID
+}
+
+func getVpcsPeeringMembers(networkClient *network.NetworkClient, peeringID string) {
+	ctx, cancel := getContext()
+	defer cancel()
+
+	peering, err := networkClient.VpcsPeerings().Get(ctx, peeringID)
+	if err != nil {
+		log.Fatalf("❌ Failed to get the VPC peering members: %v", err)
+	}
+
+	fmt.Println("✅ VPC peering info:")
+	fmt.Printf("  ID: %s\n", peering.ID)
+	fmt.Printf("  Status: %s\n", peering.Status)
+
+	printVpcsPeeringMembers(peering.Members)
+}
+
+func listVpcsPeerings(networkClient *network.NetworkClient) {
+	ctx, cancel := getContext()
+	defer cancel()
+
+	peerings, err := networkClient.VpcsPeerings().List(ctx, &network.ListVpcsPeeringsOptions{
+		Sort:         "name:asc",
+		Page:         helpers.IntPtr(1),
+		ItemsPerPage: helpers.IntPtr(10),
+	})
+	if err != nil {
+		log.Fatalf("❌ Failed to list the VPC peerings: %v", err)
+	}
+
+	fmt.Println("✅ VPC peerings:")
+
+	fmt.Println("Meta Links")
+	if peerings.Meta.Links.Next != nil {
+		fmt.Printf("  Next: %s\n", *peerings.Meta.Links.Next)
+	}
+	if peerings.Meta.Links.Previous != nil {
+		fmt.Printf("  Previous: %s\n", *peerings.Meta.Links.Previous)
+	}
+	fmt.Printf("  Self: %s\n", peerings.Meta.Links.Self)
+
+	fmt.Println("Meta Page")
+	fmt.Printf("  Count: %d\n", peerings.Meta.Page.Count)
+	fmt.Printf("  Max Items Per Page: %d\n", peerings.Meta.Page.MaxItemsPerPage)
+	fmt.Printf("  Limit: %d\n", peerings.Meta.Page.Limit)
+	fmt.Printf("  Offset: %d\n", peerings.Meta.Page.Offset)
+	fmt.Printf("  Total: %d\n", peerings.Meta.Page.Total)
+
+	for _, peering := range peerings.Result {
+		printVpcsPeering(peering)
+	}
+}
+
+func listVpcsPeeringsByVpc(networkClient *network.NetworkClient, vpcID string) {
+	ctx, cancel := getContext()
+	defer cancel()
+
+	peerings, err := networkClient.VpcsPeerings().List(ctx, &network.ListVpcsPeeringsOptions{
+		VpcID: vpcID,
+	})
+	if err != nil {
+		log.Fatalf("❌ Failed to list the VPC peerings of the VPC: %v", err)
+	}
+
+	fmt.Printf("✅ VPC peerings of the VPC %s:\n", vpcID)
+
+	for _, peering := range peerings.Result {
+		printVpcsPeering(peering)
+	}
+}
+
+func deleteVpcsPeering(networkClient *network.NetworkClient, peeringID string) {
+	ctx, cancel := getContext()
+	defer cancel()
+
+	err := networkClient.VpcsPeerings().Delete(ctx, peeringID)
+	if err != nil {
+		log.Fatalf("❌ Failed to delete the VPC peering: %v", err)
+	}
+
+	fmt.Println("✅ VPC peering successfully deleted!")
+}
+
+func printVpcsPeering(peering network.VpcsPeering) {
+	fmt.Printf("VPC Peering %s:\n", peering.ID)
+	fmt.Printf("  Name: %s\n", peering.Name)
+	if peering.Description != nil {
+		fmt.Printf("  Description: %s\n", *peering.Description)
+	}
+	fmt.Printf("  Status: %s\n", peering.Status)
+	if peering.CreatedAt != nil {
+		fmt.Printf("  Created At: %s\n", time.Time(*peering.CreatedAt).Format(time.RFC3339))
+	}
+	if peering.Updated != nil {
+		fmt.Printf("  Updated: %s\n", time.Time(*peering.Updated).Format(time.RFC3339))
+	}
+
+	printVpcsPeeringMembers(peering.Members)
+}
+
+func printVpcsPeeringMembers(members []network.VpcsPeeringMember) {
+	fmt.Println("  Members:")
+	for _, member := range members {
+		fmt.Printf("    ID: %s\n", member.ID)
+		fmt.Printf("    Vpc ID: %s\n", member.VpcID)
+		fmt.Printf("    Direct Role: %s\n", member.DirectRole)
+	}
 }
