@@ -2,6 +2,7 @@ package lbaas
 
 import (
 	"context"
+	"github.com/MagaluCloud/mgc-sdk-go/client"
 	"net/http"
 
 	mgc_http "github.com/MagaluCloud/mgc-sdk-go/internal/http"
@@ -19,9 +20,9 @@ type (
 
 	// NetworkBackendTargetService provides methods for managing backend targets
 	NetworkBackendTargetService interface {
-		Create(ctx context.Context, lbID, backendID string, req CreateNetworkBackendTargetRequest) (string, error)
-		Replace(ctx context.Context, lbID, backendID string, req CreateNetworkBackendTargetRequest) (string, error)
-		Delete(ctx context.Context, lbID, backendID, targetID string) error
+		Create(ctx context.Context, callOpts client.CallOptions, lbID, backendID string, req CreateNetworkBackendTargetRequest) (string, error)
+		Replace(ctx context.Context, callOpts client.CallOptions, lbID, backendID string, req CreateNetworkBackendTargetRequest) (string, error)
+		Delete(ctx context.Context, callOpts client.CallOptions, lbID, backendID, targetID string) error
 	}
 
 	// networkBackendTargetService implements the NetworkBackendTargetService interface
@@ -31,10 +32,10 @@ type (
 )
 
 // Create adds new targets to a backend
-func (s *networkBackendTargetService) Create(ctx context.Context, lbID, backendID string, req CreateNetworkBackendTargetRequest) (string, error) {
+func (s *networkBackendTargetService) Create(ctx context.Context, callOpts client.CallOptions, lbID, backendID string, req CreateNetworkBackendTargetRequest) (string, error) {
 	path := urlNetworkLoadBalancer(&lbID, backends, backendID, targets)
 
-	httpReq, err := s.client.newRequest(ctx, http.MethodPost, path, req)
+	httpReq, err := s.client.newRequest(ctx, callOpts, http.MethodPost, path, req)
 	if err != nil {
 		return "", err
 	}
@@ -50,10 +51,10 @@ func (s *networkBackendTargetService) Create(ctx context.Context, lbID, backendI
 }
 
 // Replace replaces all targets in a backend
-func (s *networkBackendTargetService) Replace(ctx context.Context, lbID, backendID string, req CreateNetworkBackendTargetRequest) (string, error) {
+func (s *networkBackendTargetService) Replace(ctx context.Context, callOpts client.CallOptions, lbID, backendID string, req CreateNetworkBackendTargetRequest) (string, error) {
 	path := urlNetworkLoadBalancer(&lbID, backends, backendID, targets)
 
-	httpReq, err := s.client.newRequest(ctx, http.MethodPut, path, req)
+	httpReq, err := s.client.newRequest(ctx, callOpts, http.MethodPut, path, req)
 	if err != nil {
 		return "", err
 	}
@@ -69,10 +70,10 @@ func (s *networkBackendTargetService) Replace(ctx context.Context, lbID, backend
 }
 
 // Delete removes a target from a backend
-func (s *networkBackendTargetService) Delete(ctx context.Context, lbID, backendID, targetID string) error {
+func (s *networkBackendTargetService) Delete(ctx context.Context, callOpts client.CallOptions, lbID, backendID, targetID string) error {
 	path := urlNetworkLoadBalancer(&lbID, backends, backendID, targets, targetID)
 
-	httpReq, err := s.client.newRequest(ctx, http.MethodDelete, path, nil)
+	httpReq, err := s.client.newRequest(ctx, callOpts, http.MethodDelete, path, nil)
 	if err != nil {
 		return err
 	}

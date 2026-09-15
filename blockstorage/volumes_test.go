@@ -108,8 +108,8 @@ func TestVolumeService_List(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := testClient(server.URL)
-			resp, err := client.List(context.Background(), tt.opts)
+			c := testClient(server.URL)
+			resp, err := c.List(context.Background(), client.CallOptions{}, tt.opts)
 
 			if tt.wantErr {
 				assertError(t, err)
@@ -180,8 +180,8 @@ func TestVolumeService_Create(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := testClient(server.URL)
-			id, err := client.Create(context.Background(), tt.request)
+			c := testClient(server.URL)
+			id, err := c.Create(context.Background(), client.CallOptions{}, tt.request)
 
 			if tt.wantErr {
 				assertError(t, err)
@@ -278,8 +278,8 @@ func TestVolumeService_Get(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := testClient(server.URL)
-			volume, err := client.Get(context.Background(), tt.id, tt.expand)
+			c := testClient(server.URL)
+			volume, err := c.Get(context.Background(), client.CallOptions{}, tt.id, tt.expand)
 
 			if tt.wantErr {
 				assertError(t, err)
@@ -338,8 +338,8 @@ func TestVolumeService_Delete(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := testClient(server.URL)
-			err := client.Delete(context.Background(), tt.id)
+			c := testClient(server.URL)
+			err := c.Delete(context.Background(), client.CallOptions{}, tt.id)
 
 			if tt.wantErr {
 				assertError(t, err)
@@ -400,8 +400,8 @@ func TestVolumeService_Rename(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := testClient(server.URL)
-			err := client.Rename(context.Background(), tt.id, tt.newName)
+			c := testClient(server.URL)
+			err := c.Rename(context.Background(), client.CallOptions{}, tt.id, tt.newName)
 
 			if tt.wantErr {
 				assertError(t, err)
@@ -457,8 +457,8 @@ func TestVolumeService_Extend(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := testClient(server.URL)
-			err := client.Extend(context.Background(), tt.id, tt.request)
+			c := testClient(server.URL)
+			err := c.Extend(context.Background(), client.CallOptions{}, tt.id, tt.request)
 
 			if tt.wantErr {
 				assertError(t, err)
@@ -510,8 +510,8 @@ func TestVolumeService_Retype(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := testClient(server.URL)
-			err := client.Retype(context.Background(), tt.id, tt.request)
+			c := testClient(server.URL)
+			err := c.Retype(context.Background(), client.CallOptions{}, tt.id, tt.request)
 
 			if tt.wantErr {
 				assertError(t, err)
@@ -581,13 +581,13 @@ func TestVolumeService_AttachDetach(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := testClient(server.URL)
+			c := testClient(server.URL)
 			var err error
 
 			if tt.method == "Attach" {
-				err = client.Attach(context.Background(), tt.volumeID, tt.instanceID)
+				err = c.Attach(context.Background(), client.CallOptions{}, tt.volumeID, tt.instanceID)
 			} else {
-				err = client.Detach(context.Background(), tt.volumeID)
+				err = c.Detach(context.Background(), client.CallOptions{}, tt.volumeID)
 			}
 
 			if tt.wantErr {
@@ -640,8 +640,8 @@ func TestVolumeService_ListAll(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := testClient(server.URL)
-			volumes, err := client.ListAll(context.Background(), VolumeFilterOptions{})
+			c := testClient(server.URL)
+			volumes, err := c.ListAll(context.Background(), client.CallOptions{}, VolumeFilterOptions{})
 
 			if tt.wantErr {
 				assertError(t, err)
@@ -697,8 +697,8 @@ func TestVolumeService_ListAll_MultiplePagesWithPagination(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := testClient(server.URL)
-	volumes, err := client.ListAll(context.Background(), VolumeFilterOptions{})
+	c := testClient(server.URL)
+	volumes, err := c.ListAll(context.Background(), client.CallOptions{}, VolumeFilterOptions{})
 
 	assertNoError(t, err)
 
@@ -776,8 +776,8 @@ func TestVolumeService_ListAll_WithExpand(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := testClient(server.URL)
-	volumes, err := client.ListAll(context.Background(), VolumeFilterOptions{
+	c := testClient(server.URL)
+	volumes, err := c.ListAll(context.Background(), client.CallOptions{}, VolumeFilterOptions{
 		Expand: []VolumeExpand{VolumeTypeExpand, VolumeAttachExpand},
 	})
 

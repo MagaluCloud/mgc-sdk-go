@@ -167,8 +167,8 @@ func TestNetworkLoadBalancerService_Create(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := testLoadBalancerClient(server.URL)
-			id, err := client.Create(context.Background(), tt.request)
+			c := testLoadBalancerClient(server.URL)
+			id, err := c.Create(context.Background(), client.CallOptions{}, tt.request)
 
 			if tt.wantErr {
 				assertError(t, err)
@@ -310,8 +310,8 @@ func TestNetworkLoadBalancerService_Get(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := testLoadBalancerClient(server.URL)
-			lb, err := client.Get(context.Background(), tt.lbID)
+			c := testLoadBalancerClient(server.URL)
+			lb, err := c.Get(context.Background(), client.CallOptions{}, tt.lbID)
 
 			if tt.wantErr {
 				assertError(t, err)
@@ -400,8 +400,8 @@ func TestNetworkLoadBalancerService_List(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := testLoadBalancerClient(server.URL)
-			resp, err := client.List(context.Background(), ListNetworkLoadBalancerRequest{})
+			c := testLoadBalancerClient(server.URL)
+			resp, err := c.List(context.Background(), client.CallOptions{}, ListNetworkLoadBalancerRequest{})
 
 			if tt.wantErr {
 				assertError(t, err)
@@ -497,8 +497,8 @@ func TestNetworkLoadBalancerService_ListWithPagination(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := testLoadBalancerClient(server.URL)
-			resp, err := client.List(context.Background(), tt.request)
+			c := testLoadBalancerClient(server.URL)
+			resp, err := c.List(context.Background(), client.CallOptions{}, tt.request)
 
 			if tt.wantErr {
 				assertError(t, err)
@@ -658,8 +658,8 @@ func TestNetworkLoadBalancerService_ListAll(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := testLoadBalancerClient(server.URL)
-			loadBalancers, err := client.ListAll(context.Background())
+			c := testLoadBalancerClient(server.URL)
+			loadBalancers, err := c.ListAll(context.Background(), client.CallOptions{})
 
 			if tt.wantErr {
 				assertError(t, err)
@@ -783,8 +783,8 @@ func TestNetworkLoadBalancerService_Update(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := testLoadBalancerClient(server.URL)
-			id, err := client.Update(context.Background(), tt.lbID, tt.request)
+			c := testLoadBalancerClient(server.URL)
+			id, err := c.Update(context.Background(), client.CallOptions{}, tt.lbID, tt.request)
 
 			if tt.wantErr {
 				assertError(t, err)
@@ -891,8 +891,8 @@ func TestNetworkLoadBalancerService_Delete(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := testLoadBalancerClient(server.URL)
-			err := client.Delete(context.Background(), tt.lbID, tt.request)
+			c := testLoadBalancerClient(server.URL)
+			err := c.Delete(context.Background(), client.CallOptions{}, tt.lbID, tt.request)
 
 			if tt.wantErr {
 				assertError(t, err)
@@ -929,14 +929,14 @@ func TestNetworkLoadBalancerService_ContextCancellation(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := testLoadBalancerClient(server.URL)
+	c := testLoadBalancerClient(server.URL)
 
 	// Test context cancellation for Create
 	t.Run("Create with cancelled context", func(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())
 		cancel() // Cancel immediately
 
-		_, err := client.Create(ctx, CreateNetworkLoadBalancerRequest{
+		_, err := c.Create(ctx, client.CallOptions{}, CreateNetworkLoadBalancerRequest{
 			Name:       "test-lb",
 			Visibility: "external",
 			VPCID:      "vpc-123",
@@ -953,7 +953,7 @@ func TestNetworkLoadBalancerService_ContextCancellation(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
 		defer cancel()
 
-		_, err := client.Get(ctx, "lb-123")
+		_, err := c.Get(ctx, client.CallOptions{}, "lb-123")
 
 		assertError(t, err)
 		assertEqual(t, true, strings.Contains(err.Error(), "context deadline exceeded"))
@@ -1001,7 +1001,7 @@ func TestNetworkLoadBalancerService_Create_NewRequestError(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
-	client := testLoadBalancerClient("http://dummy-url")
+	c := testLoadBalancerClient("http://dummy-url")
 
 	req := CreateNetworkLoadBalancerRequest{
 		Name:       "test-lb",
@@ -1011,7 +1011,7 @@ func TestNetworkLoadBalancerService_Create_NewRequestError(t *testing.T) {
 		Backends:   []CreateNetworkBackendRequest{},
 	}
 
-	_, err := client.Create(ctx, req)
+	_, err := c.Create(ctx, client.CallOptions{}, req)
 
 	if err == nil {
 		t.Error("expected error due to canceled context, got nil")
@@ -1024,9 +1024,9 @@ func TestNetworkLoadBalancerService_Get_NewRequestError(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
-	client := testLoadBalancerClient("http://dummy-url")
+	c := testLoadBalancerClient("http://dummy-url")
 
-	_, err := client.Get(ctx, "lb-123")
+	_, err := c.Get(ctx, client.CallOptions{}, "lb-123")
 
 	if err == nil {
 		t.Error("expected error due to canceled context, got nil")
@@ -1039,9 +1039,9 @@ func TestNetworkLoadBalancerService_List_NewRequestError(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
-	client := testLoadBalancerClient("http://dummy-url")
+	c := testLoadBalancerClient("http://dummy-url")
 
-	_, err := client.List(ctx, ListNetworkLoadBalancerRequest{})
+	_, err := c.List(ctx, client.CallOptions{}, ListNetworkLoadBalancerRequest{})
 
 	if err == nil {
 		t.Error("expected error due to canceled context, got nil")
@@ -1054,9 +1054,9 @@ func TestNetworkLoadBalancerService_ListAll_NewRequestError(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
-	client := testLoadBalancerClient("http://dummy-url")
+	c := testLoadBalancerClient("http://dummy-url")
 
-	_, err := client.ListAll(ctx)
+	_, err := c.ListAll(ctx, client.CallOptions{})
 
 	if err == nil {
 		t.Error("expected error due to canceled context, got nil")
@@ -1069,13 +1069,13 @@ func TestNetworkLoadBalancerService_Update_NewRequestError(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
-	client := testLoadBalancerClient("http://dummy-url")
+	c := testLoadBalancerClient("http://dummy-url")
 
 	req := UpdateNetworkLoadBalancerRequest{
 		Name: stringPtr("updated-lb"),
 	}
 
-	_, err := client.Update(ctx, "lb-123", req)
+	_, err := c.Update(ctx, client.CallOptions{}, "lb-123", req)
 
 	if err == nil {
 		t.Error("expected error due to canceled context, got nil")
@@ -1088,9 +1088,9 @@ func TestNetworkLoadBalancerService_Delete_NewRequestError(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
-	client := testLoadBalancerClient("http://dummy-url")
+	c := testLoadBalancerClient("http://dummy-url")
 
-	err := client.Delete(ctx, "lb-123", DeleteNetworkLoadBalancerRequest{})
+	err := c.Delete(ctx, client.CallOptions{}, "lb-123", DeleteNetworkLoadBalancerRequest{})
 
 	if err == nil {
 		t.Error("expected error due to canceled context, got nil")

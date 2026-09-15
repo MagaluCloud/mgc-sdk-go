@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/MagaluCloud/mgc-sdk-go/client"
 	"github.com/MagaluCloud/mgc-sdk-go/helpers"
 )
 
@@ -163,8 +164,8 @@ func TestImageService_List(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := testClient(server.URL)
-			got, err := client.Images().List(context.Background(), tt.opts)
+			c := testClient(server.URL)
+			got, err := c.Images().List(context.Background(), tt.opts)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("List() error = %v, wantErr %v", err, tt.wantErr)
@@ -188,14 +189,14 @@ func TestImageService_Concurrent(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := testClient(server.URL)
+	c := testClient(server.URL)
 	ctx := context.Background()
 
 	// Test concurrent operations
 	done := make(chan bool)
 	for i := 0; i < 10; i++ {
 		go func() {
-			_, err := client.Images().List(ctx, ImageListOptions{})
+			_, err := c.Images().List(ctx, ImageListOptions{})
 			if err != nil {
 				t.Errorf("concurrent List() error = %v", err)
 			}
@@ -314,8 +315,8 @@ func TestImageService_ListAll(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := testClient(server.URL)
-			images, err := client.Images().ListAll(context.Background(), tt.opts)
+			c := testClient(server.URL)
+			images, err := c.Images().ListAll(context.Background(), tt.opts)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ListAll() error = %v, wantErr %v", err, tt.wantErr)
@@ -426,8 +427,8 @@ func TestImageService_CreateCustom(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := testClient(server.URL)
-			gotID, err := client.Images().CreateCustom(context.Background(), tt.req)
+			c := testClient(server.URL)
+			gotID, err := c.Images().CreateCustom(context.Background(), client.CallOptions{}, tt.req)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Create() error = %v, wantErr %v", err, tt.wantErr)
@@ -500,8 +501,8 @@ func TestImageService_GetCustom(t *testing.T) {
 			)
 			defer server.Close()
 
-			client := testClient(server.URL)
-			got, err := client.Images().GetCustom(context.Background(), tt.id)
+			c := testClient(server.URL)
+			got, err := c.Images().GetCustom(context.Background(), client.CallOptions{}, tt.id)
 
 			if tt.wantErr {
 				if err == nil {
@@ -671,8 +672,8 @@ func TestImageService_ListCustom(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := testClient(server.URL)
-			got, err := client.Images().ListCustom(context.Background(), tt.opts)
+			c := testClient(server.URL)
+			got, err := c.Images().ListCustom(context.Background(), client.CallOptions{}, tt.opts)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ListCustom() error = %v, wantErr %v", err, tt.wantErr)
@@ -731,8 +732,8 @@ func TestImageService_DeleteCustom(t *testing.T) {
 			)
 			defer server.Close()
 
-			client := testClient(server.URL)
-			err := client.Images().DeleteCustom(context.Background(), tt.id)
+			c := testClient(server.URL)
+			err := c.Images().DeleteCustom(context.Background(), client.CallOptions{}, tt.id)
 
 			if tt.wantErr && err == nil {
 				t.Errorf("DeleteCustom() expected erro, got nil")
@@ -836,8 +837,8 @@ func TestImageService_UpdateCustom(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := testClient(server.URL)
-			err := client.Images().UpdateCustom(context.Background(), tt.id, tt.req)
+			c := testClient(server.URL)
+			err := c.Images().UpdateCustom(context.Background(), client.CallOptions{}, tt.id, tt.req)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("UpdateCustom() error = %v, wantErr %v", err, tt.wantErr)

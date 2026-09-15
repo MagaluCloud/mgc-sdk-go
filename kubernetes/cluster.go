@@ -19,14 +19,14 @@ const (
 )
 
 type (
-	// ClusterService provides methods for managing Kubernetes clusters
+	// ClusterService provides methods for managing Kubernetes clusters.
 	ClusterService interface {
-		List(ctx context.Context, opts ListOptions) ([]ClusterList, error)
-		Create(ctx context.Context, req ClusterRequest) (*CreateClusterResponse, error)
-		Get(ctx context.Context, clusterID string) (*Cluster, error)
-		Delete(ctx context.Context, clusterID string) error
-		Update(ctx context.Context, clusterID string, req PatchClusterRequest) (*PatchClusterResponse, error)
-		GetKubeConfig(ctx context.Context, clusterID string) (*KubeConfig, error)
+		List(ctx context.Context, callOpts client.CallOptions, opts ListOptions) ([]ClusterList, error)
+		Create(ctx context.Context, callOpts client.CallOptions, req ClusterRequest) (*CreateClusterResponse, error)
+		Get(ctx context.Context, callOpts client.CallOptions, clusterID string) (*Cluster, error)
+		Delete(ctx context.Context, callOpts client.CallOptions, clusterID string) error
+		Update(ctx context.Context, callOpts client.CallOptions, clusterID string, req PatchClusterRequest) (*PatchClusterResponse, error)
+		GetKubeConfig(ctx context.Context, callOpts client.CallOptions, clusterID string) (*KubeConfig, error)
 	}
 
 	//VPC related network settings
@@ -188,7 +188,7 @@ const (
 )
 
 // List returns a list of Kubernetes clusters with optional filtering and pagination
-func (s *clusterService) List(ctx context.Context, opts ListOptions) ([]ClusterList, error) {
+func (s *clusterService) List(ctx context.Context, callOpts client.CallOptions, opts ListOptions) ([]ClusterList, error) {
 	query := url.Values{}
 	if opts.Limit != nil {
 		query.Add("_limit", strconv.Itoa(*opts.Limit))
@@ -203,7 +203,7 @@ func (s *clusterService) List(ctx context.Context, opts ListOptions) ([]ClusterL
 		query.Add("expand", strings.Join(opts.Expand, ","))
 	}
 
-	resp, err := mgc_http.ExecuteSimpleRequestWithRespBody[ClusterListResponse](ctx, s.client.newRequest, s.client.GetConfig(), http.MethodGet, "/v0/clusters", nil, query)
+	resp, err := mgc_http.ExecuteCallWithRespBody[ClusterListResponse](ctx, s.client.newRequest, s.client.GetConfig(), http.MethodGet, "/v0/clusters", nil, query, callOpts)
 	if err != nil {
 		return nil, err
 	}
@@ -212,8 +212,8 @@ func (s *clusterService) List(ctx context.Context, opts ListOptions) ([]ClusterL
 }
 
 // Create creates a new Kubernetes cluster
-func (s *clusterService) Create(ctx context.Context, req ClusterRequest) (*CreateClusterResponse, error) {
-	response, err := mgc_http.ExecuteSimpleRequestWithRespBody[CreateClusterResponse](ctx, s.client.newRequest, s.client.GetConfig(), http.MethodPost, "/v0/clusters", req, nil)
+func (s *clusterService) Create(ctx context.Context, callOpts client.CallOptions, req ClusterRequest) (*CreateClusterResponse, error) {
+	response, err := mgc_http.ExecuteCallWithRespBody[CreateClusterResponse](ctx, s.client.newRequest, s.client.GetConfig(), http.MethodPost, "/v0/clusters", req, nil, callOpts)
 	if err != nil {
 		return nil, err
 	}
@@ -222,37 +222,37 @@ func (s *clusterService) Create(ctx context.Context, req ClusterRequest) (*Creat
 }
 
 // Get retrieves detailed information about a specific cluster
-func (s *clusterService) Get(ctx context.Context, clusterID string) (*Cluster, error) {
+func (s *clusterService) Get(ctx context.Context, callOpts client.CallOptions, clusterID string) (*Cluster, error) {
 	if clusterID == "" {
 		return nil, &client.ValidationError{Field: "clusterID", Message: utils.CannotBeEmpty}
 	}
 
-	return mgc_http.ExecuteSimpleRequestWithRespBody[Cluster](ctx, s.client.newRequest, s.client.GetConfig(), http.MethodGet, fmt.Sprintf(clusterUrlWithID, clusterID), nil, nil)
+	return mgc_http.ExecuteCallWithRespBody[Cluster](ctx, s.client.newRequest, s.client.GetConfig(), http.MethodGet, fmt.Sprintf(clusterUrlWithID, clusterID), nil, nil, callOpts)
 }
 
 // Delete removes a Kubernetes cluster
-func (s *clusterService) Delete(ctx context.Context, clusterID string) error {
+func (s *clusterService) Delete(ctx context.Context, callOpts client.CallOptions, clusterID string) error {
 	if clusterID == "" {
 		return &client.ValidationError{Field: "clusterID", Message: utils.CannotBeEmpty}
 	}
 
-	return mgc_http.ExecuteSimpleRequest(ctx, s.client.newRequest, s.client.GetConfig(), http.MethodDelete, fmt.Sprintf(clusterUrlWithID, clusterID), nil, nil)
+	return mgc_http.ExecuteCall(ctx, s.client.newRequest, s.client.GetConfig(), http.MethodDelete, fmt.Sprintf(clusterUrlWithID, clusterID), nil, nil, callOpts)
 }
 
 // Update updates the allowed CIDRs for a cluster
-func (s *clusterService) Update(ctx context.Context, clusterID string, req PatchClusterRequest) (*PatchClusterResponse, error) {
+func (s *clusterService) Update(ctx context.Context, callOpts client.CallOptions, clusterID string, req PatchClusterRequest) (*PatchClusterResponse, error) {
 	if clusterID == "" {
 		return nil, &client.ValidationError{Field: "clusterID", Message: utils.CannotBeEmpty}
 	}
 
-	return mgc_http.ExecuteSimpleRequestWithRespBody[PatchClusterResponse](ctx, s.client.newRequest, s.client.GetConfig(), http.MethodPatch, fmt.Sprintf(clusterUrlWithID, clusterID), req, nil)
+	return mgc_http.ExecuteCallWithRespBody[PatchClusterResponse](ctx, s.client.newRequest, s.client.GetConfig(), http.MethodPatch, fmt.Sprintf(clusterUrlWithID, clusterID), req, nil, callOpts)
 }
 
 // GetKubeConfig retrieves the kubeconfig for a cluster
-func (s *clusterService) GetKubeConfig(ctx context.Context, clusterID string) (*KubeConfig, error) {
+func (s *clusterService) GetKubeConfig(ctx context.Context, callOpts client.CallOptions, clusterID string) (*KubeConfig, error) {
 	if clusterID == "" {
 		return nil, &client.ValidationError{Field: "clusterID", Message: utils.CannotBeEmpty}
 	}
 
-	return mgc_http.ExecuteSimpleRequestWithRespBody[KubeConfig](ctx, s.client.newRequest, s.client.GetConfig(), http.MethodGet, fmt.Sprintf(clusterUrlWithID+"/kubeconfig", clusterID), nil, nil)
+	return mgc_http.ExecuteCallWithRespBody[KubeConfig](ctx, s.client.newRequest, s.client.GetConfig(), http.MethodGet, fmt.Sprintf(clusterUrlWithID+"/kubeconfig", clusterID), nil, nil, callOpts)
 }

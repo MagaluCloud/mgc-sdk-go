@@ -76,7 +76,7 @@ func TestLbaasClient_newRequest(t *testing.T) {
 			core := newTestCoreClient()
 			lbaasClient := New(core)
 
-			req, err := lbaasClient.newRequest(context.Background(), tt.method, tt.path, tt.body)
+			req, err := lbaasClient.newRequest(context.Background(), client.CallOptions{}, tt.method, tt.path, tt.body)
 
 			if tt.wantErr {
 				if err == nil {
@@ -113,7 +113,7 @@ func TestLbaasClient_newRequest_Headers(t *testing.T) {
 	lbaasClient := New(core)
 
 	ctx := context.Background()
-	req, err := lbaasClient.newRequest(ctx, http.MethodGet, "/v0beta1/network-load-balancers", nil)
+	req, err := lbaasClient.newRequest(ctx, client.CallOptions{}, http.MethodGet, "/v0beta1/network-load-balancers", nil)
 
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)

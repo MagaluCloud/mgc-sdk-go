@@ -14,6 +14,10 @@ import (
 	"github.com/MagaluCloud/mgc-sdk-go/helpers"
 )
 
+func getOpts() client.CallOptions {
+	return client.CallOptions{ProjectID: os.Getenv("MGC_PROJECT")}
+}
+
 func main() {
 	ExampleListVolumeTypes()
 	ExampleListAllVolumeTypes()
@@ -40,7 +44,7 @@ func ExampleGetVolume(id string) {
 	c := client.NewMgcClient(client.WithAPIKey(apiToken))
 	blockClient := blockstorage.New(c)
 
-	volume, err := blockClient.Volumes().Get(context.Background(), id, []string{blockstorage.VolumeTypeExpand, blockstorage.VolumeAttachExpand})
+	volume, err := blockClient.Volumes().Get(context.Background(), getOpts(), id, []string{blockstorage.VolumeTypeExpand, blockstorage.VolumeAttachExpand})
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -61,7 +65,7 @@ func ExampleListVolumes() {
 	blockClient := blockstorage.New(c)
 
 	// List volumes with pagination and expansion (paginated)
-	resp, err := blockClient.Volumes().List(context.Background(), blockstorage.ListOptions{
+	resp, err := blockClient.Volumes().List(context.Background(), getOpts(), blockstorage.ListOptions{
 		Limit:  helpers.IntPtr(10),
 		Offset: helpers.IntPtr(0),
 		Expand: []string{blockstorage.VolumeTypeExpand, blockstorage.VolumeAttachExpand},
@@ -105,7 +109,7 @@ func ExampleListAllVolumes() {
 	blockClient := blockstorage.New(c)
 
 	// List all volumes (fetches all pages automatically)
-	volumes, err := blockClient.Volumes().ListAll(context.Background(), blockstorage.VolumeFilterOptions{
+	volumes, err := blockClient.Volumes().ListAll(context.Background(), getOpts(), blockstorage.VolumeFilterOptions{
 		Expand: []blockstorage.VolumeExpand{blockstorage.VolumeTypeExpand, blockstorage.VolumeAttachExpand},
 	})
 	if err != nil {
@@ -139,7 +143,7 @@ func ExampleCreateVolume() string {
 		Encrypted: helpers.BoolPtr(true),
 	}
 
-	id, err := blockClient.Volumes().Create(context.Background(), createReq)
+	id, err := blockClient.Volumes().Create(context.Background(), getOpts(), createReq)
 	if err != nil {
 		var httpError *client.HTTPError
 		if errors.As(err, &httpError) {
@@ -162,7 +166,7 @@ func ExampleManageVolume(id string) {
 	ctx := context.Background()
 
 	// Get volume details
-	volume, err := blockClient.Volumes().Get(ctx, id, []string{blockstorage.VolumeTypeExpand})
+	volume, err := blockClient.Volumes().Get(ctx, getOpts(), id, []string{blockstorage.VolumeTypeExpand})
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -170,7 +174,7 @@ func ExampleManageVolume(id string) {
 	fmt.Printf("Volume: %s (ID: %s)\n", volume.Name, volume.ID)
 
 	// Rename the volume
-	if err := blockClient.Volumes().Rename(ctx, volume.ID, "new-volume-name"); err != nil {
+	if err := blockClient.Volumes().Rename(ctx, getOpts(), volume.ID, "new-volume-name"); err != nil {
 		log.Fatal(err)
 	}
 	fmt.Println("Volume renamed successfully")
@@ -179,7 +183,7 @@ func ExampleManageVolume(id string) {
 	extendReq := blockstorage.ExtendVolumeRequest{
 		Size: 200,
 	}
-	if err := blockClient.Volumes().Extend(ctx, volume.ID, extendReq); err != nil {
+	if err := blockClient.Volumes().Extend(ctx, getOpts(), volume.ID, extendReq); err != nil {
 		log.Fatal(err)
 	}
 	fmt.Println("Volume size extended successfully")
@@ -190,7 +194,7 @@ func ExampleManageVolume(id string) {
 			Name: helpers.StrPtr("cloud_nvme1k"),
 		},
 	}
-	if err := blockClient.Volumes().Retype(ctx, volume.ID, retypeReq); err != nil {
+	if err := blockClient.Volumes().Retype(ctx, getOpts(), volume.ID, retypeReq); err != nil {
 		log.Fatal(err)
 	}
 	fmt.Println("Volume type changed successfully")
@@ -209,13 +213,13 @@ func ExampleVolumeAttachments(volumeID string) {
 	instanceID := "your-instance-id"
 
 	// Attach volume to instance
-	if err := blockClient.Volumes().Attach(ctx, volumeID, instanceID); err != nil {
+	if err := blockClient.Volumes().Attach(ctx, getOpts(), volumeID, instanceID); err != nil {
 		log.Fatal(err)
 	}
 	fmt.Printf("Volume %s attached to instance %s\n", volumeID, instanceID)
 
 	// Get volume details with attachment info
-	volume, err := blockClient.Volumes().Get(ctx, volumeID, []string{blockstorage.VolumeAttachExpand})
+	volume, err := blockClient.Volumes().Get(ctx, getOpts(), volumeID, []string{blockstorage.VolumeAttachExpand})
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -223,8 +227,8 @@ func ExampleVolumeAttachments(volumeID string) {
 	if volume.Attachment != nil {
 		fmt.Printf("Attachment details:\n")
 		fmt.Printf("  Instance: %s\n", *volume.Attachment.Instance.ID)
-		fmt.Printf("  Device: %s\n", *volume.Attachment.Device)
-		fmt.Printf("  Attached At: %s\n", volume.Attachment.AttachedAt)
+		//fmt.Printf("  Device: %s\n", *volume.Attachment.Device)
+		//fmt.Printf("  Attached At: %s\n", volume.Attachment.AttachedAt)
 
 		if volume.Attachment.Serial != nil {
 			fmt.Printf("  Serial: %s\n", *volume.Attachment.Serial)
@@ -232,7 +236,7 @@ func ExampleVolumeAttachments(volumeID string) {
 	}
 
 	// Detach volume
-	if err := blockClient.Volumes().Detach(ctx, volumeID); err != nil {
+	if err := blockClient.Volumes().Detach(ctx, getOpts(), volumeID); err != nil {
 		log.Fatal(err)
 	}
 	fmt.Printf("Volume %s detached successfully\n", volumeID)
@@ -246,7 +250,7 @@ func ExampleDeleteVolume(id string) {
 	c := client.NewMgcClient(client.WithAPIKey(apiToken))
 	blockClient := blockstorage.New(c)
 
-	if err := blockClient.Volumes().Delete(context.Background(), id); err != nil {
+	if err := blockClient.Volumes().Delete(context.Background(), getOpts(), id); err != nil {
 		log.Fatal(err)
 	}
 
@@ -335,7 +339,7 @@ func ExampleSchedulers(volumeID string) {
 		},
 	}
 
-	schedulerID, err := blockClient.Schedulers().Create(ctx, schedulerReq)
+	schedulerID, err := blockClient.Schedulers().Create(ctx, getOpts(), schedulerReq)
 	if err != nil {
 		log.Printf("Failed to create scheduler: %v", err)
 		return
@@ -343,7 +347,7 @@ func ExampleSchedulers(volumeID string) {
 	fmt.Printf("Created scheduler with ID: %s\n", schedulerID)
 
 	// Get scheduler details
-	scheduler, err := blockClient.Schedulers().Get(ctx, schedulerID, []blockstorage.ExpandSchedulers{blockstorage.ExpandSchedulersVolume})
+	scheduler, err := blockClient.Schedulers().Get(ctx, getOpts(), schedulerID, []blockstorage.ExpandSchedulers{blockstorage.ExpandSchedulersVolume})
 	if err != nil {
 		log.Printf("Failed to get scheduler: %v", err)
 		return
@@ -361,14 +365,14 @@ func ExampleSchedulers(volumeID string) {
 			ID: &volumeID,
 		},
 	}
-	if err := blockClient.Schedulers().AttachVolume(ctx, schedulerID, attachReq); err != nil {
+	if err := blockClient.Schedulers().AttachVolume(ctx, getOpts(), schedulerID, attachReq); err != nil {
 		log.Printf("Failed to attach volume to scheduler: %v", err)
 	} else {
 		fmt.Printf("Volume %s attached to scheduler %s\n", volumeID, schedulerID)
 	}
 
 	// List schedulers with expansion (paginated)
-	schedulerResp, err := blockClient.Schedulers().List(ctx, blockstorage.SchedulerListOptions{
+	schedulerResp, err := blockClient.Schedulers().List(ctx, getOpts(), blockstorage.SchedulerListOptions{
 		Limit:  helpers.IntPtr(10),
 		Offset: helpers.IntPtr(0),
 		Expand: []blockstorage.ExpandSchedulers{blockstorage.ExpandSchedulersVolume},
@@ -400,14 +404,14 @@ func ExampleSchedulers(volumeID string) {
 			ID: &volumeID,
 		},
 	}
-	if err := blockClient.Schedulers().DetachVolume(ctx, schedulerID, detachReq); err != nil {
+	if err := blockClient.Schedulers().DetachVolume(ctx, getOpts(), schedulerID, detachReq); err != nil {
 		log.Printf("Failed to detach volume from scheduler: %v", err)
 	} else {
 		fmt.Printf("Volume %s detached from scheduler %s\n", volumeID, schedulerID)
 	}
 
 	// Delete the scheduler
-	if err := blockClient.Schedulers().Delete(ctx, schedulerID); err != nil {
+	if err := blockClient.Schedulers().Delete(ctx, getOpts(), schedulerID); err != nil {
 		log.Printf("Failed to delete scheduler: %v", err)
 	} else {
 		fmt.Printf("Scheduler %s deleted successfully\n", schedulerID)
@@ -431,7 +435,7 @@ func ExampleCreateSnapshot(volumeID string) string {
 		Type:        helpers.StrPtr("instant"),
 	}
 
-	id, err := blockClient.Snapshots().Create(context.Background(), createReq)
+	id, err := blockClient.Snapshots().Create(context.Background(), getOpts(), createReq)
 
 	if err != nil {
 		var httpError *client.HTTPError
@@ -456,7 +460,7 @@ func ExampleCopySnapshot(id string) {
 	c := client.NewMgcClient(client.WithAPIKey(apiToken))
 	blockClient := blockstorage.New(c)
 
-	err := blockClient.Snapshots().Copy(context.Background(), id, "br-ne1")
+	err := blockClient.Snapshots().Copy(context.Background(), getOpts(), id, "br-ne1")
 
 	if err != nil {
 		var httpError *client.HTTPError
@@ -480,7 +484,7 @@ func ExampleDeleteSnapshot(id string) {
 	c := client.NewMgcClient(client.WithAPIKey(apiToken))
 	blockClient := blockstorage.New(c)
 
-	err := blockClient.Snapshots().Delete(context.Background(), id)
+	err := blockClient.Snapshots().Delete(context.Background(), getOpts(), id)
 
 	if err != nil {
 		var httpError *client.HTTPError

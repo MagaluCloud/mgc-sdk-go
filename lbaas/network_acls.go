@@ -2,6 +2,7 @@ package lbaas
 
 import (
 	"context"
+	"github.com/MagaluCloud/mgc-sdk-go/client"
 	"net/http"
 
 	mgc_http "github.com/MagaluCloud/mgc-sdk-go/internal/http"
@@ -36,9 +37,9 @@ type (
 
 	// NetworkACLService provides methods for managing network ACL rules
 	NetworkACLService interface {
-		Create(ctx context.Context, lbID string, req CreateNetworkACLRequest) (string, error)
-		Delete(ctx context.Context, lbID, aclID string) error
-		Replace(ctx context.Context, lbID string, req UpdateNetworkACLRequest) error
+		Create(ctx context.Context, callOpts client.CallOptions, lbID string, req CreateNetworkACLRequest) (string, error)
+		Delete(ctx context.Context, callOpts client.CallOptions, lbID, aclID string) error
+		Replace(ctx context.Context, callOpts client.CallOptions, lbID string, req UpdateNetworkACLRequest) error
 	}
 
 	// networkACLService implements the NetworkACLService interface
@@ -48,7 +49,7 @@ type (
 )
 
 // Create creates a new network ACL rule
-func (s *networkACLService) Create(ctx context.Context, lbID string, req CreateNetworkACLRequest) (string, error) {
+func (s *networkACLService) Create(ctx context.Context, callOpts client.CallOptions, lbID string, req CreateNetworkACLRequest) (string, error) {
 	path := urlNetworkLoadBalancer(&lbID, acls)
 	body := CreateNetworkACLRequest{
 		Name:           req.Name,
@@ -58,7 +59,7 @@ func (s *networkACLService) Create(ctx context.Context, lbID string, req CreateN
 		Action:         req.Action,
 	}
 
-	httpReq, err := s.client.newRequest(ctx, http.MethodPost, path, body)
+	httpReq, err := s.client.newRequest(ctx, callOpts, http.MethodPost, path, body)
 	if err != nil {
 		return "", err
 	}
@@ -75,10 +76,10 @@ func (s *networkACLService) Create(ctx context.Context, lbID string, req CreateN
 }
 
 // Delete removes a network ACL rule
-func (s *networkACLService) Delete(ctx context.Context, lbID, aclID string) error {
+func (s *networkACLService) Delete(ctx context.Context, callOpts client.CallOptions, lbID, aclID string) error {
 	path := urlNetworkLoadBalancer(&lbID, acls, aclID)
 
-	httpReq, err := s.client.newRequest(ctx, http.MethodDelete, path, nil)
+	httpReq, err := s.client.newRequest(ctx, callOpts, http.MethodDelete, path, nil)
 	if err != nil {
 		return err
 	}
@@ -88,10 +89,10 @@ func (s *networkACLService) Delete(ctx context.Context, lbID, aclID string) erro
 }
 
 // Replace updates the network ACL rules for a load balancer
-func (s *networkACLService) Replace(ctx context.Context, lbID string, req UpdateNetworkACLRequest) error {
+func (s *networkACLService) Replace(ctx context.Context, callOpts client.CallOptions, lbID string, req UpdateNetworkACLRequest) error {
 	path := urlNetworkLoadBalancer(&lbID, acls)
 
-	httpReq, err := s.client.newRequest(ctx, http.MethodPut, path, req)
+	httpReq, err := s.client.newRequest(ctx, callOpts, http.MethodPut, path, req)
 	if err != nil {
 		return err
 	}

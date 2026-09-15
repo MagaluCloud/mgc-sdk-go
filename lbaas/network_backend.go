@@ -2,6 +2,7 @@ package lbaas
 
 import (
 	"context"
+	"github.com/MagaluCloud/mgc-sdk-go/client"
 	"net/http"
 	"time"
 
@@ -65,12 +66,12 @@ type (
 	}
 
 	NetworkBackendService interface {
-		Create(ctx context.Context, lbID string, req CreateBackendRequest) (string, error)
-		Delete(ctx context.Context, lbID, backendID string) error
-		Get(ctx context.Context, lbID, backendID string) (*NetworkBackendResponse, error)
-		List(ctx context.Context, lbID string, options ListNetworkLoadBalancerRequest) (NetworkPaginatedBackendResponse, error)
-		ListAll(ctx context.Context, lbID string) ([]NetworkBackendResponse, error)
-		Update(ctx context.Context, lbID, backendID string, req UpdateNetworkBackendRequest) (string, error)
+		Create(ctx context.Context, callOpts client.CallOptions, lbID string, req CreateBackendRequest) (string, error)
+		Delete(ctx context.Context, callOpts client.CallOptions, lbID, backendID string) error
+		Get(ctx context.Context, callOpts client.CallOptions, lbID, backendID string) (*NetworkBackendResponse, error)
+		List(ctx context.Context, callOpts client.CallOptions, lbID string, options ListNetworkLoadBalancerRequest) (NetworkPaginatedBackendResponse, error)
+		ListAll(ctx context.Context, callOpts client.CallOptions, lbID string) ([]NetworkBackendResponse, error)
+		Update(ctx context.Context, callOpts client.CallOptions, lbID, backendID string, req UpdateNetworkBackendRequest) (string, error)
 	}
 
 	// networkBackendService implements the NetworkBackendService interface
@@ -80,10 +81,10 @@ type (
 )
 
 // Create creates a new network backend
-func (s *networkBackendService) Create(ctx context.Context, lbID string, req CreateBackendRequest) (string, error) {
+func (s *networkBackendService) Create(ctx context.Context, callOpts client.CallOptions, lbID string, req CreateBackendRequest) (string, error) {
 	path := urlNetworkLoadBalancer(&lbID, backends)
 
-	httpReq, err := s.client.newRequest(ctx, http.MethodPost, path, req)
+	httpReq, err := s.client.newRequest(ctx, callOpts, http.MethodPost, path, req)
 	if err != nil {
 		return "", err
 	}
@@ -99,10 +100,10 @@ func (s *networkBackendService) Create(ctx context.Context, lbID string, req Cre
 }
 
 // Delete removes a network backend
-func (s *networkBackendService) Delete(ctx context.Context, lbID, backendID string) error {
+func (s *networkBackendService) Delete(ctx context.Context, callOpts client.CallOptions, lbID, backendID string) error {
 	path := urlNetworkLoadBalancer(&lbID, backends, backendID)
 
-	httpReq, err := s.client.newRequest(ctx, http.MethodDelete, path, nil)
+	httpReq, err := s.client.newRequest(ctx, callOpts, http.MethodDelete, path, nil)
 	if err != nil {
 		return err
 	}
@@ -112,10 +113,10 @@ func (s *networkBackendService) Delete(ctx context.Context, lbID, backendID stri
 }
 
 // Get retrieves detailed information about a specific backend
-func (s *networkBackendService) Get(ctx context.Context, lbID, backendID string) (*NetworkBackendResponse, error) {
+func (s *networkBackendService) Get(ctx context.Context, callOpts client.CallOptions, lbID, backendID string) (*NetworkBackendResponse, error) {
 	path := urlNetworkLoadBalancer(&lbID, backends, backendID)
 
-	httpReq, err := s.client.newRequest(ctx, http.MethodGet, path, nil)
+	httpReq, err := s.client.newRequest(ctx, callOpts, http.MethodGet, path, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -129,10 +130,10 @@ func (s *networkBackendService) Get(ctx context.Context, lbID, backendID string)
 }
 
 // List returns a paginated list of network backends
-func (s *networkBackendService) List(ctx context.Context, lbID string, options ListNetworkLoadBalancerRequest) (NetworkPaginatedBackendResponse, error) {
+func (s *networkBackendService) List(ctx context.Context, callOpts client.CallOptions, lbID string, options ListNetworkLoadBalancerRequest) (NetworkPaginatedBackendResponse, error) {
 	path := urlNetworkLoadBalancer(&lbID, backends)
 
-	httpReq, err := s.client.newRequest(ctx, http.MethodGet, path, nil)
+	httpReq, err := s.client.newRequest(ctx, callOpts, http.MethodGet, path, nil)
 	if err != nil {
 		return NetworkPaginatedBackendResponse{}, err
 	}
@@ -153,7 +154,7 @@ func (s *networkBackendService) List(ctx context.Context, lbID string, options L
 }
 
 // ListAll retrieves all network backends by fetching all pages
-func (s *networkBackendService) ListAll(ctx context.Context, lbID string) ([]NetworkBackendResponse, error) {
+func (s *networkBackendService) ListAll(ctx context.Context, callOpts client.CallOptions, lbID string) ([]NetworkBackendResponse, error) {
 	var allBackends []NetworkBackendResponse
 	offset := 0
 	limit := 50
@@ -166,7 +167,7 @@ func (s *networkBackendService) ListAll(ctx context.Context, lbID string) ([]Net
 			Limit:  &currentLimit,
 		}
 
-		resp, err := s.List(ctx, lbID, pageOptions)
+		resp, err := s.List(ctx, callOpts, lbID, pageOptions)
 		if err != nil {
 			return nil, err
 		}
@@ -184,10 +185,10 @@ func (s *networkBackendService) ListAll(ctx context.Context, lbID string) ([]Net
 }
 
 // Update updates a network backend's properties and returns the backend ID
-func (s *networkBackendService) Update(ctx context.Context, lbID, backendID string, req UpdateNetworkBackendRequest) (string, error) {
+func (s *networkBackendService) Update(ctx context.Context, callOpts client.CallOptions, lbID, backendID string, req UpdateNetworkBackendRequest) (string, error) {
 	path := urlNetworkLoadBalancer(&lbID, backends, backendID)
 
-	httpReq, err := s.client.newRequest(ctx, http.MethodPut, path, req)
+	httpReq, err := s.client.newRequest(ctx, callOpts, http.MethodPut, path, req)
 	if err != nil {
 		return "", err
 	}

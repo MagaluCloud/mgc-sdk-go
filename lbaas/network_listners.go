@@ -2,6 +2,7 @@ package lbaas
 
 import (
 	"context"
+	"github.com/MagaluCloud/mgc-sdk-go/client"
 	"net/http"
 	"time"
 
@@ -48,12 +49,12 @@ type (
 
 	// NetworkListenerService provides methods for managing network listeners
 	NetworkListenerService interface {
-		Create(ctx context.Context, lbID, backendID string, req CreateNetworkListenerRequest) (*NetworkListenerResponse, error)
-		Delete(ctx context.Context, lbID, listenerID string) error
-		Get(ctx context.Context, lbID, listenerID string) (*NetworkListenerResponse, error)
-		List(ctx context.Context, lbID string, options ListNetworkLoadBalancerRequest) (NetworkPaginatedListenerResponse, error)
-		ListAll(ctx context.Context, lbID string) ([]NetworkListenerResponse, error)
-		Update(ctx context.Context, lbID, listenerID string, req UpdateNetworkListenerRequest) error
+		Create(ctx context.Context, callOpts client.CallOptions, lbID, backendID string, req CreateNetworkListenerRequest) (*NetworkListenerResponse, error)
+		Delete(ctx context.Context, callOpts client.CallOptions, lbID, listenerID string) error
+		Get(ctx context.Context, callOpts client.CallOptions, lbID, listenerID string) (*NetworkListenerResponse, error)
+		List(ctx context.Context, callOpts client.CallOptions, lbID string, options ListNetworkLoadBalancerRequest) (NetworkPaginatedListenerResponse, error)
+		ListAll(ctx context.Context, callOpts client.CallOptions, lbID string) ([]NetworkListenerResponse, error)
+		Update(ctx context.Context, callOpts client.CallOptions, lbID, listenerID string, req UpdateNetworkListenerRequest) error
 	}
 
 	// networkListenerService implements the NetworkListenerService interface
@@ -63,10 +64,10 @@ type (
 )
 
 // Create creates a new network listener
-func (s *networkListenerService) Create(ctx context.Context, lbID, backendID string, req CreateNetworkListenerRequest) (*NetworkListenerResponse, error) {
+func (s *networkListenerService) Create(ctx context.Context, callOpts client.CallOptions, lbID, backendID string, req CreateNetworkListenerRequest) (*NetworkListenerResponse, error) {
 	path := urlNetworkLoadBalancer(&lbID, listeners)
 
-	httpReq, err := s.client.newRequest(ctx, http.MethodPost, path, req)
+	httpReq, err := s.client.newRequest(ctx, callOpts, http.MethodPost, path, req)
 	if err != nil {
 		return nil, err
 	}
@@ -85,10 +86,10 @@ func (s *networkListenerService) Create(ctx context.Context, lbID, backendID str
 }
 
 // Delete removes a network listener
-func (s *networkListenerService) Delete(ctx context.Context, lbID, listenerID string) error {
+func (s *networkListenerService) Delete(ctx context.Context, callOpts client.CallOptions, lbID, listenerID string) error {
 	path := urlNetworkLoadBalancer(&lbID, listeners, listenerID)
 
-	httpReq, err := s.client.newRequest(ctx, http.MethodDelete, path, nil)
+	httpReq, err := s.client.newRequest(ctx, callOpts, http.MethodDelete, path, nil)
 	if err != nil {
 		return err
 	}
@@ -98,10 +99,10 @@ func (s *networkListenerService) Delete(ctx context.Context, lbID, listenerID st
 }
 
 // Get retrieves detailed information about a specific listener
-func (s *networkListenerService) Get(ctx context.Context, lbID, listenerID string) (*NetworkListenerResponse, error) {
+func (s *networkListenerService) Get(ctx context.Context, callOpts client.CallOptions, lbID, listenerID string) (*NetworkListenerResponse, error) {
 	path := urlNetworkLoadBalancer(&lbID, listeners, listenerID)
 
-	httpReq, err := s.client.newRequest(ctx, http.MethodGet, path, nil)
+	httpReq, err := s.client.newRequest(ctx, callOpts, http.MethodGet, path, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -115,10 +116,10 @@ func (s *networkListenerService) Get(ctx context.Context, lbID, listenerID strin
 }
 
 // List returns a paginated list of network listeners with optional filtering and pagination
-func (s *networkListenerService) List(ctx context.Context, lbID string, options ListNetworkLoadBalancerRequest) (NetworkPaginatedListenerResponse, error) {
+func (s *networkListenerService) List(ctx context.Context, callOpts client.CallOptions, lbID string, options ListNetworkLoadBalancerRequest) (NetworkPaginatedListenerResponse, error) {
 	path := urlNetworkLoadBalancer(&lbID, listeners)
 
-	httpReq, err := s.client.newRequest(ctx, http.MethodGet, path, nil)
+	httpReq, err := s.client.newRequest(ctx, callOpts, http.MethodGet, path, nil)
 	if err != nil {
 		return NetworkPaginatedListenerResponse{}, err
 	}
@@ -138,7 +139,7 @@ func (s *networkListenerService) List(ctx context.Context, lbID string, options 
 }
 
 // ListAll retrieves all network listeners by fetching all pages
-func (s *networkListenerService) ListAll(ctx context.Context, lbID string) ([]NetworkListenerResponse, error) {
+func (s *networkListenerService) ListAll(ctx context.Context, callOpts client.CallOptions, lbID string) ([]NetworkListenerResponse, error) {
 	var allListeners []NetworkListenerResponse
 	offset := 0
 	limit := 50
@@ -151,7 +152,7 @@ func (s *networkListenerService) ListAll(ctx context.Context, lbID string) ([]Ne
 			Limit:  &currentLimit,
 		}
 
-		resp, err := s.List(ctx, lbID, pageOptions)
+		resp, err := s.List(ctx, callOpts, lbID, pageOptions)
 		if err != nil {
 			return nil, err
 		}
@@ -169,10 +170,10 @@ func (s *networkListenerService) ListAll(ctx context.Context, lbID string) ([]Ne
 }
 
 // Update updates a network listener's properties
-func (s *networkListenerService) Update(ctx context.Context, lbID, listenerID string, req UpdateNetworkListenerRequest) error {
+func (s *networkListenerService) Update(ctx context.Context, callOpts client.CallOptions, lbID, listenerID string, req UpdateNetworkListenerRequest) error {
 	path := urlNetworkLoadBalancer(&lbID, listeners, listenerID)
 
-	httpReq, err := s.client.newRequest(ctx, http.MethodPut, path, req)
+	httpReq, err := s.client.newRequest(ctx, callOpts, http.MethodPut, path, req)
 	if err != nil {
 		return err
 	}

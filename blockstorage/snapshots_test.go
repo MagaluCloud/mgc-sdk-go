@@ -90,8 +90,8 @@ func TestSnapshotService_List(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := testClientSnaphots(server.URL)
-			resp, err := client.List(context.Background(), tt.opts)
+			c := testClientSnaphots(server.URL)
+			resp, err := c.List(context.Background(), client.CallOptions{}, tt.opts)
 
 			if tt.wantErr {
 				if err == nil {
@@ -162,8 +162,8 @@ func TestSnapshotService_Create(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := testClientSnaphots(server.URL)
-			id, err := client.Create(context.Background(), tt.request)
+			c := testClientSnaphots(server.URL)
+			id, err := c.Create(context.Background(), client.CallOptions{}, tt.request)
 
 			if tt.wantErr {
 				if err == nil {
@@ -239,8 +239,8 @@ func TestSnapshotService_Get(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := testClientSnaphots(server.URL)
-			snap, err := client.Get(context.Background(), tt.id, tt.expand)
+			c := testClientSnaphots(server.URL)
+			snap, err := c.Get(context.Background(), client.CallOptions{}, tt.id, tt.expand)
 
 			if tt.wantErr {
 				if err == nil {
@@ -292,8 +292,8 @@ func TestSnapshotService_Delete(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := testClientSnaphots(server.URL)
-			err := client.Delete(context.Background(), tt.id)
+			c := testClientSnaphots(server.URL)
+			err := c.Delete(context.Background(), client.CallOptions{}, tt.id)
 
 			if tt.wantErr {
 				if err == nil {
@@ -357,8 +357,8 @@ func TestSnapshotService_Rename(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := testClientSnaphots(server.URL)
-			err := client.Rename(context.Background(), tt.id, tt.newName)
+			c := testClientSnaphots(server.URL)
+			err := c.Rename(context.Background(), client.CallOptions{}, tt.id, tt.newName)
 
 			if tt.wantErr {
 				if err == nil {
@@ -467,8 +467,8 @@ func TestSnapshotService_ListAll(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := testClientSnaphots(server.URL)
-			snapshots, err := client.ListAll(context.Background(), SnapshotFilterOptions{})
+			c := testClientSnaphots(server.URL)
+			snapshots, err := c.ListAll(context.Background(), client.CallOptions{}, SnapshotFilterOptions{})
 
 			if tt.wantErr {
 				if err == nil {
@@ -548,8 +548,8 @@ func TestSnapshotService_ListAll_WithExpand(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := testClientSnaphots(server.URL)
-	snapshots, err := client.ListAll(context.Background(), SnapshotFilterOptions{
+	c := testClientSnaphots(server.URL)
+	snapshots, err := c.ListAll(context.Background(), client.CallOptions{}, SnapshotFilterOptions{
 		Expand: []string{SnapshotVolumeExpand},
 	})
 
@@ -573,9 +573,9 @@ func TestSnapshotService_ListAll_NewRequestError(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
-	client := testClientSnaphots("http://dummy-url")
+	c := testClientSnaphots("http://dummy-url")
 
-	_, err := client.ListAll(ctx, SnapshotFilterOptions{})
+	_, err := c.ListAll(ctx, client.CallOptions{}, SnapshotFilterOptions{})
 
 	if err == nil {
 		t.Error("expected error due to canceled context, got nil")
@@ -635,8 +635,8 @@ func TestSnapshotService_Copy(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := testClientSnaphots(server.URL)
-			err := client.Copy(context.Background(), tt.id, tt.destinationRegion)
+			c := testClientSnaphots(server.URL)
+			err := c.Copy(context.Background(), client.CallOptions{}, tt.id, tt.destinationRegion)
 
 			if tt.wantErr {
 				if err == nil {

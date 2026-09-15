@@ -27,9 +27,15 @@ func New(core *client.CoreClient) *LbaasClient {
 	return &LbaasClient{CoreClient: core}
 }
 
-// newRequest creates a new HTTP request for the load balancer API
-func (c *LbaasClient) newRequest(ctx context.Context, method, path string, body any) (*http.Request, error) {
-	return mgc_http.NewRequest(c.GetConfig(), ctx, method, DefaultBasePath+path, &body)
+// newRequest creates a new HTTP request for the load balancer API.
+func (c *LbaasClient) newRequest(ctx context.Context, callOpts client.CallOptions, method, path string, body any) (*http.Request, error) {
+	req, err := mgc_http.NewRequest(c.GetConfig(), ctx, method, DefaultBasePath+path, &body)
+	if err != nil {
+		return nil, err
+	}
+
+	callOpts.Apply(req)
+	return req, nil
 }
 
 // NetworkACLs returns a service for managing network ACLs

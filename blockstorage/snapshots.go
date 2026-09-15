@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/MagaluCloud/mgc-sdk-go/client"
 	mgc_http "github.com/MagaluCloud/mgc-sdk-go/internal/http"
 )
 
@@ -116,13 +117,13 @@ type SnapshotFilterOptions struct {
 // SnapshotService provides operations for managing volume snapshots.
 // This interface allows creating, listing, retrieving, and managing snapshots.
 type SnapshotService interface {
-	List(ctx context.Context, opts SnaphotListOptions) (*ListSnapshotsResponse, error)
-	ListAll(ctx context.Context, filterOpts SnapshotFilterOptions) ([]Snapshot, error)
-	Create(ctx context.Context, req CreateSnapshotRequest) (string, error)
-	Get(ctx context.Context, id string, expand []SnapshotExpand) (*Snapshot, error)
-	Delete(ctx context.Context, id string) error
-	Rename(ctx context.Context, id string, newName string) error
-	Copy(ctx context.Context, id string, destinationRegion string) error
+	List(ctx context.Context, callOpts client.CallOptions, opts SnaphotListOptions) (*ListSnapshotsResponse, error)
+	ListAll(ctx context.Context, callOpts client.CallOptions, filterOpts SnapshotFilterOptions) ([]Snapshot, error)
+	Create(ctx context.Context, callOpts client.CallOptions, req CreateSnapshotRequest) (string, error)
+	Get(ctx context.Context, callOpts client.CallOptions, id string, expand []SnapshotExpand) (*Snapshot, error)
+	Delete(ctx context.Context, callOpts client.CallOptions, id string) error
+	Rename(ctx context.Context, callOpts client.CallOptions, id string, newName string) error
+	Copy(ctx context.Context, callOpts client.CallOptions, id string, destinationRegion string) error
 }
 
 // snapshotService implements the SnapshotService interface.
@@ -134,7 +135,7 @@ type snapshotService struct {
 // List returns a paginated list of snapshots.
 // This method makes an HTTP request to get the list of snapshots
 // and applies the filters specified in the options.
-func (s *snapshotService) List(ctx context.Context, opts SnaphotListOptions) (*ListSnapshotsResponse, error) {
+func (s *snapshotService) List(ctx context.Context, callOpts client.CallOptions, opts SnaphotListOptions) (*ListSnapshotsResponse, error) {
 	q := url.Values{}
 	if opts.Limit != nil {
 		q.Add("_limit", strconv.Itoa(*opts.Limit))
@@ -151,7 +152,7 @@ func (s *snapshotService) List(ctx context.Context, opts SnaphotListOptions) (*L
 
 	path := "/v1/snapshots"
 
-	result, err := mgc_http.ExecuteSimpleRequestWithRespBody[ListSnapshotsResponse](
+	result, err := mgc_http.ExecuteCallWithRespBody[ListSnapshotsResponse](
 		ctx,
 		s.client.newRequest,
 		s.client.GetConfig(),
@@ -159,6 +160,7 @@ func (s *snapshotService) List(ctx context.Context, opts SnaphotListOptions) (*L
 		path,
 		nil,
 		q,
+		callOpts,
 	)
 	if err != nil {
 		return nil, err
@@ -168,7 +170,7 @@ func (s *snapshotService) List(ctx context.Context, opts SnaphotListOptions) (*L
 }
 
 // ListAll retrieves all snapshots by fetching all pages with optional filtering
-func (s *snapshotService) ListAll(ctx context.Context, filterOpts SnapshotFilterOptions) ([]Snapshot, error) {
+func (s *snapshotService) ListAll(ctx context.Context, callOpts client.CallOptions, filterOpts SnapshotFilterOptions) ([]Snapshot, error) {
 	var allSnapshots []Snapshot
 	offset := 0
 	limit := 50
@@ -183,7 +185,7 @@ func (s *snapshotService) ListAll(ctx context.Context, filterOpts SnapshotFilter
 			Expand: filterOpts.Expand,
 		}
 
-		resp, err := s.List(ctx, opts)
+		resp, err := s.List(ctx, callOpts, opts)
 		if err != nil {
 			return nil, err
 		}
@@ -203,8 +205,8 @@ func (s *snapshotService) ListAll(ctx context.Context, filterOpts SnapshotFilter
 // Create provisions a new snapshot.
 // This method makes an HTTP request to create a new snapshot
 // and returns the ID of the created snapshot.
-func (s *snapshotService) Create(ctx context.Context, req CreateSnapshotRequest) (string, error) {
-	result, err := mgc_http.ExecuteSimpleRequestWithRespBody[struct{ ID string }](
+func (s *snapshotService) Create(ctx context.Context, callOpts client.CallOptions, req CreateSnapshotRequest) (string, error) {
+	result, err := mgc_http.ExecuteCallWithRespBody[struct{ ID string }](
 		ctx,
 		s.client.newRequest,
 		s.client.GetConfig(),
@@ -212,6 +214,7 @@ func (s *snapshotService) Create(ctx context.Context, req CreateSnapshotRequest)
 		"/v1/snapshots",
 		req,
 		nil,
+		callOpts,
 	)
 	if err != nil {
 		return "", err
@@ -222,13 +225,13 @@ func (s *snapshotService) Create(ctx context.Context, req CreateSnapshotRequest)
 // Get retrieves a specific snapshot.
 // This method makes an HTTP request to get detailed information about a snapshot
 // and optionally expands related resources.
-func (s *snapshotService) Get(ctx context.Context, id string, expand []SnapshotExpand) (*Snapshot, error) {
+func (s *snapshotService) Get(ctx context.Context, callOpts client.CallOptions, id string, expand []SnapshotExpand) (*Snapshot, error) {
 	path := fmt.Sprintf("/v1/snapshots/%s", id)
 	if len(expand) > 0 {
 		path += "?expand=" + strings.Join(expand, ",")
 	}
 
-	return mgc_http.ExecuteSimpleRequestWithRespBody[Snapshot](
+	return mgc_http.ExecuteCallWithRespBody[Snapshot](
 		ctx,
 		s.client.newRequest,
 		s.client.GetConfig(),
@@ -236,13 +239,14 @@ func (s *snapshotService) Get(ctx context.Context, id string, expand []SnapshotE
 		path,
 		nil,
 		nil,
+		callOpts,
 	)
 }
 
 // Delete removes a snapshot.
 // This method makes an HTTP request to delete a snapshot permanently.
-func (s *snapshotService) Delete(ctx context.Context, id string) error {
-	return mgc_http.ExecuteSimpleRequest(
+func (s *snapshotService) Delete(ctx context.Context, callOpts client.CallOptions, id string) error {
+	return mgc_http.ExecuteCall(
 		ctx,
 		s.client.newRequest,
 		s.client.GetConfig(),
@@ -250,13 +254,14 @@ func (s *snapshotService) Delete(ctx context.Context, id string) error {
 		fmt.Sprintf("/v1/snapshots/%s", id),
 		nil,
 		nil,
+		callOpts,
 	)
 }
 
 // Rename updates the name of a snapshot.
 // This method makes an HTTP request to rename an existing snapshot.
-func (s *snapshotService) Rename(ctx context.Context, id string, newName string) error {
-	return mgc_http.ExecuteSimpleRequest(
+func (s *snapshotService) Rename(ctx context.Context, callOpts client.CallOptions, id string, newName string) error {
+	return mgc_http.ExecuteCall(
 		ctx,
 		s.client.newRequest,
 		s.client.GetConfig(),
@@ -264,13 +269,14 @@ func (s *snapshotService) Rename(ctx context.Context, id string, newName string)
 		fmt.Sprintf("/v1/snapshots/%s/rename", id),
 		RenameSnapshotRequest{Name: newName},
 		nil,
+		callOpts,
 	)
 }
 
 // Copy copies the snapshot to another region
 // This method makes a HTTP request to copy an existing snapshot from one region to another.
-func (s *snapshotService) Copy(ctx context.Context, id string, destinationRegion string) error {
-	return mgc_http.ExecuteSimpleRequest(
+func (s *snapshotService) Copy(ctx context.Context, callOpts client.CallOptions, id string, destinationRegion string) error {
+	return mgc_http.ExecuteCall(
 		ctx,
 		s.client.newRequest,
 		s.client.GetConfig(),
@@ -278,5 +284,6 @@ func (s *snapshotService) Copy(ctx context.Context, id string, destinationRegion
 		fmt.Sprintf("/v1/snapshots/%s/copy", id),
 		CopySnapshotRequest{DestinationRegion: destinationRegion},
 		nil,
+		callOpts,
 	)
 }

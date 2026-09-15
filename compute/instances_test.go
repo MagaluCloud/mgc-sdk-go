@@ -104,8 +104,8 @@ func TestInstanceService_List(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := testClient(server.URL)
-			got, err := client.Instances().List(context.Background(), tt.opts)
+			c := testClient(server.URL)
+			got, err := c.Instances().List(context.Background(), client.CallOptions{}, tt.opts)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("List() error = %v, wantErr %v", err, tt.wantErr)
@@ -248,8 +248,8 @@ func TestInstanceService_ListAll(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := testClient(server.URL)
-			instances, err := client.Instances().ListAll(context.Background(), tt.opts)
+			c := testClient(server.URL)
+			instances, err := c.Instances().ListAll(context.Background(), client.CallOptions{}, tt.opts)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ListAll() error = %v, wantErr %v", err, tt.wantErr)
@@ -339,8 +339,8 @@ func TestInstanceService_Create(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := testClient(server.URL)
-			gotID, err := client.Instances().Create(context.Background(), tt.req)
+			c := testClient(server.URL)
+			gotID, err := c.Instances().Create(context.Background(), client.CallOptions{}, tt.req)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Create() error = %v, wantErr %v", err, tt.wantErr)
@@ -391,8 +391,8 @@ func TestInstanceService_CreateWithMultipleVNICs(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := testClient(server.URL)
-	gotID, err := client.Instances().Create(context.Background(), req)
+	c := testClient(server.URL)
+	gotID, err := c.Instances().Create(context.Background(), client.CallOptions{}, req)
 	if err != nil {
 		t.Fatalf("Create() unexpected error: %v", err)
 	}
@@ -549,8 +549,8 @@ func TestInstanceService_Get(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := testClient(server.URL)
-			got, err := client.Instances().Get(context.Background(), tt.id, tt.expand)
+			c := testClient(server.URL)
+			got, err := c.Instances().Get(context.Background(), client.CallOptions{}, tt.id, tt.expand)
 
 			if tt.wantErr {
 				if err == nil {
@@ -628,8 +628,8 @@ func TestInstanceService_Delete(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := testClient(server.URL)
-			err := client.Instances().Delete(context.Background(), tt.id, tt.deletePublicIP)
+			c := testClient(server.URL)
+			err := c.Instances().Delete(context.Background(), client.CallOptions{}, tt.id, tt.deletePublicIP)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Delete() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -687,8 +687,8 @@ func TestInstanceService_Rename(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := testClient(server.URL)
-			err := client.Instances().Rename(context.Background(), tt.id, tt.newName)
+			c := testClient(server.URL)
+			err := c.Instances().Rename(context.Background(), client.CallOptions{}, tt.id, tt.newName)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Rename() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -754,8 +754,8 @@ func TestInstanceService_Retype(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := testClient(server.URL)
-			err := client.Instances().Retype(context.Background(), tt.id, tt.req)
+			c := testClient(server.URL)
+			err := c.Instances().Retype(context.Background(), client.CallOptions{}, tt.id, tt.req)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Retype() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -845,13 +845,13 @@ func TestInstanceService_StateOperations(t *testing.T) {
 
 	operations := map[string]func(*VirtualMachineClient, context.Context, string) error{
 		"start": func(c *VirtualMachineClient, ctx context.Context, id string) error {
-			return c.Instances().Start(ctx, id)
+			return c.Instances().Start(ctx, client.CallOptions{}, id)
 		},
 		"stop": func(c *VirtualMachineClient, ctx context.Context, id string) error {
-			return c.Instances().Stop(ctx, id)
+			return c.Instances().Stop(ctx, client.CallOptions{}, id)
 		},
 		"suspend": func(c *VirtualMachineClient, ctx context.Context, id string) error {
-			return c.Instances().Suspend(ctx, id)
+			return c.Instances().Suspend(ctx, client.CallOptions{}, id)
 		},
 	}
 
@@ -863,9 +863,9 @@ func TestInstanceService_StateOperations(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := testClient(server.URL)
+			c := testClient(server.URL)
 			operation := operations[tt.operation]
-			err := operation(client, context.Background(), tt.id)
+			err := operation(c, context.Background(), tt.id)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("%s() error = %v, wantErr %v", tt.operation, err, tt.wantErr)
 			}
@@ -882,14 +882,14 @@ func TestInstanceService_Concurrent(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := testClient(server.URL)
+	c := testClient(server.URL)
 	ctx := context.Background()
 
 	// Test concurrent operations
 	done := make(chan bool)
 	for i := 0; i < 10; i++ {
 		go func() {
-			_, err := client.Instances().List(ctx, ListOptions{})
+			_, err := c.Instances().List(ctx, client.CallOptions{}, ListOptions{})
 			if err != nil {
 				t.Errorf("concurrent List() error = %v", err)
 			}
@@ -1042,8 +1042,8 @@ func TestInstanceService_ListWithExpand(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := testClient(server.URL)
-			got, err := client.Instances().List(context.Background(), tt.opts)
+			c := testClient(server.URL)
+			got, err := c.Instances().List(context.Background(), client.CallOptions{}, tt.opts)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("List() error = %v, wantErr %v", err, tt.wantErr)
@@ -1181,8 +1181,8 @@ func TestInstanceService_GetWithExpand(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := testClient(server.URL)
-			got, err := client.Instances().Get(context.Background(), tt.id, tt.expand)
+			c := testClient(server.URL)
+			got, err := c.Instances().Get(context.Background(), client.CallOptions{}, tt.id, tt.expand)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Get() error = %v, wantErr %v", err, tt.wantErr)
@@ -1273,8 +1273,8 @@ func TestInstanceService_AttachNetworkInterface(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := testClient(server.URL)
-			err := client.Instances().AttachNetworkInterface(context.Background(), tt.req)
+			c := testClient(server.URL)
+			err := c.Instances().AttachNetworkInterface(context.Background(), client.CallOptions{}, tt.req)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("AttachNetworkInterface() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -1355,8 +1355,8 @@ func TestInstanceService_DetachNetworkInterface(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := testClient(server.URL)
-			err := client.Instances().DetachNetworkInterface(context.Background(), tt.req)
+			c := testClient(server.URL)
+			err := c.Instances().DetachNetworkInterface(context.Background(), client.CallOptions{}, tt.req)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("DetachNetworkInterface() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -1441,8 +1441,8 @@ func TestInstanceService_GetFirstWindowsPassword(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := testClient(server.URL)
-			got, err := client.Instances().GetFirstWindowsPassword(context.Background(), tt.id)
+			c := testClient(server.URL)
+			got, err := c.Instances().GetFirstWindowsPassword(context.Background(), client.CallOptions{}, tt.id)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetFirstWindowsPassword() error = %v, wantErr %v", err, tt.wantErr)
@@ -1542,8 +1542,8 @@ func TestInstanceService_InitLog(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := testClient(server.URL)
-			got, err := client.Instances().InitLog(context.Background(), tt.id, tt.maxLines)
+			c := testClient(server.URL)
+			got, err := c.Instances().InitLog(context.Background(), client.CallOptions{}, tt.id, tt.maxLines)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("InitLog() error = %v, wantErr %v", err, tt.wantErr)

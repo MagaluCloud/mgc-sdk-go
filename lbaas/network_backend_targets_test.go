@@ -82,8 +82,8 @@ func TestNetworkBackendTargetService_Create(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := testBackendTargetClient(server.URL)
-			id, err := client.Create(context.Background(), tt.lbID, tt.backendID, tt.request)
+			c := testBackendTargetClient(server.URL)
+			id, err := c.Create(context.Background(), client.CallOptions{}, tt.lbID, tt.backendID, tt.request)
 
 			if tt.wantErr {
 				assertError(t, err)
@@ -162,8 +162,8 @@ func TestNetworkBackendTargetService_Replace(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := testBackendTargetClient(server.URL)
-			id, err := client.Replace(context.Background(), tt.lbID, tt.backendID, tt.request)
+			c := testBackendTargetClient(server.URL)
+			id, err := c.Replace(context.Background(), client.CallOptions{}, tt.lbID, tt.backendID, tt.request)
 
 			if tt.wantErr {
 				assertError(t, err)
@@ -215,8 +215,8 @@ func TestNetworkBackendTargetService_Delete(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := testBackendTargetClient(server.URL)
-			err := client.Delete(context.Background(), tt.lbID, tt.backendID, tt.targetID)
+			c := testBackendTargetClient(server.URL)
+			err := c.Delete(context.Background(), client.CallOptions{}, tt.lbID, tt.backendID, tt.targetID)
 
 			if tt.wantErr {
 				assertError(t, err)
@@ -236,7 +236,7 @@ func TestNetworkBackendTargetService_Create_NewRequestError(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // Cancel immediately
 
-	client := testBackendTargetClient("http://dummy-url")
+	c := testBackendTargetClient("http://dummy-url")
 
 	request := CreateNetworkBackendTargetRequest{
 		TargetsType: "instance",
@@ -248,7 +248,7 @@ func TestNetworkBackendTargetService_Create_NewRequestError(t *testing.T) {
 		},
 	}
 
-	_, err := client.Create(ctx, "lb-123", "backend-123", request)
+	_, err := c.Create(ctx, client.CallOptions{}, "lb-123", "backend-123", request)
 
 	if err == nil {
 		t.Error("expected error due to canceled context, got nil")
@@ -262,7 +262,7 @@ func TestNetworkBackendTargetService_Replace_NewRequestError(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // Cancel immediately
 
-	client := testBackendTargetClient("http://dummy-url")
+	c := testBackendTargetClient("http://dummy-url")
 
 	request := CreateNetworkBackendTargetRequest{
 		TargetsType: "instance",
@@ -274,7 +274,7 @@ func TestNetworkBackendTargetService_Replace_NewRequestError(t *testing.T) {
 		},
 	}
 
-	_, err := client.Replace(ctx, "lb-123", "backend-123", request)
+	_, err := c.Replace(ctx, client.CallOptions{}, "lb-123", "backend-123", request)
 
 	if err == nil {
 		t.Error("expected error due to canceled context, got nil")
@@ -288,9 +288,9 @@ func TestNetworkBackendTargetService_Delete_NewRequestError(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // Cancel immediately
 
-	client := testBackendTargetClient("http://dummy-url")
+	c := testBackendTargetClient("http://dummy-url")
 
-	err := client.Delete(ctx, "lb-123", "backend-123", "target-123")
+	err := c.Delete(ctx, client.CallOptions{}, "lb-123", "backend-123", "target-123")
 
 	if err == nil {
 		t.Error("expected error due to canceled context, got nil")
