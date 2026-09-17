@@ -1384,6 +1384,59 @@ func TestRetryPreservesRequestBody(t *testing.T) {
 	}
 }
 
+func TestDo_SendsContentLength(t *testing.T) {
+	var contentLengths []int64
+	var transferEncodings [][]string
+	var requestMutex sync.Mutex
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requestMutex.Lock()
+		contentLengths = append(contentLengths, r.ContentLength)
+		transferEncodings = append(transferEncodings, r.TransferEncoding)
+		attempts := len(contentLengths)
+		requestMutex.Unlock()
+
+		if attempts < 2 {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"message":"success"}`))
+	}))
+	defer server.Close()
+
+	ct := client.NewMgcClient(client.WithAPIKey("test-api-key"),
+		client.WithBaseURL(client.MgcUrl(server.URL)),
+		client.WithRetryConfig(2, 10*time.Millisecond, 50*time.Millisecond, 1.5))
+
+	body := mockRequest{Data: "test"}
+	req, err := NewRequest(ct.GetConfig(), context.Background(), http.MethodPost, "/test", &body)
+	if err != nil {
+		t.Fatalf("NewRequest() error = %v", err)
+	}
+
+	var response mockResponse
+	if _, err := Do(ct.GetConfig(), context.Background(), req, &response); err != nil {
+		t.Fatalf("Do() error = %v", err)
+	}
+
+	if len(contentLengths) != 2 {
+		t.Fatalf("Expected 2 request attempts, got %d", len(contentLengths))
+	}
+
+	wantContentLength := int64(len(`{"data":"test"}`))
+	for i := range contentLengths {
+		if contentLengths[i] != wantContentLength {
+			t.Errorf("attempt %d: expected Content-Length %d, got %d", i+1, wantContentLength, contentLengths[i])
+		}
+		if len(transferEncodings[i]) != 0 {
+			t.Errorf("attempt %d: expected no Transfer-Encoding, got %v", i+1, transferEncodings[i])
+		}
+	}
+}
+
 func TestNewRequest_Authentication(t *testing.T) {
 	tests := []struct {
 		name         string
