@@ -51,6 +51,7 @@ type (
 		Volume                 Volume                   `json:"volume"`
 		Addresses              []ReplicaAddressResponse `json:"addresses"`
 		Status                 InstanceStatus           `json:"status"`
+		AvailabilityZone       string                   `json:"availability_zone"`
 		Generation             string                   `json:"generation"`
 		CreatedAt              time.Time                `json:"created_at"`
 		UpdatedAt              *time.Time               `json:"updated_at,omitempty"`
@@ -67,9 +68,10 @@ type (
 
 	// ReplicaCreateRequest represents the request payload for creating a replica
 	ReplicaCreateRequest struct {
-		SourceID       string  `json:"source_id"`
-		Name           string  `json:"name"`
-		InstanceTypeID *string `json:"instance_type_id,omitempty"`
+		SourceID         string  `json:"source_id"`
+		Name             string  `json:"name"`
+		InstanceTypeID   *string `json:"instance_type_id,omitempty"`
+		AvailabilityZone *string `json:"availability_zone,omitempty"`
 	}
 
 	// ReplicaResizeRequest represents the request payload for resizing a replica
