@@ -450,11 +450,17 @@ func TestTagService_Update(t *testing.T) {
 		{
 			name: "every field",
 			req: UpdateTagRequest{
+				Name:        helpers.StrPtr("storage-for-datalake"),
 				Description: helpers.StrPtr("new description"),
 				Color:       helpers.StrPtr("FFFFFF"),
 				Kinds:       &[]TagKind{TagKindFinops},
 			},
-			wantBody: `{"description": "new description", "color": "ffffff", "kinds": ["finops"]}`,
+			wantBody: `{"name": "storage-for-datalake", "description": "new description", "color": "ffffff", "kinds": ["finops"]}`,
+		},
+		{
+			name:     "rename only",
+			req:      UpdateTagRequest{Name: helpers.StrPtr("storage-for-datalake")},
+			wantBody: `{"name": "storage-for-datalake"}`,
 		},
 		{
 			name:     "only the fields that were set",

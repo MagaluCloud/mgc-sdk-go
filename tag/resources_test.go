@@ -101,10 +101,11 @@ func TestResourceService_List(t *testing.T) {
 
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			query := r.URL.Query()
-			assertEqual(t, 6, len(query))
+			assertEqual(t, 7, len(query))
 			assertEqual(t, "d9f3a1b2-6c5d-4e8f-9a0b-1c2d3e4f5a6b", query.Get("external_id"))
 			assertEqual(t, "k8s.cluster", query.Get("resource_type_name"))
 			assertEqual(t, "br-ne1", query.Get("region"))
+			assertEqual(t, "kubernetes-expenses", query.Get("tag_name"))
 			assertEqual(t, "50", query.Get("_limit"))
 			assertEqual(t, "10", query.Get("_offset"))
 			assertEqual(t, "external_id:asc", query.Get("_sort"))
@@ -119,6 +120,7 @@ func TestResourceService_List(t *testing.T) {
 				ExternalID:       helpers.StrPtr("d9f3a1b2-6c5d-4e8f-9a0b-1c2d3e4f5a6b"),
 				ResourceTypeName: &resourceTypeName,
 				Region:           helpers.StrPtr("br-ne1"),
+				TagName:          helpers.StrPtr("kubernetes-expenses"),
 				Limit:            helpers.IntPtr(50),
 				Offset:           helpers.IntPtr(10),
 				Sort:             helpers.StrPtr("external_id:asc"),

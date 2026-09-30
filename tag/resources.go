@@ -50,6 +50,7 @@ type (
 		ExternalID       *string
 		ResourceTypeName *ResourceTypeName
 		Region           *string
+		TagName          *string
 		Limit            *int
 		Offset           *int
 		Sort             *string
@@ -99,6 +100,9 @@ func (s *resourceService) List(ctx context.Context, opts ListResourcesOptions) (
 	}
 	if opts.Region != nil {
 		query.Set("region", *opts.Region)
+	}
+	if opts.TagName != nil {
+		query.Set("tag_name", *opts.TagName)
 	}
 
 	result, err := mgc_http.ExecuteSimpleRequestWithRespBody[ListResourcesResponse](

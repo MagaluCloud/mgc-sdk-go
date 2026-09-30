@@ -75,6 +75,7 @@ type (
 
 	// UpdateTagRequest represents the parameters for updating a tag.
 	UpdateTagRequest struct {
+		Name        *string    `json:"name,omitempty"`
 		Description *string    `json:"description,omitempty"`
 		Color       *string    `json:"color,omitempty"`
 		Kinds       *[]TagKind `json:"kinds,omitempty"`
@@ -92,7 +93,7 @@ type TagService interface {
 	Get(ctx context.Context, tagName string) (*Tag, error)
 	// Create registers a new tag, optionally with its first values.
 	Create(ctx context.Context, req CreateTagRequest) (*Tag, error)
-	// Update changes the description, color or kinds of a tag.
+	// Update changes the name, description, color or kinds of a tag.
 	Update(ctx context.Context, tagName string, req UpdateTagRequest) (*Tag, error)
 	// Delete removes a tag and every value defined for it.
 	Delete(ctx context.Context, tagName string) error

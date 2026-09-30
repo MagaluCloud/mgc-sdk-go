@@ -278,9 +278,22 @@ func TestTagValueService_Update(t *testing.T) {
 			wantBody: `{"description": "new description"}`,
 		},
 		{
-			name:     "nil description clears it",
+			name:     "rename only",
+			req:      UpdateTagValueRequest{Name: helpers.StrPtr("production-labs")},
+			wantBody: `{"name": "production-labs"}`,
+		},
+		{
+			name: "every field",
+			req: UpdateTagValueRequest{
+				Name:        helpers.StrPtr("production-labs"),
+				Description: helpers.StrPtr("new description"),
+			},
+			wantBody: `{"name": "production-labs", "description": "new description"}`,
+		},
+		{
+			name:     "nothing to update sends an empty object",
 			req:      UpdateTagValueRequest{},
-			wantBody: `{"description": null}`,
+			wantBody: `{}`,
 		},
 	}
 

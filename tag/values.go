@@ -24,9 +24,9 @@ type (
 	}
 
 	// UpdateTagValueRequest represents the parameters for updating a tag value.
-	// A nil Description clears the current one.
 	UpdateTagValueRequest struct {
-		Description *string `json:"description"`
+		Name        *string `json:"name,omitempty"`
+		Description *string `json:"description,omitempty"`
 	}
 )
 
@@ -39,7 +39,7 @@ type TagValueService interface {
 	Get(ctx context.Context, tagName, valueName string) (*TagValue, error)
 	// Create adds a new value to an existing tag.
 	Create(ctx context.Context, tagName string, req CreateTagValueRequest) (*TagValue, error)
-	// Update changes the description of a value.
+	// Update changes the name or description of a value.
 	Update(ctx context.Context, tagName, valueName string, req UpdateTagValueRequest) (*TagValue, error)
 	// Delete removes a value from a tag.
 	Delete(ctx context.Context, tagName, valueName string) error
