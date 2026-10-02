@@ -53,14 +53,7 @@ func newTagClient() *tag.TagClient {
 	}
 
 	core := client.NewMgcClient(client.WithJWToken(apiToken))
-
-	// The API accepts a tenant override for accounts with more than one tenant.
-	var opts []tag.ClientOption
-	if tenantID := os.Getenv("MGC_TENANT_ID"); tenantID != "" {
-		opts = append(opts, tag.WithTenantID(tenantID))
-	}
-
-	return tag.New(core, opts...)
+	return tag.New(core)
 }
 
 func ExampleListTags() {

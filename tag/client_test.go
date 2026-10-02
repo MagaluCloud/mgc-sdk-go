@@ -117,14 +117,14 @@ func TestNew(t *testing.T) {
 
 		core := client.NewMgcClient(
 			client.WithJWToken("Bearer caller-token"),
-			client.WithCustomHeader("x-tenant-id", "caller-tenant"),
+			client.WithCustomHeader("X-Custom-Header", "custom-value"),
 		)
 		callerTransport := core.GetConfig().HTTPClient.Transport
 
 		New(core)
 
 		assertEqual(t, "Bearer caller-token", core.GetConfig().JWToken)
-		assertEqual(t, "caller-tenant", core.GetConfig().CustomHeaders["x-tenant-id"])
+		assertEqual(t, "custom-value", core.GetConfig().CustomHeaders["X-Custom-Header"])
 		assertEqual(t, callerTransport, core.GetConfig().HTTPClient.Transport)
 	})
 }
@@ -144,25 +144,14 @@ func TestTagClient_newRequest(t *testing.T) {
 		assertEqual(t, "application/json", req.Header.Get("Content-Type"))
 	})
 
-	t.Run("sends the tenant configured in the client", func(t *testing.T) {
+	t.Run("sends the custom headers of the core client", func(t *testing.T) {
 		t.Parallel()
 
-		core := client.NewMgcClient(client.WithCustomHeader("x-tenant-id", "core-tenant"))
-		req, err := New(core, WithTenantID("tag-tenant")).
-			newRequest(context.Background(), http.MethodGet, "/v0/tags", nil)
-
-		assertNoError(t, err)
-		assertEqual(t, "tag-tenant", req.Header.Get("x-tenant-id"))
-	})
-
-	t.Run("without a tenant the header of the core client is kept", func(t *testing.T) {
-		t.Parallel()
-
-		core := client.NewMgcClient(client.WithCustomHeader("x-tenant-id", "core-tenant"))
+		core := client.NewMgcClient(client.WithCustomHeader("X-Custom-Header", "custom-value"))
 		req, err := New(core).newRequest(context.Background(), http.MethodGet, "/v0/tags", nil)
 
 		assertNoError(t, err)
-		assertEqual(t, "core-tenant", req.Header.Get("x-tenant-id"))
+		assertEqual(t, "custom-value", req.Header.Get("X-Custom-Header"))
 	})
 
 	t.Run("body that cannot be encoded returns error", func(t *testing.T) {

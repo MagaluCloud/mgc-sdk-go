@@ -19,8 +19,7 @@ const (
 // TagClient represents a client for interacting with the tags service
 type TagClient struct {
 	*client.CoreClient
-	baseURL  client.MgcUrl
-	tenantID string
+	baseURL client.MgcUrl
 }
 
 // ClientOption allows customizing the tag client configuration.
@@ -35,15 +34,6 @@ type ClientOption func(*TagClient)
 func WithGlobalBasePath(basePath client.MgcUrl) ClientOption {
 	return func(c *TagClient) {
 		c.baseURL = basePath
-	}
-}
-
-// WithTenantID sets the x-tenant-id header sent by this client, for accounts that
-// own more than one tenant. It takes precedence over a header of the same name
-// configured in the core client.
-func WithTenantID(tenantID string) ClientOption {
-	return func(c *TagClient) {
-		c.tenantID = tenantID
 	}
 }
 
@@ -75,15 +65,7 @@ func (c *TagClient) newRequest(ctx context.Context, method, path string, body an
 	config := *c.GetConfig()
 	config.BaseURL = c.baseURL
 
-	req, err := mgc_http.NewRequest(&config, ctx, method, DefaultBasePath+path, &body)
-	if err != nil {
-		return nil, err
-	}
-
-	if c.tenantID != "" {
-		req.Header.Set("x-tenant-id", c.tenantID)
-	}
-	return req, nil
+	return mgc_http.NewRequest(&config, ctx, method, DefaultBasePath+path, &body)
 }
 
 // Tags returns a service for managing tag resources
