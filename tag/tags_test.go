@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"testing"
 	"time"
 
@@ -181,12 +182,12 @@ func TestTagService_List_Filters(t *testing.T) {
 	tests := []struct {
 		name      string
 		opts      ListTagsOptions
-		wantQuery map[string][]string
+		wantQuery url.Values
 	}{
 		{
 			name:      "no filters sends no query",
 			opts:      ListTagsOptions{},
-			wantQuery: map[string][]string{},
+			wantQuery: url.Values{},
 		},
 		{
 			name: "pagination",
@@ -195,7 +196,7 @@ func TestTagService_List_Filters(t *testing.T) {
 				Offset: helpers.IntPtr(20),
 				Sort:   helpers.StrPtr("name:asc"),
 			},
-			wantQuery: map[string][]string{
+			wantQuery: url.Values{
 				"_limit":  {"10"},
 				"_offset": {"20"},
 				"_sort":   {"name:asc"},
@@ -207,7 +208,7 @@ func TestTagService_List_Filters(t *testing.T) {
 				Name:  helpers.StrPtr("kubernetes-expenses"),
 				Color: helpers.StrPtr("F54927"),
 			},
-			wantQuery: map[string][]string{
+			wantQuery: url.Values{
 				"name":  {"kubernetes-expenses"},
 				"color": {"f54927"},
 			},
@@ -215,7 +216,7 @@ func TestTagService_List_Filters(t *testing.T) {
 		{
 			name:      "each kind is sent as its own parameter",
 			opts:      ListTagsOptions{Kinds: []TagKind{TagKindFinops, "secops"}},
-			wantQuery: map[string][]string{"kinds": {"finops", "secops"}},
+			wantQuery: url.Values{"kinds": {"finops", "secops"}},
 		},
 	}
 
@@ -224,17 +225,7 @@ func TestTagService_List_Filters(t *testing.T) {
 			t.Parallel()
 
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				query := r.URL.Query()
-				assertEqual(t, len(tt.wantQuery), len(query))
-				for param, want := range tt.wantQuery {
-					got := query[param]
-					assertEqual(t, len(want), len(got), param)
-					for i := range want {
-						if i < len(got) {
-							assertEqual(t, want[i], got[i], param)
-						}
-					}
-				}
+				assertEqual(t, tt.wantQuery.Encode(), r.URL.Query().Encode())
 				w.Header().Set("Content-Type", "application/json")
 				w.Write([]byte(`{"results": []}`))
 			}))

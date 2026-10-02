@@ -7,6 +7,7 @@ import (
 
 	"github.com/MagaluCloud/mgc-sdk-go/client"
 	mgc_http "github.com/MagaluCloud/mgc-sdk-go/internal/http"
+	"github.com/MagaluCloud/mgc-sdk-go/internal/utils"
 )
 
 type (
@@ -52,7 +53,7 @@ type tagValueService struct {
 
 func (s *tagValueService) List(ctx context.Context, tagName string, opts ListTagValuesOptions) ([]TagValue, error) {
 	if tagName == "" {
-		return nil, &client.ValidationError{Field: "tag_name", Message: "cannot be empty"}
+		return nil, &client.ValidationError{Field: "tag_name", Message: utils.CannotBeEmpty}
 	}
 
 	query := makeListQuery(listOptions{Limit: opts.Limit, Offset: opts.Offset, Sort: opts.Sort})
@@ -93,10 +94,10 @@ func (s *tagValueService) Get(ctx context.Context, tagName, valueName string) (*
 
 func (s *tagValueService) Create(ctx context.Context, tagName string, req CreateTagValueRequest) (*TagValue, error) {
 	if tagName == "" {
-		return nil, &client.ValidationError{Field: "tag_name", Message: "cannot be empty"}
+		return nil, &client.ValidationError{Field: "tag_name", Message: utils.CannotBeEmpty}
 	}
 	if req.Name == "" {
-		return nil, &client.ValidationError{Field: "name", Message: "cannot be empty"}
+		return nil, &client.ValidationError{Field: "name", Message: utils.CannotBeEmpty}
 	}
 
 	return mgc_http.ExecuteSimpleRequestWithRespBody[TagValue](
@@ -144,10 +145,10 @@ func (s *tagValueService) Delete(ctx context.Context, tagName, valueName string)
 
 func validateValueNames(tagName, valueName string) error {
 	if tagName == "" {
-		return &client.ValidationError{Field: "tag_name", Message: "cannot be empty"}
+		return &client.ValidationError{Field: "tag_name", Message: utils.CannotBeEmpty}
 	}
 	if valueName == "" {
-		return &client.ValidationError{Field: "value_name", Message: "cannot be empty"}
+		return &client.ValidationError{Field: "value_name", Message: utils.CannotBeEmpty}
 	}
 	return nil
 }

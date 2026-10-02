@@ -122,7 +122,7 @@ func (s *resourceService) List(ctx context.Context, opts ListResourcesOptions) (
 
 func (s *resourceService) Get(ctx context.Context, externalID string) (*Resource, error) {
 	if externalID == "" {
-		return nil, &client.ValidationError{Field: "external_id", Message: "cannot be empty"}
+		return nil, &client.ValidationError{Field: "external_id", Message: utils.CannotBeEmpty}
 	}
 
 	return mgc_http.ExecuteSimpleRequestWithRespBody[Resource](
@@ -138,7 +138,7 @@ func (s *resourceService) Get(ctx context.Context, externalID string) (*Resource
 
 func (s *resourceService) AttachTags(ctx context.Context, externalID string, req AttachTagsRequest) (*Resource, error) {
 	if externalID == "" {
-		return nil, &client.ValidationError{Field: "external_id", Message: "cannot be empty"}
+		return nil, &client.ValidationError{Field: "external_id", Message: utils.CannotBeEmpty}
 	}
 	if len(req.Tags) == 0 {
 		return nil, &client.ValidationError{Field: "tags", Message: "must have at least one tag"}
@@ -147,13 +147,13 @@ func (s *resourceService) AttachTags(ctx context.Context, externalID string, req
 		if tag.Name == "" {
 			return nil, &client.ValidationError{
 				Field:   fmt.Sprintf("tags[%d].name", i),
-				Message: "cannot be empty",
+				Message: utils.CannotBeEmpty,
 			}
 		}
 		if tag.Value == "" {
 			return nil, &client.ValidationError{
 				Field:   fmt.Sprintf("tags[%d].value", i),
-				Message: "cannot be empty",
+				Message: utils.CannotBeEmpty,
 			}
 		}
 	}
@@ -171,10 +171,10 @@ func (s *resourceService) AttachTags(ctx context.Context, externalID string, req
 
 func (s *resourceService) DetachTag(ctx context.Context, externalID, tagName string) error {
 	if externalID == "" {
-		return &client.ValidationError{Field: "external_id", Message: "cannot be empty"}
+		return &client.ValidationError{Field: "external_id", Message: utils.CannotBeEmpty}
 	}
 	if tagName == "" {
-		return &client.ValidationError{Field: "tag_name", Message: "cannot be empty"}
+		return &client.ValidationError{Field: "tag_name", Message: utils.CannotBeEmpty}
 	}
 
 	return mgc_http.ExecuteSimpleRequest(

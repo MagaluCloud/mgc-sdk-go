@@ -97,7 +97,7 @@ func (c *TagClient) Values() TagValueService {
 }
 
 // ResourceTypes returns a service for listing the resource types that support tagging
-func (c *TagClient) ResourceTypes() ResourceTypeService {
+func (c *TagClient) ResourceTypes() ResourceTypeLister {
 	return &resourceTypeService{client: c}
 }
 

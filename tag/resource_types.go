@@ -33,15 +33,15 @@ type (
 	}
 )
 
-// ResourceTypeService provides methods for listing the resource types that support tagging.
-type ResourceTypeService interface {
+// ResourceTypeLister lists the resource types that support tagging.
+type ResourceTypeLister interface {
 	// List retrieves the resource types and the product that owns each one. The API
 	// returns at most 100 items per call and defaults to 20, so use Limit and Offset
 	// to page through the results.
 	List(ctx context.Context, opts ListResourceTypesOptions) ([]ResourceType, error)
 }
 
-// resourceTypeService implements the ResourceTypeService interface
+// resourceTypeService implements the ResourceTypeLister interface
 type resourceTypeService struct {
 	client *TagClient
 }

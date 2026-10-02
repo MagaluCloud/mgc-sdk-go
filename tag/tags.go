@@ -151,7 +151,7 @@ func (s *tagService) List(ctx context.Context, opts ListTagsOptions) ([]Tag, err
 
 func (s *tagService) Get(ctx context.Context, tagName string) (*Tag, error) {
 	if tagName == "" {
-		return nil, &client.ValidationError{Field: "name", Message: "cannot be empty"}
+		return nil, &client.ValidationError{Field: "name", Message: utils.CannotBeEmpty}
 	}
 
 	return mgc_http.ExecuteSimpleRequestWithRespBody[Tag](
@@ -167,7 +167,7 @@ func (s *tagService) Get(ctx context.Context, tagName string) (*Tag, error) {
 
 func (s *tagService) Create(ctx context.Context, req CreateTagRequest) (*Tag, error) {
 	if req.Name == "" {
-		return nil, &client.ValidationError{Field: "name", Message: "cannot be empty"}
+		return nil, &client.ValidationError{Field: "name", Message: utils.CannotBeEmpty}
 	}
 
 	if req.Color != nil {
@@ -182,7 +182,7 @@ func (s *tagService) Create(ctx context.Context, req CreateTagRequest) (*Tag, er
 		if value.Name == "" {
 			return nil, &client.ValidationError{
 				Field:   fmt.Sprintf("values[%d].name", i),
-				Message: "cannot be empty",
+				Message: utils.CannotBeEmpty,
 			}
 		}
 	}
@@ -200,7 +200,7 @@ func (s *tagService) Create(ctx context.Context, req CreateTagRequest) (*Tag, er
 
 func (s *tagService) Update(ctx context.Context, tagName string, req UpdateTagRequest) (*Tag, error) {
 	if tagName == "" {
-		return nil, &client.ValidationError{Field: "name", Message: "cannot be empty"}
+		return nil, &client.ValidationError{Field: "name", Message: utils.CannotBeEmpty}
 	}
 
 	if req.Color != nil && *req.Color != "" {
@@ -224,7 +224,7 @@ func (s *tagService) Update(ctx context.Context, tagName string, req UpdateTagRe
 
 func (s *tagService) Delete(ctx context.Context, tagName string) error {
 	if tagName == "" {
-		return &client.ValidationError{Field: "name", Message: "cannot be empty"}
+		return &client.ValidationError{Field: "name", Message: utils.CannotBeEmpty}
 	}
 
 	return mgc_http.ExecuteSimpleRequest(
