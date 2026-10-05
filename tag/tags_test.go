@@ -325,7 +325,7 @@ func TestTagService_Create(t *testing.T) {
 				Name:        "kubernetes-expenses",
 				Description: helpers.StrPtr("tag to monitor expenses with environments"),
 				Color:       helpers.StrPtr("F54927"),
-				Kinds:       []TagKind{TagKindFinops},
+				Kinds:       &[]TagKind{TagKindFinops},
 				Values: []CreateTagValueRequest{
 					{Name: "test-labs", Description: helpers.StrPtr("labs")},
 				},
@@ -342,6 +342,11 @@ func TestTagService_Create(t *testing.T) {
 			name:     "only the name is required",
 			req:      CreateTagRequest{Name: "minimal"},
 			wantBody: `{"name": "minimal"}`,
+		},
+		{
+			name:     "empty kinds are sent to skip the API default",
+			req:      CreateTagRequest{Name: "no-kinds", Kinds: &[]TagKind{}},
+			wantBody: `{"name": "no-kinds", "kinds": []}`,
 		},
 		{
 			name: "value without description",

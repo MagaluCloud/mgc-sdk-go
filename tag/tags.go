@@ -69,7 +69,7 @@ type (
 		Name        string                  `json:"name"`
 		Description *string                 `json:"description,omitempty"`
 		Color       *string                 `json:"color,omitempty"`
-		Kinds       []TagKind               `json:"kinds,omitempty"`
+		Kinds       *[]TagKind              `json:"kinds,omitempty"`
 		Values      []CreateTagValueRequest `json:"values,omitempty"`
 	}
 
