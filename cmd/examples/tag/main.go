@@ -81,7 +81,7 @@ func ExampleCreateTag() string {
 		Name:        "environment_" + randomString(),
 		Description: helpers.StrPtr("Identifies the deployment environment"),
 		Color:       helpers.StrPtr("F54927"),
-		Kinds:       []tag.TagKind{tag.TagKindFinops},
+		Kinds:       &[]tag.TagKind{tag.TagKindFinops},
 		Values: []tag.CreateTagValueRequest{
 			{Name: "production", Description: helpers.StrPtr("Production workloads")},
 		},
