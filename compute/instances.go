@@ -445,14 +445,14 @@ func (s *instanceService) Retype(ctx context.Context, callOpts client.CallOption
 // This method makes an HTTP request to power on a stopped instance.
 // Returns an error if the instance is already running or if the operation fails.
 func (s *instanceService) Start(ctx context.Context, callOpts client.CallOptions, id string) error {
-	return s.executeInstanceAction(ctx, id, "start")
+	return s.executeInstanceAction(ctx, callOpts, id, "start")
 }
 
 // Stop stops the instance.
 // This method makes an HTTP request to gracefully power off a running instance.
 // Returns an error if the instance is already stopped or if the operation fails.
 func (s *instanceService) Stop(ctx context.Context, callOpts client.CallOptions, id string) error {
-	return s.executeInstanceAction(ctx, id, "stop")
+	return s.executeInstanceAction(ctx, callOpts, id, "stop")
 }
 
 // Suspend suspends the instance.
@@ -460,17 +460,17 @@ func (s *instanceService) Stop(ctx context.Context, callOpts client.CallOptions,
 // while maintaining its state in memory.
 // Returns an error if the instance cannot be suspended or if the operation fails.
 func (s *instanceService) Suspend(ctx context.Context, callOpts client.CallOptions, id string) error {
-	return s.executeInstanceAction(ctx, id, "suspend")
+	return s.executeInstanceAction(ctx, callOpts, id, "suspend")
 }
 
 // executeInstanceAction handles common instance state change operations.
 // This is an internal method that should not be called directly by SDK users.
-func (s *instanceService) executeInstanceAction(ctx context.Context, id string, action string) error {
+func (s *instanceService) executeInstanceAction(ctx context.Context, callOpts client.CallOptions, id string, action string) error {
 	if id == "" {
 		return &client.ValidationError{Field: "id", Message: "cannot be empty"}
 	}
 	path := fmt.Sprintf("/v1/instances/%s/%s", id, action)
-	return mgc_http.ExecuteSimpleRequest(
+	return mgc_http.ExecuteCall(
 		ctx,
 		s.client.newRequest,
 		s.client.GetConfig(),
@@ -478,6 +478,7 @@ func (s *instanceService) executeInstanceAction(ctx context.Context, id string, 
 		path,
 		nil,
 		nil,
+		callOpts,
 	)
 }
 
