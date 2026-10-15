@@ -144,12 +144,13 @@ func TestReplicaService_List(t *testing.T) {
 
 func TestReplicaService_Get(t *testing.T) {
 	tests := []struct {
-		name       string
-		id         string
-		response   string
-		statusCode int
-		wantID     string
-		wantErr    bool
+		name                 string
+		id                   string
+		response             string
+		statusCode           int
+		wantID               string
+		wantAvailabilityZone string
+		wantErr              bool
 	}{
 		{
 			name: "existing replica",
@@ -157,11 +158,13 @@ func TestReplicaService_Get(t *testing.T) {
 			response: `{
 				"id": "rep1",
 				"name": "test-replica",
-				"status": "ACTIVE"
+				"status": "ACTIVE",
+				"availability_zone": "br-se1-a"
 			}`,
-			statusCode: http.StatusOK,
-			wantID:     "rep1",
-			wantErr:    false,
+			statusCode:           http.StatusOK,
+			wantID:               "rep1",
+			wantAvailabilityZone: "br-se1-a",
+			wantErr:              false,
 		},
 		{
 			name:       "not found",
@@ -193,6 +196,7 @@ func TestReplicaService_Get(t *testing.T) {
 
 			assertNoError(t, err)
 			assertEqual(t, tt.wantID, replica.ID)
+			assertEqual(t, tt.wantAvailabilityZone, replica.AvailabilityZone)
 		})
 	}
 }
@@ -211,6 +215,18 @@ func TestReplicaService_Create(t *testing.T) {
 			request: ReplicaCreateRequest{
 				SourceID: "src1",
 				Name:     "test-replica",
+			},
+			response:   `{"id": "rep1"}`,
+			statusCode: http.StatusOK,
+			wantID:     "rep1",
+			wantErr:    false,
+		},
+		{
+			name: "successful creation with availability zone",
+			request: ReplicaCreateRequest{
+				SourceID:         "src1",
+				Name:             "test-replica",
+				AvailabilityZone: helpers.StrPtr("br-se1-a"),
 			},
 			response:   `{"id": "rep1"}`,
 			statusCode: http.StatusOK,
@@ -237,6 +253,9 @@ func TestReplicaService_Create(t *testing.T) {
 				json.NewDecoder(r.Body).Decode(&req)
 				assertEqual(t, tt.request.SourceID, req.SourceID)
 				assertEqual(t, tt.request.Name, req.Name)
+				if tt.request.AvailabilityZone != nil {
+					assertEqual(t, *tt.request.AvailabilityZone, *req.AvailabilityZone)
+				}
 
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(tt.statusCode)
