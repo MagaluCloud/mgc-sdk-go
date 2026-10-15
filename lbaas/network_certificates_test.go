@@ -148,8 +148,8 @@ func TestNetworkCertificateService_Create(t *testing.T) {
 
 			// Casos que testam validação de base64 não precisam de servidor HTTP
 			if tt.errorMsg != "" {
-				c := testCertificateClient("http://dummy-url")
-				_, err := c.Create(context.Background(), client.CallOptions{}, "lb-123", tt.request)
+				client := testCertificateClient("http://dummy-url")
+				_, err := client.Create(context.Background(), "lb-123", tt.request)
 
 				assertError(t, err)
 				if err.Error() != tt.errorMsg {
@@ -167,8 +167,8 @@ func TestNetworkCertificateService_Create(t *testing.T) {
 			}))
 			defer server.Close()
 
-			c := testCertificateClient(server.URL)
-			cert, err := c.Create(context.Background(), client.CallOptions{}, "lb-123", tt.request)
+			client := testCertificateClient(server.URL)
+			cert, err := client.Create(context.Background(), "lb-123", tt.request)
 
 			if tt.wantErr {
 				assertError(t, err)
@@ -230,8 +230,8 @@ func TestNetworkCertificateService_Get(t *testing.T) {
 			}))
 			defer server.Close()
 
-			c := testCertificateClient(server.URL)
-			cert, err := c.Get(context.Background(), client.CallOptions{}, tt.lbID, tt.certID)
+			client := testCertificateClient(server.URL)
+			cert, err := client.Get(context.Background(), tt.lbID, tt.certID)
 
 			if tt.wantErr {
 				assertError(t, err)
@@ -313,8 +313,8 @@ func TestNetworkCertificateService_List(t *testing.T) {
 			}))
 			defer server.Close()
 
-			c := testCertificateClient(server.URL)
-			resp, err := c.List(context.Background(), client.CallOptions{}, tt.lbID, ListNetworkLoadBalancerRequest{})
+			client := testCertificateClient(server.URL)
+			resp, err := client.List(context.Background(), tt.lbID, ListNetworkLoadBalancerRequest{})
 
 			if tt.wantErr {
 				assertError(t, err)
@@ -461,8 +461,8 @@ func TestNetworkCertificateService_ListAll(t *testing.T) {
 			}))
 			defer server.Close()
 
-			c := testCertificateClient(server.URL)
-			certificates, err := c.ListAll(context.Background(), client.CallOptions{}, tt.lbID)
+			client := testCertificateClient(server.URL)
+			certificates, err := client.ListAll(context.Background(), tt.lbID)
 
 			if tt.wantErr {
 				assertError(t, err)
@@ -534,8 +534,8 @@ func TestNetworkCertificateService_Update(t *testing.T) {
 			}))
 			defer server.Close()
 
-			c := testCertificateClient(server.URL)
-			err := c.Update(context.Background(), client.CallOptions{}, tt.lbID, tt.certID, tt.request)
+			client := testCertificateClient(server.URL)
+			err := client.Update(context.Background(), tt.lbID, tt.certID, tt.request)
 
 			if tt.wantErr {
 				assertError(t, err)
@@ -584,8 +584,8 @@ func TestNetworkCertificateService_Delete(t *testing.T) {
 			}))
 			defer server.Close()
 
-			c := testCertificateClient(server.URL)
-			err := c.Delete(context.Background(), client.CallOptions{}, tt.lbID, tt.certID)
+			client := testCertificateClient(server.URL)
+			err := client.Delete(context.Background(), tt.lbID, tt.certID)
 
 			if tt.wantErr {
 				assertError(t, err)
@@ -620,7 +620,7 @@ func TestNetworkCertificateService_Create_NewRequestError(t *testing.T) {
 		PrivateKey:  keyBase64,
 	}
 
-	_, err := certificateService.Create(context.Background(), client.CallOptions{}, "lb-123", req)
+	_, err := certificateService.Create(context.Background(), "lb-123", req)
 
 	if err == nil {
 		t.Error("expected error due to invalid URL, got nil")
@@ -634,9 +634,9 @@ func TestNetworkCertificateService_Get_NewRequestError(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // Cancel immediately
 
-	c := testCertificateClient("http://dummy-url")
+	client := testCertificateClient("http://dummy-url")
 
-	_, err := c.Get(ctx, client.CallOptions{}, "lb-123", "cert-123")
+	_, err := client.Get(ctx, "lb-123", "cert-123")
 
 	if err == nil {
 		t.Error("expected error due to canceled context, got nil")
@@ -650,9 +650,9 @@ func TestNetworkCertificateService_List_NewRequestError(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // Cancel immediately
 
-	c := testCertificateClient("http://dummy-url")
+	client := testCertificateClient("http://dummy-url")
 
-	_, err := c.List(ctx, client.CallOptions{}, "lb-123", ListNetworkLoadBalancerRequest{})
+	_, err := client.List(ctx, "lb-123", ListNetworkLoadBalancerRequest{})
 
 	if err == nil {
 		t.Error("expected error due to canceled context, got nil")
@@ -666,9 +666,9 @@ func TestNetworkCertificateService_ListAll_NewRequestError(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // Cancel immediately
 
-	c := testCertificateClient("http://dummy-url")
+	client := testCertificateClient("http://dummy-url")
 
-	_, err := c.ListAll(ctx, client.CallOptions{}, "lb-123")
+	_, err := client.ListAll(ctx, "lb-123")
 
 	if err == nil {
 		t.Error("expected error due to canceled context, got nil")
@@ -682,14 +682,14 @@ func TestNetworkCertificateService_Update_NewRequestError(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // Cancel immediately
 
-	c := testCertificateClient("http://dummy-url")
+	client := testCertificateClient("http://dummy-url")
 
 	req := UpdateNetworkCertificateRequest{
 		Certificate: "updated-cert",
 		PrivateKey:  "updated-key",
 	}
 
-	err := c.Update(ctx, client.CallOptions{}, "lb-123", "cert-123", req)
+	err := client.Update(ctx, "lb-123", "cert-123", req)
 
 	if err == nil {
 		t.Error("expected error due to canceled context, got nil")
@@ -703,9 +703,9 @@ func TestNetworkCertificateService_Delete_NewRequestError(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // Cancel immediately
 
-	c := testCertificateClient("http://dummy-url")
+	client := testCertificateClient("http://dummy-url")
 
-	err := c.Delete(ctx, client.CallOptions{}, "lb-123", "cert-123")
+	err := client.Delete(ctx, "lb-123", "cert-123")
 
 	if err == nil {
 		t.Error("expected error due to canceled context, got nil")

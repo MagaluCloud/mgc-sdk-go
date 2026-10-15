@@ -29,10 +29,6 @@ const (
 	ExamplePublicIPID = "public-ip-12345678-1234-1234-1234-123456789012"
 )
 
-func getOpts() client.CallOptions {
-	return client.CallOptions{ProjectID: os.Getenv("MGC_PROJECT")}
-}
-
 // Global variables to store created resources for cleanup
 var (
 	createdLBID     string
@@ -47,7 +43,7 @@ func main() {
 	fmt.Println()
 
 	// Initialize the SDK client
-	core, err := initializeClient()
+	client, err := initializeClient()
 	if err != nil {
 		log.Fatalf("Failed to initialize client: %v", err)
 	}
@@ -57,38 +53,38 @@ func main() {
 
 	// Run examples in order
 	fmt.Println("1. Creating a comprehensive Load Balancer...")
-	lbID := runCreateLoadBalancerExample(ctx, core)
+	lbID := runCreateLoadBalancerExample(ctx, client)
 	if lbID == "" {
 		log.Fatal("Failed to create load balancer, stopping examples")
 	}
 	createdLBID = lbID
 
 	fmt.Println("\n2. Listing all Load Balancers...")
-	runListLoadBalancersExample(ctx, core)
+	runListLoadBalancersExample(ctx, client)
 
 	fmt.Println("\n3. Getting Load Balancer details...")
-	runGetLoadBalancerExample(ctx, core, lbID)
+	runGetLoadBalancerExample(ctx, client, lbID)
 
 	fmt.Println("\n4. Updating Load Balancer...")
-	runUpdateLoadBalancerExample(ctx, core, lbID)
+	runUpdateLoadBalancerExample(ctx, client, lbID)
 
 	fmt.Println("\n5. Managing Backends...")
-	runManageBackendsExample(ctx, core, lbID)
+	runManageBackendsExample(ctx, client, lbID)
 
 	fmt.Println("\n6. Managing Listeners...")
-	runManageListenersExample(ctx, core, lbID)
+	runManageListenersExample(ctx, client, lbID)
 
 	fmt.Println("\n7. Managing Health Checks...")
-	runManageHealthChecksExample(ctx, core, lbID)
+	runManageHealthChecksExample(ctx, client, lbID)
 
 	fmt.Println("\n8. Managing TLS Certificates...")
-	runManageCertificatesExample(ctx, core, lbID)
+	runManageCertificatesExample(ctx, client, lbID)
 
 	fmt.Println("\n9. Managing Access Control Lists (ACLs)...")
-	runManageACLsExample(ctx, core, lbID)
+	runManageACLsExample(ctx, client, lbID)
 
 	fmt.Println("\n10. Cleaning up resources...")
-	runCleanupExample(ctx, core, lbID)
+	runCleanupExample(ctx, client, lbID)
 
 	fmt.Println("\n=== All examples completed successfully! ===")
 }
@@ -113,14 +109,14 @@ func initializeClient() (*client.CoreClient, error) {
 }
 
 // waitForLoadBalancerStatus waits for a load balancer to reach a specific status
-func waitForLoadBalancerStatus(ctx context.Context, core *client.CoreClient, lbID string, targetStatus lbaas.LoadBalancerStatus, timeout time.Duration) error {
+func waitForLoadBalancerStatus(ctx context.Context, client *client.CoreClient, lbID string, targetStatus lbaas.LoadBalancerStatus, timeout time.Duration) error {
 	fmt.Printf("Waiting for load balancer %s to reach status: %s\n", lbID, targetStatus)
 
-	lbService := lbaas.New(core).NetworkLoadBalancers()
+	lbService := lbaas.New(client).NetworkLoadBalancers()
 
 	deadline := time.Now().Add(timeout)
 	for time.Now().Before(deadline) {
-		lb, err := lbService.Get(ctx, getOpts(), lbID)
+		lb, err := lbService.Get(ctx, lbID)
 		if err != nil {
 			return fmt.Errorf("error checking load balancer status: %w", err)
 		}
@@ -144,10 +140,10 @@ func waitForLoadBalancerStatus(ctx context.Context, core *client.CoreClient, lbI
 }
 
 // runCreateLoadBalancerExample demonstrates creating a comprehensive load balancer
-func runCreateLoadBalancerExample(ctx context.Context, core *client.CoreClient) string {
+func runCreateLoadBalancerExample(ctx context.Context, client *client.CoreClient) string {
 	fmt.Println("Creating a load balancer with backends, listeners, health checks, and certificates...")
 
-	lbService := lbaas.New(core).NetworkLoadBalancers()
+	lbService := lbaas.New(client).NetworkLoadBalancers()
 
 	// Generate a self-signed certificate for HTTPS listener
 	cert, key, err := generateSelfSignedCertificate()
@@ -275,7 +271,7 @@ func runCreateLoadBalancerExample(ctx context.Context, core *client.CoreClient) 
 
 	// Create the load balancer
 	fmt.Println("Sending create request...")
-	lbID, err := lbService.Create(ctx, getOpts(), createRequest)
+	lbID, err := lbService.Create(ctx, createRequest)
 	if err != nil {
 		log.Printf("Failed to create load balancer: %v", err)
 		return ""
@@ -284,7 +280,7 @@ func runCreateLoadBalancerExample(ctx context.Context, core *client.CoreClient) 
 	fmt.Printf("✓ Load balancer created with ID: %s\n", lbID)
 
 	// Wait for the load balancer to become ready
-	if err := waitForLoadBalancerStatus(ctx, core, lbID, lbaas.LoadBalancerStatusRunning, 10*time.Minute); err != nil {
+	if err := waitForLoadBalancerStatus(ctx, client, lbID, lbaas.LoadBalancerStatusRunning, 10*time.Minute); err != nil {
 		log.Printf("Load balancer creation failed or timed out: %v", err)
 		return ""
 	}
@@ -294,10 +290,10 @@ func runCreateLoadBalancerExample(ctx context.Context, core *client.CoreClient) 
 }
 
 // runListLoadBalancersExample demonstrates listing load balancers with pagination
-func runListLoadBalancersExample(ctx context.Context, core *client.CoreClient) {
+func runListLoadBalancersExample(ctx context.Context, client *client.CoreClient) {
 	fmt.Println("Listing load balancers with pagination...")
 
-	lbService := lbaas.New(core).NetworkLoadBalancers()
+	lbService := lbaas.New(client).NetworkLoadBalancers()
 
 	// Example 1: List with pagination options
 	listOptions := lbaas.ListNetworkLoadBalancerRequest{
@@ -306,7 +302,7 @@ func runListLoadBalancersExample(ctx context.Context, core *client.CoreClient) {
 		Sort:   stringPtr("created_at:desc"), // Sort by creation date, newest first
 	}
 
-	paginatedResp, err := lbService.List(ctx, getOpts(), listOptions)
+	paginatedResp, err := lbService.List(ctx, listOptions)
 	if err != nil {
 		log.Printf("Failed to list load balancers: %v", err)
 		return
@@ -328,7 +324,7 @@ func runListLoadBalancersExample(ctx context.Context, core *client.CoreClient) {
 
 	// Example 2: List all load balancers across all pages
 	fmt.Println("\nFetching ALL load balancers (across all pages)...")
-	allLoadBalancers, err := lbService.ListAll(ctx, getOpts())
+	allLoadBalancers, err := lbService.ListAll(ctx)
 	if err != nil {
 		log.Printf("Failed to list all load balancers: %v", err)
 		return
@@ -338,12 +334,12 @@ func runListLoadBalancersExample(ctx context.Context, core *client.CoreClient) {
 }
 
 // runGetLoadBalancerExample demonstrates getting detailed information about a load balancer
-func runGetLoadBalancerExample(ctx context.Context, core *client.CoreClient, lbID string) {
+func runGetLoadBalancerExample(ctx context.Context, client *client.CoreClient, lbID string) {
 	fmt.Printf("Getting detailed information for load balancer: %s\n", lbID)
 
-	lbService := lbaas.New(core).NetworkLoadBalancers()
+	lbService := lbaas.New(client).NetworkLoadBalancers()
 
-	lb, err := lbService.Get(ctx, getOpts(), lbID)
+	lb, err := lbService.Get(ctx, lbID)
 	if err != nil {
 		log.Printf("Failed to get load balancer: %v", err)
 		return
@@ -421,10 +417,10 @@ func runGetLoadBalancerExample(ctx context.Context, core *client.CoreClient, lbI
 }
 
 // runUpdateLoadBalancerExample demonstrates updating a load balancer
-func runUpdateLoadBalancerExample(ctx context.Context, core *client.CoreClient, lbID string) {
+func runUpdateLoadBalancerExample(ctx context.Context, client *client.CoreClient, lbID string) {
 	fmt.Printf("Updating load balancer: %s\n", lbID)
 
-	lbService := lbaas.New(core).NetworkLoadBalancers()
+	lbService := lbaas.New(client).NetworkLoadBalancers()
 
 	// Update the load balancer name and description
 	updateRequest := lbaas.UpdateNetworkLoadBalancerRequest{
@@ -432,7 +428,7 @@ func runUpdateLoadBalancerExample(ctx context.Context, core *client.CoreClient, 
 		Description: stringPtr("Updated description with enhanced features"),
 	}
 
-	updatedID, err := lbService.Update(ctx, getOpts(), lbID, updateRequest)
+	updatedID, err := lbService.Update(ctx, lbID, updateRequest)
 	if err != nil {
 		log.Printf("Failed to update load balancer: %v", err)
 		return
@@ -441,7 +437,7 @@ func runUpdateLoadBalancerExample(ctx context.Context, core *client.CoreClient, 
 	fmt.Printf("✓ Load balancer updated successfully (ID: %s)\n", updatedID)
 
 	// Wait for update to complete
-	if err := waitForLoadBalancerStatus(ctx, core, lbID, lbaas.LoadBalancerStatusRunning, 5*time.Minute); err != nil {
+	if err := waitForLoadBalancerStatus(ctx, client, lbID, lbaas.LoadBalancerStatusRunning, 5*time.Minute); err != nil {
 		log.Printf("Update failed or timed out: %v", err)
 		return
 	}
@@ -450,10 +446,10 @@ func runUpdateLoadBalancerExample(ctx context.Context, core *client.CoreClient, 
 }
 
 // runManageBackendsExample demonstrates backend management operations
-func runManageBackendsExample(ctx context.Context, core *client.CoreClient, lbID string) {
+func runManageBackendsExample(ctx context.Context, client *client.CoreClient, lbID string) {
 	fmt.Printf("Managing backends for load balancer: %s\n", lbID)
 
-	backendService := lbaas.New(core).NetworkBackends()
+	backendService := lbaas.New(client).NetworkBackends()
 
 	// Create a new backend
 	fmt.Println("Creating a new backend...")
@@ -466,7 +462,7 @@ func runManageBackendsExample(ctx context.Context, core *client.CoreClient, lbID
 		CloseConnectionsOnHostHealthFailure: boolPtr(true),
 	}
 
-	backendID, err := backendService.Create(ctx, getOpts(), lbID, createBackendReq)
+	backendID, err := backendService.Create(ctx, lbID, createBackendReq)
 	if err != nil {
 		log.Printf("Failed to create backend: %v", err)
 		return
@@ -476,7 +472,7 @@ func runManageBackendsExample(ctx context.Context, core *client.CoreClient, lbID
 
 	// List all backends (using ListAll to get all pages)
 	fmt.Println("\nListing all backends...")
-	backends, err := backendService.ListAll(ctx, getOpts(), lbID)
+	backends, err := backendService.ListAll(ctx, lbID)
 	if err != nil {
 		log.Printf("Failed to list backends: %v", err)
 		return
@@ -491,7 +487,7 @@ func runManageBackendsExample(ctx context.Context, core *client.CoreClient, lbID
 	// Get detailed backend information
 	if len(backends) > 0 {
 		fmt.Printf("\nGetting details for backend: %s\n", backends[0].ID)
-		backend, err := backendService.Get(ctx, getOpts(), lbID, backends[0].ID)
+		backend, err := backendService.Get(ctx, lbID, backends[0].ID)
 		if err != nil {
 			log.Printf("Failed to get backend details: %v", err)
 			return
@@ -513,7 +509,7 @@ func runManageBackendsExample(ctx context.Context, core *client.CoreClient, lbID
 		CloseConnectionsOnHostHealthFailure: boolPtr(false),
 	}
 
-	_, err = backendService.Update(ctx, getOpts(), lbID, backendID, updateBackendReq)
+	_, err = backendService.Update(ctx, lbID, backendID, updateBackendReq)
 	if err != nil {
 		log.Printf("Failed to update backend: %v", err)
 		return
@@ -522,14 +518,14 @@ func runManageBackendsExample(ctx context.Context, core *client.CoreClient, lbID
 }
 
 // runManageListenersExample demonstrates listener management operations
-func runManageListenersExample(ctx context.Context, core *client.CoreClient, lbID string) {
+func runManageListenersExample(ctx context.Context, client *client.CoreClient, lbID string) {
 	fmt.Printf("Managing listeners for load balancer: %s\n", lbID)
 
-	listenerService := lbaas.New(core).NetworkListeners()
-	backendService := lbaas.New(core).NetworkBackends()
+	listenerService := lbaas.New(client).NetworkListeners()
+	backendService := lbaas.New(client).NetworkBackends()
 
 	// First, get available backends to link to
-	backends, err := backendService.ListAll(ctx, getOpts(), lbID)
+	backends, err := backendService.ListAll(ctx, lbID)
 	if err != nil || len(backends) == 0 {
 		log.Printf("No backends available for listener creation")
 		return
@@ -544,7 +540,7 @@ func runManageListenersExample(ctx context.Context, core *client.CoreClient, lbI
 		Port:        9090,
 	}
 
-	listener, err := listenerService.Create(ctx, getOpts(), lbID, backends[0].ID, createListenerReq)
+	listener, err := listenerService.Create(ctx, lbID, backends[0].ID, createListenerReq)
 	if err != nil {
 		log.Printf("Failed to create listener: %v", err)
 		return
@@ -553,7 +549,7 @@ func runManageListenersExample(ctx context.Context, core *client.CoreClient, lbI
 
 	// List all listeners (using ListAll to get all pages)
 	fmt.Println("\nListing all listeners...")
-	listeners, err := listenerService.ListAll(ctx, getOpts(), lbID)
+	listeners, err := listenerService.ListAll(ctx, lbID)
 	if err != nil {
 		log.Printf("Failed to list listeners: %v", err)
 		return
@@ -567,7 +563,7 @@ func runManageListenersExample(ctx context.Context, core *client.CoreClient, lbI
 
 	// Get detailed listener information
 	fmt.Printf("\nGetting details for listener: %s\n", listener.ID)
-	detailedListener, err := listenerService.Get(ctx, getOpts(), lbID, listener.ID)
+	detailedListener, err := listenerService.Get(ctx, lbID, listener.ID)
 	if err != nil {
 		log.Printf("Failed to get listener details: %v", err)
 		return
@@ -587,7 +583,7 @@ func runManageListenersExample(ctx context.Context, core *client.CoreClient, lbI
 		Name: stringPtr("updated-admin-listener"),
 	}
 
-	err = listenerService.Update(ctx, getOpts(), lbID, listener.ID, updateListenerReq)
+	err = listenerService.Update(ctx, lbID, listener.ID, updateListenerReq)
 	if err != nil {
 		log.Printf("Failed to update listener: %v", err)
 		return
@@ -596,10 +592,10 @@ func runManageListenersExample(ctx context.Context, core *client.CoreClient, lbI
 }
 
 // runManageHealthChecksExample demonstrates health check management
-func runManageHealthChecksExample(ctx context.Context, core *client.CoreClient, lbID string) {
+func runManageHealthChecksExample(ctx context.Context, client *client.CoreClient, lbID string) {
 	fmt.Printf("Managing health checks for load balancer: %s\n", lbID)
 
-	hcService := lbaas.New(core).NetworkHealthChecks()
+	hcService := lbaas.New(client).NetworkHealthChecks()
 
 	// Create a new health check
 	fmt.Println("Creating a new health check...")
@@ -615,7 +611,7 @@ func runManageHealthChecksExample(ctx context.Context, core *client.CoreClient, 
 		UnhealthyThresholdCount: intPtr(3),
 	}
 
-	hc, err := hcService.Create(ctx, getOpts(), lbID, createHCReq)
+	hc, err := hcService.Create(ctx, lbID, createHCReq)
 	if err != nil {
 		log.Printf("Failed to create health check: %v", err)
 		return
@@ -625,7 +621,7 @@ func runManageHealthChecksExample(ctx context.Context, core *client.CoreClient, 
 
 	// List all health checks (using ListAll to get all pages)
 	fmt.Println("\nListing all health checks...")
-	healthChecks, err := hcService.ListAll(ctx, getOpts(), lbID)
+	healthChecks, err := hcService.ListAll(ctx, lbID)
 	if err != nil {
 		log.Printf("Failed to list health checks: %v", err)
 		return
@@ -641,7 +637,7 @@ func runManageHealthChecksExample(ctx context.Context, core *client.CoreClient, 
 
 	// Get detailed health check information
 	fmt.Printf("\nGetting details for health check: %s\n", hc.ID)
-	detailedHC, err := hcService.Get(ctx, getOpts(), lbID, hc.ID)
+	detailedHC, err := hcService.Get(ctx, lbID, hc.ID)
 	if err != nil {
 		log.Printf("Failed to get health check details: %v", err)
 		return
@@ -664,7 +660,7 @@ func runManageHealthChecksExample(ctx context.Context, core *client.CoreClient, 
 		IntervalSeconds: intPtr(15),
 	}
 
-	err = hcService.Update(ctx, getOpts(), lbID, hc.ID, updateHCReq)
+	err = hcService.Update(ctx, lbID, hc.ID, updateHCReq)
 	if err != nil {
 		log.Printf("Failed to update health check: %v", err)
 		return
@@ -673,10 +669,10 @@ func runManageHealthChecksExample(ctx context.Context, core *client.CoreClient, 
 }
 
 // runManageCertificatesExample demonstrates TLS certificate management
-func runManageCertificatesExample(ctx context.Context, core *client.CoreClient, lbID string) {
+func runManageCertificatesExample(ctx context.Context, client *client.CoreClient, lbID string) {
 	fmt.Printf("Managing TLS certificates for load balancer: %s\n", lbID)
 
-	certService := lbaas.New(core).NetworkCertificates()
+	certService := lbaas.New(client).NetworkCertificates()
 
 	// Generate a new certificate
 	fmt.Println("Generating a new TLS certificate...")
@@ -695,7 +691,7 @@ func runManageCertificatesExample(ctx context.Context, core *client.CoreClient, 
 		PrivateKey:  key,
 	}
 
-	certResp, err := certService.Create(ctx, getOpts(), lbID, createCertReq)
+	certResp, err := certService.Create(ctx, lbID, createCertReq)
 	if err != nil {
 		log.Printf("Failed to create certificate: %v", err)
 		return
@@ -705,7 +701,7 @@ func runManageCertificatesExample(ctx context.Context, core *client.CoreClient, 
 
 	// List all certificates (using ListAll to get all pages)
 	fmt.Println("\nListing all certificates...")
-	certificates, err := certService.ListAll(ctx, getOpts(), lbID)
+	certificates, err := certService.ListAll(ctx, lbID)
 	if err != nil {
 		log.Printf("Failed to list certificates: %v", err)
 		return
@@ -722,7 +718,7 @@ func runManageCertificatesExample(ctx context.Context, core *client.CoreClient, 
 
 	// Get detailed certificate information
 	fmt.Printf("\nGetting details for certificate: %s\n", certResp.ID)
-	detailedCert, err := certService.Get(ctx, getOpts(), lbID, certResp.ID)
+	detailedCert, err := certService.Get(ctx, lbID, certResp.ID)
 	if err != nil {
 		log.Printf("Failed to get certificate details: %v", err)
 		return
@@ -749,7 +745,7 @@ func runManageCertificatesExample(ctx context.Context, core *client.CoreClient, 
 		PrivateKey:  newKey,
 	}
 
-	err = certService.Update(ctx, getOpts(), lbID, certResp.ID, updateCertReq)
+	err = certService.Update(ctx, lbID, certResp.ID, updateCertReq)
 	if err != nil {
 		log.Printf("Failed to update certificate: %v", err)
 		return
@@ -758,16 +754,16 @@ func runManageCertificatesExample(ctx context.Context, core *client.CoreClient, 
 }
 
 // runManageACLsExample demonstrates Access Control List management
-func runManageACLsExample(ctx context.Context, core *client.CoreClient, lbID string) {
+func runManageACLsExample(ctx context.Context, client *client.CoreClient, lbID string) {
 	fmt.Printf("Managing ACLs for load balancer: %s\n", lbID)
 
-	aclService := lbaas.New(core).NetworkACLs()
+	aclService := lbaas.New(client).NetworkACLs()
 
 	// Create individual ACL rules
 	fmt.Println("Creating ACL rules...")
 
 	// Allow HTTP from anywhere
-	httpACLID, err := aclService.Create(ctx, getOpts(), lbID, lbaas.CreateNetworkACLRequest{
+	httpACLID, err := aclService.Create(ctx, lbID, lbaas.CreateNetworkACLRequest{
 		Name:           stringPtr("allow-http-global"),
 		Ethertype:      lbaas.AclEtherTypeIPv4,
 		Protocol:       lbaas.AclProtocolTCP,
@@ -782,7 +778,7 @@ func runManageACLsExample(ctx context.Context, core *client.CoreClient, lbID str
 	createdACLs = append(createdACLs, httpACLID)
 
 	// Allow HTTPS from anywhere
-	httpsACLID, err := aclService.Create(ctx, getOpts(), lbID, lbaas.CreateNetworkACLRequest{
+	httpsACLID, err := aclService.Create(ctx, lbID, lbaas.CreateNetworkACLRequest{
 		Name:           stringPtr("allow-https-global"),
 		Ethertype:      lbaas.AclEtherTypeIPv4,
 		Protocol:       lbaas.AclProtocolTLS,
@@ -797,7 +793,7 @@ func runManageACLsExample(ctx context.Context, core *client.CoreClient, lbID str
 	createdACLs = append(createdACLs, httpsACLID)
 
 	// Deny access from a specific IP range
-	denyACLID, err := aclService.Create(ctx, getOpts(), lbID, lbaas.CreateNetworkACLRequest{
+	denyACLID, err := aclService.Create(ctx, lbID, lbaas.CreateNetworkACLRequest{
 		Name:           stringPtr("deny-suspicious-range"),
 		Ethertype:      lbaas.AclEtherTypeIPv4,
 		Protocol:       lbaas.AclProtocolTCP,
@@ -839,7 +835,7 @@ func runManageACLsExample(ctx context.Context, core *client.CoreClient, lbID str
 		},
 	}
 
-	err = aclService.Replace(ctx, getOpts(), lbID, replaceACLsReq)
+	err = aclService.Replace(ctx, lbID, replaceACLsReq)
 	if err != nil {
 		log.Printf("Failed to replace ACLs: %v", err)
 		return
@@ -850,14 +846,14 @@ func runManageACLsExample(ctx context.Context, core *client.CoreClient, lbID str
 }
 
 // runCleanupExample demonstrates proper resource cleanup
-func runCleanupExample(ctx context.Context, core *client.CoreClient, lbID string) {
+func runCleanupExample(ctx context.Context, client *client.CoreClient, lbID string) {
 	fmt.Printf("Cleaning up resources for load balancer: %s\n", lbID)
 
 	// Note: In a real application, you might want to clean up individual resources
 	// before deleting the load balancer, but since we created them as part of the LB,
 	// they'll be cleaned up automatically when we delete the LB.
 
-	lbService := lbaas.New(core).NetworkLoadBalancers()
+	lbService := lbaas.New(client).NetworkLoadBalancers()
 
 	// Delete the load balancer (this will cascade delete most sub-resources)
 	fmt.Println("Deleting load balancer...")
@@ -865,7 +861,7 @@ func runCleanupExample(ctx context.Context, core *client.CoreClient, lbID string
 		DeletePublicIP: boolPtr(true), // Also delete the associated public IP
 	}
 
-	err := lbService.Delete(ctx, getOpts(), lbID, deleteRequest)
+	err := lbService.Delete(ctx, lbID, deleteRequest)
 	if err != nil {
 		log.Printf("Failed to delete load balancer: %v", err)
 		return
@@ -877,7 +873,7 @@ func runCleanupExample(ctx context.Context, core *client.CoreClient, lbID string
 	fmt.Println("Waiting for deletion to complete...")
 	deadline := time.Now().Add(10 * time.Minute)
 	for time.Now().Before(deadline) {
-		_, err := lbService.Get(ctx, getOpts(), lbID)
+		_, err := lbService.Get(ctx, lbID)
 		if err != nil {
 			// If we get an error (likely 404), the LB is deleted
 			if strings.Contains(err.Error(), "404") {

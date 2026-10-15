@@ -131,8 +131,8 @@ func TestNetworkHealthCheckService_Create(t *testing.T) {
 			}))
 			defer server.Close()
 
-			c := testHealthCheckClient(server.URL)
-			hc, err := c.Create(context.Background(), client.CallOptions{}, tt.lbID, tt.request)
+			client := testHealthCheckClient(server.URL)
+			hc, err := client.Create(context.Background(), tt.lbID, tt.request)
 
 			if tt.wantErr {
 				assertError(t, err)
@@ -234,8 +234,8 @@ func TestNetworkHealthCheckService_Get(t *testing.T) {
 			}))
 			defer server.Close()
 
-			c := testHealthCheckClient(server.URL)
-			hc, err := c.Get(context.Background(), client.CallOptions{}, tt.lbID, tt.hcID)
+			client := testHealthCheckClient(server.URL)
+			hc, err := client.Get(context.Background(), tt.lbID, tt.hcID)
 
 			if tt.wantErr {
 				assertError(t, err)
@@ -317,8 +317,8 @@ func TestNetworkHealthCheckService_List(t *testing.T) {
 			}))
 			defer server.Close()
 
-			c := testHealthCheckClient(server.URL)
-			resp, err := c.List(context.Background(), client.CallOptions{}, tt.lbID, ListNetworkLoadBalancerRequest{})
+			client := testHealthCheckClient(server.URL)
+			resp, err := client.List(context.Background(), tt.lbID, ListNetworkLoadBalancerRequest{})
 
 			if tt.wantErr {
 				assertError(t, err)
@@ -480,8 +480,8 @@ func TestNetworkHealthCheckService_ListAll(t *testing.T) {
 			}))
 			defer server.Close()
 
-			c := testHealthCheckClient(server.URL)
-			healthChecks, err := c.ListAll(context.Background(), client.CallOptions{}, tt.lbID)
+			client := testHealthCheckClient(server.URL)
+			healthChecks, err := client.ListAll(context.Background(), tt.lbID)
 
 			if tt.wantErr {
 				assertError(t, err)
@@ -559,8 +559,8 @@ func TestNetworkHealthCheckService_Update(t *testing.T) {
 			}))
 			defer server.Close()
 
-			c := testHealthCheckClient(server.URL)
-			err := c.Update(context.Background(), client.CallOptions{}, tt.lbID, tt.hcID, tt.request)
+			client := testHealthCheckClient(server.URL)
+			err := client.Update(context.Background(), tt.lbID, tt.hcID, tt.request)
 
 			if tt.wantErr {
 				assertError(t, err)
@@ -609,8 +609,8 @@ func TestNetworkHealthCheckService_Delete(t *testing.T) {
 			}))
 			defer server.Close()
 
-			c := testHealthCheckClient(server.URL)
-			err := c.Delete(context.Background(), client.CallOptions{}, tt.lbID, tt.hcID)
+			client := testHealthCheckClient(server.URL)
+			err := client.Delete(context.Background(), tt.lbID, tt.hcID)
 
 			if tt.wantErr {
 				assertError(t, err)
@@ -630,7 +630,7 @@ func TestNetworkHealthCheckService_Create_NewRequestError(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // Cancela imediatamente
 
-	c := testHealthCheckClient("http://dummy-url")
+	client := testHealthCheckClient("http://dummy-url")
 
 	req := CreateNetworkHealthCheckRequest{
 		Name:     "test-hc",
@@ -638,7 +638,7 @@ func TestNetworkHealthCheckService_Create_NewRequestError(t *testing.T) {
 		Port:     80,
 	}
 
-	_, err := c.Create(ctx, client.CallOptions{}, "lb-123", req)
+	_, err := client.Create(ctx, "lb-123", req)
 
 	if err == nil {
 		t.Error("expected error due to canceled context, got nil")
@@ -651,9 +651,9 @@ func TestNetworkHealthCheckService_Get_NewRequestError(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
-	c := testHealthCheckClient("http://dummy-url")
+	client := testHealthCheckClient("http://dummy-url")
 
-	_, err := c.Get(ctx, client.CallOptions{}, "lb-123", "hc-123")
+	_, err := client.Get(ctx, "lb-123", "hc-123")
 
 	if err == nil {
 		t.Error("expected error due to canceled context, got nil")
@@ -666,9 +666,9 @@ func TestNetworkHealthCheckService_List_NewRequestError(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
-	c := testHealthCheckClient("http://dummy-url")
+	client := testHealthCheckClient("http://dummy-url")
 
-	_, err := c.List(ctx, client.CallOptions{}, "lb-123", ListNetworkLoadBalancerRequest{})
+	_, err := client.List(ctx, "lb-123", ListNetworkLoadBalancerRequest{})
 
 	if err == nil {
 		t.Error("expected error due to canceled context, got nil")
@@ -681,9 +681,9 @@ func TestNetworkHealthCheckService_ListAll_NewRequestError(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
-	c := testHealthCheckClient("http://dummy-url")
+	client := testHealthCheckClient("http://dummy-url")
 
-	_, err := c.ListAll(ctx, client.CallOptions{}, "lb-123")
+	_, err := client.ListAll(ctx, "lb-123")
 
 	if err == nil {
 		t.Error("expected error due to canceled context, got nil")
@@ -696,13 +696,13 @@ func TestNetworkHealthCheckService_Update_NewRequestError(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
-	c := testHealthCheckClient("http://dummy-url")
+	client := testHealthCheckClient("http://dummy-url")
 
 	req := UpdateNetworkHealthCheckRequest{
 		Path: stringPtr("updated-hc"),
 	}
 
-	err := c.Update(ctx, client.CallOptions{}, "lb-123", "hc-123", req)
+	err := client.Update(ctx, "lb-123", "hc-123", req)
 
 	if err == nil {
 		t.Error("expected error due to canceled context, got nil")
@@ -715,9 +715,9 @@ func TestNetworkHealthCheckService_Delete_NewRequestError(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
-	c := testHealthCheckClient("http://dummy-url")
+	client := testHealthCheckClient("http://dummy-url")
 
-	err := c.Delete(ctx, client.CallOptions{}, "lb-123", "hc-123")
+	err := client.Delete(ctx, "lb-123", "hc-123")
 
 	if err == nil {
 		t.Error("expected error due to canceled context, got nil")

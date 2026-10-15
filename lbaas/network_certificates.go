@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/base64"
 	"errors"
-	"github.com/MagaluCloud/mgc-sdk-go/client"
 	"net/http"
 	"time"
 
@@ -47,12 +46,12 @@ type (
 
 	// NetworkCertificateService provides methods for managing network TLS certificates
 	NetworkCertificateService interface {
-		Create(ctx context.Context, callOpts client.CallOptions, lbID string, req CreateNetworkCertificateRequest) (*NetworkTLSCertificateResponse, error)
-		Delete(ctx context.Context, callOpts client.CallOptions, lbID, certicateID string) error
-		Get(ctx context.Context, callOpts client.CallOptions, lbID, certicateID string) (*NetworkTLSCertificateResponse, error)
-		List(ctx context.Context, callOpts client.CallOptions, lbID string, options ListNetworkLoadBalancerRequest) (NetworkPaginatedTLSCertificateResponse, error)
-		ListAll(ctx context.Context, callOpts client.CallOptions, lbID string) ([]NetworkTLSCertificateResponse, error)
-		Update(ctx context.Context, callOpts client.CallOptions, lbID, certicateID string, req UpdateNetworkCertificateRequest) error
+		Create(ctx context.Context, lbID string, req CreateNetworkCertificateRequest) (*NetworkTLSCertificateResponse, error)
+		Delete(ctx context.Context, lbID, certicateID string) error
+		Get(ctx context.Context, lbID, certicateID string) (*NetworkTLSCertificateResponse, error)
+		List(ctx context.Context, lbID string, options ListNetworkLoadBalancerRequest) (NetworkPaginatedTLSCertificateResponse, error)
+		ListAll(ctx context.Context, lbID string) ([]NetworkTLSCertificateResponse, error)
+		Update(ctx context.Context, lbID, certicateID string, req UpdateNetworkCertificateRequest) error
 	}
 
 	// networkCertificateService implements the NetworkCertificateService interface
@@ -62,7 +61,7 @@ type (
 )
 
 // Create creates a new network TLS certificate
-func (s *networkCertificateService) Create(ctx context.Context, callOpts client.CallOptions, lbID string, req CreateNetworkCertificateRequest) (*NetworkTLSCertificateResponse, error) {
+func (s *networkCertificateService) Create(ctx context.Context, lbID string, req CreateNetworkCertificateRequest) (*NetworkTLSCertificateResponse, error) {
 	path := urlNetworkLoadBalancer(&lbID, tls_certificates)
 
 	// Validate if certificate and private key are base64 encoded
@@ -73,7 +72,7 @@ func (s *networkCertificateService) Create(ctx context.Context, callOpts client.
 		return nil, errors.New("private key is not base64 encoded")
 	}
 
-	httpReq, err := s.client.newRequest(ctx, callOpts, http.MethodPost, path, req)
+	httpReq, err := s.client.newRequest(ctx, http.MethodPost, path, req)
 	if err != nil {
 		return nil, err
 	}
@@ -87,10 +86,10 @@ func (s *networkCertificateService) Create(ctx context.Context, callOpts client.
 }
 
 // Delete removes a network TLS certificate
-func (s *networkCertificateService) Delete(ctx context.Context, callOpts client.CallOptions, lbID, certicateID string) error {
+func (s *networkCertificateService) Delete(ctx context.Context, lbID, certicateID string) error {
 	path := urlNetworkLoadBalancer(&lbID, tls_certificates, certicateID)
 
-	httpReq, err := s.client.newRequest(ctx, callOpts, http.MethodDelete, path, nil)
+	httpReq, err := s.client.newRequest(ctx, http.MethodDelete, path, nil)
 	if err != nil {
 		return err
 	}
@@ -100,10 +99,10 @@ func (s *networkCertificateService) Delete(ctx context.Context, callOpts client.
 }
 
 // Get retrieves detailed information about a specific TLS certificate
-func (s *networkCertificateService) Get(ctx context.Context, callOpts client.CallOptions, lbID, certicateID string) (*NetworkTLSCertificateResponse, error) {
+func (s *networkCertificateService) Get(ctx context.Context, lbID, certicateID string) (*NetworkTLSCertificateResponse, error) {
 	path := urlNetworkLoadBalancer(&lbID, tls_certificates, certicateID)
 
-	httpReq, err := s.client.newRequest(ctx, callOpts, http.MethodGet, path, nil)
+	httpReq, err := s.client.newRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -117,10 +116,10 @@ func (s *networkCertificateService) Get(ctx context.Context, callOpts client.Cal
 }
 
 // List returns a paginated list of network TLS certificates with optional filtering and pagination
-func (s *networkCertificateService) List(ctx context.Context, callOpts client.CallOptions, lbID string, options ListNetworkLoadBalancerRequest) (NetworkPaginatedTLSCertificateResponse, error) {
+func (s *networkCertificateService) List(ctx context.Context, lbID string, options ListNetworkLoadBalancerRequest) (NetworkPaginatedTLSCertificateResponse, error) {
 	path := urlNetworkLoadBalancer(&lbID, tls_certificates)
 
-	httpReq, err := s.client.newRequest(ctx, callOpts, http.MethodGet, path, nil)
+	httpReq, err := s.client.newRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
 		return NetworkPaginatedTLSCertificateResponse{}, err
 	}
@@ -139,7 +138,7 @@ func (s *networkCertificateService) List(ctx context.Context, callOpts client.Ca
 }
 
 // ListAll retrieves all network TLS certificates by fetching all pages
-func (s *networkCertificateService) ListAll(ctx context.Context, callOpts client.CallOptions, lbID string) ([]NetworkTLSCertificateResponse, error) {
+func (s *networkCertificateService) ListAll(ctx context.Context, lbID string) ([]NetworkTLSCertificateResponse, error) {
 	var allCertificates []NetworkTLSCertificateResponse
 	offset := 0
 	limit := 50
@@ -152,7 +151,7 @@ func (s *networkCertificateService) ListAll(ctx context.Context, callOpts client
 			Limit:  &currentLimit,
 		}
 
-		resp, err := s.List(ctx, callOpts, lbID, pageOptions)
+		resp, err := s.List(ctx, lbID, pageOptions)
 		if err != nil {
 			return nil, err
 		}
@@ -170,10 +169,10 @@ func (s *networkCertificateService) ListAll(ctx context.Context, callOpts client
 }
 
 // Update updates a network TLS certificate's properties
-func (s *networkCertificateService) Update(ctx context.Context, callOpts client.CallOptions, lbID, certicateID string, req UpdateNetworkCertificateRequest) error {
+func (s *networkCertificateService) Update(ctx context.Context, lbID, certicateID string, req UpdateNetworkCertificateRequest) error {
 	path := urlNetworkLoadBalancer(&lbID, tls_certificates, certicateID)
 
-	httpReq, err := s.client.newRequest(ctx, callOpts, http.MethodPut, path, req)
+	httpReq, err := s.client.newRequest(ctx, http.MethodPut, path, req)
 	if err != nil {
 		return err
 	}

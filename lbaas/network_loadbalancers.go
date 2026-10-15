@@ -3,7 +3,6 @@ package lbaas
 import (
 	"context"
 	"errors"
-	"github.com/MagaluCloud/mgc-sdk-go/client"
 	"net/http"
 	"strconv"
 	"time"
@@ -156,12 +155,12 @@ type (
 
 	// NetworkLoadBalancerService provides CRUD operations for Network Load Balancers.
 	NetworkLoadBalancerService interface {
-		Create(ctx context.Context, callOpts client.CallOptions, create CreateNetworkLoadBalancerRequest) (string, error)
-		Delete(ctx context.Context, callOpts client.CallOptions, id string, options DeleteNetworkLoadBalancerRequest) error
-		Get(ctx context.Context, callOpts client.CallOptions, id string) (NetworkLoadBalancerResponse, error)
-		List(ctx context.Context, callOpts client.CallOptions, options ListNetworkLoadBalancerRequest) (NetworkLBPaginatedResponse, error)
-		ListAll(ctx context.Context, callOpts client.CallOptions) ([]NetworkLoadBalancerResponse, error)
-		Update(ctx context.Context, callOpts client.CallOptions, id string, loadBalancer UpdateNetworkLoadBalancerRequest) (string, error)
+		Create(ctx context.Context, create CreateNetworkLoadBalancerRequest) (string, error)
+		Delete(ctx context.Context, id string, options DeleteNetworkLoadBalancerRequest) error
+		Get(ctx context.Context, id string) (NetworkLoadBalancerResponse, error)
+		List(ctx context.Context, options ListNetworkLoadBalancerRequest) (NetworkLBPaginatedResponse, error)
+		ListAll(ctx context.Context) ([]NetworkLoadBalancerResponse, error)
+		Update(ctx context.Context, id string, loadBalancer UpdateNetworkLoadBalancerRequest) (string, error)
 	}
 
 	// networkLoadBalancerService implements the NetworkLoadBalancerService interface.
@@ -172,10 +171,10 @@ type (
 )
 
 // Create creates a new Network Load Balancer and returns its ID.
-func (s *networkLoadBalancerService) Create(ctx context.Context, callOpts client.CallOptions, create CreateNetworkLoadBalancerRequest) (string, error) {
+func (s *networkLoadBalancerService) Create(ctx context.Context, create CreateNetworkLoadBalancerRequest) (string, error) {
 	path := urlNetworkLoadBalancer(nil)
 
-	httpReq, err := s.client.newRequest(ctx, callOpts, http.MethodPost, path, create)
+	httpReq, err := s.client.newRequest(ctx, http.MethodPost, path, create)
 	if err != nil {
 		return "", err
 	}
@@ -192,10 +191,10 @@ func (s *networkLoadBalancerService) Create(ctx context.Context, callOpts client
 
 // Delete removes a Network Load Balancer by ID.
 // Set DeletePublicIP=true in options to also remove the public IP.
-func (s *networkLoadBalancerService) Delete(ctx context.Context, callOpts client.CallOptions, id string, options DeleteNetworkLoadBalancerRequest) error {
+func (s *networkLoadBalancerService) Delete(ctx context.Context, id string, options DeleteNetworkLoadBalancerRequest) error {
 	path := urlNetworkLoadBalancer(&id)
 
-	httpReq, err := s.client.newRequest(ctx, callOpts, http.MethodDelete, path, nil)
+	httpReq, err := s.client.newRequest(ctx, http.MethodDelete, path, nil)
 	if err != nil {
 		return err
 	}
@@ -211,10 +210,10 @@ func (s *networkLoadBalancerService) Delete(ctx context.Context, callOpts client
 }
 
 // Get retrieves detailed information about a Load Balancer by ID.
-func (s *networkLoadBalancerService) Get(ctx context.Context, callOpts client.CallOptions, id string) (NetworkLoadBalancerResponse, error) {
+func (s *networkLoadBalancerService) Get(ctx context.Context, id string) (NetworkLoadBalancerResponse, error) {
 	path := urlNetworkLoadBalancer(&id)
 
-	httpReq, err := s.client.newRequest(ctx, callOpts, http.MethodGet, path, nil)
+	httpReq, err := s.client.newRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
 		return NetworkLoadBalancerResponse{}, err
 	}
@@ -232,10 +231,10 @@ func (s *networkLoadBalancerService) Get(ctx context.Context, callOpts client.Ca
 }
 
 // List returns a paginated list of Network Load Balancers with optional pagination and sorting.
-func (s *networkLoadBalancerService) List(ctx context.Context, callOpts client.CallOptions, options ListNetworkLoadBalancerRequest) (NetworkLBPaginatedResponse, error) {
+func (s *networkLoadBalancerService) List(ctx context.Context, options ListNetworkLoadBalancerRequest) (NetworkLBPaginatedResponse, error) {
 	path := urlNetworkLoadBalancer(nil)
 
-	httpReq, err := s.client.newRequest(ctx, callOpts, http.MethodGet, path, nil)
+	httpReq, err := s.client.newRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
 		return NetworkLBPaginatedResponse{}, err
 	}
@@ -255,7 +254,7 @@ func (s *networkLoadBalancerService) List(ctx context.Context, callOpts client.C
 }
 
 // ListAll retrieves all Network Load Balancers by fetching all pages
-func (s *networkLoadBalancerService) ListAll(ctx context.Context, callOpts client.CallOptions) ([]NetworkLoadBalancerResponse, error) {
+func (s *networkLoadBalancerService) ListAll(ctx context.Context) ([]NetworkLoadBalancerResponse, error) {
 	var allLoadBalancers []NetworkLoadBalancerResponse
 	offset := 0
 	limit := 50
@@ -268,7 +267,7 @@ func (s *networkLoadBalancerService) ListAll(ctx context.Context, callOpts clien
 			Limit:  &currentLimit,
 		}
 
-		resp, err := s.List(ctx, callOpts, pageOptions)
+		resp, err := s.List(ctx, pageOptions)
 		if err != nil {
 			return nil, err
 		}
@@ -288,10 +287,10 @@ func (s *networkLoadBalancerService) ListAll(ctx context.Context, callOpts clien
 // Update modifies a Network Load Balancer's name and/or description.
 // Returns the ID of the updated load balancer.
 // Only name and description can be updated via this endpoint.
-func (s *networkLoadBalancerService) Update(ctx context.Context, callOpts client.CallOptions, id string, loadBalancer UpdateNetworkLoadBalancerRequest) (string, error) {
+func (s *networkLoadBalancerService) Update(ctx context.Context, id string, loadBalancer UpdateNetworkLoadBalancerRequest) (string, error) {
 	path := urlNetworkLoadBalancer(&id)
 
-	httpReq, err := s.client.newRequest(ctx, callOpts, http.MethodPut, path, loadBalancer)
+	httpReq, err := s.client.newRequest(ctx, http.MethodPut, path, loadBalancer)
 	if err != nil {
 		return "", err
 	}

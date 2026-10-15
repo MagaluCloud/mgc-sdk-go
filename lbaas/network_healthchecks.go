@@ -2,7 +2,6 @@ package lbaas
 
 import (
 	"context"
-	"github.com/MagaluCloud/mgc-sdk-go/client"
 	"net/http"
 	"time"
 
@@ -67,12 +66,12 @@ type (
 
 	// NetworkHealthCheckService provides methods for managing network health checks
 	NetworkHealthCheckService interface {
-		Create(ctx context.Context, callOpts client.CallOptions, lbID string, req CreateNetworkHealthCheckRequest) (*NetworkHealthCheckResponse, error)
-		Delete(ctx context.Context, callOpts client.CallOptions, lbID, healthCheckID string) error
-		Get(ctx context.Context, callOpts client.CallOptions, lbID, healthCheckID string) (*NetworkHealthCheckResponse, error)
-		List(ctx context.Context, callOpts client.CallOptions, lbID string, options ListNetworkLoadBalancerRequest) (NetworkPaginatedHealthCheckResponse, error)
-		ListAll(ctx context.Context, callOpts client.CallOptions, lbID string) ([]NetworkHealthCheckResponse, error)
-		Update(ctx context.Context, callOpts client.CallOptions, lbID, healthCheckID string, req UpdateNetworkHealthCheckRequest) error
+		Create(ctx context.Context, lbID string, req CreateNetworkHealthCheckRequest) (*NetworkHealthCheckResponse, error)
+		Delete(ctx context.Context, lbID, healthCheckID string) error
+		Get(ctx context.Context, lbID, healthCheckID string) (*NetworkHealthCheckResponse, error)
+		List(ctx context.Context, lbID string, options ListNetworkLoadBalancerRequest) (NetworkPaginatedHealthCheckResponse, error)
+		ListAll(ctx context.Context, lbID string) ([]NetworkHealthCheckResponse, error)
+		Update(ctx context.Context, lbID, healthCheckID string, req UpdateNetworkHealthCheckRequest) error
 	}
 
 	// networkHealthCheckService implements the NetworkHealthCheckService interface
@@ -82,10 +81,10 @@ type (
 )
 
 // Create creates a new network health check
-func (s *networkHealthCheckService) Create(ctx context.Context, callOpts client.CallOptions, lbID string, req CreateNetworkHealthCheckRequest) (*NetworkHealthCheckResponse, error) {
+func (s *networkHealthCheckService) Create(ctx context.Context, lbID string, req CreateNetworkHealthCheckRequest) (*NetworkHealthCheckResponse, error) {
 	path := urlNetworkLoadBalancer(&lbID, health_checks)
 
-	httpReq, err := s.client.newRequest(ctx, callOpts, http.MethodPost, path, req)
+	httpReq, err := s.client.newRequest(ctx, http.MethodPost, path, req)
 	if err != nil {
 		return nil, err
 	}
@@ -99,10 +98,10 @@ func (s *networkHealthCheckService) Create(ctx context.Context, callOpts client.
 }
 
 // Delete removes a network health check
-func (s *networkHealthCheckService) Delete(ctx context.Context, callOpts client.CallOptions, lbID, healthCheckID string) error {
+func (s *networkHealthCheckService) Delete(ctx context.Context, lbID, healthCheckID string) error {
 	path := urlNetworkLoadBalancer(&lbID, health_checks, healthCheckID)
 
-	httpReq, err := s.client.newRequest(ctx, callOpts, http.MethodDelete, path, nil)
+	httpReq, err := s.client.newRequest(ctx, http.MethodDelete, path, nil)
 	if err != nil {
 		return err
 	}
@@ -112,10 +111,10 @@ func (s *networkHealthCheckService) Delete(ctx context.Context, callOpts client.
 }
 
 // Get retrieves detailed information about a specific health check
-func (s *networkHealthCheckService) Get(ctx context.Context, callOpts client.CallOptions, lbID, healthCheckID string) (*NetworkHealthCheckResponse, error) {
+func (s *networkHealthCheckService) Get(ctx context.Context, lbID, healthCheckID string) (*NetworkHealthCheckResponse, error) {
 	path := urlNetworkLoadBalancer(&lbID, health_checks, healthCheckID)
 
-	httpReq, err := s.client.newRequest(ctx, callOpts, http.MethodGet, path, nil)
+	httpReq, err := s.client.newRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -129,10 +128,10 @@ func (s *networkHealthCheckService) Get(ctx context.Context, callOpts client.Cal
 }
 
 // List returns a paginated list of network health checks with optional filtering and pagination
-func (s *networkHealthCheckService) List(ctx context.Context, callOpts client.CallOptions, lbID string, options ListNetworkLoadBalancerRequest) (NetworkPaginatedHealthCheckResponse, error) {
+func (s *networkHealthCheckService) List(ctx context.Context, lbID string, options ListNetworkLoadBalancerRequest) (NetworkPaginatedHealthCheckResponse, error) {
 	path := urlNetworkLoadBalancer(&lbID, health_checks)
 
-	httpReq, err := s.client.newRequest(ctx, callOpts, http.MethodGet, path, nil)
+	httpReq, err := s.client.newRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
 		return NetworkPaginatedHealthCheckResponse{}, err
 	}
@@ -152,7 +151,7 @@ func (s *networkHealthCheckService) List(ctx context.Context, callOpts client.Ca
 }
 
 // ListAll retrieves all network health checks by fetching all pages
-func (s *networkHealthCheckService) ListAll(ctx context.Context, callOpts client.CallOptions, lbID string) ([]NetworkHealthCheckResponse, error) {
+func (s *networkHealthCheckService) ListAll(ctx context.Context, lbID string) ([]NetworkHealthCheckResponse, error) {
 	var allHealthChecks []NetworkHealthCheckResponse
 	offset := 0
 	limit := 50
@@ -165,7 +164,7 @@ func (s *networkHealthCheckService) ListAll(ctx context.Context, callOpts client
 			Limit:  &currentLimit,
 		}
 
-		resp, err := s.List(ctx, callOpts, lbID, pageOptions)
+		resp, err := s.List(ctx, lbID, pageOptions)
 		if err != nil {
 			return nil, err
 		}
@@ -183,10 +182,10 @@ func (s *networkHealthCheckService) ListAll(ctx context.Context, callOpts client
 }
 
 // Update updates a network health check's properties
-func (s *networkHealthCheckService) Update(ctx context.Context, callOpts client.CallOptions, lbID, healthCheckID string, req UpdateNetworkHealthCheckRequest) error {
+func (s *networkHealthCheckService) Update(ctx context.Context, lbID, healthCheckID string, req UpdateNetworkHealthCheckRequest) error {
 	path := urlNetworkLoadBalancer(&lbID, health_checks, healthCheckID)
 
-	httpReq, err := s.client.newRequest(ctx, callOpts, http.MethodPut, path, req)
+	httpReq, err := s.client.newRequest(ctx, http.MethodPut, path, req)
 	if err != nil {
 		return err
 	}

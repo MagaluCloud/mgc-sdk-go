@@ -167,8 +167,8 @@ func TestNetworkListenerService_Create(t *testing.T) {
 			}))
 			defer server.Close()
 
-			c := testListenerClient(server.URL)
-			listener, err := c.Create(context.Background(), client.CallOptions{}, tt.lbID, tt.backendID, tt.request)
+			client := testListenerClient(server.URL)
+			listener, err := client.Create(context.Background(), tt.lbID, tt.backendID, tt.request)
 
 			if tt.wantErr {
 				assertError(t, err)
@@ -233,8 +233,8 @@ func TestNetworkListenerService_Get(t *testing.T) {
 			}))
 			defer server.Close()
 
-			c := testListenerClient(server.URL)
-			listener, err := c.Get(context.Background(), client.CallOptions{}, tt.lbID, tt.listenerID)
+			client := testListenerClient(server.URL)
+			listener, err := client.Get(context.Background(), tt.lbID, tt.listenerID)
 
 			if tt.wantErr {
 				assertError(t, err)
@@ -316,8 +316,8 @@ func TestNetworkListenerService_List(t *testing.T) {
 			}))
 			defer server.Close()
 
-			c := testListenerClient(server.URL)
-			resp, err := c.List(context.Background(), client.CallOptions{}, tt.lbID, ListNetworkLoadBalancerRequest{})
+			client := testListenerClient(server.URL)
+			resp, err := client.List(context.Background(), tt.lbID, ListNetworkLoadBalancerRequest{})
 
 			if tt.wantErr {
 				assertError(t, err)
@@ -469,8 +469,8 @@ func TestNetworkListenerService_ListAll(t *testing.T) {
 			}))
 			defer server.Close()
 
-			c := testListenerClient(server.URL)
-			listeners, err := c.ListAll(context.Background(), client.CallOptions{}, tt.lbID)
+			client := testListenerClient(server.URL)
+			listeners, err := client.ListAll(context.Background(), tt.lbID)
 
 			if tt.wantErr {
 				assertError(t, err)
@@ -543,8 +543,8 @@ func TestNetworkListenerService_Update(t *testing.T) {
 			}))
 			defer server.Close()
 
-			c := testListenerClient(server.URL)
-			err := c.Update(context.Background(), client.CallOptions{}, tt.lbID, tt.listenerID, tt.request)
+			client := testListenerClient(server.URL)
+			err := client.Update(context.Background(), tt.lbID, tt.listenerID, tt.request)
 
 			if tt.wantErr {
 				assertError(t, err)
@@ -593,8 +593,8 @@ func TestNetworkListenerService_Delete(t *testing.T) {
 			}))
 			defer server.Close()
 
-			c := testListenerClient(server.URL)
-			err := c.Delete(context.Background(), client.CallOptions{}, tt.lbID, tt.listenerID)
+			client := testListenerClient(server.URL)
+			err := client.Delete(context.Background(), tt.lbID, tt.listenerID)
 
 			if tt.wantErr {
 				assertError(t, err)
@@ -614,7 +614,7 @@ func TestNetworkListenerService_Create_NewRequestError(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // Cancela imediatamente
 
-	c := testListenerClient("http://dummy-url")
+	client := testListenerClient("http://dummy-url")
 
 	req := CreateNetworkListenerRequest{
 		Name:     "test-listener",
@@ -622,7 +622,7 @@ func TestNetworkListenerService_Create_NewRequestError(t *testing.T) {
 		Port:     80,
 	}
 
-	_, err := c.Create(ctx, client.CallOptions{}, "lb-123", "backend-123", req)
+	_, err := client.Create(ctx, "lb-123", "backend-123", req)
 
 	if err == nil {
 		t.Error("expected error due to canceled context, got nil")
@@ -635,9 +635,9 @@ func TestNetworkListenerService_Get_NewRequestError(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
-	c := testListenerClient("http://dummy-url")
+	client := testListenerClient("http://dummy-url")
 
-	_, err := c.Get(ctx, client.CallOptions{}, "lb-123", "listener-123")
+	_, err := client.Get(ctx, "lb-123", "listener-123")
 
 	if err == nil {
 		t.Error("expected error due to canceled context, got nil")
@@ -650,9 +650,9 @@ func TestNetworkListenerService_List_NewRequestError(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
-	c := testListenerClient("http://dummy-url")
+	client := testListenerClient("http://dummy-url")
 
-	_, err := c.List(ctx, client.CallOptions{}, "lb-123", ListNetworkLoadBalancerRequest{})
+	_, err := client.List(ctx, "lb-123", ListNetworkLoadBalancerRequest{})
 
 	if err == nil {
 		t.Error("expected error due to canceled context, got nil")
@@ -665,9 +665,9 @@ func TestNetworkListenerService_ListAll_NewRequestError(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
-	c := testListenerClient("http://dummy-url")
+	client := testListenerClient("http://dummy-url")
 
-	_, err := c.ListAll(ctx, client.CallOptions{}, "lb-123")
+	_, err := client.ListAll(ctx, "lb-123")
 
 	if err == nil {
 		t.Error("expected error due to canceled context, got nil")
@@ -680,13 +680,13 @@ func TestNetworkListenerService_Update_NewRequestError(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
-	c := testListenerClient("http://dummy-url")
+	client := testListenerClient("http://dummy-url")
 
 	req := UpdateNetworkListenerRequest{
 		TLSCertificateID: stringPtr("updated-listener"),
 	}
 
-	err := c.Update(ctx, client.CallOptions{}, "lb-123", "listener-123", req)
+	err := client.Update(ctx, "lb-123", "listener-123", req)
 
 	if err == nil {
 		t.Error("expected error due to canceled context, got nil")
@@ -699,9 +699,9 @@ func TestNetworkListenerService_Delete_NewRequestError(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
-	c := testListenerClient("http://dummy-url")
+	client := testListenerClient("http://dummy-url")
 
-	err := c.Delete(ctx, client.CallOptions{}, "lb-123", "listener-123")
+	err := client.Delete(ctx, "lb-123", "listener-123")
 
 	if err == nil {
 		t.Error("expected error due to canceled context, got nil")

@@ -88,8 +88,8 @@ func TestNetworkACLService_Create(t *testing.T) {
 			}))
 			defer server.Close()
 
-			c := testACLClient(server.URL)
-			id, err := c.Create(context.Background(), client.CallOptions{}, tt.lbID, tt.request)
+			client := testACLClient(server.URL)
+			id, err := client.Create(context.Background(), tt.lbID, tt.request)
 
 			if tt.wantErr {
 				assertError(t, err)
@@ -146,8 +146,8 @@ func TestNetworkACLService_Delete(t *testing.T) {
 			}))
 			defer server.Close()
 
-			c := testACLClient(server.URL)
-			err := c.Delete(context.Background(), client.CallOptions{}, tt.lbID, tt.aclID)
+			client := testACLClient(server.URL)
+			err := client.Delete(context.Background(), tt.lbID, tt.aclID)
 
 			if tt.wantErr {
 				assertError(t, err)
@@ -221,8 +221,8 @@ func TestNetworkACLService_Replace(t *testing.T) {
 			}))
 			defer server.Close()
 
-			c := testACLClient(server.URL)
-			err := c.Replace(context.Background(), client.CallOptions{}, tt.lbID, tt.request)
+			client := testACLClient(server.URL)
+			err := client.Replace(context.Background(), tt.lbID, tt.request)
 
 			if tt.wantErr {
 				assertError(t, err)
@@ -241,7 +241,7 @@ func TestNetworkACLService_Create_NewRequestError(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
-	c := testACLClient("http://dummy-url")
+	client := testACLClient("http://dummy-url")
 
 	req := CreateNetworkACLRequest{
 		Ethertype:      "IPv4",
@@ -250,7 +250,7 @@ func TestNetworkACLService_Create_NewRequestError(t *testing.T) {
 		Action:         "allow",
 	}
 
-	_, err := c.Create(ctx, client.CallOptions{}, "lb-123", req)
+	_, err := client.Create(ctx, "lb-123", req)
 
 	if err == nil {
 		t.Error("expected error due to canceled context, got nil")
@@ -263,9 +263,9 @@ func TestNetworkACLService_Delete_NewRequestError(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
-	c := testACLClient("http://dummy-url")
+	client := testACLClient("http://dummy-url")
 
-	err := c.Delete(ctx, client.CallOptions{}, "lb-123", "acl-123")
+	err := client.Delete(ctx, "lb-123", "acl-123")
 
 	if err == nil {
 		t.Error("expected error due to canceled context, got nil")
@@ -278,7 +278,7 @@ func TestNetworkACLService_Replace_NewRequestError(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
-	c := testACLClient("http://dummy-url")
+	client := testACLClient("http://dummy-url")
 
 	req := UpdateNetworkACLRequest{
 		Acls: []CreateNetworkACLRequest{
@@ -291,7 +291,7 @@ func TestNetworkACLService_Replace_NewRequestError(t *testing.T) {
 		},
 	}
 
-	err := c.Replace(ctx, client.CallOptions{}, "lb-123", req)
+	err := client.Replace(ctx, "lb-123", req)
 
 	if err == nil {
 		t.Error("expected error due to canceled context, got nil")
