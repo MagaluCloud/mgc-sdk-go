@@ -497,7 +497,7 @@ Available options:
 ### Listing Instances
 
 ```go
-instances, err := computeClient.Instances().List(context.Background(), compute.ListOptions{
+instances, err := computeClient.Instances().List(context.Background(), client.CallOptions{}, compute.ListOptions{
     Limit:  helpers.IntPtr(10),
     Offset: helpers.IntPtr(0),
     Expand: []string{compute.InstanceMachineTypeExpand, compute.InstanceImageExpand},

@@ -229,6 +229,19 @@ func decodeJsonResponse[T any](resp *http.Response, v *T) (*T, error) {
 	return v, nil
 }
 
+// WithCallOptions wraps reqf so that every request it builds carries opts.
+func WithCallOptions(reqf NewRequestFunc, opts client.CallOptions) NewRequestFunc {
+	return func(ctx context.Context, method, path string, body any) (*http.Request, error) {
+		req, err := reqf(ctx, method, path, body)
+		if err != nil {
+			return nil, err
+		}
+
+		opts.Apply(req)
+		return req, nil
+	}
+}
+
 // ExecuteSimpleRequestWithRespBody handles HTTP requests that require response body parsing
 func ExecuteSimpleRequestWithRespBody[T any](
 	ctx context.Context,

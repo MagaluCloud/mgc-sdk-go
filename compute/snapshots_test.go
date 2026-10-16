@@ -7,6 +7,8 @@ import (
 	"strconv"
 	"testing"
 	"time"
+
+	"github.com/MagaluCloud/mgc-sdk-go/client"
 )
 
 func TestSnapshotService_List(t *testing.T) {
@@ -118,8 +120,8 @@ func TestSnapshotService_List(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := testClient(server.URL)
-			got, err := client.Snapshots().List(context.Background(), tt.opts)
+			c := testClient(server.URL)
+			got, err := c.Snapshots().List(context.Background(), client.CallOptions{}, tt.opts)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("List() error = %v, wantErr %v", err, tt.wantErr)
@@ -255,8 +257,8 @@ func TestSnapshotService_ListAll(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := testClient(server.URL)
-			got, err := client.Snapshots().ListAll(context.Background(), tt.opts)
+			c := testClient(server.URL)
+			got, err := c.Snapshots().ListAll(context.Background(), client.CallOptions{}, tt.opts)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ListAll() error = %v, wantErr %v", err, tt.wantErr)
@@ -320,8 +322,8 @@ func TestSnapshotService_Create(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := testClient(server.URL)
-			gotID, err := client.Snapshots().Create(context.Background(), tt.req)
+			c := testClient(server.URL)
+			gotID, err := c.Snapshots().Create(context.Background(), client.CallOptions{}, tt.req)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Create() error = %v, wantErr %v", err, tt.wantErr)
@@ -390,8 +392,8 @@ func TestSnapshotService_Get(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := testClient(server.URL)
-			got, err := client.Snapshots().Get(context.Background(), tt.id, tt.expand)
+			c := testClient(server.URL)
+			got, err := c.Snapshots().Get(context.Background(), client.CallOptions{}, tt.id, tt.expand)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Get() error = %v, wantErr %v", err, tt.wantErr)
@@ -459,8 +461,8 @@ func TestSnapshotService_Delete(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := testClient(server.URL)
-			err := client.Snapshots().Delete(context.Background(), tt.id)
+			c := testClient(server.URL)
+			err := c.Snapshots().Delete(context.Background(), client.CallOptions{}, tt.id)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Delete() error = %v, wantErr %v", err, tt.wantErr)
@@ -505,8 +507,8 @@ func TestSnapshotService_Rename(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := testClient(server.URL)
-			err := client.Snapshots().Rename(context.Background(), tt.id, tt.newName)
+			c := testClient(server.URL)
+			err := c.Snapshots().Rename(context.Background(), client.CallOptions{}, tt.id, tt.newName)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Rename() error = %v, wantErr %v", err, tt.wantErr)
@@ -559,8 +561,8 @@ func TestSnapshotService_Restore(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := testClient(server.URL)
-			gotID, err := client.Snapshots().Restore(context.Background(), tt.id, tt.req)
+			c := testClient(server.URL)
+			gotID, err := c.Snapshots().Restore(context.Background(), client.CallOptions{}, tt.id, tt.req)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Restore() error = %v, wantErr %v", err, tt.wantErr)
@@ -613,8 +615,8 @@ func TestSnapshotService_Copy(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := testClient(server.URL)
-			err := client.Snapshots().Copy(context.Background(), tt.id, tt.req)
+			c := testClient(server.URL)
+			err := c.Snapshots().Copy(context.Background(), client.CallOptions{}, tt.id, tt.req)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Copy() error = %v, wantErr %v", err, tt.wantErr)

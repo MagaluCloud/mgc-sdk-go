@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/MagaluCloud/mgc-sdk-go/client"
 	mgc_http "github.com/MagaluCloud/mgc-sdk-go/internal/http"
 )
 
@@ -164,16 +165,16 @@ const (
 // VolumeService defines the interface for volume operations.
 // This interface provides methods for managing block storage volumes.
 type VolumeService interface {
-	List(ctx context.Context, opts ListOptions) (*ListVolumesResponse, error)
-	ListAll(ctx context.Context, filterOpts VolumeFilterOptions) ([]Volume, error)
-	Create(ctx context.Context, req CreateVolumeRequest) (string, error)
-	Get(ctx context.Context, id string, expand []SnapshotExpand) (*Volume, error)
-	Delete(ctx context.Context, id string) error
-	Rename(ctx context.Context, id string, newName string) error
-	Extend(ctx context.Context, id string, req ExtendVolumeRequest) error
-	Retype(ctx context.Context, id string, req RetypeVolumeRequest) error
-	Attach(ctx context.Context, volumeID string, instanceID string) error
-	Detach(ctx context.Context, volumeID string) error
+	List(ctx context.Context, callOpts client.CallOptions, opts ListOptions) (*ListVolumesResponse, error)
+	ListAll(ctx context.Context, callOpts client.CallOptions, filterOpts VolumeFilterOptions) ([]Volume, error)
+	Create(ctx context.Context, callOpts client.CallOptions, req CreateVolumeRequest) (string, error)
+	Get(ctx context.Context, callOpts client.CallOptions, id string, expand []SnapshotExpand) (*Volume, error)
+	Delete(ctx context.Context, callOpts client.CallOptions, id string) error
+	Rename(ctx context.Context, callOpts client.CallOptions, id string, newName string) error
+	Extend(ctx context.Context, callOpts client.CallOptions, id string, req ExtendVolumeRequest) error
+	Retype(ctx context.Context, callOpts client.CallOptions, id string, req RetypeVolumeRequest) error
+	Attach(ctx context.Context, callOpts client.CallOptions, volumeID string, instanceID string) error
+	Detach(ctx context.Context, callOpts client.CallOptions, volumeID string) error
 }
 
 // volumeService implements the VolumeService interface.
@@ -185,7 +186,7 @@ type volumeService struct {
 // List retrieves a paginated list of volumes.
 // This method makes an HTTP request to get the list of volumes
 // and applies the filters specified in the options.
-func (s *volumeService) List(ctx context.Context, opts ListOptions) (*ListVolumesResponse, error) {
+func (s *volumeService) List(ctx context.Context, callOpts client.CallOptions, opts ListOptions) (*ListVolumesResponse, error) {
 	path := "/v1/volumes"
 	query := make(url.Values)
 
@@ -206,7 +207,7 @@ func (s *volumeService) List(ctx context.Context, opts ListOptions) (*ListVolume
 
 	result, err := mgc_http.ExecuteSimpleRequestWithRespBody[ListVolumesResponse](
 		ctx,
-		s.client.newRequest,
+		mgc_http.WithCallOptions(s.client.newRequest, callOpts),
 		s.client.GetConfig(),
 		http.MethodGet,
 		path,
@@ -221,7 +222,7 @@ func (s *volumeService) List(ctx context.Context, opts ListOptions) (*ListVolume
 
 // ListAll retrieves all volumes by fetching all pages with optional filtering.
 // This method repeatedly calls List to get all available volumes.
-func (s *volumeService) ListAll(ctx context.Context, filterOpts VolumeFilterOptions) ([]Volume, error) {
+func (s *volumeService) ListAll(ctx context.Context, callOpts client.CallOptions, filterOpts VolumeFilterOptions) ([]Volume, error) {
 	var allVolumes []Volume
 	offset := 0
 	limit := 50
@@ -236,7 +237,7 @@ func (s *volumeService) ListAll(ctx context.Context, filterOpts VolumeFilterOpti
 			Expand: filterOpts.Expand,
 		}
 
-		resp, err := s.List(ctx, opts)
+		resp, err := s.List(ctx, callOpts, opts)
 		if err != nil {
 			return nil, err
 		}
@@ -256,10 +257,10 @@ func (s *volumeService) ListAll(ctx context.Context, filterOpts VolumeFilterOpti
 // Create provisions a new volume.
 // This method makes an HTTP request to create a new volume
 // and returns the ID of the created volume.
-func (s *volumeService) Create(ctx context.Context, req CreateVolumeRequest) (string, error) {
+func (s *volumeService) Create(ctx context.Context, callOpts client.CallOptions, req CreateVolumeRequest) (string, error) {
 	result, err := mgc_http.ExecuteSimpleRequestWithRespBody[struct{ ID string }](
 		ctx,
-		s.client.newRequest,
+		mgc_http.WithCallOptions(s.client.newRequest, callOpts),
 		s.client.GetConfig(),
 		http.MethodPost,
 		"/v1/volumes",
@@ -275,7 +276,7 @@ func (s *volumeService) Create(ctx context.Context, req CreateVolumeRequest) (st
 // Get retrieves a specific volume.
 // This method makes an HTTP request to get detailed information about a volume
 // and optionally expands related resources.
-func (s *volumeService) Get(ctx context.Context, id string, expand []SnapshotExpand) (*Volume, error) {
+func (s *volumeService) Get(ctx context.Context, callOpts client.CallOptions, id string, expand []SnapshotExpand) (*Volume, error) {
 	path := fmt.Sprintf("/v1/volumes/%s", id)
 	query := make(url.Values)
 	if len(expand) > 0 {
@@ -286,7 +287,7 @@ func (s *volumeService) Get(ctx context.Context, id string, expand []SnapshotExp
 
 	return mgc_http.ExecuteSimpleRequestWithRespBody[Volume](
 		ctx,
-		s.client.newRequest,
+		mgc_http.WithCallOptions(s.client.newRequest, callOpts),
 		s.client.GetConfig(),
 		http.MethodGet,
 		path,
@@ -298,10 +299,10 @@ func (s *volumeService) Get(ctx context.Context, id string, expand []SnapshotExp
 // Delete removes a volume.
 // This method makes an HTTP request to delete a volume permanently.
 // The volume must be detached from any instances before it can be deleted.
-func (s *volumeService) Delete(ctx context.Context, id string) error {
+func (s *volumeService) Delete(ctx context.Context, callOpts client.CallOptions, id string) error {
 	return mgc_http.ExecuteSimpleRequest(
 		ctx,
-		s.client.newRequest,
+		mgc_http.WithCallOptions(s.client.newRequest, callOpts),
 		s.client.GetConfig(),
 		http.MethodDelete,
 		fmt.Sprintf("/v1/volumes/%s", id),
@@ -312,10 +313,10 @@ func (s *volumeService) Delete(ctx context.Context, id string) error {
 
 // Rename changes the volume name.
 // This method makes an HTTP request to rename an existing volume.
-func (s *volumeService) Rename(ctx context.Context, id string, newName string) error {
+func (s *volumeService) Rename(ctx context.Context, callOpts client.CallOptions, id string, newName string) error {
 	return mgc_http.ExecuteSimpleRequest(
 		ctx,
-		s.client.newRequest,
+		mgc_http.WithCallOptions(s.client.newRequest, callOpts),
 		s.client.GetConfig(),
 		http.MethodPatch,
 		fmt.Sprintf("/v1/volumes/%s/rename", id),
@@ -327,10 +328,10 @@ func (s *volumeService) Rename(ctx context.Context, id string, newName string) e
 // Extend increases the volume size.
 // This method makes an HTTP request to extend an existing volume.
 // The volume must be detached or the attached instance must be stopped.
-func (s *volumeService) Extend(ctx context.Context, id string, req ExtendVolumeRequest) error {
+func (s *volumeService) Extend(ctx context.Context, callOpts client.CallOptions, id string, req ExtendVolumeRequest) error {
 	return mgc_http.ExecuteSimpleRequest(
 		ctx,
-		s.client.newRequest,
+		mgc_http.WithCallOptions(s.client.newRequest, callOpts),
 		s.client.GetConfig(),
 		http.MethodPost,
 		fmt.Sprintf("/v1/volumes/%s/extend", id),
@@ -342,10 +343,10 @@ func (s *volumeService) Extend(ctx context.Context, id string, req ExtendVolumeR
 // Retype changes the volume type.
 // This method makes an HTTP request to change the type of an existing volume.
 // The volume must be detached or the attached instance must be stopped.
-func (s *volumeService) Retype(ctx context.Context, id string, req RetypeVolumeRequest) error {
+func (s *volumeService) Retype(ctx context.Context, callOpts client.CallOptions, id string, req RetypeVolumeRequest) error {
 	return mgc_http.ExecuteSimpleRequest(
 		ctx,
-		s.client.newRequest,
+		mgc_http.WithCallOptions(s.client.newRequest, callOpts),
 		s.client.GetConfig(),
 		http.MethodPost,
 		fmt.Sprintf("/v1/volumes/%s/retype", id),
@@ -357,10 +358,10 @@ func (s *volumeService) Retype(ctx context.Context, id string, req RetypeVolumeR
 // Attach connects a volume to an instance.
 // This method makes an HTTP request to attach a volume to an instance.
 // Returns an error if the volume is already attached or if either ID is invalid.
-func (s *volumeService) Attach(ctx context.Context, volumeID string, instanceID string) error {
+func (s *volumeService) Attach(ctx context.Context, callOpts client.CallOptions, volumeID string, instanceID string) error {
 	return mgc_http.ExecuteSimpleRequest(
 		ctx,
-		s.client.newRequest,
+		mgc_http.WithCallOptions(s.client.newRequest, callOpts),
 		s.client.GetConfig(),
 		http.MethodPost,
 		fmt.Sprintf("/v1/volumes/%s/attach/%s", volumeID, instanceID),
@@ -372,10 +373,10 @@ func (s *volumeService) Attach(ctx context.Context, volumeID string, instanceID 
 // Detach disconnects a volume from an instance.
 // This method makes an HTTP request to detach a volume from an instance.
 // Returns an error if the volume is not attached or if the operation fails.
-func (s *volumeService) Detach(ctx context.Context, volumeID string) error {
+func (s *volumeService) Detach(ctx context.Context, callOpts client.CallOptions, volumeID string) error {
 	return mgc_http.ExecuteSimpleRequest(
 		ctx,
-		s.client.newRequest,
+		mgc_http.WithCallOptions(s.client.newRequest, callOpts),
 		s.client.GetConfig(),
 		http.MethodPost,
 		fmt.Sprintf("/v1/volumes/%s/detach", volumeID),

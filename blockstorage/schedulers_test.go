@@ -205,8 +205,8 @@ func TestSchedulerService_List(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := testSchedulerClient(server.URL)
-			result, err := client.List(context.Background(), tt.opts)
+			c := testSchedulerClient(server.URL)
+			result, err := c.List(context.Background(), client.CallOptions{}, tt.opts)
 
 			if tt.wantErr {
 				assertError(t, err)
@@ -298,8 +298,8 @@ func TestSchedulerService_Create(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := testSchedulerClient(server.URL)
-			id, err := client.Create(context.Background(), tt.request)
+			c := testSchedulerClient(server.URL)
+			id, err := c.Create(context.Background(), client.CallOptions{}, tt.request)
 
 			if tt.wantErr {
 				assertError(t, err)
@@ -429,8 +429,8 @@ func TestSchedulerService_Get(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := testSchedulerClient(server.URL)
-			scheduler, err := client.Get(context.Background(), tt.id, tt.expand)
+			c := testSchedulerClient(server.URL)
+			scheduler, err := c.Get(context.Background(), client.CallOptions{}, tt.id, tt.expand)
 
 			if tt.wantErr {
 				assertError(t, err)
@@ -489,8 +489,8 @@ func TestSchedulerService_Delete(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := testSchedulerClient(server.URL)
-			err := client.Delete(context.Background(), tt.id)
+			c := testSchedulerClient(server.URL)
+			err := c.Delete(context.Background(), client.CallOptions{}, tt.id)
 
 			if tt.wantErr {
 				assertError(t, err)
@@ -580,8 +580,8 @@ func TestSchedulerService_AttachVolume(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := testSchedulerClient(server.URL)
-			err := client.AttachVolume(context.Background(), tt.id, tt.request)
+			c := testSchedulerClient(server.URL)
+			err := c.AttachVolume(context.Background(), client.CallOptions{}, tt.id, tt.request)
 
 			if tt.wantErr {
 				assertError(t, err)
@@ -671,8 +671,8 @@ func TestSchedulerService_DetachVolume(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := testSchedulerClient(server.URL)
-			err := client.DetachVolume(context.Background(), tt.id, tt.request)
+			c := testSchedulerClient(server.URL)
+			err := c.DetachVolume(context.Background(), client.CallOptions{}, tt.id, tt.request)
 
 			if tt.wantErr {
 				assertError(t, err)
@@ -822,8 +822,8 @@ func TestSchedulerService_ListAll(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := testSchedulerClient(server.URL)
-			schedulers, err := client.ListAll(context.Background(), SchedulerFilterOptions{})
+			c := testSchedulerClient(server.URL)
+			schedulers, err := c.ListAll(context.Background(), client.CallOptions{}, SchedulerFilterOptions{})
 
 			if tt.wantErr {
 				if err == nil {
@@ -907,8 +907,8 @@ func TestSchedulerService_ListAll_WithExpand(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := testSchedulerClient(server.URL)
-	schedulers, err := client.ListAll(context.Background(), SchedulerFilterOptions{
+	c := testSchedulerClient(server.URL)
+	schedulers, err := c.ListAll(context.Background(), client.CallOptions{}, SchedulerFilterOptions{
 		Expand: []ExpandSchedulers{ExpandSchedulersVolume},
 	})
 
@@ -932,9 +932,9 @@ func TestSchedulerService_ListAll_NewRequestError(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
-	client := testSchedulerClient("http://dummy-url")
+	c := testSchedulerClient("http://dummy-url")
 
-	_, err := client.ListAll(ctx, SchedulerFilterOptions{})
+	_, err := c.ListAll(ctx, client.CallOptions{}, SchedulerFilterOptions{})
 
 	if err == nil {
 		t.Error("expected error due to canceled context, got nil")

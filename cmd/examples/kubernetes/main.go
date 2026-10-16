@@ -7,6 +7,7 @@ import (
 	"math/rand/v2"
 	"os"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -17,6 +18,10 @@ import (
 
 func randomString() string {
 	return strconv.FormatInt(time.Now().Unix(), 10) + strconv.FormatInt(rand.Int64(), 10)
+}
+
+func getOpts() client.CallOptions {
+	return client.CallOptions{ProjectID: os.Getenv("MGC_PROJECT")}
 }
 
 func main() {
@@ -91,13 +96,13 @@ func main() {
 }
 
 func deleteAllClusters(k8sClient *kubernetes.KubernetesClient) {
-	clusters, err := k8sClient.Clusters().List(context.Background(), kubernetes.ListOptions{})
+	clusters, err := k8sClient.Clusters().List(context.Background(), getOpts(), kubernetes.ListOptions{})
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	for _, cluster := range clusters {
-		err = k8sClient.Clusters().Delete(context.Background(), cluster.ID)
+		err = k8sClient.Clusters().Delete(context.Background(), getOpts(), cluster.ID)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -105,7 +110,7 @@ func deleteAllClusters(k8sClient *kubernetes.KubernetesClient) {
 	}
 
 	for {
-		clusters, err = k8sClient.Clusters().List(context.Background(), kubernetes.ListOptions{})
+		clusters, err = k8sClient.Clusters().List(context.Background(), getOpts(), kubernetes.ListOptions{})
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -123,14 +128,14 @@ func deleteAllClusters(k8sClient *kubernetes.KubernetesClient) {
 
 func WaitClusterRunning(k8sClient *kubernetes.KubernetesClient, clusterID string) {
 	for {
-		cluster, err := k8sClient.Clusters().Get(context.Background(), clusterID)
+		cluster, err := k8sClient.Clusters().Get(context.Background(), getOpts(), clusterID)
 		if err != nil {
 			log.Fatal(err)
 		}
 
 		fmt.Println(cluster.Status.State)
 
-		if cluster.Status.State == "Running" {
+		if strings.EqualFold(cluster.Status.State, "Running") {
 			break
 		}
 
@@ -150,7 +155,7 @@ func ExampleCreateClusterWithoutNodepool(k8sClient *kubernetes.KubernetesClient)
 		AllowedCIDRs: &[]string{"192.168.0.0/24"},
 	}
 
-	cluster, err := k8sClient.Clusters().Create(context.Background(), createReq)
+	cluster, err := k8sClient.Clusters().Create(context.Background(), getOpts(), createReq)
 	if err != nil {
 		fmt.Println(err)
 		return ""
@@ -180,7 +185,7 @@ func ExampleCreateCluster(k8sClient *kubernetes.KubernetesClient) string {
 		AllowedCIDRs: &[]string{"192.168.0.0/24"},
 	}
 
-	cluster, err := k8sClient.Clusters().Create(context.Background(), createReq)
+	cluster, err := k8sClient.Clusters().Create(context.Background(), getOpts(), createReq)
 	if err != nil {
 		log.Println(err)
 		return ""
@@ -192,7 +197,7 @@ func ExampleCreateCluster(k8sClient *kubernetes.KubernetesClient) string {
 
 func ExampleListClusters(k8sClient *kubernetes.KubernetesClient) {
 
-	clusters, err := k8sClient.Clusters().List(context.Background(), kubernetes.ListOptions{
+	clusters, err := k8sClient.Clusters().List(context.Background(), getOpts(), kubernetes.ListOptions{
 		Limit:  helpers.IntPtr(10),
 		Offset: helpers.IntPtr(0),
 		Expand: []string{"node_pools"},
@@ -212,7 +217,7 @@ func ExampleListClusters(k8sClient *kubernetes.KubernetesClient) {
 func ExampleGetCluster(k8sClient *kubernetes.KubernetesClient, clusterID string) {
 	ctx := context.Background()
 
-	cluster, err := k8sClient.Clusters().Get(ctx, clusterID)
+	cluster, err := k8sClient.Clusters().Get(ctx, getOpts(), clusterID)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -230,7 +235,7 @@ func ExampleUpdateCluster(k8sClient *kubernetes.KubernetesClient, clusterID stri
 		AllowedCIDRs: &[]string{"192.168.0.0/24", "10.0.0.0/16"},
 	}
 
-	updatedCluster, err := k8sClient.Clusters().Update(ctx, clusterID, updateReq)
+	updatedCluster, err := k8sClient.Clusters().Update(ctx, getOpts(), clusterID, updateReq)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -240,7 +245,7 @@ func ExampleUpdateCluster(k8sClient *kubernetes.KubernetesClient, clusterID stri
 
 func ExampleGetKubeConfig(k8sClient *kubernetes.KubernetesClient, clusterID string) {
 	ctx := context.Background()
-	kubeconfig, err := k8sClient.Clusters().GetKubeConfig(ctx, clusterID)
+	kubeconfig, err := k8sClient.Clusters().GetKubeConfig(ctx, getOpts(), clusterID)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -264,14 +269,14 @@ func ExampleNodePoolOperationsWithTaints(k8sClient *kubernetes.KubernetesClient,
 		},
 	}
 
-	newPool, err := k8sClient.Nodepools().Create(ctx, clusterID, poolReq)
+	newPool, err := k8sClient.Nodepools().Create(ctx, getOpts(), clusterID, poolReq)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	fmt.Printf("\nNode Pool criado: %s (%s)\n", newPool.Name, newPool.ID)
 
-	pools, err := k8sClient.Nodepools().List(ctx, clusterID, kubernetes.ListOptions{})
+	pools, err := k8sClient.Nodepools().List(ctx, getOpts(), clusterID, kubernetes.ListOptions{})
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -280,13 +285,13 @@ func ExampleNodePoolOperationsWithTaints(k8sClient *kubernetes.KubernetesClient,
 	for _, pool := range pools {
 		fmt.Printf(" - %s (%d replicas)\n", pool.Name, pool.Replicas)
 	}
-	pool, err := k8sClient.Nodepools().Get(ctx, clusterID, newPool.ID)
+	pool, err := k8sClient.Nodepools().Get(ctx, getOpts(), clusterID, newPool.ID)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	fmt.Println("\nNode Pool:", pool)
-	err = k8sClient.Nodepools().Delete(ctx, clusterID, newPool.ID)
+	err = k8sClient.Nodepools().Delete(ctx, getOpts(), clusterID, newPool.ID)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -303,14 +308,14 @@ func ExampleNodePoolOperationsWithEmptyTaints(k8sClient *kubernetes.KubernetesCl
 		Taints:   &[]kubernetes.Taint{},
 	}
 
-	newPool, err := k8sClient.Nodepools().Create(ctx, clusterID, poolReq)
+	newPool, err := k8sClient.Nodepools().Create(ctx, getOpts(), clusterID, poolReq)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	fmt.Printf("\nNode Pool criado: %s (%s)\n", newPool.Name, newPool.ID)
 
-	pools, err := k8sClient.Nodepools().List(ctx, clusterID, kubernetes.ListOptions{})
+	pools, err := k8sClient.Nodepools().List(ctx, getOpts(), clusterID, kubernetes.ListOptions{})
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -320,14 +325,14 @@ func ExampleNodePoolOperationsWithEmptyTaints(k8sClient *kubernetes.KubernetesCl
 		fmt.Printf(" - %s (%d replicas)\n", pool.Name, pool.Replicas)
 	}
 
-	pool, err := k8sClient.Nodepools().Get(ctx, clusterID, newPool.ID)
+	pool, err := k8sClient.Nodepools().Get(ctx, getOpts(), clusterID, newPool.ID)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	fmt.Println("\nNode Pool:", pool)
 
-	err = k8sClient.Nodepools().Delete(ctx, clusterID, newPool.ID)
+	err = k8sClient.Nodepools().Delete(ctx, getOpts(), clusterID, newPool.ID)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -344,14 +349,14 @@ func ExampleNodePoolOperations(k8sClient *kubernetes.KubernetesClient, clusterID
 		Replicas: 1,
 	}
 
-	newPool, err := k8sClient.Nodepools().Create(ctx, clusterID, poolReq)
+	newPool, err := k8sClient.Nodepools().Create(ctx, getOpts(), clusterID, poolReq)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	fmt.Printf("\nNode Pool criado: %s (%s)\n", newPool.Name, newPool.ID)
 
-	pools, err := k8sClient.Nodepools().List(ctx, clusterID, kubernetes.ListOptions{})
+	pools, err := k8sClient.Nodepools().List(ctx, getOpts(), clusterID, kubernetes.ListOptions{})
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -366,7 +371,7 @@ func ExampleNodePoolOperations(k8sClient *kubernetes.KubernetesClient, clusterID
 		Flavor:   helpers.StrPtr("DP64-128-500"),
 	}
 
-	updatedPool, err := k8sClient.Nodepools().Update(ctx, clusterID, newPool.ID, updateReq)
+	updatedPool, err := k8sClient.Nodepools().Update(ctx, getOpts(), clusterID, newPool.ID, updateReq)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -375,13 +380,13 @@ func ExampleNodePoolOperations(k8sClient *kubernetes.KubernetesClient, clusterID
 	fmt.Printf("Replicas: %d\n", updatedPool.Replicas)
 	fmt.Printf("Flavor: %s\n", updatedPool.InstanceTemplate.Flavor.Name)
 
-	pool, err := k8sClient.Nodepools().Get(ctx, clusterID, newPool.ID)
+	pool, err := k8sClient.Nodepools().Get(ctx, getOpts(), clusterID, newPool.ID)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	fmt.Println("\nNode Pool:", pool)
-	err = k8sClient.Nodepools().Delete(ctx, clusterID, newPool.ID)
+	err = k8sClient.Nodepools().Delete(ctx, getOpts(), clusterID, newPool.ID)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -406,12 +411,12 @@ func ExampleListFlavorsAndVersions(k8sClient *kubernetes.KubernetesClient) {
 
 func ExampleDeleteCluster(k8sClient *kubernetes.KubernetesClient, clusterID string) {
 
-	err := waitForClusterStatus(context.Background(), k8sClient, clusterID, "active")
+	err := waitForClusterStatus(context.Background(), k8sClient, clusterID, "running")
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	err = k8sClient.Clusters().Delete(context.Background(), clusterID)
+	err = k8sClient.Clusters().Delete(context.Background(), getOpts(), clusterID)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -419,7 +424,7 @@ func ExampleDeleteCluster(k8sClient *kubernetes.KubernetesClient, clusterID stri
 	fmt.Printf("\nCluster %s deletado com sucesso\n", clusterID)
 }
 
-func waitForClusterStatus(ctx context.Context, client *kubernetes.KubernetesClient, clusterID, targetStatus string) error {
+func waitForClusterStatus(ctx context.Context, k8sClient *kubernetes.KubernetesClient, clusterID, targetStatus string) error {
 	ctx, cancel := context.WithTimeout(ctx, 30*time.Minute)
 	defer cancel()
 
@@ -431,7 +436,7 @@ func waitForClusterStatus(ctx context.Context, client *kubernetes.KubernetesClie
 		case <-ctx.Done():
 			return fmt.Errorf("timeout esperando status do cluster")
 		case <-ticker.C:
-			cluster, err := client.Clusters().Get(ctx, clusterID)
+			cluster, err := k8sClient.Clusters().Get(ctx, getOpts(), clusterID)
 			if err != nil {
 				return err
 			}
@@ -453,7 +458,7 @@ func ExampleGetNodePoolsList(k8sClient *kubernetes.KubernetesClient, clusterID s
 
 	ctx := context.Background()
 
-	nodePools, err := k8sClient.Nodepools().List(ctx, clusterID, kubernetes.ListOptions{})
+	nodePools, err := k8sClient.Nodepools().List(ctx, getOpts(), clusterID, kubernetes.ListOptions{})
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -466,7 +471,7 @@ func ExampleGetNodePoolsList(k8sClient *kubernetes.KubernetesClient, clusterID s
 func ExampleGetNodePool(k8sClient *kubernetes.KubernetesClient, clusterID string, nodePoolID string) {
 	ctx := context.Background()
 
-	nodePool, err := k8sClient.Nodepools().Get(ctx, clusterID, nodePoolID)
+	nodePool, err := k8sClient.Nodepools().Get(ctx, getOpts(), clusterID, nodePoolID)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -510,7 +515,7 @@ func ExampleCreateNodepoolWithLabels(k8sClient *kubernetes.KubernetesClient, clu
 		Labels:   labels,
 	}
 
-	newPool, err := k8sClient.Nodepools().Create(ctx, clusterID, poolReq)
+	newPool, err := k8sClient.Nodepools().Create(ctx, getOpts(), clusterID, poolReq)
 	if err != nil {
 		log.Fatal(err)
 	}

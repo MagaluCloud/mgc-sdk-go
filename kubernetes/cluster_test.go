@@ -9,6 +9,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/MagaluCloud/mgc-sdk-go/client"
 )
 
 func TestClusterService_List(t *testing.T) {
@@ -75,8 +77,8 @@ func TestClusterService_List(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := testClient(server.URL)
-			result, err := client.Clusters().List(context.Background(), tt.opts)
+			c := testClient(server.URL)
+			result, err := c.Clusters().List(context.Background(), client.CallOptions{}, tt.opts)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("List() error = %v, wantErr %v", err, tt.wantErr)
@@ -139,8 +141,8 @@ func TestClusterService_Create(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := testClient(server.URL)
-			result, err := client.Clusters().Create(context.Background(), tt.request)
+			c := testClient(server.URL)
+			result, err := c.Clusters().Create(context.Background(), client.CallOptions{}, tt.request)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Create() error = %v, wantErr %v", err, tt.wantErr)
@@ -174,7 +176,7 @@ func TestClusterService_Create_WithCustomerChosenSubnets(t *testing.T) {
 		}))
 		defer server.Close()
 
-		_, err := testClient(server.URL).Clusters().Create(context.Background(), ClusterRequest{
+		_, err := testClient(server.URL).Clusters().Create(context.Background(), client.CallOptions{}, ClusterRequest{
 			Name: "cluster-new",
 			Network: &KubernetesNetworkRequest{
 				SubnetIDs: chosenSubnets,
@@ -239,8 +241,8 @@ func TestClusterService_Delete(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := testClient(server.URL)
-			err := client.Clusters().Delete(context.Background(), tt.clusterID)
+			c := testClient(server.URL)
+			err := c.Clusters().Delete(context.Background(), client.CallOptions{}, tt.clusterID)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Delete() error = %v, wantErr %v", err, tt.wantErr)
@@ -294,8 +296,8 @@ func TestClusterService_Get(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := testClient(server.URL)
-			result, err := client.Clusters().Get(context.Background(), tt.clusterID)
+			c := testClient(server.URL)
+			result, err := c.Clusters().Get(context.Background(), client.CallOptions{}, tt.clusterID)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Get() error = %v, wantErr %v", err, tt.wantErr)
@@ -366,8 +368,8 @@ func TestClusterService_Update(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := testClient(server.URL)
-			result, err := client.Clusters().Update(context.Background(), tt.clusterID, tt.request)
+			c := testClient(server.URL)
+			result, err := c.Clusters().Update(context.Background(), client.CallOptions{}, tt.clusterID, tt.request)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Update() error = %v, wantErr %v", err, tt.wantErr)
@@ -423,8 +425,8 @@ func TestClusterService_GetKubeConfig(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := testClient(server.URL)
-			result, err := client.Clusters().GetKubeConfig(context.Background(), tt.clusterID)
+			c := testClient(server.URL)
+			result, err := c.Clusters().GetKubeConfig(context.Background(), client.CallOptions{}, tt.clusterID)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetKubeConfig() error = %v, wantErr %v", err, tt.wantErr)
@@ -439,10 +441,10 @@ func TestClusterService_GetKubeConfig(t *testing.T) {
 }
 
 func TestClusterService_NodePoolOperations(t *testing.T) {
-	client := testClient("http://dummy")
+	c := testClient("http://dummy")
 
 	t.Run("NodePools service exists", func(t *testing.T) {
-		service := client.Nodepools()
+		service := c.Nodepools()
 		if service == nil {
 			t.Error("NodePools service não disponível")
 		}
@@ -464,8 +466,8 @@ func TestClusterService_ValidationErrors(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			client := testClient("http://dummy")
-			_, err := client.Clusters().Get(context.Background(), tt.clusterID)
+			c := testClient("http://dummy")
+			_, err := c.Clusters().Get(context.Background(), client.CallOptions{}, tt.clusterID)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Validation error = %v, wantErr %v", err, tt.wantErr)
@@ -482,11 +484,11 @@ func TestClusterService_EdgeCases(t *testing.T) {
 		}))
 		defer server.Close()
 
-		client := testClient(server.URL)
+		c := testClient(server.URL)
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
 		defer cancel()
 
-		_, err := client.Clusters().Get(ctx, "cluster-123")
+		_, err := c.Clusters().Get(ctx, client.CallOptions{}, "cluster-123")
 		if err == nil {
 			t.Error("Esperado erro de timeout")
 		}
@@ -499,8 +501,8 @@ func TestClusterService_EdgeCases(t *testing.T) {
 		}))
 		defer server.Close()
 
-		client := testClient(server.URL)
-		_, err := client.Clusters().Get(context.Background(), "cluster-123")
+		c := testClient(server.URL)
+		_, err := c.Clusters().Get(context.Background(), client.CallOptions{}, "cluster-123")
 		if err == nil {
 			t.Error("Esperado erro de parsing")
 		}
@@ -541,8 +543,8 @@ func TestClusterService_Upgrade(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := testClient(server.URL)
-			result, err := client.Clusters().Update(context.Background(), tt.clusterID, tt.request)
+			c := testClient(server.URL)
+			result, err := c.Clusters().Update(context.Background(), client.CallOptions{}, tt.clusterID, tt.request)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Upgrade() error = %v, wantErr %v", err, tt.wantErr)

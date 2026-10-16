@@ -208,20 +208,20 @@ type InitLogResponse struct {
 
 // InstanceService provides operations for managing virtual machine instances.
 type InstanceService interface {
-	List(ctx context.Context, opts ListOptions) (*ListInstancesResponse, error)
-	ListAll(ctx context.Context, opts InstanceFilterOptions) ([]Instance, error)
-	Create(ctx context.Context, req CreateRequest) (string, error)
-	Get(ctx context.Context, id string, expand []InstanceExpand) (*Instance, error)
-	Delete(ctx context.Context, id string, deletePublicIP bool) error
-	Rename(ctx context.Context, id string, newName string) error
-	Retype(ctx context.Context, id string, req RetypeRequest) error
-	Start(ctx context.Context, id string) error
-	Stop(ctx context.Context, id string) error
-	Suspend(ctx context.Context, id string) error
-	GetFirstWindowsPassword(ctx context.Context, id string) (*WindowsPasswordResponse, error)
-	AttachNetworkInterface(ctx context.Context, req NICRequest) error
-	DetachNetworkInterface(ctx context.Context, req NICRequest) error
-	InitLog(ctx context.Context, id string, maxLines *int) (*InitLogResponse, error)
+	List(ctx context.Context, callOpts client.CallOptions, opts ListOptions) (*ListInstancesResponse, error)
+	ListAll(ctx context.Context, callOpts client.CallOptions, opts InstanceFilterOptions) ([]Instance, error)
+	Create(ctx context.Context, callOpts client.CallOptions, req CreateRequest) (string, error)
+	Get(ctx context.Context, callOpts client.CallOptions, id string, expand []InstanceExpand) (*Instance, error)
+	Delete(ctx context.Context, callOpts client.CallOptions, id string, deletePublicIP bool) error
+	Rename(ctx context.Context, callOpts client.CallOptions, id string, newName string) error
+	Retype(ctx context.Context, callOpts client.CallOptions, id string, req RetypeRequest) error
+	Start(ctx context.Context, callOpts client.CallOptions, id string) error
+	Stop(ctx context.Context, callOpts client.CallOptions, id string) error
+	Suspend(ctx context.Context, callOpts client.CallOptions, id string) error
+	GetFirstWindowsPassword(ctx context.Context, callOpts client.CallOptions, id string) (*WindowsPasswordResponse, error)
+	AttachNetworkInterface(ctx context.Context, callOpts client.CallOptions, req NICRequest) error
+	DetachNetworkInterface(ctx context.Context, callOpts client.CallOptions, req NICRequest) error
+	InitLog(ctx context.Context, callOpts client.CallOptions, id string, maxLines *int) (*InitLogResponse, error)
 }
 
 // instanceService implements the InstanceService interface.
@@ -248,11 +248,13 @@ type InstanceFilterOptions struct {
 // List retrieves instances with pagination metadata.
 // This method makes an HTTP request to get the list of instances
 // and applies the filters specified in the options.
-func (s *instanceService) List(ctx context.Context, opts ListOptions) (*ListInstancesResponse, error) {
+func (s *instanceService) List(ctx context.Context, callOpts client.CallOptions, opts ListOptions) (*ListInstancesResponse, error) {
 	req, err := s.client.newRequest(ctx, http.MethodGet, "/v1/instances", nil)
 	if err != nil {
 		return nil, err
 	}
+
+	callOpts.Apply(req)
 
 	// Set API version header
 	req.Header.Set(VmInstanceHeaderVersionName, VmInstanceHeaderVersion)
@@ -291,7 +293,7 @@ func (s *instanceService) List(ctx context.Context, opts ListOptions) (*ListInst
 
 // ListAll retrieves all instances across all pages with optional filtering.
 // This method automatically handles pagination and returns all results.
-func (s *instanceService) ListAll(ctx context.Context, opts InstanceFilterOptions) ([]Instance, error) {
+func (s *instanceService) ListAll(ctx context.Context, callOpts client.CallOptions, opts InstanceFilterOptions) ([]Instance, error) {
 	var allInstances []Instance
 	offset := 0
 	limit := 50
@@ -307,7 +309,7 @@ func (s *instanceService) ListAll(ctx context.Context, opts InstanceFilterOption
 			Name:   opts.Name,
 		}
 
-		response, err := s.List(ctx, listOpts)
+		response, err := s.List(ctx, callOpts, listOpts)
 		if err != nil {
 			return nil, err
 		}
@@ -328,10 +330,10 @@ func (s *instanceService) ListAll(ctx context.Context, opts InstanceFilterOption
 // Create creates a new instance.
 // This method makes an HTTP request to provision a new virtual machine instance
 // and returns the ID of the created instance.
-func (s *instanceService) Create(ctx context.Context, createReq CreateRequest) (string, error) {
+func (s *instanceService) Create(ctx context.Context, callOpts client.CallOptions, createReq CreateRequest) (string, error) {
 	res, err := mgc_http.ExecuteSimpleRequestWithRespBody[struct{ ID string }](
 		ctx,
-		s.client.newRequest,
+		mgc_http.WithCallOptions(s.client.newRequest, callOpts),
 		s.client.GetConfig(),
 		http.MethodPost,
 		"/v1/instances",
@@ -347,11 +349,13 @@ func (s *instanceService) Create(ctx context.Context, createReq CreateRequest) (
 // Get retrieves a specific instance.
 // This method makes an HTTP request to get detailed information about an instance
 // and optionally expands related resources.
-func (s *instanceService) Get(ctx context.Context, id string, expand []InstanceExpand) (*Instance, error) {
+func (s *instanceService) Get(ctx context.Context, callOpts client.CallOptions, id string, expand []InstanceExpand) (*Instance, error) {
 	req, err := s.client.newRequest(ctx, http.MethodGet, fmt.Sprintf("/v1/instances/%s", id), nil)
 	if err != nil {
 		return nil, err
 	}
+
+	callOpts.Apply(req)
 
 	// Set API version header
 	req.Header.Set(VmInstanceHeaderVersionName, VmInstanceHeaderVersion)
@@ -377,11 +381,13 @@ func (s *instanceService) Get(ctx context.Context, id string, expand []InstanceE
 // Delete removes an instance.
 // This method makes an HTTP request to terminate and remove an instance.
 // If deletePublicIP is true, any associated public IP will also be released.
-func (s *instanceService) Delete(ctx context.Context, id string, deletePublicIP bool) error {
+func (s *instanceService) Delete(ctx context.Context, callOpts client.CallOptions, id string, deletePublicIP bool) error {
 	req, err := s.client.newRequest(ctx, http.MethodDelete, fmt.Sprintf("/v1/instances/%s", id), nil)
 	if err != nil {
 		return err
 	}
+
+	callOpts.Apply(req)
 
 	q := req.URL.Query()
 	q.Add("delete_public_ip", strconv.FormatBool(deletePublicIP))
@@ -397,14 +403,14 @@ func (s *instanceService) Delete(ctx context.Context, id string, deletePublicIP 
 // Rename changes the instance name.
 // This method makes an HTTP request to update the display name of an existing instance.
 // Returns an error if the operation fails or if the ID is empty.
-func (s *instanceService) Rename(ctx context.Context, id string, newName string) error {
+func (s *instanceService) Rename(ctx context.Context, callOpts client.CallOptions, id string, newName string) error {
 	if id == "" {
 		return &client.ValidationError{Field: "id", Message: "cannot be empty"}
 	}
 	path := fmt.Sprintf("/v1/instances/%s/rename", id)
 	return mgc_http.ExecuteSimpleRequest(
 		ctx,
-		s.client.newRequest,
+		mgc_http.WithCallOptions(s.client.newRequest, callOpts),
 		s.client.GetConfig(),
 		http.MethodPatch,
 		path,
@@ -416,14 +422,14 @@ func (s *instanceService) Rename(ctx context.Context, id string, newName string)
 // Retype changes the instance machine type.
 // This method makes an HTTP request to change the machine type (size) of an instance.
 // The instance must be in a stopped state for this operation to succeed.
-func (s *instanceService) Retype(ctx context.Context, id string, retypeReq RetypeRequest) error {
+func (s *instanceService) Retype(ctx context.Context, callOpts client.CallOptions, id string, retypeReq RetypeRequest) error {
 	if id == "" {
 		return &client.ValidationError{Field: "id", Message: "cannot be empty"}
 	}
 	path := fmt.Sprintf("/v1/instances/%s/retype", id)
 	return mgc_http.ExecuteSimpleRequest(
 		ctx,
-		s.client.newRequest,
+		mgc_http.WithCallOptions(s.client.newRequest, callOpts),
 		s.client.GetConfig(),
 		http.MethodPost,
 		path,
@@ -435,35 +441,35 @@ func (s *instanceService) Retype(ctx context.Context, id string, retypeReq Retyp
 // Start starts the instance.
 // This method makes an HTTP request to power on a stopped instance.
 // Returns an error if the instance is already running or if the operation fails.
-func (s *instanceService) Start(ctx context.Context, id string) error {
-	return s.executeInstanceAction(ctx, id, "start")
+func (s *instanceService) Start(ctx context.Context, callOpts client.CallOptions, id string) error {
+	return s.executeInstanceAction(ctx, callOpts, id, "start")
 }
 
 // Stop stops the instance.
 // This method makes an HTTP request to gracefully power off a running instance.
 // Returns an error if the instance is already stopped or if the operation fails.
-func (s *instanceService) Stop(ctx context.Context, id string) error {
-	return s.executeInstanceAction(ctx, id, "stop")
+func (s *instanceService) Stop(ctx context.Context, callOpts client.CallOptions, id string) error {
+	return s.executeInstanceAction(ctx, callOpts, id, "stop")
 }
 
 // Suspend suspends the instance.
 // This method makes an HTTP request to pause the execution of an instance
 // while maintaining its state in memory.
 // Returns an error if the instance cannot be suspended or if the operation fails.
-func (s *instanceService) Suspend(ctx context.Context, id string) error {
-	return s.executeInstanceAction(ctx, id, "suspend")
+func (s *instanceService) Suspend(ctx context.Context, callOpts client.CallOptions, id string) error {
+	return s.executeInstanceAction(ctx, callOpts, id, "suspend")
 }
 
 // executeInstanceAction handles common instance state change operations.
 // This is an internal method that should not be called directly by SDK users.
-func (s *instanceService) executeInstanceAction(ctx context.Context, id string, action string) error {
+func (s *instanceService) executeInstanceAction(ctx context.Context, callOpts client.CallOptions, id string, action string) error {
 	if id == "" {
 		return &client.ValidationError{Field: "id", Message: "cannot be empty"}
 	}
 	path := fmt.Sprintf("/v1/instances/%s/%s", id, action)
 	return mgc_http.ExecuteSimpleRequest(
 		ctx,
-		s.client.newRequest,
+		mgc_http.WithCallOptions(s.client.newRequest, callOpts),
 		s.client.GetConfig(),
 		http.MethodPost,
 		path,
@@ -475,14 +481,14 @@ func (s *instanceService) executeInstanceAction(ctx context.Context, id string, 
 // GetFirstWindowsPassword retrieves the initial Windows administrator password for an instance.
 // This method makes an HTTP request to get the Windows password for instances
 // that were created with Windows images.
-func (s *instanceService) GetFirstWindowsPassword(ctx context.Context, id string) (*WindowsPasswordResponse, error) {
+func (s *instanceService) GetFirstWindowsPassword(ctx context.Context, callOpts client.CallOptions, id string) (*WindowsPasswordResponse, error) {
 	if id == "" {
 		return nil, &client.ValidationError{Field: "id", Message: "cannot be empty"}
 	}
 	path := fmt.Sprintf("/v1/instances/config/%s/first-windows-password", id)
 	result, err := mgc_http.ExecuteSimpleRequestWithRespBody[WindowsPasswordResponse](
 		ctx,
-		s.client.newRequest,
+		mgc_http.WithCallOptions(s.client.newRequest, callOpts),
 		s.client.GetConfig(),
 		http.MethodGet,
 		path,
@@ -497,10 +503,10 @@ func (s *instanceService) GetFirstWindowsPassword(ctx context.Context, id string
 
 // AttachNetworkInterface connects a network interface to an instance.
 // This method makes an HTTP request to attach a network interface to an instance.
-func (s *instanceService) AttachNetworkInterface(ctx context.Context, req NICRequest) error {
+func (s *instanceService) AttachNetworkInterface(ctx context.Context, callOpts client.CallOptions, req NICRequest) error {
 	return mgc_http.ExecuteSimpleRequest(
 		ctx,
-		s.client.newRequest,
+		mgc_http.WithCallOptions(s.client.newRequest, callOpts),
 		s.client.GetConfig(),
 		http.MethodPost,
 		"/v1/instances/network-interface/attach",
@@ -511,10 +517,10 @@ func (s *instanceService) AttachNetworkInterface(ctx context.Context, req NICReq
 
 // DetachNetworkInterface removes a non-primary network interface from an instance.
 // This method makes an HTTP request to detach a network interface from an instance.
-func (s *instanceService) DetachNetworkInterface(ctx context.Context, req NICRequest) error {
+func (s *instanceService) DetachNetworkInterface(ctx context.Context, callOpts client.CallOptions, req NICRequest) error {
 	return mgc_http.ExecuteSimpleRequest(
 		ctx,
-		s.client.newRequest,
+		mgc_http.WithCallOptions(s.client.newRequest, callOpts),
 		s.client.GetConfig(),
 		http.MethodPost,
 		"/v1/instances/network-interface/detach",
@@ -525,7 +531,7 @@ func (s *instanceService) DetachNetworkInterface(ctx context.Context, req NICReq
 
 // InitLog retrieves instance initialization log output.
 // This method makes an HTTP request to get the initialization logs for an instance.
-func (s *instanceService) InitLog(ctx context.Context, id string, maxLines *int) (*InitLogResponse, error) {
+func (s *instanceService) InitLog(ctx context.Context, callOpts client.CallOptions, id string, maxLines *int) (*InitLogResponse, error) {
 	if id == "" {
 		return nil, &client.ValidationError{Field: "id", Message: "cannot be empty"}
 	}
@@ -534,6 +540,8 @@ func (s *instanceService) InitLog(ctx context.Context, id string, maxLines *int)
 	if err != nil {
 		return nil, err
 	}
+
+	callOpts.Apply(req)
 
 	q := req.URL.Query()
 	if maxLines != nil {

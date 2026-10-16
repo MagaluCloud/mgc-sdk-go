@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/MagaluCloud/mgc-sdk-go/client"
 	"github.com/MagaluCloud/mgc-sdk-go/helpers"
 )
 
@@ -67,8 +68,8 @@ func TestNodePoolService_List(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := testClient(server.URL)
-			result, err := client.Nodepools().List(context.Background(), tt.clusterID, tt.opts)
+			c := testClient(server.URL)
+			result, err := c.Nodepools().List(context.Background(), client.CallOptions{}, tt.clusterID, tt.opts)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("List() error = %v, wantErr %v", err, tt.wantErr)
@@ -123,8 +124,8 @@ func TestNodePoolService_Create(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := testClient(server.URL)
-			result, err := client.Nodepools().Create(context.Background(), tt.clusterID, tt.request)
+			c := testClient(server.URL)
+			result, err := c.Nodepools().Create(context.Background(), client.CallOptions{}, tt.clusterID, tt.request)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Create() error = %v, wantErr %v", err, tt.wantErr)
@@ -160,7 +161,7 @@ func TestNodePoolService_Create_WithCustomerChosenSubnets(t *testing.T) {
 		}))
 		defer server.Close()
 
-		_, err := testClient(server.URL).Nodepools().Create(context.Background(), "cluster-123", CreateNodePoolRequest{
+		_, err := testClient(server.URL).Nodepools().Create(context.Background(), client.CallOptions{}, "cluster-123", CreateNodePoolRequest{
 			Name:     "pool-new",
 			Flavor:   "BV4-8-40",
 			Replicas: 2,
@@ -196,7 +197,7 @@ func TestNodePoolService_Create_WithCustomerChosenSubnets(t *testing.T) {
 		}))
 		defer server.Close()
 
-		_, err := testClient(server.URL).Nodepools().Create(context.Background(), "cluster-123", CreateNodePoolRequest{
+		_, err := testClient(server.URL).Nodepools().Create(context.Background(), client.CallOptions{}, "cluster-123", CreateNodePoolRequest{
 			Name:     "pool-new",
 			Flavor:   "BV4-8-40",
 			Replicas: 2,
@@ -232,7 +233,7 @@ func TestNodePoolService_Create_WithLabels(t *testing.T) {
 		}))
 		defer server.Close()
 
-		_, err := testClient(server.URL).Nodepools().Create(context.Background(), "cluster-123", CreateNodePoolRequest{
+		_, err := testClient(server.URL).Nodepools().Create(context.Background(), client.CallOptions{}, "cluster-123", CreateNodePoolRequest{
 			Name:     "pool-new",
 			Flavor:   "BV4-8-40",
 			Replicas: 2,
@@ -269,7 +270,7 @@ func TestNodePoolService_Create_WithLabels(t *testing.T) {
 		}))
 		defer server.Close()
 
-		_, err := testClient(server.URL).Nodepools().Create(context.Background(), "cluster-123", CreateNodePoolRequest{
+		_, err := testClient(server.URL).Nodepools().Create(context.Background(), client.CallOptions{}, "cluster-123", CreateNodePoolRequest{
 			Name:     "pool-new",
 			Flavor:   "BV4-8-40",
 			Replicas: 2,
@@ -328,8 +329,8 @@ func TestNodePoolService_Delete(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := testClient(server.URL)
-			err := client.Nodepools().Delete(context.Background(), tt.clusterID, tt.nodePoolID)
+			c := testClient(server.URL)
+			err := c.Nodepools().Delete(context.Background(), client.CallOptions{}, tt.clusterID, tt.nodePoolID)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Delete() error = %v, wantErr %v", err, tt.wantErr)
@@ -344,8 +345,8 @@ func TestNodePoolService_List_InvalidOptions(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := testClient(server.URL)
-	_, err := client.Nodepools().List(context.Background(), "cluster-123", ListOptions{
+	c := testClient(server.URL)
+	_, err := c.Nodepools().List(context.Background(), client.CallOptions{}, "cluster-123", ListOptions{
 		Limit: helpers.IntPtr(-1),
 	})
 
@@ -386,8 +387,8 @@ func TestNodePoolService_Create_ValidationError(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			client := testClient("http://dummy")
-			_, err := client.Nodepools().Create(context.Background(), tt.clusterID, tt.request)
+			c := testClient("http://dummy")
+			_, err := c.Nodepools().Create(context.Background(), client.CallOptions{}, tt.clusterID, tt.request)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Create() error = %v, wantErr %v", err, tt.wantErr)
@@ -433,8 +434,8 @@ func TestNodePoolService_GetWithVersion(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := testClient(server.URL)
-			result, err := client.Nodepools().Get(context.Background(), tt.clusterID, tt.nodePoolID)
+			c := testClient(server.URL)
+			result, err := c.Nodepools().Get(context.Background(), client.CallOptions{}, tt.clusterID, tt.nodePoolID)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Get() error = %v, wantErr %v", err, tt.wantErr)
@@ -481,8 +482,8 @@ func TestNodePoolService_Scale(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := testClient(server.URL)
-			result, err := client.Nodepools().Update(context.Background(), tt.clusterID, tt.nodePoolID, PatchNodePoolRequest{
+			c := testClient(server.URL)
+			result, err := c.Nodepools().Update(context.Background(), client.CallOptions{}, tt.clusterID, tt.nodePoolID, PatchNodePoolRequest{
 				Replicas: helpers.IntPtr(tt.replicas),
 			})
 
@@ -571,8 +572,8 @@ func TestNodePoolService_Update(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := testClient(server.URL)
-			result, err := client.Nodepools().Update(context.Background(), tt.clusterID, tt.nodePoolID, tt.request)
+			c := testClient(server.URL)
+			result, err := c.Nodepools().Update(context.Background(), client.CallOptions{}, tt.clusterID, tt.nodePoolID, tt.request)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Update() error = %v, wantErr %v", err, tt.wantErr)
@@ -649,8 +650,8 @@ func TestNodePoolService_Get(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := testClient(server.URL)
-			result, err := client.Nodepools().Get(context.Background(), tt.clusterID, tt.nodePoolID)
+			c := testClient(server.URL)
+			result, err := c.Nodepools().Get(context.Background(), client.CallOptions{}, tt.clusterID, tt.nodePoolID)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Get() error = %v, wantErr %v", err, tt.wantErr)
@@ -729,8 +730,8 @@ func TestNodeService_List(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := testClient(server.URL)
-			result, err := client.Nodepools().Nodes(context.Background(), tt.clusterID, tt.nodePoolID)
+			c := testClient(server.URL)
+			result, err := c.Nodepools().Nodes(context.Background(), client.CallOptions{}, tt.clusterID, tt.nodePoolID)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("List() error = %v, wantErr %v", err, tt.wantErr)
@@ -811,8 +812,8 @@ func TestNodeService_Nodes(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := testClient(server.URL)
-			result, err := client.Nodepools().Nodes(context.Background(), tt.clusterID, tt.nodePoolID)
+			c := testClient(server.URL)
+			result, err := c.Nodepools().Nodes(context.Background(), client.CallOptions{}, tt.clusterID, tt.nodePoolID)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Nodes() error = %v, wantErr %v", err, tt.wantErr)
@@ -869,8 +870,8 @@ func TestNodePoolService_Upgrade(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := testClient(server.URL)
-			result, err := client.Nodepools().Update(context.Background(), tt.clusterID, tt.nodePoolID, tt.request)
+			c := testClient(server.URL)
+			result, err := c.Nodepools().Update(context.Background(), client.CallOptions{}, tt.clusterID, tt.nodePoolID, tt.request)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Upgrade() error = %v, wantErr %v", err, tt.wantErr)

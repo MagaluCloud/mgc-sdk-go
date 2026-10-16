@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/MagaluCloud/mgc-sdk-go/client"
 	mgc_http "github.com/MagaluCloud/mgc-sdk-go/internal/http"
 )
 
@@ -88,14 +89,14 @@ type SnapshotFilterOptions struct {
 // SnapshotService provides operations for managing snapshots.
 // This interface allows creating, listing, retrieving, and managing instance snapshots.
 type SnapshotService interface {
-	List(ctx context.Context, opts SnapshotListOptions) (*ListSnapshotsResponse, error)
-	ListAll(ctx context.Context, opts SnapshotFilterOptions) ([]Snapshot, error)
-	Create(ctx context.Context, req CreateSnapshotRequest) (string, error)
-	Get(ctx context.Context, id string, expand []SnapshotExpand) (*Snapshot, error)
-	Delete(ctx context.Context, id string) error
-	Rename(ctx context.Context, id string, newName string) error
-	Restore(ctx context.Context, id string, req RestoreSnapshotRequest) (string, error)
-	Copy(ctx context.Context, id string, req CopySnapshotRequest) error
+	List(ctx context.Context, callOpts client.CallOptions, opts SnapshotListOptions) (*ListSnapshotsResponse, error)
+	ListAll(ctx context.Context, callOpts client.CallOptions, opts SnapshotFilterOptions) ([]Snapshot, error)
+	Create(ctx context.Context, callOpts client.CallOptions, req CreateSnapshotRequest) (string, error)
+	Get(ctx context.Context, callOpts client.CallOptions, id string, expand []SnapshotExpand) (*Snapshot, error)
+	Delete(ctx context.Context, callOpts client.CallOptions, id string) error
+	Rename(ctx context.Context, callOpts client.CallOptions, id string, newName string) error
+	Restore(ctx context.Context, callOpts client.CallOptions, id string, req RestoreSnapshotRequest) (string, error)
+	Copy(ctx context.Context, callOpts client.CallOptions, id string, req CopySnapshotRequest) error
 }
 
 // snapshotService implements the SnapshotService interface.
@@ -107,11 +108,13 @@ type snapshotService struct {
 // List retrieves snapshots with pagination metadata.
 // This method makes an HTTP request to get the list of snapshots
 // and applies the filters specified in the options.
-func (s *snapshotService) List(ctx context.Context, opts SnapshotListOptions) (*ListSnapshotsResponse, error) {
+func (s *snapshotService) List(ctx context.Context, callOpts client.CallOptions, opts SnapshotListOptions) (*ListSnapshotsResponse, error) {
 	req, err := s.client.newRequest(ctx, http.MethodGet, "/v1/snapshots", nil)
 	if err != nil {
 		return nil, err
 	}
+
+	callOpts.Apply(req)
 
 	q := req.URL.Query()
 	if opts.Limit != nil {
@@ -143,7 +146,7 @@ func (s *snapshotService) List(ctx context.Context, opts SnapshotListOptions) (*
 
 // ListAll retrieves all snapshots across all pages with optional filtering.
 // This method automatically handles pagination and returns all results.
-func (s *snapshotService) ListAll(ctx context.Context, opts SnapshotFilterOptions) ([]Snapshot, error) {
+func (s *snapshotService) ListAll(ctx context.Context, callOpts client.CallOptions, opts SnapshotFilterOptions) ([]Snapshot, error) {
 	var allSnapshots []Snapshot
 	offset := 0
 	limit := 50
@@ -158,7 +161,7 @@ func (s *snapshotService) ListAll(ctx context.Context, opts SnapshotFilterOption
 			Expand: opts.Expand,
 		}
 
-		response, err := s.List(ctx, listOpts)
+		response, err := s.List(ctx, callOpts, listOpts)
 		if err != nil {
 			return nil, err
 		}
@@ -179,7 +182,7 @@ func (s *snapshotService) ListAll(ctx context.Context, opts SnapshotFilterOption
 // Create creates a new snapshot from an instance.
 // This method makes an HTTP request to create a new snapshot
 // and returns the ID of the created snapshot.
-func (s *snapshotService) Create(ctx context.Context, createReq CreateSnapshotRequest) (string, error) {
+func (s *snapshotService) Create(ctx context.Context, callOpts client.CallOptions, createReq CreateSnapshotRequest) (string, error) {
 	var result struct {
 		ID string `json:"id"`
 	}
@@ -188,6 +191,8 @@ func (s *snapshotService) Create(ctx context.Context, createReq CreateSnapshotRe
 	if err != nil {
 		return "", err
 	}
+
+	callOpts.Apply(req)
 
 	resp, err := mgc_http.Do(s.client.GetConfig(), ctx, req, &result)
 	if err != nil {
@@ -199,11 +204,13 @@ func (s *snapshotService) Create(ctx context.Context, createReq CreateSnapshotRe
 // Get retrieves a specific snapshot.
 // This method makes an HTTP request to get detailed information about a snapshot
 // and optionally expands related resources.
-func (s *snapshotService) Get(ctx context.Context, id string, expand []SnapshotExpand) (*Snapshot, error) {
+func (s *snapshotService) Get(ctx context.Context, callOpts client.CallOptions, id string, expand []SnapshotExpand) (*Snapshot, error) {
 	req, err := s.client.newRequest(ctx, http.MethodGet, fmt.Sprintf("/v1/snapshots/%s", id), nil)
 	if err != nil {
 		return nil, err
 	}
+
+	callOpts.Apply(req)
 
 	if len(expand) > 0 {
 		q := req.URL.Query()
@@ -225,11 +232,13 @@ func (s *snapshotService) Get(ctx context.Context, id string, expand []SnapshotE
 
 // Delete removes a snapshot.
 // This method makes an HTTP request to delete a snapshot permanently.
-func (s *snapshotService) Delete(ctx context.Context, id string) error {
+func (s *snapshotService) Delete(ctx context.Context, callOpts client.CallOptions, id string) error {
 	req, err := s.client.newRequest(ctx, http.MethodDelete, fmt.Sprintf("/v1/snapshots/%s", id), nil)
 	if err != nil {
 		return err
 	}
+
+	callOpts.Apply(req)
 
 	_, err = mgc_http.Do[any](s.client.GetConfig(), ctx, req, nil)
 	if err != nil {
@@ -240,13 +249,15 @@ func (s *snapshotService) Delete(ctx context.Context, id string) error {
 
 // Rename changes the name of a snapshot.
 // This method makes an HTTP request to rename an existing snapshot.
-func (s *snapshotService) Rename(ctx context.Context, id string, newName string) error {
+func (s *snapshotService) Rename(ctx context.Context, callOpts client.CallOptions, id string, newName string) error {
 	req, err := s.client.newRequest(ctx, http.MethodPatch,
 		fmt.Sprintf("/v1/snapshots/%s/rename", id),
 		UpdateNameRequest{Name: newName})
 	if err != nil {
 		return err
 	}
+
+	callOpts.Apply(req)
 
 	_, err = mgc_http.Do[any](s.client.GetConfig(), ctx, req, nil)
 	if err != nil {
@@ -258,7 +269,7 @@ func (s *snapshotService) Rename(ctx context.Context, id string, newName string)
 // Restore creates a new instance from a snapshot.
 // This method makes an HTTP request to restore an instance from a snapshot
 // and returns the ID of the created instance.
-func (s *snapshotService) Restore(ctx context.Context, id string, restoreReq RestoreSnapshotRequest) (string, error) {
+func (s *snapshotService) Restore(ctx context.Context, callOpts client.CallOptions, id string, restoreReq RestoreSnapshotRequest) (string, error) {
 	var result struct {
 		ID string `json:"id"`
 	}
@@ -270,6 +281,8 @@ func (s *snapshotService) Restore(ctx context.Context, id string, restoreReq Res
 		return "", err
 	}
 
+	callOpts.Apply(req)
+
 	resp, err := mgc_http.Do(s.client.GetConfig(), ctx, req, &result)
 	if err != nil {
 		return "", err
@@ -279,13 +292,15 @@ func (s *snapshotService) Restore(ctx context.Context, id string, restoreReq Res
 
 // Copy copies a snapshot to another region.
 // This method makes an HTTP request to copy a snapshot to a different region.
-func (s *snapshotService) Copy(ctx context.Context, id string, copyReq CopySnapshotRequest) error {
+func (s *snapshotService) Copy(ctx context.Context, callOpts client.CallOptions, id string, copyReq CopySnapshotRequest) error {
 	req, err := s.client.newRequest(ctx, http.MethodPost,
 		fmt.Sprintf("/v1/snapshots/%s/copy", id),
 		copyReq)
 	if err != nil {
 		return err
 	}
+
+	callOpts.Apply(req)
 
 	_, err = mgc_http.Do[any](s.client.GetConfig(), ctx, req, nil)
 	if err != nil {

@@ -14,11 +14,15 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+func getOpts() client.CallOptions {
+	return client.CallOptions{ProjectID: os.Getenv("MGC_PROJECT")}
+}
+
 func main() {
 	// Get credentials from environment
 	apiToken := os.Getenv("MGC_API_KEY")
 	if apiToken == "" {
-		log.Fatal("MGC_API_TOKEN environment variable is not set")
+		log.Fatal("MGC_API_KEY environment variable is not set")
 	}
 
 	// Check for optional region parameter
@@ -515,7 +519,7 @@ func ExampleCreateCustomImage(ctx context.Context, cli *compute.VirtualMachineCl
 		License:      compute.LicenseUnlicensed,
 		URL:          url,
 	}
-	id, err := cli.Images().CreateCustom(ctx, req)
+	id, err := cli.Images().CreateCustom(ctx, getOpts(), req)
 	if err != nil {
 		fmt.Printf("Failed to create custom image: %s\n", err)
 		return
@@ -531,7 +535,7 @@ func ExampleRetrieveCustomImage(ctx context.Context, cli *compute.VirtualMachine
 		return
 	}
 
-	image, err := cli.Images().GetCustom(ctx, id)
+	image, err := cli.Images().GetCustom(ctx, getOpts(), id)
 	if err != nil {
 		fmt.Printf("Failed to retrieve custom image: %s\n", err)
 		return
@@ -555,7 +559,7 @@ func ExampleRetrieveCustomImage(ctx context.Context, cli *compute.VirtualMachine
 
 func ExampleListCustomImages(ctx context.Context, cli *compute.VirtualMachineClient) {
 	opts := compute.CustomImageListOptions{Limit: helpers.IntPtr(2)}
-	images, err := cli.Images().ListCustom(ctx, opts)
+	images, err := cli.Images().ListCustom(ctx, getOpts(), opts)
 	if err != nil {
 		fmt.Printf("Failed to list custom images: %s\n", err)
 		return
@@ -585,7 +589,7 @@ func ExampleDeleteCustomImage(ctx context.Context, cli *compute.VirtualMachineCl
 		return
 	}
 
-	err := cli.Images().DeleteCustom(ctx, id)
+	err := cli.Images().DeleteCustom(ctx, getOpts(), id)
 	if err != nil {
 		fmt.Printf("Failed to delete custom image: %s\n", err)
 		return
@@ -604,7 +608,7 @@ func ExampleUpdateCustomImage(ctx context.Context, cli *compute.VirtualMachineCl
 		Description: helpers.StrPtr("SDK test"),
 		Version:     helpers.StrPtr("0.1.0"),
 	}
-	err := cli.Images().UpdateCustom(ctx, id, req)
+	err := cli.Images().UpdateCustom(ctx, getOpts(), id, req)
 	if err != nil {
 		fmt.Printf("Failed to update custom image: %s\n", err)
 		return
