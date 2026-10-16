@@ -235,15 +235,14 @@ func (s *imageService) ListAll(ctx context.Context, opts ImageFilterOptions) ([]
 // This method makes an HTTP request to publish a new custom image
 // and returns the ID of the created image.
 func (s *imageService) CreateCustom(ctx context.Context, callOpts client.CallOptions, createReq CreateCustomImageRequest) (string, error) {
-	res, err := mgc_http.ExecuteCallWithRespBody[struct{ ID string }](
+	res, err := mgc_http.ExecuteSimpleRequestWithRespBody[struct{ ID string }](
 		ctx,
-		s.client.newRequest,
+		mgc_http.WithCallOptions(s.client.newRequest, callOpts),
 		s.client.GetConfig(),
 		http.MethodPost,
 		"/v1/images/custom",
 		createReq,
 		nil,
-		callOpts,
 	)
 	if err != nil {
 		return "", err
@@ -254,15 +253,14 @@ func (s *imageService) CreateCustom(ctx context.Context, callOpts client.CallOpt
 // GetCustom retrieves a specific custom image.
 // This method makes an HTTP request to get detailed information about an image.
 func (s *imageService) GetCustom(ctx context.Context, callOpts client.CallOptions, id string) (*CustomImage, error) {
-	return mgc_http.ExecuteCallWithRespBody[CustomImage](
+	return mgc_http.ExecuteSimpleRequestWithRespBody[CustomImage](
 		ctx,
-		s.client.newRequest,
+		mgc_http.WithCallOptions(s.client.newRequest, callOpts),
 		s.client.GetConfig(),
 		http.MethodGet,
 		fmt.Sprintf("/v1/images/custom/%s", id),
 		nil,
 		nil,
-		callOpts,
 	)
 }
 
@@ -305,29 +303,27 @@ func (s *imageService) ListCustom(ctx context.Context, callOpts client.CallOptio
 // DeleteCustom deletes a specific custom image.
 // This method makes an HTTP request to delete the specified image.
 func (s *imageService) DeleteCustom(ctx context.Context, callOpts client.CallOptions, id string) error {
-	return mgc_http.ExecuteCall(
+	return mgc_http.ExecuteSimpleRequest(
 		ctx,
-		s.client.newRequest,
+		mgc_http.WithCallOptions(s.client.newRequest, callOpts),
 		s.client.GetConfig(),
 		http.MethodDelete,
 		fmt.Sprintf("/v1/images/custom/%s", id),
 		nil,
 		nil,
-		callOpts,
 	)
 }
 
 // UpdateCustom updates a specific custom image.
 // This method makes an HTTP request to update the specified image.
 func (s *imageService) UpdateCustom(ctx context.Context, callOpts client.CallOptions, id string, updateReq UpdateCustomImageRequest) error {
-	return mgc_http.ExecuteCall(
+	return mgc_http.ExecuteSimpleRequest(
 		ctx,
-		s.client.newRequest,
+		mgc_http.WithCallOptions(s.client.newRequest, callOpts),
 		s.client.GetConfig(),
 		http.MethodPatch,
 		fmt.Sprintf("/v1/images/custom/%s", id),
 		updateReq,
 		nil,
-		callOpts,
 	)
 }

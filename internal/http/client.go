@@ -229,7 +229,20 @@ func decodeJsonResponse[T any](resp *http.Response, v *T) (*T, error) {
 	return v, nil
 }
 
-// ExecuteSimpleRequestWithRespBody handles HTTP requests that require response body parsing.
+// WithCallOptions wraps reqf so that every request it builds carries opts.
+func WithCallOptions(reqf NewRequestFunc, opts client.CallOptions) NewRequestFunc {
+	return func(ctx context.Context, method, path string, body any) (*http.Request, error) {
+		req, err := reqf(ctx, method, path, body)
+		if err != nil {
+			return nil, err
+		}
+
+		opts.Apply(req)
+		return req, nil
+	}
+}
+
+// ExecuteSimpleRequestWithRespBody handles HTTP requests that require response body parsing
 func ExecuteSimpleRequestWithRespBody[T any](
 	ctx context.Context,
 	reqf NewRequestFunc,
@@ -239,39 +252,10 @@ func ExecuteSimpleRequestWithRespBody[T any](
 	body any,
 	queryParams url.Values,
 ) (*T, error) {
-	return ExecuteCallWithRespBody[T](ctx, reqf, configs, method, path, body, queryParams, client.CallOptions{})
-}
-
-// ExecuteSimpleRequest handles HTTP requests that do not require response body parsing.
-func ExecuteSimpleRequest(
-	ctx context.Context,
-	reqf NewRequestFunc,
-	configs *client.Config,
-	method string,
-	path string,
-	body any,
-	queryParams url.Values,
-) error {
-	return ExecuteCall(ctx, reqf, configs, method, path, body, queryParams, client.CallOptions{})
-}
-
-// ExecuteCallWithRespBody handles HTTP requests that require response body parsing with CallOptions.
-func ExecuteCallWithRespBody[T any](
-	ctx context.Context,
-	reqf NewRequestFunc,
-	configs *client.Config,
-	method string,
-	path string,
-	body any,
-	queryParams url.Values,
-	opts client.CallOptions,
-) (*T, error) {
 	req, err := reqf(ctx, method, path, body)
 	if err != nil {
 		return nil, err
 	}
-
-	opts.Apply(req)
 
 	if queryParams != nil {
 		req.URL.RawQuery = queryParams.Encode()
@@ -286,7 +270,8 @@ func ExecuteCallWithRespBody[T any](
 	return result, nil
 }
 
-func ExecuteCall(
+// ExecuteSimpleRequest handles HTTP requests that do not require response body parsing
+func ExecuteSimpleRequest(
 	ctx context.Context,
 	reqf NewRequestFunc,
 	configs *client.Config,
@@ -294,14 +279,11 @@ func ExecuteCall(
 	path string,
 	body any,
 	queryParams url.Values,
-	opts client.CallOptions,
 ) error {
 	req, err := reqf(ctx, method, path, body)
 	if err != nil {
 		return err
 	}
-
-	opts.Apply(req)
 
 	if queryParams != nil {
 		req.URL.RawQuery = queryParams.Encode()

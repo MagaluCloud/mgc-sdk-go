@@ -3,6 +3,7 @@ package mgc_http
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"sync"
@@ -78,7 +79,7 @@ func requestFuncFor(cfg *client.Config) NewRequestFunc {
 	}
 }
 
-func TestExecuteCall_ProjectHeader(t *testing.T) {
+func TestWithCallOptions_ProjectHeader(t *testing.T) {
 	tests := []struct {
 		name        string
 		opts        client.CallOptions
@@ -104,9 +105,9 @@ func TestExecuteCall_ProjectHeader(t *testing.T) {
 			cfg, closeFn := newProbeClient(t, probe)
 			defer closeFn()
 
-			_, err := ExecuteCallWithRespBody[map[string]string](
-				context.Background(), requestFuncFor(cfg), cfg,
-				http.MethodPost, "/test", nil, nil, tt.opts,
+			_, err := ExecuteSimpleRequestWithRespBody[map[string]string](
+				context.Background(), WithCallOptions(requestFuncFor(cfg), tt.opts), cfg,
+				http.MethodPost, "/test", nil, nil,
 			)
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
@@ -123,15 +124,14 @@ func TestExecuteCall_ProjectHeader(t *testing.T) {
 	}
 }
 
-func TestExecuteCall_GetKeepsProjectHeader(t *testing.T) {
+func TestWithCallOptions_GetKeepsProjectHeader(t *testing.T) {
 	probe := &scopeProbe{}
 	cfg, closeFn := newProbeClient(t, probe)
 	defer closeFn()
 
-	_, err := ExecuteCallWithRespBody[map[string]string](
-		context.Background(), requestFuncFor(cfg), cfg,
+	_, err := ExecuteSimpleRequestWithRespBody[map[string]string](
+		context.Background(), WithCallOptions(requestFuncFor(cfg), client.CallOptions{ProjectID: testProjectID}), cfg,
 		http.MethodGet, "/test", nil, nil,
-		client.CallOptions{ProjectID: testProjectID},
 	)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -144,15 +144,14 @@ func TestExecuteCall_GetKeepsProjectHeader(t *testing.T) {
 }
 
 // S4: Do clones the request per attempt; the scope must reach the retry too.
-func TestExecuteCall_ProjectHeaderSurvivesRetry(t *testing.T) {
+func TestWithCallOptions_ProjectHeaderSurvivesRetry(t *testing.T) {
 	probe := &scopeProbe{status: http.StatusInternalServerError}
 	cfg, closeFn := newProbeClient(t, probe)
 	defer closeFn()
 
-	_, err := ExecuteCallWithRespBody[map[string]string](
-		context.Background(), requestFuncFor(cfg), cfg,
+	_, err := ExecuteSimpleRequestWithRespBody[map[string]string](
+		context.Background(), WithCallOptions(requestFuncFor(cfg), client.CallOptions{ProjectID: testProjectID}), cfg,
 		http.MethodPost, "/test", nil, nil,
-		client.CallOptions{ProjectID: testProjectID},
 	)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -171,7 +170,7 @@ func TestExecuteCall_ProjectHeaderSurvivesRetry(t *testing.T) {
 	}
 }
 
-func TestExecuteCall_ConcurrentScopesDoNotLeak(t *testing.T) {
+func TestWithCallOptions_ConcurrentScopesDoNotLeak(t *testing.T) {
 	const otherProjectID = "11111111-2222-4333-8444-555555555555"
 
 	seen := make(chan string, 2)
@@ -194,10 +193,9 @@ func TestExecuteCall_ConcurrentScopesDoNotLeak(t *testing.T) {
 		wg.Add(1)
 		go func(projectID string) {
 			defer wg.Done()
-			_, _ = ExecuteCallWithRespBody[map[string]string](
-				context.Background(), requestFuncFor(cfg), cfg,
+			_, _ = ExecuteSimpleRequestWithRespBody[map[string]string](
+				context.Background(), WithCallOptions(requestFuncFor(cfg), client.CallOptions{ProjectID: projectID}), cfg,
 				http.MethodGet, "/test", nil, nil,
-				client.CallOptions{ProjectID: projectID},
 			)
 		}(projectID)
 	}
@@ -213,15 +211,14 @@ func TestExecuteCall_ConcurrentScopesDoNotLeak(t *testing.T) {
 	}
 }
 
-func TestExecuteCall_NoRespBodySendsProjectHeader(t *testing.T) {
+func TestWithCallOptions_NoRespBodySendsProjectHeader(t *testing.T) {
 	probe := &scopeProbe{}
 	cfg, closeFn := newProbeClient(t, probe)
 	defer closeFn()
 
-	err := ExecuteCall(
-		context.Background(), requestFuncFor(cfg), cfg,
+	err := ExecuteSimpleRequest(
+		context.Background(), WithCallOptions(requestFuncFor(cfg), client.CallOptions{ProjectID: testProjectID}), cfg,
 		http.MethodDelete, "/test", nil, nil,
-		client.CallOptions{ProjectID: testProjectID},
 	)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -230,6 +227,18 @@ func TestExecuteCall_NoRespBodySendsProjectHeader(t *testing.T) {
 	got, present := probe.last()
 	if !present || got != testProjectID {
 		t.Errorf("header = %q (present %v), want %q", got, present, testProjectID)
+	}
+}
+
+func TestWithCallOptions_PropagatesRequestError(t *testing.T) {
+	wantErr := errors.New("build failed")
+	reqf := WithCallOptions(func(context.Context, string, string, any) (*http.Request, error) {
+		return nil, wantErr
+	}, client.CallOptions{ProjectID: testProjectID})
+
+	req, err := reqf(context.Background(), http.MethodGet, "/test", nil)
+	if req != nil || !errors.Is(err, wantErr) {
+		t.Fatalf("got (%v, %v), want (nil, %v)", req, err, wantErr)
 	}
 }
 

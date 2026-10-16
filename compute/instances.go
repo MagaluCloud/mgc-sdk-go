@@ -331,15 +331,14 @@ func (s *instanceService) ListAll(ctx context.Context, callOpts client.CallOptio
 // This method makes an HTTP request to provision a new virtual machine instance
 // and returns the ID of the created instance.
 func (s *instanceService) Create(ctx context.Context, callOpts client.CallOptions, createReq CreateRequest) (string, error) {
-	res, err := mgc_http.ExecuteCallWithRespBody[struct{ ID string }](
+	res, err := mgc_http.ExecuteSimpleRequestWithRespBody[struct{ ID string }](
 		ctx,
-		s.client.newRequest,
+		mgc_http.WithCallOptions(s.client.newRequest, callOpts),
 		s.client.GetConfig(),
 		http.MethodPost,
 		"/v1/instances",
 		createReq,
 		nil,
-		callOpts,
 	)
 	if err != nil {
 		return "", err
@@ -409,15 +408,14 @@ func (s *instanceService) Rename(ctx context.Context, callOpts client.CallOption
 		return &client.ValidationError{Field: "id", Message: "cannot be empty"}
 	}
 	path := fmt.Sprintf("/v1/instances/%s/rename", id)
-	return mgc_http.ExecuteCall(
+	return mgc_http.ExecuteSimpleRequest(
 		ctx,
-		s.client.newRequest,
+		mgc_http.WithCallOptions(s.client.newRequest, callOpts),
 		s.client.GetConfig(),
 		http.MethodPatch,
 		path,
 		UpdateNameRequest{Name: newName},
 		nil,
-		callOpts,
 	)
 }
 
@@ -429,15 +427,14 @@ func (s *instanceService) Retype(ctx context.Context, callOpts client.CallOption
 		return &client.ValidationError{Field: "id", Message: "cannot be empty"}
 	}
 	path := fmt.Sprintf("/v1/instances/%s/retype", id)
-	return mgc_http.ExecuteCall(
+	return mgc_http.ExecuteSimpleRequest(
 		ctx,
-		s.client.newRequest,
+		mgc_http.WithCallOptions(s.client.newRequest, callOpts),
 		s.client.GetConfig(),
 		http.MethodPost,
 		path,
 		retypeReq,
 		nil,
-		callOpts,
 	)
 }
 
@@ -470,15 +467,14 @@ func (s *instanceService) executeInstanceAction(ctx context.Context, callOpts cl
 		return &client.ValidationError{Field: "id", Message: "cannot be empty"}
 	}
 	path := fmt.Sprintf("/v1/instances/%s/%s", id, action)
-	return mgc_http.ExecuteCall(
+	return mgc_http.ExecuteSimpleRequest(
 		ctx,
-		s.client.newRequest,
+		mgc_http.WithCallOptions(s.client.newRequest, callOpts),
 		s.client.GetConfig(),
 		http.MethodPost,
 		path,
 		nil,
 		nil,
-		callOpts,
 	)
 }
 
@@ -490,15 +486,14 @@ func (s *instanceService) GetFirstWindowsPassword(ctx context.Context, callOpts 
 		return nil, &client.ValidationError{Field: "id", Message: "cannot be empty"}
 	}
 	path := fmt.Sprintf("/v1/instances/config/%s/first-windows-password", id)
-	result, err := mgc_http.ExecuteCallWithRespBody[WindowsPasswordResponse](
+	result, err := mgc_http.ExecuteSimpleRequestWithRespBody[WindowsPasswordResponse](
 		ctx,
-		s.client.newRequest,
+		mgc_http.WithCallOptions(s.client.newRequest, callOpts),
 		s.client.GetConfig(),
 		http.MethodGet,
 		path,
 		nil,
 		nil,
-		callOpts,
 	)
 	if err != nil {
 		return nil, err
@@ -509,30 +504,28 @@ func (s *instanceService) GetFirstWindowsPassword(ctx context.Context, callOpts 
 // AttachNetworkInterface connects a network interface to an instance.
 // This method makes an HTTP request to attach a network interface to an instance.
 func (s *instanceService) AttachNetworkInterface(ctx context.Context, callOpts client.CallOptions, req NICRequest) error {
-	return mgc_http.ExecuteCall(
+	return mgc_http.ExecuteSimpleRequest(
 		ctx,
-		s.client.newRequest,
+		mgc_http.WithCallOptions(s.client.newRequest, callOpts),
 		s.client.GetConfig(),
 		http.MethodPost,
 		"/v1/instances/network-interface/attach",
 		req,
 		nil,
-		callOpts,
 	)
 }
 
 // DetachNetworkInterface removes a non-primary network interface from an instance.
 // This method makes an HTTP request to detach a network interface from an instance.
 func (s *instanceService) DetachNetworkInterface(ctx context.Context, callOpts client.CallOptions, req NICRequest) error {
-	return mgc_http.ExecuteCall(
+	return mgc_http.ExecuteSimpleRequest(
 		ctx,
-		s.client.newRequest,
+		mgc_http.WithCallOptions(s.client.newRequest, callOpts),
 		s.client.GetConfig(),
 		http.MethodPost,
 		"/v1/instances/network-interface/detach",
 		req,
 		nil,
-		callOpts,
 	)
 }
 

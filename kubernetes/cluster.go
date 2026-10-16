@@ -203,7 +203,7 @@ func (s *clusterService) List(ctx context.Context, callOpts client.CallOptions, 
 		query.Add("expand", strings.Join(opts.Expand, ","))
 	}
 
-	resp, err := mgc_http.ExecuteCallWithRespBody[ClusterListResponse](ctx, s.client.newRequest, s.client.GetConfig(), http.MethodGet, "/v0/clusters", nil, query, callOpts)
+	resp, err := mgc_http.ExecuteSimpleRequestWithRespBody[ClusterListResponse](ctx, mgc_http.WithCallOptions(s.client.newRequest, callOpts), s.client.GetConfig(), http.MethodGet, "/v0/clusters", nil, query)
 	if err != nil {
 		return nil, err
 	}
@@ -213,7 +213,7 @@ func (s *clusterService) List(ctx context.Context, callOpts client.CallOptions, 
 
 // Create creates a new Kubernetes cluster
 func (s *clusterService) Create(ctx context.Context, callOpts client.CallOptions, req ClusterRequest) (*CreateClusterResponse, error) {
-	response, err := mgc_http.ExecuteCallWithRespBody[CreateClusterResponse](ctx, s.client.newRequest, s.client.GetConfig(), http.MethodPost, "/v0/clusters", req, nil, callOpts)
+	response, err := mgc_http.ExecuteSimpleRequestWithRespBody[CreateClusterResponse](ctx, mgc_http.WithCallOptions(s.client.newRequest, callOpts), s.client.GetConfig(), http.MethodPost, "/v0/clusters", req, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -227,7 +227,7 @@ func (s *clusterService) Get(ctx context.Context, callOpts client.CallOptions, c
 		return nil, &client.ValidationError{Field: "clusterID", Message: utils.CannotBeEmpty}
 	}
 
-	return mgc_http.ExecuteCallWithRespBody[Cluster](ctx, s.client.newRequest, s.client.GetConfig(), http.MethodGet, fmt.Sprintf(clusterUrlWithID, clusterID), nil, nil, callOpts)
+	return mgc_http.ExecuteSimpleRequestWithRespBody[Cluster](ctx, mgc_http.WithCallOptions(s.client.newRequest, callOpts), s.client.GetConfig(), http.MethodGet, fmt.Sprintf(clusterUrlWithID, clusterID), nil, nil)
 }
 
 // Delete removes a Kubernetes cluster
@@ -236,7 +236,7 @@ func (s *clusterService) Delete(ctx context.Context, callOpts client.CallOptions
 		return &client.ValidationError{Field: "clusterID", Message: utils.CannotBeEmpty}
 	}
 
-	return mgc_http.ExecuteCall(ctx, s.client.newRequest, s.client.GetConfig(), http.MethodDelete, fmt.Sprintf(clusterUrlWithID, clusterID), nil, nil, callOpts)
+	return mgc_http.ExecuteSimpleRequest(ctx, mgc_http.WithCallOptions(s.client.newRequest, callOpts), s.client.GetConfig(), http.MethodDelete, fmt.Sprintf(clusterUrlWithID, clusterID), nil, nil)
 }
 
 // Update updates the allowed CIDRs for a cluster
@@ -245,7 +245,7 @@ func (s *clusterService) Update(ctx context.Context, callOpts client.CallOptions
 		return nil, &client.ValidationError{Field: "clusterID", Message: utils.CannotBeEmpty}
 	}
 
-	return mgc_http.ExecuteCallWithRespBody[PatchClusterResponse](ctx, s.client.newRequest, s.client.GetConfig(), http.MethodPatch, fmt.Sprintf(clusterUrlWithID, clusterID), req, nil, callOpts)
+	return mgc_http.ExecuteSimpleRequestWithRespBody[PatchClusterResponse](ctx, mgc_http.WithCallOptions(s.client.newRequest, callOpts), s.client.GetConfig(), http.MethodPatch, fmt.Sprintf(clusterUrlWithID, clusterID), req, nil)
 }
 
 // GetKubeConfig retrieves the kubeconfig for a cluster
@@ -254,5 +254,5 @@ func (s *clusterService) GetKubeConfig(ctx context.Context, callOpts client.Call
 		return nil, &client.ValidationError{Field: "clusterID", Message: utils.CannotBeEmpty}
 	}
 
-	return mgc_http.ExecuteCallWithRespBody[KubeConfig](ctx, s.client.newRequest, s.client.GetConfig(), http.MethodGet, fmt.Sprintf(clusterUrlWithID+"/kubeconfig", clusterID), nil, nil, callOpts)
+	return mgc_http.ExecuteSimpleRequestWithRespBody[KubeConfig](ctx, mgc_http.WithCallOptions(s.client.newRequest, callOpts), s.client.GetConfig(), http.MethodGet, fmt.Sprintf(clusterUrlWithID+"/kubeconfig", clusterID), nil, nil)
 }

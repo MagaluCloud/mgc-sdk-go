@@ -205,15 +205,14 @@ func (s *volumeService) List(ctx context.Context, callOpts client.CallOptions, o
 		}
 	}
 
-	result, err := mgc_http.ExecuteCallWithRespBody[ListVolumesResponse](
+	result, err := mgc_http.ExecuteSimpleRequestWithRespBody[ListVolumesResponse](
 		ctx,
-		s.client.newRequest,
+		mgc_http.WithCallOptions(s.client.newRequest, callOpts),
 		s.client.GetConfig(),
 		http.MethodGet,
 		path,
 		nil,
 		query,
-		callOpts,
 	)
 	if err != nil {
 		return nil, err
@@ -259,15 +258,14 @@ func (s *volumeService) ListAll(ctx context.Context, callOpts client.CallOptions
 // This method makes an HTTP request to create a new volume
 // and returns the ID of the created volume.
 func (s *volumeService) Create(ctx context.Context, callOpts client.CallOptions, req CreateVolumeRequest) (string, error) {
-	result, err := mgc_http.ExecuteCallWithRespBody[struct{ ID string }](
+	result, err := mgc_http.ExecuteSimpleRequestWithRespBody[struct{ ID string }](
 		ctx,
-		s.client.newRequest,
+		mgc_http.WithCallOptions(s.client.newRequest, callOpts),
 		s.client.GetConfig(),
 		http.MethodPost,
 		"/v1/volumes",
 		req,
 		nil,
-		callOpts,
 	)
 	if err != nil {
 		return "", err
@@ -287,15 +285,14 @@ func (s *volumeService) Get(ctx context.Context, callOpts client.CallOptions, id
 		}
 	}
 
-	return mgc_http.ExecuteCallWithRespBody[Volume](
+	return mgc_http.ExecuteSimpleRequestWithRespBody[Volume](
 		ctx,
-		s.client.newRequest,
+		mgc_http.WithCallOptions(s.client.newRequest, callOpts),
 		s.client.GetConfig(),
 		http.MethodGet,
 		path,
 		nil,
 		query,
-		callOpts,
 	)
 }
 
@@ -303,30 +300,28 @@ func (s *volumeService) Get(ctx context.Context, callOpts client.CallOptions, id
 // This method makes an HTTP request to delete a volume permanently.
 // The volume must be detached from any instances before it can be deleted.
 func (s *volumeService) Delete(ctx context.Context, callOpts client.CallOptions, id string) error {
-	return mgc_http.ExecuteCall(
+	return mgc_http.ExecuteSimpleRequest(
 		ctx,
-		s.client.newRequest,
+		mgc_http.WithCallOptions(s.client.newRequest, callOpts),
 		s.client.GetConfig(),
 		http.MethodDelete,
 		fmt.Sprintf("/v1/volumes/%s", id),
 		nil,
 		nil,
-		callOpts,
 	)
 }
 
 // Rename changes the volume name.
 // This method makes an HTTP request to rename an existing volume.
 func (s *volumeService) Rename(ctx context.Context, callOpts client.CallOptions, id string, newName string) error {
-	return mgc_http.ExecuteCall(
+	return mgc_http.ExecuteSimpleRequest(
 		ctx,
-		s.client.newRequest,
+		mgc_http.WithCallOptions(s.client.newRequest, callOpts),
 		s.client.GetConfig(),
 		http.MethodPatch,
 		fmt.Sprintf("/v1/volumes/%s/rename", id),
 		RenameVolumeRequest{Name: newName},
 		nil,
-		callOpts,
 	)
 }
 
@@ -334,15 +329,14 @@ func (s *volumeService) Rename(ctx context.Context, callOpts client.CallOptions,
 // This method makes an HTTP request to extend an existing volume.
 // The volume must be detached or the attached instance must be stopped.
 func (s *volumeService) Extend(ctx context.Context, callOpts client.CallOptions, id string, req ExtendVolumeRequest) error {
-	return mgc_http.ExecuteCall(
+	return mgc_http.ExecuteSimpleRequest(
 		ctx,
-		s.client.newRequest,
+		mgc_http.WithCallOptions(s.client.newRequest, callOpts),
 		s.client.GetConfig(),
 		http.MethodPost,
 		fmt.Sprintf("/v1/volumes/%s/extend", id),
 		req,
 		nil,
-		callOpts,
 	)
 }
 
@@ -350,15 +344,14 @@ func (s *volumeService) Extend(ctx context.Context, callOpts client.CallOptions,
 // This method makes an HTTP request to change the type of an existing volume.
 // The volume must be detached or the attached instance must be stopped.
 func (s *volumeService) Retype(ctx context.Context, callOpts client.CallOptions, id string, req RetypeVolumeRequest) error {
-	return mgc_http.ExecuteCall(
+	return mgc_http.ExecuteSimpleRequest(
 		ctx,
-		s.client.newRequest,
+		mgc_http.WithCallOptions(s.client.newRequest, callOpts),
 		s.client.GetConfig(),
 		http.MethodPost,
 		fmt.Sprintf("/v1/volumes/%s/retype", id),
 		req,
 		nil,
-		callOpts,
 	)
 }
 
@@ -366,15 +359,14 @@ func (s *volumeService) Retype(ctx context.Context, callOpts client.CallOptions,
 // This method makes an HTTP request to attach a volume to an instance.
 // Returns an error if the volume is already attached or if either ID is invalid.
 func (s *volumeService) Attach(ctx context.Context, callOpts client.CallOptions, volumeID string, instanceID string) error {
-	return mgc_http.ExecuteCall(
+	return mgc_http.ExecuteSimpleRequest(
 		ctx,
-		s.client.newRequest,
+		mgc_http.WithCallOptions(s.client.newRequest, callOpts),
 		s.client.GetConfig(),
 		http.MethodPost,
 		fmt.Sprintf("/v1/volumes/%s/attach/%s", volumeID, instanceID),
 		nil,
 		nil,
-		callOpts,
 	)
 }
 
@@ -382,14 +374,13 @@ func (s *volumeService) Attach(ctx context.Context, callOpts client.CallOptions,
 // This method makes an HTTP request to detach a volume from an instance.
 // Returns an error if the volume is not attached or if the operation fails.
 func (s *volumeService) Detach(ctx context.Context, callOpts client.CallOptions, volumeID string) error {
-	return mgc_http.ExecuteCall(
+	return mgc_http.ExecuteSimpleRequest(
 		ctx,
-		s.client.newRequest,
+		mgc_http.WithCallOptions(s.client.newRequest, callOpts),
 		s.client.GetConfig(),
 		http.MethodPost,
 		fmt.Sprintf("/v1/volumes/%s/detach", volumeID),
 		nil,
 		nil,
-		callOpts,
 	)
 }

@@ -110,9 +110,9 @@ func (s *nodePoolService) Nodes(ctx context.Context, callOpts client.CallOptions
 		return nil, &client.ValidationError{Field: nodePoolIdField, Message: utils.CannotBeEmpty}
 	}
 
-	resp, err := mgc_http.ExecuteCallWithRespBody[NodesResponse](ctx, s.client.newRequest,
+	resp, err := mgc_http.ExecuteSimpleRequestWithRespBody[NodesResponse](ctx, mgc_http.WithCallOptions(s.client.newRequest, callOpts),
 		s.client.GetConfig(), http.MethodGet,
-		fmt.Sprintf(clusterNodepoolURL+"/nodes", clusterID, nodePoolID), nil, nil, callOpts)
+		fmt.Sprintf(clusterNodepoolURL+"/nodes", clusterID, nodePoolID), nil, nil)
 
 	if err != nil {
 		return nil, err
@@ -138,8 +138,8 @@ func (s *nodePoolService) List(ctx context.Context, callOpts client.CallOptions,
 		query.Add("_sort", *opts.Sort)
 	}
 
-	resp, err := mgc_http.ExecuteCallWithRespBody[NodePoolList](ctx, s.client.newRequest,
-		s.client.GetConfig(), http.MethodGet, fmt.Sprintf("/v1alpha0/clusters/%s/node-pools", clusterID), nil, query, callOpts)
+	resp, err := mgc_http.ExecuteSimpleRequestWithRespBody[NodePoolList](ctx, mgc_http.WithCallOptions(s.client.newRequest, callOpts),
+		s.client.GetConfig(), http.MethodGet, fmt.Sprintf("/v1alpha0/clusters/%s/node-pools", clusterID), nil, query)
 	if err != nil {
 		return nil, err
 	}
@@ -153,9 +153,9 @@ func (s *nodePoolService) Create(ctx context.Context, callOpts client.CallOption
 		return nil, &client.ValidationError{Field: clusterIdField, Message: utils.CannotBeEmpty}
 	}
 
-	return mgc_http.ExecuteCallWithRespBody[NodePool](ctx, s.client.newRequest,
+	return mgc_http.ExecuteSimpleRequestWithRespBody[NodePool](ctx, mgc_http.WithCallOptions(s.client.newRequest, callOpts),
 		s.client.GetConfig(), http.MethodPost,
-		fmt.Sprintf("/v0/clusters/%s/node_pools", clusterID), req, nil, callOpts)
+		fmt.Sprintf("/v0/clusters/%s/node_pools", clusterID), req, nil)
 }
 
 // Get retrieves detailed information about a specific node pool
@@ -168,9 +168,9 @@ func (s *nodePoolService) Get(ctx context.Context, callOpts client.CallOptions, 
 		return nil, &client.ValidationError{Field: nodePoolIdField, Message: utils.CannotBeEmpty}
 	}
 
-	return mgc_http.ExecuteCallWithRespBody[NodePool](ctx, s.client.newRequest,
+	return mgc_http.ExecuteSimpleRequestWithRespBody[NodePool](ctx, mgc_http.WithCallOptions(s.client.newRequest, callOpts),
 		s.client.GetConfig(), http.MethodGet,
-		fmt.Sprintf(clusterNodepoolURL, clusterID, nodePoolID), nil, nil, callOpts)
+		fmt.Sprintf(clusterNodepoolURL, clusterID, nodePoolID), nil, nil)
 }
 
 // Update updates a node pool's properties
@@ -183,9 +183,9 @@ func (s *nodePoolService) Update(ctx context.Context, callOpts client.CallOption
 		return nil, &client.ValidationError{Field: nodePoolIdField, Message: utils.CannotBeEmpty}
 	}
 
-	return mgc_http.ExecuteCallWithRespBody[NodePool](ctx, s.client.newRequest,
+	return mgc_http.ExecuteSimpleRequestWithRespBody[NodePool](ctx, mgc_http.WithCallOptions(s.client.newRequest, callOpts),
 		s.client.GetConfig(), http.MethodPatch,
-		fmt.Sprintf(clusterNodepoolURL, clusterID, nodePoolID), req, nil, callOpts)
+		fmt.Sprintf(clusterNodepoolURL, clusterID, nodePoolID), req, nil)
 }
 
 // Delete removes a node pool from a cluster
@@ -198,7 +198,7 @@ func (s *nodePoolService) Delete(ctx context.Context, callOpts client.CallOption
 		return &client.ValidationError{Field: nodePoolIdField, Message: utils.CannotBeEmpty}
 	}
 
-	return mgc_http.ExecuteCall(ctx, s.client.newRequest,
+	return mgc_http.ExecuteSimpleRequest(ctx, mgc_http.WithCallOptions(s.client.newRequest, callOpts),
 		s.client.GetConfig(), http.MethodDelete,
-		fmt.Sprintf(clusterNodepoolURL, clusterID, nodePoolID), nil, nil, callOpts)
+		fmt.Sprintf(clusterNodepoolURL, clusterID, nodePoolID), nil, nil)
 }

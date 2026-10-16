@@ -154,15 +154,14 @@ func (s *schedulerService) List(ctx context.Context, callOpts client.CallOptions
 		}
 	}
 
-	result, err := mgc_http.ExecuteCallWithRespBody[SchedulerListResponse](
+	result, err := mgc_http.ExecuteSimpleRequestWithRespBody[SchedulerListResponse](
 		ctx,
-		s.client.newRequest,
+		mgc_http.WithCallOptions(s.client.newRequest, callOpts),
 		s.client.GetConfig(),
 		http.MethodGet,
 		"/v1/schedulers",
 		nil,
 		query,
-		callOpts,
 	)
 	if err != nil {
 		return nil, err
@@ -207,15 +206,14 @@ func (s *schedulerService) ListAll(ctx context.Context, callOpts client.CallOpti
 // This method makes an HTTP request to create a new scheduler
 // and returns the ID of the created scheduler.
 func (s *schedulerService) Create(ctx context.Context, callOpts client.CallOptions, req SchedulerPayload) (string, error) {
-	result, err := mgc_http.ExecuteCallWithRespBody[struct{ ID string }](
+	result, err := mgc_http.ExecuteSimpleRequestWithRespBody[struct{ ID string }](
 		ctx,
-		s.client.newRequest,
+		mgc_http.WithCallOptions(s.client.newRequest, callOpts),
 		s.client.GetConfig(),
 		http.MethodPost,
 		"/v1/schedulers",
 		req,
 		nil,
-		callOpts,
 	)
 	if err != nil {
 		return "", err
@@ -240,59 +238,55 @@ func (s *schedulerService) Get(ctx context.Context, callOpts client.CallOptions,
 		}
 	}
 
-	return mgc_http.ExecuteCallWithRespBody[SchedulerResponse](
+	return mgc_http.ExecuteSimpleRequestWithRespBody[SchedulerResponse](
 		ctx,
-		s.client.newRequest,
+		mgc_http.WithCallOptions(s.client.newRequest, callOpts),
 		s.client.GetConfig(),
 		http.MethodGet,
 		path,
 		nil,
 		query,
-		callOpts,
 	)
 }
 
 // Delete removes a scheduler.
 // This method makes an HTTP request to delete a scheduler permanently.
 func (s *schedulerService) Delete(ctx context.Context, callOpts client.CallOptions, id string) error {
-	return mgc_http.ExecuteCall(
+	return mgc_http.ExecuteSimpleRequest(
 		ctx,
-		s.client.newRequest,
+		mgc_http.WithCallOptions(s.client.newRequest, callOpts),
 		s.client.GetConfig(),
 		http.MethodDelete,
 		fmt.Sprintf("/v1/schedulers/%s", id),
 		nil,
 		nil,
-		callOpts,
 	)
 }
 
 // AttachVolume attaches a volume to a scheduler.
 // This method makes an HTTP request to attach a volume to an existing scheduler.
 func (s *schedulerService) AttachVolume(ctx context.Context, callOpts client.CallOptions, id string, req SchedulerVolumeIdentifierPayload) error {
-	return mgc_http.ExecuteCall(
+	return mgc_http.ExecuteSimpleRequest(
 		ctx,
-		s.client.newRequest,
+		mgc_http.WithCallOptions(s.client.newRequest, callOpts),
 		s.client.GetConfig(),
 		http.MethodPost,
 		fmt.Sprintf("/v1/schedulers/%s/attach", id),
 		req,
 		nil,
-		callOpts,
 	)
 }
 
 // DetachVolume detaches a volume from a scheduler.
 // This method makes an HTTP request to detach a volume from an existing scheduler.
 func (s *schedulerService) DetachVolume(ctx context.Context, callOpts client.CallOptions, id string, req SchedulerVolumeIdentifierPayload) error {
-	return mgc_http.ExecuteCall(
+	return mgc_http.ExecuteSimpleRequest(
 		ctx,
-		s.client.newRequest,
+		mgc_http.WithCallOptions(s.client.newRequest, callOpts),
 		s.client.GetConfig(),
 		http.MethodPost,
 		fmt.Sprintf("/v1/schedulers/%s/detach", id),
 		req,
 		nil,
-		callOpts,
 	)
 }
