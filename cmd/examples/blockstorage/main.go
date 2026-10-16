@@ -227,8 +227,8 @@ func ExampleVolumeAttachments(volumeID string) {
 	if volume.Attachment != nil {
 		fmt.Printf("Attachment details:\n")
 		fmt.Printf("  Instance: %s\n", *volume.Attachment.Instance.ID)
-		//fmt.Printf("  Device: %s\n", *volume.Attachment.Device)
-		//fmt.Printf("  Attached At: %s\n", volume.Attachment.AttachedAt)
+		fmt.Printf("  Device: %s\n", *volume.Attachment.Device)
+		fmt.Printf("  Attached At: %s\n", volume.Attachment.AttachedAt)
 
 		if volume.Attachment.Serial != nil {
 			fmt.Printf("  Serial: %s\n", *volume.Attachment.Serial)
