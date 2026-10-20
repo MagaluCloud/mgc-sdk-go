@@ -38,6 +38,12 @@ func main() {
 	ExampleDeleteParameter()
 	ExampleStartImportMode()
 	ExampleStopImportMode()
+	ExampleCreateClusterSnapshot()
+	ExampleListClusterSnapshots()
+	ExampleGetClusterSnapshot()
+	ExampleUpdateClusterSnapshot()
+	ExampleDeleteClusterSnapshot()
+	ExampleRestoreClusterSnapshot()
 }
 
 func ExampleListEngines() {
@@ -698,4 +704,123 @@ func ExampleStopImportMode() {
 	}
 
 	fmt.Printf("Updated cluster %s (ID: %s) to %v\n", updated.Name, updated.ID, updated.Status)
+}
+
+func ExampleListClusterSnapshots() {
+	apiToken := os.Getenv("MGC_API_TOKEN")
+	if apiToken == "" {
+		log.Fatal("MGC_API_TOKEN environment variable is not set")
+	}
+	c := client.NewMgcClient(client.WithAPIKey(apiToken))
+	dbaasClient := dbaas.New(c)
+
+	resp, err := dbaasClient.Clusters().ListSnapshots(context.Background(), "your-cluster-id", dbaas.ListClusterSnapshotOptions{
+		Limit: helpers.IntPtr(10),
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, snapshot := range resp.Results {
+		fmt.Printf("Snapshot %s (ID: %s) - Status: %s\n", snapshot.Name, snapshot.ID, snapshot.Status)
+	}
+}
+
+func ExampleCreateClusterSnapshot() {
+	apiToken := os.Getenv("MGC_API_TOKEN")
+	if apiToken == "" {
+		log.Fatal("MGC_API_TOKEN environment variable is not set")
+	}
+	c := client.NewMgcClient(client.WithAPIKey(apiToken))
+	dbaasClient := dbaas.New(c)
+
+	snapshot, err := dbaasClient.Clusters().CreateSnapshot(context.Background(), "your-cluster-id", dbaas.ClusterSnapshotCreateRequest{
+		Name:        "manual-snapshot",
+		Description: helpers.StrPtr("Manual snapshot created via SDK"),
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Printf("Created cluster snapshot with ID: %s\n", snapshot.ID)
+}
+
+func ExampleGetClusterSnapshot() {
+	apiToken := os.Getenv("MGC_API_TOKEN")
+	if apiToken == "" {
+		log.Fatal("MGC_API_TOKEN environment variable is not set")
+	}
+	c := client.NewMgcClient(client.WithAPIKey(apiToken))
+	dbaasClient := dbaas.New(c)
+
+	snapshot, err := dbaasClient.Clusters().GetSnapshot(context.Background(), "your-cluster-id", "your-snapshot-id")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Printf("Snapshot %s (ID: %s) - Status: %s\n", snapshot.Name, snapshot.ID, snapshot.Status)
+}
+
+func ExampleUpdateClusterSnapshot() {
+	apiToken := os.Getenv("MGC_API_TOKEN")
+	if apiToken == "" {
+		log.Fatal("MGC_API_TOKEN environment variable is not set")
+	}
+	c := client.NewMgcClient(client.WithAPIKey(apiToken))
+	dbaasClient := dbaas.New(c)
+
+	snapshot, err := dbaasClient.Clusters().UpdateSnapshot(
+		context.Background(),
+		"your-cluster-id",
+		"your-snapshot-id",
+		dbaas.ClusterSnapshotUpdateRequest{
+			Name:        "renamed-snapshot",
+			Description: helpers.StrPtr("Updated description"),
+		},
+	)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Printf("Updated snapshot %s (ID: %s)\n", snapshot.Name, snapshot.ID)
+}
+
+func ExampleDeleteClusterSnapshot() {
+	apiToken := os.Getenv("MGC_API_TOKEN")
+	if apiToken == "" {
+		log.Fatal("MGC_API_TOKEN environment variable is not set")
+	}
+	c := client.NewMgcClient(client.WithAPIKey(apiToken))
+	dbaasClient := dbaas.New(c)
+
+	err := dbaasClient.Clusters().DeleteSnapshot(context.Background(), "your-cluster-id", "your-snapshot-id")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println("Cluster snapshot deleted successfully")
+}
+
+func ExampleRestoreClusterSnapshot() {
+	apiToken := os.Getenv("MGC_API_TOKEN")
+	if apiToken == "" {
+		log.Fatal("MGC_API_TOKEN environment variable is not set")
+	}
+	c := client.NewMgcClient(client.WithAPIKey(apiToken))
+	dbaasClient := dbaas.New(c)
+
+	cluster, err := dbaasClient.Clusters().RestoreSnapshot(
+		context.Background(),
+		"your-cluster-id",
+		"your-snapshot-id",
+		dbaas.ClusterRestoreRequest{
+			Name:           "restored-cluster",
+			InstanceTypeID: "your-instance-type-id",
+		},
+	)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Printf("Restored cluster %s (ID: %s) - Status: %s\n", cluster.Name, cluster.ID, cluster.Status)
 }

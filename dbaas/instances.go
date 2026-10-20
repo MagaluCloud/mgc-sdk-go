@@ -23,8 +23,6 @@ type (
 	InstanceStatus string
 	AddressAccess  string
 	AddressType    string
-	SnapshotType   string
-	SnapshotStatus string
 )
 
 const (
@@ -54,21 +52,6 @@ const (
 const (
 	AddressTypeIPv4 AddressType = "IPv4"
 	AddressTypeIPv6 AddressType = "IPv6"
-)
-
-const (
-	SnapshotTypeOnDemand  SnapshotType = "ON_DEMAND"
-	SnapshotTypeAutomated SnapshotType = "AUTOMATED"
-)
-
-const (
-	SnapshotStatusPending   SnapshotStatus = "PENDING"
-	SnapshotStatusCreating  SnapshotStatus = "CREATING"
-	SnapshotStatusAvailable SnapshotStatus = "AVAILABLE"
-	SnapshotStatusRestoring SnapshotStatus = "RESTORING"
-	SnapshotStatusError     SnapshotStatus = "ERROR"
-	SnapshotStatusDeleting  SnapshotStatus = "DELETING"
-	SnapshotStatusDeleted   SnapshotStatus = "DELETED"
 )
 
 type (
