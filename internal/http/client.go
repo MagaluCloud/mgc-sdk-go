@@ -45,7 +45,7 @@ func NewRequest[T any](c *client.Config, ctx context.Context, method, path strin
 				"path", path)
 			return nil, fmt.Errorf("error marshalling body: %w", err)
 		}
-		bodyReader = io.NopCloser(bytes.NewReader(bodyBytes))
+		bodyReader = bytes.NewReader(bodyBytes)
 	}
 
 	req, err := http.NewRequestWithContext(ctx, method, url, bodyReader)
