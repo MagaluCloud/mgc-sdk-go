@@ -1482,3 +1482,38 @@ func TestNewRequest_Authentication(t *testing.T) {
 		})
 	}
 }
+
+func TestDo_NonPositiveMaxAttemptsStillSendsRequest(t *testing.T) {
+	for _, maxAttempts := range []int{0, -1} {
+		t.Run(fmt.Sprintf("maxAttempts=%d", maxAttempts), func(t *testing.T) {
+			attemptCount := 0
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				attemptCount++
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusOK)
+				json.NewEncoder(w).Encode(mockResponse{Message: "ok"})
+			}))
+			defer server.Close()
+
+			core := client.NewMgcClient(client.WithAPIKey("test-api-key"),
+				client.WithBaseURL(client.MgcUrl(server.URL)),
+				client.WithRetryConfig(maxAttempts, 10*time.Millisecond, 50*time.Millisecond, 1.5))
+
+			req, err := NewRequest[any](core.GetConfig(), context.Background(), http.MethodGet, "/test", nil)
+			if err != nil {
+				t.Fatalf("unexpected error creating request: %v", err)
+			}
+
+			resp, err := Do(core.GetConfig(), context.Background(), req, &mockResponse{})
+			if err != nil {
+				t.Fatalf("expected request to succeed, got: %v", err)
+			}
+			if resp == nil || resp.Message != "ok" {
+				t.Errorf("expected decoded response, got %+v", resp)
+			}
+			if attemptCount != 1 {
+				t.Errorf("expected exactly 1 attempt, got %d", attemptCount)
+			}
+		})
+	}
+}
