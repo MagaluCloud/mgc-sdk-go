@@ -119,8 +119,12 @@ func Do[T any](c *client.Config, ctx context.Context, req *http.Request, v *T) (
 		defer cancel()
 	}
 
+	// Always make at least one attempt, even when retries are disabled with
+	// MaxAttempts <= 0.
+	maxAttempts := max(c.RetryConfig.MaxAttempts, 1)
+
 	var lastError error
-	for attempt := range c.RetryConfig.MaxAttempts {
+	for attempt := range maxAttempts {
 		if attempt > 0 {
 			backoff := retry.GetNextBackoff(attempt-1, c.RetryConfig.BackoffFactor, c.RetryConfig.InitialInterval, c.RetryConfig.MaxInterval)
 			timer := time.NewTimer(backoff)
@@ -183,7 +187,7 @@ func Do[T any](c *client.Config, ctx context.Context, req *http.Request, v *T) (
 		return nil, nil
 	}
 
-	return nil, &client.RetryError{LastError: lastError, Retries: c.RetryConfig.MaxAttempts}
+	return nil, &client.RetryError{LastError: lastError, Retries: maxAttempts}
 }
 
 func decodeYamlResponse[T any](resp *http.Response, v *T) (*T, error) {
