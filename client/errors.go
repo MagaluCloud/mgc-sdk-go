@@ -58,3 +58,9 @@ type RetryError struct {
 func (e *RetryError) Error() string {
 	return fmt.Sprintf("max retry attempts reached: %v", e.LastError)
 }
+
+// Unwrap returns the last error encountered, so errors.Is and errors.As can
+// inspect it (for example to read the status code of an HTTPError).
+func (e *RetryError) Unwrap() error {
+	return e.LastError
+}
