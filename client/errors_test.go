@@ -2,6 +2,8 @@ package client
 
 import (
 	"bytes"
+	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -172,5 +174,27 @@ func TestRetryError_Error(t *testing.T) {
 				t.Errorf("RetryError.Error() = %v, want %v", got, tt.want)
 			}
 		})
+	}
+}
+
+func TestRetryError_Unwrap(t *testing.T) {
+	httpErr := &HTTPError{StatusCode: http.StatusServiceUnavailable, Status: "503 Service Unavailable"}
+	var err error = &RetryError{LastError: httpErr, Retries: 3}
+
+	var target *HTTPError
+	if !errors.As(err, &target) {
+		t.Fatal("errors.As should find the HTTPError wrapped by RetryError")
+	}
+	if target.StatusCode != http.StatusServiceUnavailable {
+		t.Errorf("StatusCode = %d, want %d", target.StatusCode, http.StatusServiceUnavailable)
+	}
+
+	err = &RetryError{LastError: context.DeadlineExceeded, Retries: 3}
+	if !errors.Is(err, context.DeadlineExceeded) {
+		t.Error("errors.Is should match the error wrapped by RetryError")
+	}
+
+	if (&RetryError{}).Unwrap() != nil {
+		t.Error("Unwrap should return nil when there is no last error")
 	}
 }
